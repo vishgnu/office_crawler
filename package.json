@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node build.mjs",
     "test": "node --test",
-    "e2e": "node e2e/smoke.mjs"
+    "e2e": "node build.mjs && node e2e/run-all.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.10",
