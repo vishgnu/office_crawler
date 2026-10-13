@@ -13,3 +13,11 @@ export const monsters = {
     minDepth: 1, weight: 2, pack: [2, 3],
   },
 };
+
+// Drop tables per monster type (S2-1). Multipliers scale the config chances; slotWeights bias which gear slot drops.
+// Depth enters through the item level (config.ilvlPerDepth) and the rarity shift, so these tables stay depth-free.
+export const drops = {
+  "zombie-intern": { goldMult: 1.2, itemMult: 1, potionMult: 1.2, slotWeights: { body: 3, head: 2, feet: 2, belt: 2, weapon: 1, offhand: 1, hands: 1, ring: 1, amulet: 1 } },
+  "printer-imp": { goldMult: 0.8, itemMult: 1.1, potionMult: 0.8, slotWeights: { weapon: 3, hands: 2, ring: 2, amulet: 2, offhand: 1, head: 1, body: 1, feet: 1, belt: 1 } },
+};
+export const defaultDrops = { goldMult: 1, itemMult: 1, potionMult: 1, slotWeights: null };

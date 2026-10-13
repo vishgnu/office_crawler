@@ -7,6 +7,11 @@ import { planPath } from "../nav.js";
 import { emit } from "../events.js";
 import { createSpatialHash } from "../spatial.js";
 import { restartInPlace } from "../state.js";
+import { groundAt, takeGround, dropItem, releaseCursor } from "./loot.js";
+import { clickCell, findById, remove, autoplace as autoplaceInto } from "../items/inventory.js";
+import { equipItem, unequipItem, clickSlot } from "../items/equipment.js";
+import { useBelt, toBelt, clickBelt } from "../items/belt.js";
+import { openVendor, closeVendor, buy, sell } from "./vendors.js";
 
 const fail = (error) => ({ ok: false, error });
 const OK = { ok: true };
@@ -24,7 +29,7 @@ function issueMove(state, tile) {
   const ctx = getCtx(state), p = state.player;
   if (!ctx.grid.inBounds(tile.x, tile.y)) return fail("tile out of bounds");
   if (p.hp <= 0) return fail("player is dead");
-  p.target = null; p.goal = null;
+  p.target = null; p.goal = null; p.pickup = null;
   const from = p.next ?? p.tile; // finish the step in progress first
   let path = ctx.grid.walkable(tile.x, tile.y) ? planPath(ctx, from, tile) : null;
   if (!path) {
@@ -47,14 +52,85 @@ function issueAttack(state, id) {
   if (!m || m.ai === "dead") return fail("no such living monster");
   if (state.player.hp <= 0) return fail("player is dead");
   const p = state.player;
-  p.target = id; p.path = []; p.goal = null; p.repathT = 0;
+  p.target = id; p.path = []; p.goal = null; p.repathT = 0; p.pickup = null;
   return OK;
+}
+
+const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+
+/** Pick up a ground entry: at once when in reach, else walk to it first (QF: the order completes in loot.js pickups). */
+function issuePickup(state, id) {
+  const entry = state.groundItems.find((g) => g.id === id);
+  if (!entry) return fail("no such ground item");
+  const p = state.player;
+  if (p.hp <= 0) return fail("player is dead");
+  if (cheb(p.tile, entry.tile) <= config.pickupRange && !p.next) { p.pickup = null; return takeGround(state, entry).ok ? OK : fail("inventory full"); }
+  const r = issueMove(state, entry.tile);
+  if (r.ok) p.pickup = id;
+  return r;
+}
+
+const inGrid = (state, name) => (name === "stash" ? state.stash : name === undefined || name === "inventory" ? state.inventory : null);
+
+/** Drop an inventory item or the cursor item onto the floor next to the hero. */
+function dropCommand(state, id) {
+  const item = id === undefined || state.cursorItem?.id === id ? state.cursorItem : findById(state.inventory, id);
+  if (!item) return fail("nothing to drop");
+  if (item === state.cursorItem) state.cursorItem = null; else remove(state.inventory, item);
+  dropItem(state, item, state.player.tile);
+  emit(state, { type: "dropped", id: item.id });
+  return OK;
+}
+
+const BELT_KEYS = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3 };
+
+/** Inventory, equipment, belt and vendor commands (S2-2). */
+function itemCommand(state, input) {
+  const done = (r) => (r.ok ? OK : fail(r.error ?? "rejected"));
+  switch (input.t) {
+    case "pickup": return issuePickup(state, input.id);
+    case "invClick": {
+      const grid = inGrid(state, input.grid);
+      if (!grid) return fail("unknown grid");
+      const r = clickCell(grid, state, input.x, input.y);
+      if (!r.ok) emit(state, { type: "placeRejected", grid: input.grid ?? "inventory", reason: r.error });
+      return done(r);
+    }
+    case "slotClick": return done(clickSlot(state, input.slot));
+    case "beltClick": return done(clickBelt(state, input.index));
+    case "equip": return done(equipItem(state, input.id, input.slot));
+    case "unequip": return done(unequipItem(state, input.slot));
+    case "useBelt": return done(useBelt(state, input.index));
+    case "toBelt": return done(toBelt(state, input.id, input.index));
+    case "drop": return dropCommand(state, input.id);
+    case "stash": {
+      const [from, to] = input.to === "stash" ? [state.inventory, state.stash] : [state.stash, state.inventory];
+      const item = findById(from, input.id);
+      if (!item) return fail("no such item");
+      remove(from, item);
+      if (!autoplaceInto(to, item)) { autoplaceInto(from, item); emit(state, { type: "inventoryFull", id: item.id }); return fail("no room"); }
+      return OK;
+    }
+    case "openVendor": return done(openVendor(state, input.id));
+    case "closeVendor": return done(closeVendor(state));
+    case "buy": return done(buy(state, input.index));
+    case "sell": return done(sell(state, input.id));
+    case "releaseCursor": releaseCursor(state); return OK;
+    default: return null;
+  }
 }
 
 function mouseDown(state, tile, button, hold) {
   if (button !== 0) return fail("no secondary skill in S1");
   if (!isTile(tile)) return fail("invalid tile");
-  const m = getCtx(state).grid.inBounds(tile.x, tile.y) ? livingMonsterAt(state, tile) : null;
+  const inb = getCtx(state).grid.inBounds(tile.x, tile.y);
+  const m = inb ? livingMonsterAt(state, tile) : null;
+  const ground = !m && inb ? groundAt(state, tile) : null;
+  if (ground) {
+    const r = issuePickup(state, ground.id);
+    Object.assign(state.input.mouse, { down: false, button, tile: { ...tile }, mode: "pickup", applied: { ...tile } });
+    return r;
+  }
   const res = m ? issueAttack(state, m.id) : issueMove(state, tile);
   Object.assign(state.input.mouse, { down: hold, button, tile: { ...tile }, mode: m ? "attack" : "move", applied: { ...tile } });
   return res;
@@ -63,12 +139,18 @@ function mouseDown(state, tile, button, hold) {
 /**
  * Apply one input command now (no time passes). Returns { ok, error? }.
  * Commands: click {tile, button, hold}, mouse {phase: down|move|up|cancel, tile, button}, moveTo {tile},
- * attack {id}, pause, key {code}, restart.
+ * attack {id}, pause, key {code}, restart. Items (S2-2): pickup {id}, invClick {grid, x, y}, slotClick {slot}, beltClick {index},
+ * equip {id, slot?}, unequip {slot}, useBelt {index}, toBelt {id, index?}, drop {id?}, stash {id, to}, openVendor {id?}, closeVendor,
+ * buy {index}, sell {id}, releaseCursor.
  */
 export function applyInput(state, input) {
   const live = state.scene === "floor";
   switch (input?.t) {
     case "pause": case "key": {
+      if (input.t === "key" && input.code in BELT_KEYS) { // potions on keys 1-4 (QF-01-4)
+        if (!live || state.paused) return fail("not in a running game");
+        return useBelt(state, BELT_KEYS[input.code]).ok ? OK : fail("nothing to drink");
+      }
       if (input.t === "key" && input.code !== "Escape") return OK;
       if (!live) return fail("not in a running game");
       state.paused = !state.paused;
@@ -94,7 +176,10 @@ export function applyInput(state, input) {
     }
     case "moveTo": return issueMove(state, input.tile);
     case "attack": return issueAttack(state, input.id);
-    default: return fail("unknown input");
+    default: {
+      const r = itemCommand(state, input);
+      return r ?? fail("unknown input");
+    }
   }
 }
 

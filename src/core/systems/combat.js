@@ -5,6 +5,7 @@ import { emit } from "../events.js";
 import { getCtx } from "../ctx.js";
 import { isAdjacent } from "../grid.js";
 import { monsters as registry } from "../content/monsters.js";
+import { dropLoot, releaseCursor } from "./loot.js";
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
@@ -36,6 +37,7 @@ function killMonster(state, m) {
   const xp = registry[m.type].xp;
   p.xp += xp;
   emit(state, { type: "kill", source: "player", target: m.id, xp });
+  dropLoot(state, m);
   if (p.target === m.id) p.target = null;
 }
 
@@ -59,6 +61,7 @@ function monsterSwing(state, ctx, m) {
   emit(state, { type: "hit", source: m.id, target: "player", value: r.damage });
   if (p.hp === 0) {
     p.action = "dead"; p.path = []; p.target = null; p.next = null;
+    releaseCursor(state); // QF-02-3: a held item goes back to the inventory, else to the floor
     state.scene = "dead"; // same tick as the killing blow (AC-R-023-1)
     emit(state, { type: "death", target: "player" });
   }

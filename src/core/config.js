@@ -39,13 +39,50 @@ export const config = {
   // Natural regeneration (QF-02-4 is open; small default, easy to set to 0)
   regen: { hpEvery: 120, mpEvery: 60 },
 
+  // Character (S2-2). Derived stats are a pure function of level, attributes and gear (items/derive.js).
+  startGold: 50,
+  damageTypes: ["fire", "cold", "shock", "acid"],
+  unarmed: { min: 1, max: 4 },
+  derived: {
+    rounding: "floor",               // "floor" | "round" | "ceil", applied to every derived stat
+    hpBase: 10, hpPerLevel: 10, hpPerStamina: 3,
+    mpBase: 5, mpPerLevel: 5, mpPerFocus: 1,
+    gritFree: 8,                     // damage bonus counts grit points above this value ...
+    damagePerGrit: { min: 1, max: 1 }, // ... times this
+    defenseBase: 0, defensePerAgility: 1,
+    attackRatingBase: 10, attackRatingPerAgility: 3,
+  },
+  levelCap: 30,
   player: {
-    hpMax: 50,
-    mpMax: 20,
-    damage: { min: 3, max: 6 },
-    defense: 10,
-    baseAttackRating: 10,
     attrs: { grit: 10, agility: 10, stamina: 10, focus: 10 },
     xpNext: 100,
   },
+  startKit: { weapon: "ruler-rapier", healthPotions: 2, healthPotion: "lukewarm-coffee" },
+
+  // Items and loot (S2-1). All balance numbers for drops, prices and potions live here (QF-05-7).
+  ilvlPerDepth: 3,                   // item level of a drop = depth * this (+ monster bonus)
+  dropChance: 0.35,                  // chance that a normal kill drops a gear item; strictly between 0 and 1
+  potionDropChance: 0.12,
+  goldDropChance: 0.55,
+  gold: { base: 4, perDepth: 3, spread: 3 }, // pile = (base + perDepth * depth) * goldMult +/- spread
+  rarityWeights: { normal: 700, magic: 250, rare: 45, unique: 5 },
+  rarityDepthShift: 3,               // per depth, this much weight moves from normal to magic/rare/unique
+  magicAffixes: [1, 2],
+  rareAffixes: [3, 5],
+  maxPrefixes: 3, maxSuffixes: 3,
+  uniqueOncePerGame: true,           // QF-05-2: a taken unique falls back to a rare of the same base
+  tierMinRarity: { normal: "normal", champion: "magic", boss: "rare" }, // QF-03-4 and QF-04-7
+  bossDrops: 3,
+  dropRadius: 3,                     // loot lands on the kill tile or the nearest free tile within this radius
+  pickupRange: 1,                    // Chebyshev tiles
+  consumePotionAtFull: true,         // QF-05-5
+  inventory: { w: 10, h: 4 },
+  stash: { w: 10, h: 8 },
+  beltSlots: 4,
+  groundItemCap: 60,                 // oldest ground item is removed beyond this (keeps state small)
+  rarityValue: { normal: 1, magic: 2, rare: 4, unique: 8 },
+  affixWorth: 0.5,                   // share of the base value an affix at its range maximum adds
+  ilvlValue: 0.1,                    // base value grows by this per item level
+  buyOverSell: 4,                    // vendor price = sell value * this (at least sell value + 1)
+  vendor: { gearSlots: 8, potionTiers: { 1: 1, 2: 5, 3: 12 } }, // potion tier -> minimum player level
 };
