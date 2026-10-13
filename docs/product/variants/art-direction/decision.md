@@ -1,6 +1,6 @@
 # Decision: art direction
 
-Status: decided (PROXY)
+Status: decided (PROXY), style frozen after round-2 review (appeal 33 ship, craft 32 ship)
 Date: 2026-10-13
 Picked: C (stylised vector), graded darker with A's lighting model ("C-dark")
 Confidence: medium (high that C is the right base; medium on how dark the grade goes)
