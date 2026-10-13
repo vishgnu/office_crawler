@@ -31,7 +31,8 @@ export function populate(rng, floor) {
   // A champion pack comes first so the budget cannot starve it: its leader is a champion, the rest are normal.
   let packs = 0;
   const champPack = floor.depth >= 2 && rng.next() < config.championChance;
-  for (let tries = 0, want = 3 + rng.int(0, 2); tries < 80 && spent < floor.budget && packs < 12; tries++) {
+  const [wantLo, wantHi] = config.population.packsWanted;
+  for (let tries = 0, want = wantLo + rng.int(0, wantHi - wantLo); tries < config.population.tries && spent < floor.budget && packs < config.population.maxPacks; tries++) {
     const champ = champPack && packs === 0;
     const type = rng.pick(champ ? weighted.filter((t) => t.pack[1] > 1) : weighted), first = anyTile();
     if (!first || !type) continue;
@@ -54,7 +55,7 @@ export function populate(rng, floor) {
     packs++; spent += cost;
     const mods = champ ? rollMods() : null;
     members.forEach((t, i) => spawns.push({ type: type.id, tile: t, packId: `p${packs}`, ...(champ && i === 0 ? { tier: "champion", mods } : {}) }));
-    if (packs >= want && spent >= floor.budget * 0.6) break;
+    if (packs >= want && spent >= floor.budget * config.population.stopAtBudget) break;
   }
   floor.spawns = spawns;
 }

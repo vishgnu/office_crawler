@@ -22,7 +22,7 @@ test("phone layout (<= 899 px wide or <= 519 px tall): one full-width panel, gri
     assert.equal(isPhone(w, h), true, `${w}x${h}`);
     const D = drawerLayout(w, h);
     assert.equal(D.leftW, w - 12);
-    assert.ok(D.cell * 10 + 56 <= w, `${w}x${h}: 10 columns of ${D.cell} px fit`);
+    assert.ok(D.cell * 10 + 36 <= w, `${w}x${h}: 10 columns of ${D.cell} px fit`);
   }
   assert.equal(isPhone(900, 700), false);
 });

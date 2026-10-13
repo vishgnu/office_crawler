@@ -116,6 +116,7 @@ export const config = {
   scaling: { hpPct: 28, damagePct: 14, defensePct: 16, attackRatingPct: 12, xpPct: 20 },
   // Floor population budget (AC-R-034-3): sum of cost * tierFactor stays within it.
   budgetBase: 22, budgetPerDepth: 5,
+  population: { packsWanted: [3, 5], maxPacks: 12, tries: 80, stopAtBudget: 0.6 }, // how many packs a floor tries to place before it stops
 
   // World (S2-4)
   maxDepth: 8,                       // floors 1-8; the boss arena (depth 9, S3) hangs off floor 8

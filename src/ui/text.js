@@ -38,7 +38,7 @@ export const T = {
   learn: "Learn", upgrade: "Upgrade", maxed: "Max level", assignTo: "Assign to", assigned: "Assigned", unassign: "Clear slot", selectedSkill: "Selected for the right mouse button", rightMouse: "Right mouse button uses the selected skill.",
   noSkillSelected: "No skill selected. Learn one in the Skills panel (S).",
   // npc windows
-  buyTab: "Buy", sellTab: "Sell", buy: "Buy", sell: "Sell", stashPut: "Put away", stashTake: "Take", heal: "Heal me", healed: "You feel much better.", alreadyHealthy: "You are not hurt.",
+  buyTab: "Buy", sellTab: "Sell", buy: "Buy", sell: "Sell", sellSure: "Sure?", stashPut: "Put away", stashTake: "Take", heal: "Heal me", healed: "You feel much better.", alreadyHealthy: "You are not hurt.",
   nothingToSell: "Nothing to sell.", lockerEmpty: "The locker is empty.", yourDrawer: "In your desk drawer", inLocker: "In the locker", stockEmpty: "Sold out.", unlimited: "always in stock",
   // hud
   hudLevel: "Level", attrPointsBadge: "attribute points", skillPointsBadge: "skill points", selectedMark: "selected", notEnoughMana: "Not enough mana", mpShort: "mana",

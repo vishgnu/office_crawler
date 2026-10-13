@@ -73,9 +73,10 @@ test("the potion seller sells only potions: every strength tier allowed at the l
   s.player.tile = { x: 19, y: 5 };
   assert.equal(cmd(s, { t: "interact", id: "potions" }).ok, true);
   const stock = s.vendor.stock;
-  assert.ok(stock.every((e) => e.unlimited && e.item.kind === "potion"));
+  assert.ok(stock.every((e) => e.unlimited && (e.item.kind === "potion" || e.item.base === "emergency-exit")));
   assert.ok(stock.some((e) => e.item.restores === "hp") && stock.some((e) => e.item.restores === "mp"));
-  assert.equal(new Set(stock.map((e) => e.item.base)).size, 6);
+  assert.equal(new Set(stock.filter((e) => e.item.kind === "potion").map((e) => e.item.base)).size, 6);
+  assert.ok(stock.some((e) => e.item.base === "emergency-exit"));
   const t = town(); t.player.tile = { x: 5, y: 6 };
   cmd(t, { t: "interact", id: "vendor" });
   assert.ok(t.vendor.stock.some((e) => !e.unlimited));

@@ -30,6 +30,8 @@ export function messageFor(ev, state) {
     case "allocate": return `${T.msgAlloc} ${T.statAttr[ev.attr] ?? ev.attr}.`;
     case "healed": return T.healed;
     case "respawn": return T.msgRespawned;
+    case "portalOpen": return T.msgPortalOpen;
+    case "portalUse": return T.msgPortalBack;
     case "floorEnter": return ev.depth === 0 ? S.lobbyName : `${T.floorWord} ${ev.depth}: ${state.floor.name}`;
     default: return null;
   }

@@ -86,7 +86,8 @@ async function boot() {
     if (preventsDefault(e.code) || (e.code === "Tab" && game.menu() === null && !game.anyPanel())) e.preventDefault(); // Tab is reserved for the map while no panel is open
     if (e.code === "AltLeft" || e.code === "AltRight") game.setShowLoot(true); // Alt held: every loot plate on the floor
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || !game.core) return;
-    if (/^(F[1-4]|Digit[1-4]|Numpad[1-4]|Key[ICSK]|Escape)$/.test(e.code)) {
+    if (e.code === "Tab" && (game.menu() !== null || game.anyPanel())) return; // Tab is the map key only while playing with no drawer open; elsewhere it moves focus
+    if (/^(F[1-4]|Digit[1-4]|Numpad[1-4]|Key[ICSKM]|Tab|Escape)$/.test(e.code)) {
       // a focused button keeps Enter/Space; letters and digits still reach the game
       if (e.code === "Escape") e.preventDefault();
       game.key(e.code);

@@ -11,7 +11,7 @@ export const FLOOR_VARIANTS = 6;
 // Wall variants: 0 clean, 1 smear, 2 splatter.
 export const WALL_VARIANTS = 3;
 export const MARKERS = ["door", "stairs-up", "stairs-down"];
-export const FX_IDS = ["alert", "paper", "shadow", "muted", "flee", "spark", "plus", "elevator"];
+export const FX_IDS = ["alert", "paper", "shadow", "muted", "flee", "spark", "plus", "elevator", "portal"];
 export const PROJECTILES = ["stapler", "toner", "slide"];
 export const LOOT_IDS = ["item", "gold-s", "gold-m", "gold-l"];
 export const NPC_FRAMES = 4;

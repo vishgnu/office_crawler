@@ -146,3 +146,25 @@ export function drawElevator(g) {
   fillPoly(g, [[c[0] - 8, c[1] - 3], [c[0] + 8, c[1] - 3 - 4], [c[0] + 8, c[1] + 1 - 4], [c[0] - 8, c[1] + 2]], "#0b0f1a", INK, 1);
   fillPoly(g, [[c[0] - 2.4, c[1] - 1.2], [c[0] + 2.4, c[1] - 3.2], [c[0], c[1] + 1]], "#5af0a0");
 }
+
+/** The Emergency Exit door (R-046), drawn at state.portal.tile / lobbyTile: a freestanding doorframe with a green EXIT sign, the door swung open on a violet swirl. 64x72 canvas like props. */
+export const PORTAL_W = 64, PORTAL_H = 96, PORTAL_CX = 32, PORTAL_CY = 80; // 24 px taller than a prop: the frame and its sign stand above the tile
+export function drawPortal(g) {
+  g.translate(0, PORTAL_CY - CY);
+  const bl = [CX - 24, CY + 3], br = [CX + 6, CY - 12], z = 50;
+  const at = (t, h) => [bl[0] + (br[0] - bl[0]) * t, bl[1] + (br[1] - bl[1]) * t - h];
+  const quad = (t0, t1, h0, h1, fill, st = INK, lw = 1.2) => fillPoly(g, [at(t0, h0), at(t1, h0), at(t1, h1), at(t0, h1)], fill, st, lw);
+  ellipse(g, CX - 6, CY + 2, 24, 10, "rgba(0,0,0,0.32)");
+  ellipse(g, CX - 9, CY - 2, 17, 7, "rgba(180,140,255,0.38)");           // glow spilling onto the floor
+  quad(0.0, 1.0, 0, z, "#2a1458", INK, 1.6);                              // the opening: deep violet
+  quad(0.08, 0.92, 0, z - 4, "#6a3fc8", null);
+  quad(0.2, 0.8, 4, z - 12, "#a47cff", null);
+  quad(0.34, 0.66, 10, z - 20, "#e6d8ff", null);                          // bright core
+  for (let k = 0; k < 3; k++) quad(0.1, 0.9, 8 + k * 13, 10 + k * 13, "rgba(255,255,255,0.28)", null); // swirl streaks
+  quad(-0.07, 0.05, 0, z + 5, "#c8d0e4");                                 // steel posts
+  quad(0.95, 1.07, 0, z + 5, "#8f9ab6");
+  quad(-0.07, 1.07, z, z + 6, "#c8d0e4");                                 // lintel
+  const c = at(0.5, z + 12);                                              // EXIT sign above the frame
+  fillPoly(g, [[c[0] - 11, c[1] - 1], [c[0] + 11, c[1] - 12], [c[0] + 11, c[1] - 4], [c[0] - 11, c[1] + 7]], "#0b2a1c", INK, 1.2);
+  line(g, c[0] - 8, c[1] + 2, c[0] - 4, c[1] + 0.4, "#5af0a0", 2); line(g, c[0] - 2, c[1] - 0.6, c[0] + 2, c[1] - 2.2, "#5af0a0", 2); line(g, c[0] + 4, c[1] - 3, c[0] + 8, c[1] - 4.6, "#5af0a0", 2);
+}

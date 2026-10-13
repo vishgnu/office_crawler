@@ -23,7 +23,7 @@ export function hudLayout(w, h) {
   const mugW = 108 * s, mugH = 100 * s, jugW = 84 * s, jugH = 116 * s;
   const health = { x: m, y: h - m - mugH, w: mugW, h: mugH };
   const mana = { x: w - m - jugW, y: h - m - jugH, w: jugW, h: jugH };
-  const nameH = fontPx(s, 10, 12) * 2 + 4, pad = 6 * s, xpH = Math.max(8, 9 * s), textH = fontPx(s, 10, 12) + 2;
+  const pad = 6 * s, xpH = Math.max(8, 9 * s), textH = fontPx(s, 10, 12) + 2;
   const availW = mana.x - (health.x + health.w) - 24 * s;
   const row = (n, sz) => n * sz + (n - 1) * gap;
   // S2 fix: slots are at least 44 CSS px on every layout (the HUD never shrinks below the touch/click target size); they only grow with the scale
@@ -31,6 +31,7 @@ export function hudLayout(w, h) {
   let slot = Math.max(MIN, 44 * s), belt = Math.max(MIN, 40 * s);
   const sideBySide = availW >= row(SKILL_SLOTS, slot) + 2 * pad + 14 * s + row(BELT_SLOTS, belt) + 2 * pad;
   if (!sideBySide) { slot = Math.max(MIN, Math.min(slot, (availW - 2 * pad - (SKILL_SLOTS - 1) * gap) / SKILL_SLOTS)); belt = slot; }
+  const showNames = sideBySide && slot >= 38, nameH = showNames ? fontPx(s, 10, 12) * 2 + 4 : 6; // names wrap to two lines under the slots; none on a stacked (phone) HUD
   const skillW = row(SKILL_SLOTS, slot), beltW = row(BELT_SLOTS, belt);
   const panelW = skillW + 2 * pad, panelH = pad + textH + 3 + xpH + 6 * s + slot + nameH + pad * 0.5;
   const groupW = sideBySide ? panelW + 14 * s + beltW + 2 * pad : panelW;
@@ -48,7 +49,7 @@ export function hudLayout(w, h) {
     beltPanel = { x: beltX0 - pad, y: beltY - pad, w: beltW + 2 * pad, h: belt + 2 * pad };
   }
   return {
-    scale: s, margin: m, stacked: !sideBySide, showNames: slot >= 38, slot, belt, compactXp: skillW < 170,
+    scale: s, margin: m, stacked: !sideBySide, showNames, slotPx: slot, beltPx: belt, compactXp: skillW < 170,
     health: { rect: health }, mana: { rect: mana },
     panel, beltPanel, xp, textH, nameH, pad,
     skills, belt: Array.from({ length: BELT_SLOTS }, (_, i) => ({ x: beltX0 + i * (belt + gap), y: beltY, w: belt, h: belt })),
@@ -71,7 +72,7 @@ export function drawerLayout(w, h) {
   const L = hudLayout(w, h), phone = isPhone(w, h);
   const vesselTop = Math.min(L.health.rect.y, L.mana.rect.y), hudTop = Math.min(L.panel.y, L.beltPanel.y, vesselTop);
   if (phone) {
-    const cell = Math.max(24, Math.floor((w - 56) / 10));
+    const cell = Math.max(24, Math.floor((w - 36) / 10)); // the grid is the one part that cannot reach 44 px on a 390 px phone (10 columns)
     return { phone, top: 6, bottom: Math.floor(hudTop - 6 - TOAST_LANE), left: 6, right: 6, leftW: w - 12, rightW: w - 12, cell, hudTop };
   }
   const cell = w >= 1024 ? 44 : 40;
@@ -93,9 +94,9 @@ const area = (a, b) => (hit(a, b) ? (Math.min(a.x + a.w, b.x + b.w) - Math.max(a
  * Tooltip position (pure). Rules (inventory decision, must-fix 1): beside the item toward the drawer's inner edge, flipped to stay
  * on screen, never over the bottom bar (bounds.bottom), never over the hero (`hero` rect), and not over the drawer it belongs to.
  * Covering the other drawer is the last resort before covering the hero.
- * in: { w, h, anchor, panel (the anchor's drawer rect or null), side ("left"|"right"|null), drawers: [rect], hero, bounds: {left, top, right, bottom} }.
+ * in: { w, h, anchor, panel (the anchor's drawer rect or null), side ("left"|"right"|null), drawers: [rect], hero, bounds: {left, top, right, bottom}, keepClear: [rect] }.
  */
-export function placeTip({ w, h, anchor, panel, side = null, drawers = [], hero, bounds }) {
+export function placeTip({ w, h, anchor, panel, side = null, drawers = [], hero, bounds, keepClear = [] }) {
   const gap = 8, maxH = Math.max(80, bounds.bottom - bounds.top);
   h = Math.min(h, maxH);
   const clampY = (y) => Math.min(Math.max(bounds.top, y), bounds.bottom - h);
@@ -105,12 +106,15 @@ export function placeTip({ w, h, anchor, panel, side = null, drawers = [], hero,
     const inner = side === "left" ? panel.x + panel.w + gap : panel.x - w - gap, outer = side === "left" ? panel.x - w - gap : panel.x + panel.w + gap;
     xs.push(inner, outer, bounds.left + gap, bounds.right - w - gap);
   } else xs.push(anchor.x + anchor.w / 2 - w / 2, anchor.x - w - gap, anchor.x + anchor.w + gap);
-  const ys = panel ? [anchor.y - 20, bounds.top, bounds.bottom - h] : [anchor.y - h - gap, anchor.y + anchor.h + gap, bounds.top];
+  const ys = panel ? [anchor.y - 20, bounds.top, bounds.bottom - h, (bounds.top + bounds.bottom - h) / 2] : [anchor.y - h - gap, anchor.y + anchor.h + gap, bounds.top];
   const cands = [];
   for (const x of xs) for (const y of ys) cands.push({ x: clampX(x), y: clampY(y), w, h });
-  const ok = (r, passes) => !hit(r, hero) && !(panel && hit(r, panel)) && (!passes.drawers || !drawers.some((d) => d !== panel && hit(r, d)));
+  const clear = (r) => !keepClear.some((k) => hit(r, k)); // the + buttons (and the like) are never covered while any candidate avoids them
+  const ok = (r, passes) => !hit(r, hero) && clear(r) && !(panel && hit(r, panel)) && (!passes.drawers || !drawers.some((d) => d !== panel && hit(r, d)));
   const pick = cands.find((r) => ok(r, { drawers: true })) ?? cands.find((r) => ok(r, { drawers: false }));
   if (pick) return { x: Math.round(pick.x), y: Math.round(pick.y), h };
+  const free = cands.filter(clear);
+  if (free.length) { const b2 = free.reduce((a, r) => (area(r, hero) < area(a, hero) ? r : a), free[0]); return { x: Math.round(b2.x), y: Math.round(b2.y), h }; }
   const best = cands.reduce((a, r) => (area(r, hero) < area(a, hero) ? r : a), cands[0]);
   return { x: Math.round(best.x), y: Math.round(best.y), h };
 }

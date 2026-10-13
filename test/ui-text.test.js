@@ -29,8 +29,9 @@ test("UI text and item names carry no denylisted IP terms", () => {
 });
 
 test("keys: I, C, S and K open panels; F1-F4 are default-prevented; digits are not", () => {
-  assert.deepEqual(Object.keys(PANEL_KEYS).sort(), ["KeyC", "KeyI", "KeyK", "KeyS"]);
+  assert.deepEqual(Object.keys(PANEL_KEYS).sort(), ["KeyC", "KeyI", "KeyK", "KeyM", "KeyS", "Tab"]);
   assert.equal(panelFor("KeyI"), "inventory"); assert.equal(panelFor("KeyC"), "character"); assert.equal(panelFor("KeyS"), "skills"); assert.equal(panelFor("KeyK"), "skills");
+  assert.equal(panelFor("KeyM"), "map"); assert.equal(panelFor("Tab"), "map");
   assert.equal(panelFor("KeyQ"), null);
   assert.ok(["F1", "F2", "F3", "F4"].every(preventsDefault));
   assert.equal(preventsDefault("Digit1"), false);

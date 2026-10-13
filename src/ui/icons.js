@@ -43,6 +43,7 @@ const G = {
   cup: (W, H, col = "#56b4e9") => p(`M${W * 0.26} ${H * 0.3}H${W * 0.74}L${W * 0.68} ${H * 0.88}H${W * 0.32}Z`, "#ece4cf") + r(W * 0.3, H * 0.55, W * 0.4, H * 0.28, col, 2, 1.5),
   bottle: (W, H, col = "#2f78f0") => r(W * 0.3, H * 0.2, W * 0.4, H * 0.68, col, 6) + r(W * 0.38, H * 0.08, W * 0.24, H * 0.14, "#d3dcea", 3, 2) + p(`M${W * 0.56} ${H * 0.36}L${W * 0.42} ${H * 0.56}H${W * 0.52}L${W * 0.46} ${H * 0.76}L${W * 0.62} ${H * 0.5}H${W * 0.52}Z`, "#ffe27a", 1.5),
   jug: (W, H) => r(W * 0.22, H * 0.28, W * 0.56, H * 0.62, "#2f78f0", 9) + r(W * 0.4, H * 0.08, W * 0.2, H * 0.22, "#d3dcea", 3, 2) + p(`M${W / 2} ${H * 0.4}Q${W * 0.62} ${H * 0.58} ${W / 2} ${H * 0.72}Q${W * 0.38} ${H * 0.58} ${W / 2} ${H * 0.4}Z`, "#fff", 1.5),
+  exit: (W, H) => r(W * 0.2, H * 0.14, W * 0.6, H * 0.76, "#6a3fc8", 4) + r(W * 0.3, H * 0.26, W * 0.4, H * 0.64, "#e6d8ff", 2, 2) + r(W * 0.26, H * 0.02, W * 0.48, H * 0.14, "#1a7a4a", 3, 2) + line(`M${W * 0.34} ${H * 0.09}H${W * 0.66}`, "#9ff5d8", 2.5) + p(`M${W * 0.42} ${H * 0.5}H${W * 0.58}V${H * 0.42}L${W * 0.72} ${H * 0.58}L${W * 0.58} ${H * 0.74}V${H * 0.66}H${W * 0.42}Z`, "#1a7a4a", 1.8),
   box: (W, H) => r(8, 8, W - 16, H - 16, "#d3dcea", 4),
 };
 
@@ -59,7 +60,7 @@ const BASE = {
   "paperclip-ring": ["clipring"], "rubber-band-ring": ["ring", "#f0e442", "#c83f38"], "lapel-badge": ["badge"],
   "id-card": ["card"], lanyard: ["lanyard"], "access-badge": ["card"],
   "lukewarm-coffee": ["mug", "#c86a38"], "strong-coffee": ["mug", "#8e3406"], "triple-espresso": ["mug", "#4a2a14"],
-  "paper-cup-of-water": ["cup"], "water-bottle": ["bottle"], "cooler-jug": ["jug"],
+  "emergency-exit": ["exit"], "paper-cup-of-water": ["cup"], "water-bottle": ["bottle"], "cooler-jug": ["jug"],
 };
 
 /** Inline SVG icon for an item (by its base). Unknown bases get a plain box so a new base never breaks the UI. */

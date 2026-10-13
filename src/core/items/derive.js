@@ -35,17 +35,20 @@ export function deriveStats(player, equipment = player.equipment ?? {}) {
   // Passive skills add their stat per level (AC-R-014-6).
   const passive = { defense: 0, attackRating: 0, hpMax: 0, mpMax: 0 };
   for (const s of passiveSkills) passive[s.stat] += s.perLevel * (player.skills?.[s.id] ?? 0);
+  const un = g.armed ? { min: 0, max: 0 } : config.unarmed, cap = config.caps;
+  const resist = {};
+  for (const [k, v] of Object.entries(g.resist)) resist[k] = Math.min(cap.resist, v);
   return {
     attrs,
     hpMax: r(d.hpBase + player.level * d.hpPerLevel + attrs.stamina * d.hpPerStamina) + g.hpMax + passive.hpMax,
     mpMax: r(d.mpBase + player.level * d.mpPerLevel + attrs.focus * d.mpPerFocus) + g.mpMax + passive.mpMax,
     damage: {
-      min: r(config.unarmed.min + gritBonus * d.damagePerGrit.min) + g.damageMin,
-      max: r(config.unarmed.max + gritBonus * d.damagePerGrit.max) + g.damageMax,
+      min: r(un.min + gritBonus * d.damagePerGrit.min) + g.damageMin,
+      max: r(un.max + gritBonus * d.damagePerGrit.max) + g.damageMax,
     },
-    defense: r(d.defenseBase + attrs.agility * d.defensePerAgility) + g.defense + passive.defense,
-    attackRating: r(d.attackRatingBase + attrs.agility * d.attackRatingPerAgility) + g.attackRating + passive.attackRating,
-    resist: g.resist,
+    defense: Math.min(cap.defense, r(d.defenseBase + attrs.agility * d.defensePerAgility) + g.defense + passive.defense),
+    attackRating: Math.min(cap.attackRating, r(d.attackRatingBase + attrs.agility * d.attackRatingPerAgility) + g.attackRating + passive.attackRating),
+    resist,
   };
 }
 

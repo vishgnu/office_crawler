@@ -288,6 +288,15 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     items.push(grab(p.x + p.y + 1 - (p.blocks ? 0 : 0.3), p.e, pt.x, pt.y));
   }
 
+  // the Emergency Exit door: a lit prop standing on its tile (the floor it was opened on, and the Lobby spot)
+  const door = core.portal ? (core.depth === 0 ? core.portal.lobbyTile : core.depth === core.portal.depth ? core.portal.tile : null) : null;
+  if (door && door.x >= minX && door.x <= maxX && door.y >= minY && door.y <= maxY) {
+    project(cam, door.x + 0.5, door.y + 0.5, pt);
+    if (pt.x > -margin && pt.x < cam.w + margin && pt.y > -margin && pt.y < yMax) {
+      const it = grab(door.x + door.y + 1.04, atlas.get(keys.fx("portal")), pt.x, pt.y);
+      items.push(it);
+    }
+  }
   const hero = core.player, light = env.lighting;
   fx.core = core; fx.alpha = alpha; // the screen-space pass (floaters, projectiles, loot plates) reads the state through these
   // ---- ground loot: rarity ring underneath, a small box or a gold pile on top (the marker, beam and plate come in fx.draw) ----

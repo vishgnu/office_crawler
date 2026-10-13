@@ -6,6 +6,7 @@ import { affixes } from "../content/affixes.js";
 import { rareNames } from "../content/affixes.js";
 import { uniques, uniqueById } from "../content/uniques.js";
 
+const decayPow = (k) => { let w = 1; for (let i = 0; i < k; i++) w *= config.affixTierDecay; return w; }; // no ** in core (determinism lint)
 const rank = (r) => rarityOrder.indexOf(r);
 
 function weightedPick(rng, entries) { // entries: [[value, weight], ...]
@@ -38,7 +39,11 @@ export const rollAffixValue = (rng, def) => rng.int(def.range[0], def.range[1]);
 
 const affixRecord = (def, value) => ({ id: def.id, group: def.group, kind: def.kind, stat: def.stat, name: def.name, tier: def.tier, value, range: [def.range[0], def.range[1]] });
 
-/** Random affixes for an item type and level: unique ids, one per stat group, at most maxPrefixes/maxSuffixes. */
+/**
+ * Random affixes for an item type and level: unique ids, one per stat group, at most maxPrefixes/maxSuffixes.
+ * The group is picked first (every open group equally likely), then its tier: only tiers unlocked at `ilvl` are candidates and
+ * the highest unlocked tier weighs 1, each lower one config.affixTierDecay times the next one up (level-weighted, S2 review).
+ */
 export function rollAffixes(rng, type, ilvl, count) {
   const pool = affixes.filter((a) => a.types.includes(type) && a.minIlvl <= ilvl);
   const out = [], groups = new Set(), kinds = { prefix: 0, suffix: 0 };
@@ -46,7 +51,10 @@ export function rollAffixes(rng, type, ilvl, count) {
   for (let i = 0; i < count; i++) {
     const open = pool.filter((a) => !groups.has(a.group) && kinds[a.kind] < cap[a.kind]);
     if (open.length === 0) break;
-    const def = rng.pick(open);
+    const names = [...new Set(open.map((a) => a.group))];
+    const group = rng.pick(names);
+    const tiers = open.filter((a) => a.group === group).sort((a, b) => b.tier - a.tier); // best unlocked tier first
+    const def = weightedPick(rng, tiers.map((a, k) => [a, decayPow(k)]));
     groups.add(def.group); kinds[def.kind]++;
     out.push(affixRecord(def, rollAffixValue(rng, def)));
   }

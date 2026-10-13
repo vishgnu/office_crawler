@@ -163,6 +163,7 @@ test("AC-R-014-8 / AC-R-023-5 a cast costs content.skills[X].mana(level) and mp 
   assert.equal(p.mp, p.mpMax - cost);
   run(s, config.castTicks + 1);
   assert.equal(cmd(s, { t: "cast", skill: "coffee-break" }).ok, true); // no cooldown: again at once
+  run(s, config.castTicks + 1);
   p.mp = cost - 1;
   assert.equal(cmd(s, { t: "cast", skill: "coffee-break" }).ok, false);
   assert.equal(p.mp, cost - 1);

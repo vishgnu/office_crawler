@@ -3,7 +3,7 @@
 // toast and a live region. Plain data in (game.core, game.ui), commands out (game.input / game.openPanel); no game rules here.
 // Everything is a real <button>: keyboard (arrows in the grid, Enter picks up and places, Esc puts back), focus ring,
 // labelled, contrast >= 4.5:1 (see style.css tokens and test/ui-contrast.test.js).
-import { content, itemAt } from "../core/index.js";
+import { content, itemAt, config } from "../core/index.js";
 import { T } from "./text.js";
 import { itemIcon, skillIcon, rarityMark, arrow, coinIcon } from "./icons.js";
 import { describeItem, compareToEquipped, unmetGear, allocPreview, dropCheck, rarityName, statLabel, xpRatio, xpProgress } from "./itemview.js";
@@ -32,7 +32,7 @@ export function createPanels(root, game) {
     <div class="toast" id="toast" data-testid="toast" hidden></div>
     <div class="sr" id="live" role="status" aria-live="polite" data-testid="live"></div>`;
   const el = { hud: root.querySelector("#hudui"), left: root.querySelector("#pleft"), right: root.querySelector("#pright"), tip: root.querySelector("#tip"), ghost: root.querySelector("#ghost"), toast: root.querySelector("#toast"), live: root.querySelector("#live") };
-  const view = { cur: { x: 0, y: 0 }, hoverKey: null, hoverEl: null, last: { x: -999, y: -999 }, drag: null, grab: { gx: 0, gy: 0 }, sigs: { hud: "", left: "", right: "" }, stats: {}, preview: null, toastId: 0, toastTimer: 0 };
+  const view = { cur: { x: 0, y: 0 }, hoverKey: null, hoverEl: null, last: { x: -999, y: -999 }, drag: null, grab: { gx: 0, gy: 0 }, sigs: { hud: "", left: "", right: "" }, stats: {}, preview: null, toastId: 0, toastTimer: 0, sellArm: null, sellTimer: 0 };
 
   // ------------------------------------------------------------ lookups
   const cellPx = () => drawerLayout(game.w, game.h).cell;
@@ -157,7 +157,7 @@ export function createPanels(root, game) {
       if (tab === "buy") {
         h += `<ul class="rows" data-testid="vendor-stock">${c.vendor.stock.map((e, i) => rowItem(e.item, `vendor:${i}`, `<span class="rprice">${coinIcon()} ${e.price}</span><button class="rbtn" type="button" data-testid="buy-${i}" data-buy="${i}" data-fk="by.${i}" ${c.player.gold < e.price ? "disabled" : ""} aria-label="${esc(T.buy)} ${esc(e.item.name)}, ${e.price} ${esc(T.gold)}">${esc(T.buy)}</button>`)).join("") || `<li class="empty">${esc(T.stockEmpty)}</li>`}</ul>`;
       } else {
-        h += `<ul class="rows" data-testid="vendor-sell">${c.inventory.items.map((it) => rowItem(it, `inv:${it.id}`, `<span class="rprice">${coinIcon()} ${sellValue(it)}</span><button class="rbtn" type="button" data-testid="sell-${esc(it.id)}" data-sell="${esc(it.id)}" data-fk="se.${esc(it.id)}" aria-label="${esc(T.sell)} ${esc(it.name)}, ${sellValue(it)} ${esc(T.gold)}">${esc(T.sell)}</button>`)).join("") || `<li class="empty">${esc(T.nothingToSell)}</li>`}</ul>`;
+        h += `<ul class="rows" data-testid="vendor-sell">${c.inventory.items.map((it) => rowItem(it, `inv:${it.id}`, `<span class="rprice">${coinIcon()} ${sellValue(it)}</span><button class="rbtn${view.sellArm === it.id ? " arm" : ""}" type="button" data-testid="sell-${esc(it.id)}" data-sell="${esc(it.id)}" data-fk="se.${esc(it.id)}" aria-label="${esc(view.sellArm === it.id ? T.sellSure : T.sell)} ${esc(it.name)}, ${sellValue(it)} ${esc(T.gold)}">${esc(view.sellArm === it.id ? T.sellSure : T.sell)}</button>`)).join("") || `<li class="empty">${esc(T.nothingToSell)}</li>`}</ul>`;
       }
     } else if (d.kind === "healer") {
       const hurt = c.player.hp < c.player.hpMax;
@@ -187,7 +187,7 @@ export function createPanels(root, game) {
       const id = bar.hotkeys[i], def = id ? content.skills[id] : null, lvl = id === "strike" ? 1 : id ? p.skills[id] ?? 0 : 0, cost = def?.mana ? def.mana(Math.max(1, lvl)) : 0;
       const dis = !!def && (lvl < 1 || p.mp < cost), sel = bar.selected === i;
       const label = def ? `F${i + 1}: ${def.name}${cost ? `, ${T.manaCost} ${cost}` : ""}${sel ? `, ${T.selectedSkill}` : ""}${dis ? `, ${T.notEnoughMana}` : ""}` : `F${i + 1}: ${T.slotEmpty}`;
-      h += `<button class="sk${sel ? " on" : ""}${dis ? " dis" : ""}${def ? "" : " none"}" type="button" data-testid="hud-skill-${i}" data-skill-slot="${i}" data-fk="h.s.${i}" aria-pressed="${sel}" aria-disabled="${dis}" style="${ctl(L.skills[i])}" aria-label="${esc(label)}"><span class="kb">F${i + 1}</span>${def ? skillIcon(id) : ""}${sel ? '<span class="sel" aria-hidden="true"></span>' : ""}</button>`;
+      h += `<button class="sk${sel ? " on" : ""}${dis ? " dis" : ""}${def ? "" : " none"}" type="button" data-testid="hud-skill-${i}" data-skill-slot="${i}" data-fk="h.s.${i}" aria-pressed="${sel}" aria-disabled="${dis}" style="${ctl(L.skills[i])}" aria-label="${esc(label)}" title="${esc(def ? def.name : T.slotEmpty)}"><span class="kb">F${i + 1}</span>${def ? skillIcon(id) : ""}${sel ? '<span class="sel" aria-hidden="true"></span>' : ""}</button>`;
       if (def && L.showNames) h += `<span class="sn" aria-hidden="true" style="left:${(L.skills[i].x - 3).toFixed(1)}px;top:${(L.skills[i].y + L.skills[i].h).toFixed(1)}px;width:${(L.skills[i].w + 6).toFixed(1)}px;--fs:${fs}px">${esc(def.name)}</span>`;
     }
     h += `</div><div class="hgroup" role="group" aria-label="${esc(T.beltKeys)}">`;
@@ -202,7 +202,8 @@ export function createPanels(root, game) {
     h += `<div class="dock" role="group" aria-label="${esc(T.toggleLabel)}">`;
     h += `<button class="hbtn" type="button" data-testid="dock-inventory" data-fk="h.d.i" data-open="inventory" aria-pressed="${panels.inventory}"><span>${esc(T.openInventory)}</span><kbd>I</kbd></button>`;
     h += `<button class="hbtn" type="button" data-testid="dock-character" data-fk="h.d.c" data-open="character" aria-pressed="${panels.character}"><span>${esc(T.openCharacter)}</span><kbd>C</kbd>${badge(p.attrPoints, T.attrPointsBadge)}</button>`;
-    h += `<button class="hbtn" type="button" data-testid="dock-skills" data-fk="h.d.s" data-open="skills" aria-pressed="${panels.skills}"><span>${esc(T.openSkills)}</span><kbd>S</kbd>${badge(p.skillPoints, T.skillPointsBadge)}</button></div>`;
+    h += `<button class="hbtn" type="button" data-testid="dock-skills" data-fk="h.d.s" data-open="skills" aria-pressed="${panels.skills}"><span>${esc(T.openSkills)}</span><kbd>S</kbd>${badge(p.skillPoints, T.skillPointsBadge)}</button>`;
+    h += `<button class="hbtn" type="button" data-testid="dock-map" data-fk="h.d.m" data-open="map" aria-pressed="${panels.map}"><span>${esc(T.openMap)}</span><kbd>M</kbd></button></div>`;
     return h;
   }
 
@@ -243,14 +244,14 @@ export function createPanels(root, game) {
     el.left.dataset.panel = u.left ?? ""; el.right.dataset.panel = "inventory";
     el.left.setAttribute("aria-label", u.left === "skills" ? T.skills : u.left === "npc" ? (S[c.ui.dialog?.nameKey] ?? "") : T.character);
 
-    const hudSig = sigOf(game.w, game.h, p.skillBar.hotkeys, p.skillBar.selected, p.skills, p.mp >= 0 && p.skillBar.hotkeys.map((id) => (id && content.skills[id]?.mana ? p.mp < content.skills[id].mana(Math.max(1, id === "strike" ? 1 : p.skills[id] ?? 0)) : 0)), c.belt.map((b) => b?.id ?? 0), p.attrPoints, p.skillPoints, u.inventory, u.left, p.xp, p.level);
+    const hudSig = sigOf(game.w, game.h, p.skillBar.hotkeys, p.skillBar.selected, p.skills, p.mp >= 0 && p.skillBar.hotkeys.map((id) => (id && content.skills[id]?.mana ? p.mp < content.skills[id].mana(Math.max(1, id === "strike" ? 1 : p.skills[id] ?? 0)) : 0)), c.belt.map((b) => b?.id ?? 0), p.attrPoints, p.skillPoints, u.inventory, u.left, u.map, p.xp, p.level);
     if (hudSig !== view.sigs.hud) { view.sigs.hud = hudSig; renderInto(el.hud, renderHud(c)); }
 
     const base = [game.w, game.h, u.front, held?.id ?? 0, game.heldOrigin, !!view.drag, p.level, p.xp, p.xpNext, p.attrs, p.attrsTotal, p.attrPoints, p.skillPoints, p.hp, p.hpMax, p.mp, p.mpMax, p.gold, p.damage, p.defense, p.attackRating, p.resist, p.skills, p.skillBar.hotkeys,
       c.inventory.items.map((i) => [i.id, i.x, i.y]), Object.values(c.equipment).map((i) => i?.id ?? 0), c.belt.map((b) => b?.id ?? 0), c.floor.name];
     if (rightOpen) { const sg = sigOf(base); if (sg !== view.sigs.right) { view.sigs.right = sg; renderInto(el.right, renderInventory(c)); } } else view.sigs.right = "";
     if (leftOpen) {
-      const sg = sigOf(base, u.left, u.vendorTab, c.ui.dialog, c.vendor && [c.vendor.id, c.vendor.stock.map((e) => e.item.id)], c.stash.items.map((i) => i.id));
+      const sg = sigOf(base, u.left, u.vendorTab, view.sellArm, c.ui.dialog, c.vendor && [c.vendor.id, c.vendor.stock.map((e) => e.item.id)], c.stash.items.map((i) => i.id));
       if (sg !== view.sigs.left) {
         view.sigs.left = sg;
         renderInto(el.left, u.left === "skills" ? renderSkills(c) : u.left === "npc" ? renderNpc(c) : renderCharacter(c));
@@ -260,7 +261,8 @@ export function createPanels(root, game) {
     } else { view.sigs.left = ""; view.stats = {}; }
     syncGhost();
     syncToast();
-    if (!leftOpen && !rightOpen) hideTip();
+    if (view.hoverKey && !itemFor(view.hoverKey)) hideTip(); // the item under the cursor was equipped, used, sold or dropped
+    else if (!leftOpen && !rightOpen && !view.hoverEl?.closest?.("#hudui")) hideTip();
   }
 
   // ------------------------------------------------------------ toast + live region
@@ -320,7 +322,7 @@ export function createPanels(root, game) {
       el.tip.style.right = "8px"; el.tip.style.width = "auto";
     } else {
       el.tip.style.right = ""; el.tip.style.width = "";
-      pos = placeTip({ w, h, anchor: anchorRect, panel: panelNode ? rectOf(panelNode) : null, side: panelNode === el.left ? "left" : "right", drawers, hero: heroRect(), bounds: { left: 8, top: 8, right: game.w - 8, bottom: D.hudTop - 8 } });
+      pos = placeTip({ w, h, anchor: anchorRect, panel: panelNode ? rectOf(panelNode) : null, side: panelNode === el.left ? "left" : "right", drawers, hero: heroRect(), bounds: { left: 8, top: 8, right: game.w - 8, bottom: D.hudTop - 8 }, keepClear: [...root.querySelectorAll(".plus,.dock .hbtn")].map(rectOf) });
     }
     el.tip.style.left = pos.x + "px"; el.tip.style.top = pos.y + "px";
     el.tip.style.maxHeight = Math.max(80, D.hudTop - 16) + "px";
@@ -420,15 +422,22 @@ export function createPanels(root, game) {
     if (core().cursorItem) { applyDrop(target); return false; }
     return pickFrom(target);
   }
+  /** Right-click / E: gear is worn, potions go to the belt, one-use consumables (Emergency Exit) are used; belt items are used from the belt. */
   function quickAction(node) {
-    const c = core(), cell = node.closest(".cell"), slot = node.closest(".slot");
+    const c = core(), cell = node.closest(".cell"), slot = node.closest(".slot"), belt = node.closest(".bslot,.hb");
     if (c.cursorItem) return;
     if (cell) {
       const it = itemAt(c.inventory, Number(cell.dataset.x), Number(cell.dataset.y));
       if (!it) return;
       if (it.kind === "potion") game.input({ t: "toBelt", id: it.id });
+      else if (it.kind === "consumable") game.input({ t: "useItem", id: it.id });
       else game.input({ t: "equip", id: it.id });
     } else if (slot && c.equipment[slot.dataset.slot]) game.input({ t: "unequip", slot: slot.dataset.slot });
+    else if (belt) {
+      const i = Number(belt.dataset.belt ?? belt.dataset.useBelt);
+      if (c.belt[i]) game.input({ t: "useBelt", index: i });
+    }
+    hideTip(); // the item moved or was used: its tooltip must not linger over the panel
   }
 
   // ------------------------------------------------------------ events
@@ -474,7 +483,16 @@ export function createPanels(root, game) {
     else if (d.skillSlot !== undefined) game.input({ t: "selectSkill", index: Number(d.skillSlot) });
     else if (d.useBelt !== undefined) game.input({ t: "useBelt", index: Number(d.useBelt) });
     else if (d.buy !== undefined) game.input({ t: "buy", index: Number(d.buy) });
-    else if (d.sell) game.input({ t: "sell", id: d.sell });
+    else if (d.sell) {
+      const it = core().inventory.items.find((i) => i.id === d.sell);
+      if (it && it.rarity !== "normal" && view.sellArm !== d.sell) { // magic and better ask once more (a sale cannot be undone)
+        view.sellArm = d.sell; view.sigs.left = ""; sync(); clearTimeout(view.sellTimer);
+        view.sellTimer = setTimeout(() => { view.sellArm = null; view.sigs.left = ""; sync(); }, 3000);
+        return;
+      }
+      view.sellArm = null; clearTimeout(view.sellTimer);
+      game.input({ t: "sell", id: d.sell });
+    }
     else if (d.stash) game.input({ t: "stash", id: d.stash, to: d.to });
     else if (d.vtab) { game.ui.vendorTab = d.vtab; view.sigs.left = ""; sync(); }
     else if (d.act === "heal") game.input({ t: "heal" });
@@ -505,7 +523,7 @@ export function createPanels(root, game) {
     if (cell) {
       const x = Number(cell.dataset.x), y = Number(cell.dataset.y), D = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
       if (D) {
-        const nx = Math.min(9, Math.max(0, x + D[0])), ny = Math.min(3, Math.max(0, y + D[1]));
+        const nx = Math.min(config.inventory.w - 1, Math.max(0, x + D[0])), ny = Math.min(config.inventory.h - 1, Math.max(0, y + D[1]));
         view.cur = { x: nx, y: ny };
         const next = root.querySelector(`[data-fk="c.${nx}.${ny}"]`);
         if (next) { cell.tabIndex = -1; next.tabIndex = 0; next.focus({ preventScroll: true }); }

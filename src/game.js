@@ -11,6 +11,7 @@ import { createHud, hudState } from "./render/hud.js";
 import { createFx } from "./render/fx.js";
 import { createLighting } from "./render/light.js";
 import { createLabels } from "./render/labels.js";
+import { createMap } from "./render/map.js";
 import { pick } from "./input/pick.js";
 import { requiredKeys } from "./render/keys.js";
 
@@ -18,7 +19,7 @@ const MAX_CATCHUP_TICKS = 8;
 
 export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed, atlasMs = 0, lowFx = false, hc = false }) {
   const g = canvas.getContext("2d");
-  const fx = createFx(style), lighting = createLighting(style), labels = createLabels(style), hud = createHud(style);
+  const fx = createFx(style), lighting = createLighting(style), labels = createLabels(style), hud = createHud(style), fmap = createMap(style);
   fx.lowFx = lowFx; fx.hc = hc;
   const rs = { facing: new Map() };
   const game = {
@@ -27,12 +28,12 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     cam: null, w: 0, h: 0, dpr: 1, frameMs: [], renderMs: [], simMs: 0, simTicks: 0, listeners: [],
     focus: null, lowFx, hc, atlas, atlasChanges: 0, onResize: null,
     // UI state that is not game state: which drawers are open (left: character | skills | npc), vendor tab, hover tooltip, toast
-    ui: { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null },
+    ui: { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false },
     inset: 0, defaultStart: "town",
   };
   const syncUi = () => { // the NPC window follows the core dialog; the drawers go away with the run
     const u = game.ui;
-    if (!game.core) { u.left = null; u.inventory = false; u.tooltip = null; return; }
+    if (!game.core) { u.left = null; u.inventory = false; u.tooltip = null; u.map = false; return; }
     if (u.left === "npc" && !game.core.ui.dialog) { u.left = null; if (u.inventory) u.front = "inventory"; u.tooltip = null; }
   };
   const emitChange = () => { syncUi(); game.listeners.forEach((fn) => fn()); };
@@ -41,7 +42,14 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   bus.on("*", (ev) => fx.handle(ev, game.core ?? game.backdrop, performance.now()));
   // a new floor: no interpolation from the old position, the camera snaps
   bus.on("floorEnter", () => { game.prev.clear(); rs.facing.clear(); game.focus = null; });
-  bus.on("*", (ev) => { if (!game.core) return; const m = messageFor(ev, game.core); if (m) game.toast(m); });
+  let portalToast = false; // the Emergency Exit line is not overwritten by the floor name of the same step
+  bus.on("*", (ev) => {
+    if (!game.core) return;
+    if (ev.type === "floorEnter" && portalToast) return;
+    const m = messageFor(ev, game.core);
+    if (m) game.toast(m);
+    if (ev.type === "portalOpen" || ev.type === "portalUse") portalToast = true;
+  });
   bus.on("dialog", () => { game.ui.left = "npc"; game.ui.inventory = true; game.ui.front = "left"; game.ui.vendorTab = "buy"; });
   // run summary for the death screen, derived from the event stream (the core keeps no kill counter)
   game.run = { kills: 0 };
@@ -57,7 +65,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (game.core.paused) return "pause";
     return null;
   };
-  const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null }); game.inset = 0; };
+  const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false }); game.inset = 0; game.heldOrigin = null; };
   const resetRender = () => { game.run.kills = 0; game.prev.clear(); rs.facing.clear(); fx.reset(); game.acc = 0; game.hover = null; game.focus = null; };
   game.setBackdrop = () => { game.backdrop = newGame(game.titleSeed); resetRender(); };
   /** Start a run. opts.start: "town" (default: the Lobby, R-040) or "floor" (fixtures and tests that want floor 1). */
@@ -81,7 +89,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
       for (const id of game.prev.keys()) if (!live.has(id)) game.prev.delete(id);
     }
   };
-  const dispatchFrom = (from) => { const ev = game.core.events; for (let i = from; i < ev.length; i++) bus.emit(ev[i]); };
+  const dispatchFrom = (from) => { portalToast = false; const ev = game.core.events; for (let i = from; i < ev.length; i++) bus.emit(ev[i]); };
   game.tick = () => {
     capture();
     const t0 = performance.now();
@@ -157,12 +165,13 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     const c = game.core, u = game.ui, d = c?.ui.dialog;
     return {
       inventory: u.inventory, character: u.left === "character", skills: u.left === "skills", npc: u.left === "npc",
-      vendor: u.left === "npc" && d?.kind === "vendor", stash: u.left === "npc" && d?.kind === "stash", healer: u.left === "npc" && d?.kind === "healer", map: false,
+      vendor: u.left === "npc" && d?.kind === "vendor", stash: u.left === "npc" && d?.kind === "stash", healer: u.left === "npc" && d?.kind === "healer", map: !!u.map,
     };
   };
   game.openPanel = (name) => {
     if (!game.core || game.menu()) return { ok: false, error: "no game running" };
     const u = game.ui;
+    if (name === "map") { u.map = true; u.tooltip = null; emitChange(); return { ok: true }; }
     if (name === "inventory") { u.inventory = true; u.front = "inventory"; }
     else if (isLeft(name)) {
       if (u.left === "npc" && name !== "npc" && game.core.ui.dialog) game.input({ t: "closeDialog" });
@@ -173,16 +182,17 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   };
   game.closePanel = (name) => {
     const u = game.ui;
+    if (name === "map") { u.map = false; emitChange(); return { ok: true }; }
     if (name === "inventory") { u.inventory = false; if (u.left) u.front = "left"; }
     else if (isLeft(name) && u.left) { if (u.left === "npc" && game.core?.ui.dialog) game.input({ t: "closeDialog" }); u.left = null; if (u.inventory) u.front = "inventory"; }
     else return { ok: false, error: "unknown panel" };
     u.tooltip = null;
-    if (!u.inventory && game.core?.cursorItem) game.input({ t: "releaseCursor" });
+    if (!u.inventory && game.core?.cursorItem) { game.input({ t: "releaseCursor" }); game.heldOrigin = null; }
     emitChange();
     return { ok: true };
   };
   game.togglePanel = (name) => {
-    const open = name === "inventory" ? game.ui.inventory : game.ui.left === name;
+    const open = name === "inventory" ? game.ui.inventory : name === "map" ? game.ui.map : game.ui.left === name;
     return open ? game.closePanel(name) : game.openPanel(name);
   };
   /** Where the item in hand came from ({kind:'grid',x,y} | {kind:'slot',k} | {kind:'belt',i}), so it can go back there. */
@@ -211,10 +221,11 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     const panel = panelFor(code);
     if (panel) return game.menu() ? { ok: false, error: "menu open" } : game.togglePanel(panel);
     if (code === "Escape" && !game.menu()) {
+      if (game.ui.map) return game.closePanel("map");
       if (game.core.cursorItem) { const r = game.returnHeld(); game.ui.tooltip = null; return r; }
       if (game.anyPanel()) {
         if (game.core.ui.dialog) game.input({ t: "closeDialog" });
-        game.ui.left = null; game.ui.inventory = false; game.ui.tooltip = null; emitChange();
+        game.ui.left = null; game.ui.inventory = false; game.ui.tooltip = null; game.heldOrigin = null; emitChange();
         return { ok: true };
       }
     }
@@ -317,13 +328,20 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (game.core) {
       const L = layoutFor(game.w, game.h);
       labels.place(out.actors, c, L.scale, game.core.player.target, game.hover, out.heroScreen, hudRects(L), game.hc, game.dpr);
+      labels.collect(fx.avoid, fx.avoidSegs); // loot plates and floaters keep clear of the nameplates, pips and leader lines
       labels.draw(g);
     }
     fx.draw(g, c, atlas, now, out.heroDir);
     fx.drawHurt(g, game.w, game.h, now);
     if (game.core && game.core.scene === "floor") fx.drawLowHp(g, game.w, game.h, now, game.core.player.hp / Math.max(1, game.core.player.hpMax), bus);
     else if (fx.lowHp) fx.drawLowHp(g, game.w, game.h, now, 0, bus);
-    if (game.core) hud.draw(g, game.w, game.h, game.core, atlas, now, game.core.player.target ?? game.hover, game.dpr, game.hc);
+    if (game.core) {
+      hud.draw(g, game.w, game.h, game.core, atlas, now, game.core.player.target ?? game.hover, game.dpr, game.hc);
+      if (game.menu() === null || game.menu() === "pause") {
+        if (game.ui.map) fmap.drawFull(g, game.core, game.w, game.h, now, game.hc);
+        else if (game.core.scene !== "dead") fmap.drawMini(g, game.core, fmap.miniRect(game.w, game.h, layoutFor(game.w, game.h)), now, game.hc);
+      }
+    }
   };
   let lay = null, rectsFor = null, rectsL = null;
   const layoutFor = (w, h) => (lay && lay.w === w && lay.h === h ? lay.L : (lay = { w, h, L: hudLayout(w, h) }).L);

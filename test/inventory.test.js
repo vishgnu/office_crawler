@@ -100,7 +100,9 @@ test("AC-R-053-2 equipping a weapon changes damage by exactly its damage plus af
   assert.equal(cmd(s, { t: "equip", id: w.id }).ok, true);
   assert.equal(s.equipment.weapon, w);
   assert.equal(s.inventory.items.length, 0);
-  assert.deepEqual(s.player.damage, { min: before.min + w.damage.min + 2, max: before.max + w.damage.max + 2 });
+  // a worn weapon replaces the unarmed range (fists are not a bonus on top of it); grit bonus and affixes still add
+  const u = config.unarmed;
+  assert.deepEqual(s.player.damage, { min: before.min - u.min + w.damage.min + 2, max: before.max - u.max + w.damage.max + 2 });
   assert.ok(types(s).includes("equip"));
 });
 
@@ -341,6 +343,9 @@ test("drop puts the cursor or an inventory item on the ground near the hero", ()
 
 test("stash moves conserve items (AC-R-059-1)", () => {
   const s = fresh(), it = give(s, "blazer");
+  enterFloor(s, 0); s.player.tile = { x: 24, y: 9 }; // beside the stash NPC
+  assert.equal(cmd(s, { t: "interact", id: "stash" }).ok, true);
+  assert.equal(s.ui.dialog.kind, "stash");
   assert.equal(cmd(s, { t: "stash", id: it.id, to: "stash" }).ok, true);
   assert.equal(s.stash.items.length, 1); assert.equal(s.inventory.items.length, 0);
   assert.equal(cmd(s, { t: "stash", id: it.id, to: "inventory" }).ok, true);
@@ -364,9 +369,9 @@ test("AC-R-057-1 buying costs exactly the price, adds the item and removes it fr
 
 test("potions at the vendor are unlimited and unlock by player level (QF-04-3)", () => {
   const s = fresh(); giveGold(s, 1000); open(s);
-  const tiers = (st) => new Set(st.vendor.stock.filter((e) => e.unlimited).map((e) => e.item.base));
+  const tiers = (st) => new Set(st.vendor.stock.filter((e) => e.unlimited && e.item.kind === "potion").map((e) => e.item.base));
   assert.ok(tiers(s).size === 2);
-  const i = s.vendor.stock.findIndex((e) => e.unlimited);
+  const i = s.vendor.stock.findIndex((e) => e.unlimited && e.item.kind === "potion");
   cmd(s, { t: "buy", index: i }); cmd(s, { t: "buy", index: i });
   assert.equal(s.vendor.stock[i].unlimited, true);
   assert.equal(s.inventory.items.filter((x) => x.kind === "potion").length, 2);
@@ -413,6 +418,10 @@ test("AC-R-057-7 vendor stock is a pure function of seed and visit: equal for eq
   assert.notDeepEqual(vendorStock(6, 1), a);
   const s = gameOn(OPEN); open(s);
   const first = s.vendor.stock.map((e) => e.item.base).join();
+  open(s); // reopening the window in the same Lobby visit does not re-roll the stock
+  assert.equal(s.vendor.visit, 1);
+  assert.equal(s.vendor.stock.map((e) => e.item.base).join(), first);
+  enterFloor(s, 1); enterFloor(s, 0); s.player.tile = { x: 4, y: 6 }; // a new Lobby visit does
   open(s);
   assert.equal(s.vendor.visit, 2);
   assert.notEqual(s.vendor.stock.map((e) => e.item.base).join(), first);
@@ -426,5 +435,5 @@ test("derived stats follow equipment through the whole pipeline: pick up, equip,
   run(s, 300);
   const dmg0 = s.player.damage.max;
   assert.equal(cmd(s, { t: "equip", id: e.id }).ok, true);
-  assert.equal(s.player.damage.max, dmg0 + 3);
+  assert.equal(s.player.damage.max, dmg0 - config.unarmed.max + 3); // the rapier replaces the fists
 });

@@ -62,9 +62,9 @@ test("AC-R-012-1 deriveStats follows the config formulas, is pure and rounds as 
   assert.ok(Object.values(s).every((v) => typeof v === "object" || Number.isInteger(v)));
 });
 
-test("a new player's stats are the S1 numbers (50 hp, 20 mp, damage 3-6, defense 10, attack rating 40)", () => {
+test("a new player's stats (50 hp, 20 mp, unarmed 1-2 plus 2 grit bonus = damage 3-4, defense 10, attack rating 40)", () => {
   const p = newGame(1).player;
-  assert.deepEqual([p.hpMax, p.mpMax, p.damage, p.defense, p.attackRating], [50, 20, { min: 3, max: 6 }, 10, 40]);
+  assert.deepEqual([p.hpMax, p.mpMax, p.damage, p.defense, p.attackRating], [50, 20, { min: 3, max: 4 }, 10, 40]);
 });
 
 test("AC-R-012-2 with empty equipment damage is the unarmed range plus the attribute bonus", () => {

@@ -5,7 +5,7 @@ import { keys, FLOOR_KINDS, FLOOR_VARIANTS, WALL_VARIANTS, MARKERS, ANIMS, PLAYE
 import { content } from "../../../core/index.js";
 import { palette } from "./palette.js";
 import { drawFloor, drawMarker, drawWall, WALL_W, WALL_CANVAS_H, WALL_CY } from "./tiles.js";
-import { drawProp, drawElevator, PROP_W, PROP_H, PROP_CX, PROP_CY } from "./props.js";
+import { drawProp, drawElevator, drawPortal, PORTAL_W, PORTAL_H, PORTAL_CX, PORTAL_CY, PROP_W, PROP_H, PROP_CX, PROP_CY } from "./props.js";
 import { drawFigure, FIG_W, FIG_H, FIG_FX, FIG_FY, FIG_DIM } from "./characters.js";
 import { drawProjectile, drawLootItem, drawGold, drawMuted, drawFlee, drawSpark, drawPlus, PROJ_W, PROJ_H } from "./sprites.js";
 import { VESSEL_REF, VESSEL_SHAPES, VESSEL_PAD, drawVesselFrame, drawVesselLive, vesselFrameSize, drawSlot, drawIconStrike, drawIconPlus, drawAlert, drawPaper, drawShadow, drawSlash } from "./ui.js";
@@ -86,6 +86,7 @@ export const vector = {
       atlas.add(keys.fx("spark"), 12, 12, 6, 6, drawSpark);
       atlas.add(keys.fx("plus"), 12, 12, 6, 6, drawPlus);
       atlas.add(keys.fx("elevator"), PROP_W, PROP_H, PROP_CX, PROP_CY, drawElevator);
+      atlas.add(keys.fx("portal"), PORTAL_W, PORTAL_H, PORTAL_CX, PORTAL_CY, drawPortal);
       for (const k of PROJECTILES) atlas.add(keys.proj(k), PROJ_W, PROJ_H, PROJ_W / 2, PROJ_H / 2, (g) => drawProjectile(g, k));
       atlas.add(keys.loot("item"), 24, 22, 12, 16, drawLootItem);
       for (const sz of ["s", "m", "l"]) atlas.add(keys.loot(`gold-${sz}`), 36, 26, 18, 18, (g) => drawGold(g, sz));
