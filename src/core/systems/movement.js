@@ -4,7 +4,6 @@ import { config } from "../config.js";
 import { getCtx, idx } from "../ctx.js";
 import { canStep } from "../grid.js";
 import { moveTicksFor } from "../state.js";
-import { monsters as registry } from "../content/monsters.js";
 
 /** Advance an in-progress step; returns true when the actor is free to start another. */
 function progress(ctx, a) {
@@ -32,17 +31,17 @@ function begin(ctx, a, ticksPerTile, mark) {
 export function movement(state) {
   const ctx = getCtx(state), p = state.player;
   if (p.hp > 0) {
-    if (progress(ctx, p) && p.action !== "attack") {
+    if (progress(ctx, p) && p.action !== "attack" && !(p.castT > 0)) {
       const r = begin(ctx, p, config.moveTicksPerTile, 2);
       if (r === "blocked") { if (++p.blockedT >= 10) { p.path = []; p.blockedT = 0; } } // give up if the way stays blocked
       else p.blockedT = 0;
     }
-    if (p.action !== "attack") p.action = p.next ? "move" : "idle";
+    if (p.action !== "attack") p.action = p.castT > 0 ? "cast" : p.next ? "move" : "idle";
   }
   for (const m of state.monsters) {
-    if (m.ai === "dead") continue;
-    if (progress(ctx, m) && m.ai === "chase") {
-      if (begin(ctx, m, moveTicksFor(registry[m.type].speed), 1) === "blocked") { m.path = []; m.repathT = 0; }
+    if (m.ai === "dead" || m.ai === "stagger" || m.muteT > 0) continue; // staggered and muted monsters stand still
+    if (progress(ctx, m) && (m.ai === "chase" || m.ai === "flee")) {
+      if (begin(ctx, m, moveTicksFor(m.speed), 1) === "blocked") { m.path = []; m.repathT = 0; }
     }
   }
 }

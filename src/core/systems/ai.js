@@ -11,6 +11,30 @@ function canSee(ctx, m, p) {
   return dx * dx + dy * dy <= r * r && hasLineOfSight(ctx.grid, m.tile.x, m.tile.y, p.tile.x, p.tile.y);
 }
 
+/** A ranged monster shoots from where it stands when the hero is in range with a clear line (AC-R-032-8). */
+export function canShoot(ctx, m, p) {
+  const r = registry[m.type].range, dx = p.tile.x - m.tile.x, dy = p.tile.y - m.tile.y;
+  return dx * dx + dy * dy <= r * r && hasLineOfSight(ctx.grid, m.tile.x, m.tile.y, p.tile.x, p.tile.y);
+}
+
+/** In position to attack: adjacent for melee types, in range with a clear line for ranged ones. */
+const inPosition = (ctx, m, p) => (registry[m.type].behaviour === "ranged" ? canShoot(ctx, m, p) : isAdjacent(ctx.grid, m.tile, p.tile));
+
+/** Pick the reachable tile far from the hero (within 10 tiles of the monster) and path there. */
+function startFlee(state, ctx, m, p) {
+  const cands = [];
+  for (let dy = -10; dy <= 10; dy += 2) for (let dx = -10; dx <= 10; dx += 2) {
+    const x = m.tile.x + dx, y = m.tile.y + dy;
+    if (ctx.grid.walkable(x, y)) cands.push({ x, y, d: (x - p.tile.x) * (x - p.tile.x) + (y - p.tile.y) * (y - p.tile.y) });
+  }
+  cands.sort((a, b) => b.d - a.d || a.y - b.y || a.x - b.x);
+  for (const c of cands.slice(0, 6)) {
+    const path = planPath(ctx, m.next ?? m.tile, c, { maxNodes: config.ai.maxPathNodes });
+    if (path && path.length) { m.path = path; m.goal = { x: c.x, y: c.y }; return; }
+  }
+  m.path = [];
+}
+
 function wakePack(state, m) {
   if (m.packId === null) return;
   for (const o of state.monsters) if (o !== m && o.packId === m.packId && o.ai === "idle") { o.ai = "notice"; o.aiT = 1; }
@@ -29,7 +53,12 @@ function chase(ctx, m, p) {
 export function ai(state) {
   const ctx = getCtx(state), p = state.player;
   for (const m of state.monsters) {
+    if (m.ai === "dead" || m.muteT > 0) continue; // muted monsters do nothing (the Mute skill)
     const still = !m.next;
+    // Weak swarmers run away once, below fleeHpFraction of their health (QF-03-2).
+    if (registry[m.type].canFlee && !m.fled && m.ai !== "stagger" && m.ai !== "flee" && m.hp / m.hpMax < config.fleeHpFraction) {
+      m.fled = true; m.ai = "flee"; m.fleeT = config.fleeTicks; m.attackT = 0; m.repathT = 0; startFlee(state, ctx, m, p);
+    }
     switch (m.ai) {
       case "idle":
         if (canSee(ctx, m, p)) { m.ai = "notice"; m.aiT = 1; wakePack(state, m); }
@@ -38,12 +67,19 @@ export function ai(state) {
         if (++m.aiT >= config.noticeTicks) { m.ai = "chase"; m.path = []; m.goal = null; m.repathT = 0; }
         break;
       case "chase":
-        if (still && isAdjacent(ctx.grid, m.tile, p.tile)) { m.ai = "attack"; m.attackT = 0; m.path = []; }
+        if (still && inPosition(ctx, m, p)) { m.ai = "attack"; m.attackT = 0; m.path = []; }
         else chase(ctx, m, p);
         break;
       case "attack":
         // Between swings, close the distance again if the player has moved away.
-        if (m.attackT === 0 && !(still && isAdjacent(ctx.grid, m.tile, p.tile))) { m.ai = "chase"; m.path = []; m.goal = null; m.repathT = 0; }
+        if (m.attackT === 0 && !(still && inPosition(ctx, m, p))) { m.ai = "chase"; m.path = []; m.goal = null; m.repathT = 0; }
+        break;
+      case "stagger": // hit recovery: no attack, no move (AC-R-024-1)
+        if (--m.staggerT <= 0) { m.ai = "chase"; m.path = []; m.goal = null; m.repathT = 0; }
+        break;
+      case "flee":
+        if (--m.fleeT <= 0) { m.ai = "chase"; m.path = []; m.goal = null; m.repathT = 0; }
+        else if (still && m.path.length === 0 && m.repathT-- <= 0) { startFlee(state, ctx, m, p); m.repathT = config.ai.repathTicks; }
         break;
     }
   }

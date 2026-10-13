@@ -12,6 +12,9 @@ import { clickCell, findById, remove, autoplace as autoplaceInto } from "../item
 import { equipItem, unequipItem, clickSlot } from "../items/equipment.js";
 import { useBelt, toBelt, clickBelt } from "../items/belt.js";
 import { openVendor, closeVendor, buy, sell } from "./vendors.js";
+import { castSkill } from "./skills.js";
+import { allocate, learnSkill, assignSkill, selectSkill } from "./progression.js";
+import { useStairs, stairsAt, interact, npcAt, closeDialog, heal, respawn } from "./world.js";
 
 const fail = (error) => ({ ok: false, error });
 const OK = { ok: true };
@@ -29,7 +32,7 @@ function issueMove(state, tile) {
   const ctx = getCtx(state), p = state.player;
   if (!ctx.grid.inBounds(tile.x, tile.y)) return fail("tile out of bounds");
   if (p.hp <= 0) return fail("player is dead");
-  p.target = null; p.goal = null; p.pickup = null;
+  p.target = null; p.goal = null; p.pickup = null; p.stairs = null; p.interact = null;
   const from = p.next ?? p.tile; // finish the step in progress first
   let path = ctx.grid.walkable(tile.x, tile.y) ? planPath(ctx, from, tile) : null;
   if (!path) {
@@ -52,7 +55,7 @@ function issueAttack(state, id) {
   if (!m || m.ai === "dead") return fail("no such living monster");
   if (state.player.hp <= 0) return fail("player is dead");
   const p = state.player;
-  p.target = id; p.path = []; p.goal = null; p.repathT = 0; p.pickup = null;
+  p.target = id; p.path = []; p.goal = null; p.repathT = 0; p.pickup = null; p.stairs = null; p.interact = null;
   return OK;
 }
 
@@ -116,14 +119,38 @@ function itemCommand(state, input) {
     case "buy": return done(buy(state, input.index));
     case "sell": return done(sell(state, input.id));
     case "releaseCursor": releaseCursor(state); return OK;
+    // progression, skills and the world (S2-3, S2-4)
+    case "allocate": return done(allocate(state, input.attr));
+    case "learnSkill": return done(learnSkill(state, input.id));
+    case "assignSkill": return done(assignSkill(state, input.slot, input.id ?? null));
+    case "selectSkill": return done(selectSkill(state, input.index));
+    case "cast": return done(castSkill(state, input.skill ?? state.player.skillBar.secondary, input.tile));
+    case "useStairs": return done(useStairs(state, input.dir, issueMove));
+    case "interact": return done(interact(state, input.id, issueMove));
+    case "heal": return done(heal(state));
+    case "closeDialog": closeDialog(state); return OK;
     default: return null;
   }
 }
 
+/** Right mouse button: use the selected skill (QF-01-4). On a monster the basic attack just attacks. */
+function secondary(state, tile) {
+  if (!isTile(tile)) return fail("invalid tile");
+  const id = state.player.skillBar.secondary;
+  if (!id) return fail("no skill selected");
+  if (id === "strike") { const m = livingMonsterAt(state, tile); return m ? issueAttack(state, m.id) : fail("nothing to strike"); }
+  return castSkill(state, id, tile);
+}
+
 function mouseDown(state, tile, button, hold) {
-  if (button !== 0) return fail("no secondary skill in S1");
+  if (button === 2) return secondary(state, tile);
+  if (button !== 0) return fail("unknown mouse button");
   if (!isTile(tile)) return fail("invalid tile");
   const inb = getCtx(state).grid.inBounds(tile.x, tile.y);
+  const npc = inb ? npcAt(state, tile) : null;
+  if (npc) { Object.assign(state.input.mouse, { down: false, button, tile: { ...tile }, mode: "interact", applied: { ...tile } }); return interact(state, npc.id, issueMove); }
+  const dir = inb ? stairsAt(state, tile) : null;
+  if (dir) { Object.assign(state.input.mouse, { down: false, button, tile: { ...tile }, mode: "stairs", applied: { ...tile } }); return useStairs(state, dir, issueMove); }
   const m = inb ? livingMonsterAt(state, tile) : null;
   const ground = !m && inb ? groundAt(state, tile) : null;
   if (ground) {
@@ -144,9 +171,14 @@ function mouseDown(state, tile, button, hold) {
  * buy {index}, sell {id}, releaseCursor.
  */
 export function applyInput(state, input) {
-  const live = state.scene === "floor";
+  const live = state.scene === "floor" || state.scene === "town";
   switch (input?.t) {
     case "pause": case "key": {
+      if (input.t === "key" && /^F[1-4]$/.test(input.code ?? "")) { // skill selector (QF-01-4)
+        if (!live || state.paused) return fail("not in a running game");
+        return selectSkill(state, Number(input.code[1]) - 1).ok ? OK : fail("unknown hotkey");
+      }
+      if (input.t === "key" && input.code === "Escape" && live && state.ui.dialog) { closeDialog(state); return OK; }
       if (input.t === "key" && input.code in BELT_KEYS) { // potions on keys 1-4 (QF-01-4)
         if (!live || state.paused) return fail("not in a running game");
         return useBelt(state, BELT_KEYS[input.code]).ok ? OK : fail("nothing to drink");
@@ -160,10 +192,11 @@ export function applyInput(state, input) {
       if (state.scene !== "dead") return fail("not dead");
       restartInPlace(state);
       return OK;
+    case "respawn": return respawn(state).ok ? OK : fail("not dead"); // back to the Lobby, nothing lost (AC-R-023-4)
   }
   // Releasing the button must always register (also while paused or dead), or the core keeps
   // following the cursor with no button down (S1 review B1).
-  if (input.t === "mouse" && (input.phase === "up" || input.phase === "cancel")) { state.input.mouse.down = false; return OK; }
+  if (input.t === "mouse" && (input.phase === "up" || input.phase === "cancel")) { if (input.button !== 2) state.input.mouse.down = false; return OK; }
   if (!live) return fail("not in a running game");
   if (state.paused) return fail("paused");
   switch (input.t) {
@@ -187,6 +220,7 @@ export function applyInput(state, input) {
 export function playerIntent(state) {
   const ctx = getCtx(state), p = state.player;
   if (p.hp <= 0) return;
+  if (p.castT > 0) return; // busy casting
 
   // Held button on the floor: the destination follows the cursor.
   const mouse = state.input.mouse;

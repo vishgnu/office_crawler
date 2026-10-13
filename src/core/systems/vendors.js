@@ -8,6 +8,7 @@ import { buyPrice, sellValue } from "../items/price.js";
 import { autoplace, findById, remove } from "../items/inventory.js";
 import { mint } from "./loot.js";
 import { emit } from "../events.js";
+import { npcs } from "../content/npcs.js";
 
 const fail = (error) => ({ ok: false, error });
 const idHash = (id) => hash32(...[...String(id)].map((c) => c.charCodeAt(0)));
@@ -16,24 +17,33 @@ const idHash = (id) => hash32(...[...String(id)].map((c) => c.charCodeAt(0)));
  * Stock for one visit: unlimited potions of every strength unlocked at `level` (QF-04-3), plus a few gear items
  * of normal or magic rarity. Entries: { item, price, unlimited }. Items have no id until the vendor window opens.
  */
-export function vendorStock(seed, visit, { vendorId = "supplies", level = 1, ilvl } = {}) {
+export function vendorStock(seed, visit, { vendorId = "supplies", level = 1, ilvl, potionsOnly = false } = {}) {
   const rng = createRng(hash32(seed, idHash(vendorId), visit));
   const itemLevel = ilvl ?? Math.max(1, level) * config.ilvlPerDepth;
   const stock = [];
   for (const b of potionBases) {
     if (config.vendor.potionTiers[b.tier] <= level) { const item = makeItem(b.id); stock.push({ item, price: buyPrice(item), unlimited: true }); }
   }
-  for (let i = 0; i < config.vendor.gearSlots; i++) {
+  for (let i = 0; i < (potionsOnly ? 0 : config.vendor.gearSlots); i++) {
     const item = rollItem(rng, { ilvl: itemLevel, maxRarity: "magic" });
     stock.push({ item, price: buyPrice(item), unlimited: false });
   }
   return stock;
 }
 
+/** Is a town NPC that sells under this vendor id within interactRange of the hero? Trading needs one (R-041). */
+export function vendorInReach(state, vendorId) {
+  if (state.depth !== 0) return false;
+  const p = state.player;
+  return (state.floor.npcs ?? []).some((n) => npcs[n.id]?.vendorId === vendorId && Math.max(Math.abs(p.tile.x - n.tile.x), Math.abs(p.tile.y - n.tile.y)) <= config.interactRange);
+}
+
 export function openVendor(state, vendorId = "supplies") {
+  if (!vendorInReach(state, vendorId)) return fail("no vendor within reach");
   state.vendorVisits[vendorId] = (state.vendorVisits[vendorId] ?? 0) + 1;
   const visit = state.vendorVisits[vendorId];
-  const stock = vendorStock(state.seed, visit, { vendorId, level: state.player.level, ilvl: state.deepestDepth * config.ilvlPerDepth });
+  const potionsOnly = Object.values(npcs).some((n) => n.vendorId === vendorId && n.potionsOnly);
+  const stock = vendorStock(state.seed, visit, { vendorId, level: state.player.level, ilvl: state.deepestDepth * config.ilvlPerDepth, potionsOnly });
   for (const e of stock) mint(state, e.item);
   state.vendor = { id: vendorId, visit, stock };
   emit(state, { type: "vendorOpen", id: vendorId, visit });

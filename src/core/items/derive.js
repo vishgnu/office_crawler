@@ -1,5 +1,6 @@
 // Derived stats (AC-R-012): a pure function of level, attributes and equipped gear.
 import { config } from "../config.js";
+import { passiveSkills } from "../content/skills.js";
 
 const ROUND = { floor: Math.floor, round: Math.round, ceil: Math.ceil };
 const ATTRS = ["grit", "agility", "stamina", "focus"];
@@ -32,16 +33,19 @@ export function deriveStats(player, equipment = player.equipment ?? {}) {
   const attrs = {};
   for (const k of ATTRS) attrs[k] = (player.attrs?.[k] ?? 0) + g[k];
   const gritBonus = Math.max(0, attrs.grit - d.gritFree);
+  // Passive skills add their stat per level (AC-R-014-6).
+  const passive = { defense: 0, attackRating: 0, hpMax: 0, mpMax: 0 };
+  for (const s of passiveSkills) passive[s.stat] += s.perLevel * (player.skills?.[s.id] ?? 0);
   return {
     attrs,
-    hpMax: r(d.hpBase + player.level * d.hpPerLevel + attrs.stamina * d.hpPerStamina) + g.hpMax,
-    mpMax: r(d.mpBase + player.level * d.mpPerLevel + attrs.focus * d.mpPerFocus) + g.mpMax,
+    hpMax: r(d.hpBase + player.level * d.hpPerLevel + attrs.stamina * d.hpPerStamina) + g.hpMax + passive.hpMax,
+    mpMax: r(d.mpBase + player.level * d.mpPerLevel + attrs.focus * d.mpPerFocus) + g.mpMax + passive.mpMax,
     damage: {
       min: r(config.unarmed.min + gritBonus * d.damagePerGrit.min) + g.damageMin,
       max: r(config.unarmed.max + gritBonus * d.damagePerGrit.max) + g.damageMax,
     },
-    defense: r(d.defenseBase + attrs.agility * d.defensePerAgility) + g.defense,
-    attackRating: r(d.attackRatingBase + attrs.agility * d.attackRatingPerAgility) + g.attackRating,
+    defense: r(d.defenseBase + attrs.agility * d.defensePerAgility) + g.defense + passive.defense,
+    attackRating: r(d.attackRatingBase + attrs.agility * d.attackRatingPerAgility) + g.attackRating + passive.attackRating,
     resist: g.resist,
   };
 }
