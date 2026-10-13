@@ -40,7 +40,6 @@ Areas: D Monsters and AI (R-030..R-035). Contract: `10-tech-and-testability.md`.
 - **AC-R-034-2** `S1` `Unit` — Given a floor, When monsters are grouped by `packId`, Then there is at least one pack (size at least 2) and, with `config.singlesAllowed`, may be singles; every member of a pack lies within `config.packRadius` tiles of the pack's first member.
 - **AC-R-034-3** `S2` `Unit` — Given `generateFloor(seed, d)` for d in 1..8, When the sum of monster cost `config.cost[type] * tierFactor` is computed, Then it is at most `floor.budget`, `floor.budget` is non-decreasing in d and strictly greater at d = 8 than at d = 1.
 - **AC-R-034-4** `S1` `Unit` — Given the same seed and depth, When generated twice, Then the monster lists (type, tile, packId) are deep-equal; with a different seed they differ.
-- **AC-R-034-5** `S1` `Unit` — Given a floor, When the entry area is checked, Then no monster starts within `config.safeRadius` tiles of `entry` (QF-03-5).
 
 ### R-035 Special-behaviour monsters (could · LATER)
 
@@ -56,9 +55,18 @@ LATER, no AC.
 - **QF-03-2** Which archetypes flee ("some types") and at what health fraction?
 - **QF-03-3** Do monsters lose interest or have a leash radius? Not in the requirements; AC-R-032-10 only checks they do not break.
 - **QF-03-4** "Better drops" for champions is unquantified; AC uses mean rarity only. Proposal: guaranteed at least magic rarity.
-- **QF-03-5** A safe radius around the entry stair is not required but is a standard fairness rule. Add as a requirement or remove AC-R-034-5?
+- **QF-03-5** A safe radius around the entry stair is not required but is a standard fairness rule. Add as a requirement? No AC written until decided.
 - **QF-03-6** The 6 to 8 archetypes and 3 behaviours: which archetype is which behaviour, and how many are available per zone?
 
 ## Coverage
 
-<!--COVERAGE-->
+| Requirement | ACs | Slices | Levels |
+|---|---|---|---|
+| R-030 Monster archetypes as office characters (must · MVP) | R-030-1, R-030-2, R-030-3, R-030-4 | S1, S2 | Unit |
+| R-031 Monster stats scale with depth (must · MVP) | R-031-1, R-031-2, R-031-3, R-031-4 | S2 | E2E, Unit |
+| R-032 Basic AI: idle, notice, chase, attack, flee (must · MVP) | R-032-1, R-032-2, R-032-3, R-032-4, R-032-5, R-032-6, R-032-7, R-032-8, R-032-9, R-032-10 | S1, S2 | Unit |
+| R-033 Champion/unique monsters with affixes (should · MVP) | R-033-1, R-033-2 | S2 | Unit |
+| R-034 Monster population placed by the level generator (must · MVP) | R-034-1, R-034-2, R-034-3, R-034-4 | S1, S2 | Unit |
+| R-035 Special-behaviour monsters (could · LATER) | none (see below) | - | - |
+
+Total ACs in this file: 24 (S1 13, S2 11, S3 0).

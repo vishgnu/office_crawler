@@ -169,4 +169,28 @@ Denylists are supplied as data files and are not written in this spec (QF-10-2):
 
 ## Coverage
 
-<!--COVERAGE-->
+| Requirement | ACs | Slices | Levels |
+|---|---|---|---|
+| R-110 Runs in current desktop browsers without install (must · MVP) | R-110-1, R-110-2, R-110-3 | S1 | E2E |
+| R-111 Static, single self-contained build (should · MVP) | R-111-1, R-111-2 | S3 | E2E, Unit |
+| R-112 Render with HTML5 canvas 2D, no plug-ins (must · MVP) | R-112-1, R-112-2, R-112-3 | S1 | E2E |
+| R-113 Fixed-timestep simulation separate from rendering (must · MVP) | R-113-1, R-113-2, R-113-3 | S1 | E2E, Unit |
+| R-120 Deterministic seed mode (must · MVP) | R-120-1, R-120-2, R-120-3, R-120-4, R-120-5 | S1, S2 | E2E, Unit |
+| R-121 Automation hook for agents (must · MVP) | R-121-1, R-121-2, R-121-3, R-121-4, R-121-5, R-121-6, R-121-7 | S1, S2 | E2E |
+| R-122 Headless simulation mode (should · MVP) | R-122-1, R-122-2 | S1 | Unit |
+| R-123 Debug cheats only in test mode (should · MVP) | R-123-1, R-123-2, R-123-3, R-123-4, R-123-5 | S1, S2 | E2E |
+| NFR-P01 Frame rate (must) | NFR-P01-1, NFR-P01-2 | S2 | E2E, Unit |
+| NFR-B01 / NFR-B02 / NFR-B03 Browsers, screen size, no account (must) | NFR-B01-1 | S1 | E2E |
+| NFR-O01 Works offline (should) | NFR-O01-1 | S3 | E2E |
+| NFR-S01 Static content only; test hooks off in normal play (should) | NFR-S01-1, NFR-S01-2 | S1 | E2E, Unit |
+| NFR-Q01 Determinism (must) | NFR-Q01-1, NFR-Q01-2 | S1 | E2E |
+| NFR-L01 ..L05 Legal and IP guardrails (must) | NFR-L01-1, NFR-L01-2, NFR-L01-3 | S1, S3 | E2E, Unit |
+| NFR-B02   | NFR-B02-1 | S1 | E2E |
+| NFR-B03   | NFR-B03-1 | S1 | E2E |
+| NFR-O02   | NFR-O02-1 | S1 | E2E |
+| NFR-Q02   | NFR-Q02-1 | S3 | E2E |
+| NFR-L03   | NFR-L03-1 | S1 | E2E |
+| NFR-L04   | NFR-L04-1 | S1 | Unit |
+| NFR-L05   | NFR-L05-1 | S1 | Unit |
+
+Total ACs in this file: 48 (S1 36, S2 7, S3 5).

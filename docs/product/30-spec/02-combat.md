@@ -34,8 +34,6 @@ Areas: C Combat (R-020..R-026). Contract: `10-tech-and-testability.md`.
 - **AC-R-023-3** `S1` `E2E` — Given `scene === 'dead'`, When the restart control is clicked, Then (S1) `scene === 'floor'`, `player.hp === player.hpMax` and `player.mp === player.mpMax` (QF-02-2), `player.tile === floor.entry`, and a new game is playable (AC-R-005-1 passes).
 - **AC-R-023-4** `S2` `E2E` — Given the player died on floor n with gold g, level L, xp X and inventory I, When the restart control is clicked, Then `scene === 'town'`, `depth === 0`, `player.gold === g` (Q7: no gold loss), `level === L`, `xp === X`, inventory and equipment unchanged, and `hp === hpMax`. This supersedes AC-R-023-3 from S2.
 - **AC-R-023-5** `S2` `Unit` — Given mana use and regeneration, When a skill costs more than `mp`, Then `mp` never goes below 0; `mp` never exceeds `mpMax` after a mana potion (AC-R-056-2).
-- **AC-R-023-6** `S2` `E2E` — Given the player died holding items on the cursor (`cursorItem` set), When respawned, Then the item is back in the inventory (or on the town floor if full), not lost (edge case, QF-02-3).
-- **AC-R-023-7** `S1` `Unit` — Given regeneration is configured (`config.regen`), When no damage is taken for `k` ticks, Then `hp` and `mp` change by exactly what `config.regen` states and never exceed their max (QF-02-4).
 
 ### R-024 Hit recovery, knock-back and monster stun (should · MVP)
 
@@ -60,10 +58,20 @@ LATER; only the stat exists in MVP. See AC-R-052-6 (affix with a resist stat cha
 
 - **QF-02-1** The hit chance formula and its clamp bounds are not specified. Architect to define in ADR; spec asserts only monotonicity and bounds from `config`.
 - **QF-02-2** Does the player respawn with full health and mana? (Q7 says "forgiving"; proposal: yes.)
-- **QF-02-3** Edge case from circle 1 (dying with an item on the cursor): not in the requirements. Proposal given in AC-R-023-6; confirm or drop.
-- **QF-02-4** Natural health/mana regeneration is not mentioned anywhere. Is there any? AC-R-023-7 is conditional on a decision.
+- **QF-02-3** Dying with an item on the cursor (circle 1 edge case) is not in the requirements; no AC written. Proposal: the item returns to the inventory.
+- **QF-02-4** Natural health/mana regeneration is not mentioned anywhere. Is there any? No AC written until decided.
 - **QF-02-5** R-025 "feel" criteria (animation quality, readability) cannot be asserted in state. Accept screenshot review by the independent visual reviewer instead?
 
 ## Coverage
 
-<!--COVERAGE-->
+| Requirement | ACs | Slices | Levels |
+|---|---|---|---|
+| R-020 Real-time combat (must · MVP) | R-020-1, R-020-2, R-020-3 | S1 | E2E, Unit |
+| R-021 Melee attack with swing animation and hit resolution (must · MVP) | R-021-1, R-021-2, R-021-3, R-021-4, R-021-5, R-021-6, R-021-7, R-021-8 | S1 | E2E, Unit |
+| R-022 Ranged and spell projectiles (must · MVP) | R-022-1, R-022-2, R-022-3, R-022-4, R-022-5 | S2 | Unit |
+| R-023 Health and mana; death and respawn (must · MVP) | R-023-1, R-023-2, R-023-3, R-023-4, R-023-5 | S1, S2 | E2E, Unit |
+| R-024 Hit recovery, knock-back and monster stun (should · MVP) | R-024-1, R-024-2 | S2 | Unit |
+| R-025 Damage feedback (should · MVP) | R-025-1, R-025-2, R-025-3 | S2, S3 | E2E |
+| R-026 Elemental damage types and resistances (should · LATER) | none (see below) | - | - |
+
+Total ACs in this file: 26 (S1 14, S2 11, S3 1).

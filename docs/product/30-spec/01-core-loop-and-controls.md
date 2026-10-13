@@ -77,4 +77,15 @@ Not given an AC (not directly testable; QF-01-5).
 
 ## Coverage
 
-<!--COVERAGE-->
+| Requirement | ACs | Slices | Levels |
+|---|---|---|---|
+| R-001 Playable game in a desktop browser (must · MVP) | R-001-1, R-001-2 | S1 | E2E |
+| R-002 Hack-and-slash action-RPG in the spirit of the original (must · MVP) | R-002-1, R-002-2 | S1, S2 | E2E |
+| R-003 Office environment setting (must · MVP) | R-003-1, R-003-2 | S1, S2 | E2E |
+| R-004 Core loop: town, descend, fight, loot, return, upgrade, descend deeper (must · MVP) | R-004-1, R-004-2, R-004-3, R-004-4 | S2 | E2E |
+| R-005 Mouse-driven controls (must · MVP) | R-005-1, R-005-2, R-005-3, R-005-4, R-005-5, R-005-6, R-005-7, R-005-8, R-005-9, R-005-10, R-005-11 | S1, S2 | E2E, Unit |
+| R-006 Run length 20-40 minutes (should · MVP) | none (see below) | - | - |
+| NFR-A01 Remappable keys (must) | NFR-A01-1, NFR-A01-2, NFR-A01-3, NFR-A01-4, NFR-A01-5 | S3 | E2E |
+| NFR-A02 Pause (must) | NFR-A02-1, NFR-A02-2, NFR-A02-3, NFR-A02-4 | S1, S2, S3 | E2E, Unit |
+
+Total ACs in this file: 30 (S1 12, S2 12, S3 6).
