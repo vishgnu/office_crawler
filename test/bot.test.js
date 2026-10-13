@@ -136,3 +136,62 @@ test("S2 bot runs pick up loot and stay deterministic: seeds 1-5 clear, collect 
   assert.ok(gold > 0, `gold ${gold}`);
   assert.ok(worn > 0, `worn ${worn}`);
 });
+
+// ---- S2-3/S2-4: skills, points, floors ----
+import { newGame, setLevel, learnSkill, applyInput, config } from "../src/core/index.js";
+
+const lit = (s) => { s.floor.rooms = []; s.inventory.items.length = 0; return s; };
+
+test("S2 bot: spends attribute points by weight and learns skills in the configured order", () => {
+  const s = lit(gameOn(OPEN, [["zombie-intern", 12, 4]]));
+  setLevel(s, 3); // 10 attribute points, 2 skill points
+  const mem = createBotMemory();
+  const seen = [];
+  for (let i = 0; i < 12; i++) { const c = decide(s, mem); if (!c) break; assert.equal(applyInput(s, c).ok, true); seen.push(c); }
+  assert.equal(s.player.attrPoints, 0); assert.equal(s.player.skillPoints, 0);
+  assert.deepEqual(seen.filter((c) => c.t === "learnSkill").map((c) => c.id), ["stapler-throw", "stapler-throw"].slice(0, 2));
+  assert.ok(s.player.attrs.stamina > 10 && s.player.attrs.grit > 10);
+});
+
+test("S2 bot: Coffee Break when hurt, Reply-All on a crowd, Stapler Throw at range with a clear line, nothing without mana", () => {
+  const mk = (monsters) => { const s = lit(gameOn(OPEN, monsters)); setLevel(s, 10); for (const id of ["stapler-throw", "coffee-break", "reply-all", "mute"]) learnSkill(s, id); s.player.attrPoints = 0; s.player.skillPoints = 0; s.belt.fill(null); return s; };
+  const awake = (s) => s.monsters.forEach((m) => { m.ai = "chase"; });
+  let s = mk([["zombie-intern", 9, 1]]); awake(s);
+  assert.deepEqual(decide(s, createBotMemory()), { t: "cast", skill: "stapler-throw", tile: { x: 9, y: 1 } });
+  s.player.mp = 0;
+  assert.notEqual(decide(s, createBotMemory())?.t, "cast");
+  s = mk([["zombie-intern", 5, 1]]); awake(s); s.player.hp = 3;
+  assert.equal(decide(s, createBotMemory()).skill, "coffee-break");
+  s = mk([["zombie-intern", 2, 1], ["zombie-intern", 2, 2], ["zombie-intern", 1, 3], ["zombie-intern", 3, 2]]); awake(s);
+  assert.equal(decide(s, createBotMemory()).skill, "reply-all");
+  s = mk([["zombie-intern", 2, 1], ["zombie-intern", 2, 2]]); s.monsters.forEach((m) => { m.ai = "attack"; }); s.player.hp = Math.floor(s.player.hpMax * 0.55);
+  assert.equal(decide(s, createBotMemory()).skill, "mute");
+});
+
+test("S2 bot: in the Lobby it buys belt potions, closes the dialog and takes the elevator", () => {
+  const s = newGame(3, { start: "town" }), mem = createBotMemory({ depth: 3 });
+  s.belt.fill(null); s.player.gold = 200;
+  for (let i = 0; i < 1500 && s.scene === "town"; i++) {
+    if (i % BOT.decideEvery === 0) { const c = decide(s, mem); if (c) noteResult(mem, c, applyInput(s, c)); }
+    step(s);
+  }
+  assert.equal(s.scene, "floor"); assert.equal(s.depth, 1);
+  assert.ok(s.belt.some((b) => b?.restores === "hp"), "potions on the belt");
+  assert.ok(s.player.gold < 200);
+});
+
+test("S2 bot: a multi-floor run is deterministic, reaches floor 3 and reports depth and level", () => {
+  const a = runOne(2, 40000, { depth: 3, respawn: true }), b = runOne(2, 40000, { depth: 3, respawn: true });
+  assert.deepEqual(a, b);
+  assert.equal(a.result, "cleared");
+  assert.equal(a.depth, 3);
+  assert.ok(a.level >= 2);
+  assert.equal(a.stuck, 0);
+});
+
+test("S2 bot: after a death it respawns in the Lobby and carries on (counted in deaths)", () => {
+  const s = newGame(1, { start: "town" }), mem = createBotMemory({ depth: 2, respawn: true });
+  s.scene = "dead"; s.player.hp = 0; s.depth = 1;
+  assert.deepEqual(decide(s, mem), { t: "respawn" });
+  assert.equal(decide(s, createBotMemory()), null); // without respawn the run just ends
+});
