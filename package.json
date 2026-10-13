@@ -8,5 +8,8 @@
     "test": "node --test",
     "e2e": "node e2e/smoke.mjs"
   },
-  "devDependencies": { "esbuild": "0.25.10" }
+  "devDependencies": {
+    "esbuild": "0.25.10",
+    "playwright": "1.56.1"
+  }
 }
