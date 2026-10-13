@@ -76,3 +76,6 @@ One line per decision by `customer-proxy`. The real customer can overrule any of
 - 2026-10-13 | spec QF-10-5 (?test=1) | accept, architect confirms in ADR; cheats only with flag | medium
 - 2026-10-13 | art-direction variant pick | C (stylised vector) as primary, graded darker with A's lighting model and B's performance discipline; must-fix list in variants/art-direction/decision.md; real customer may prefer A if "moody" outranks "readable" | medium
 - 2026-10-13 | S1 slice acceptance (playable core) | ACCEPT WITH FOLLOW-UPS: npm test 120/120, e2e 118/118 checks (7 scripts, Chromium only); gaps: AC-R-010-x, R-011-x, R-012-x, R-042-5, NFR-S01-2, NFR-L05-1, NFR-L03-1 (see reviews/S1-acceptance.md); visual acceptance pending reviews/S1-visual-review.md | medium
+- 2026-10-13 | inventory-panel variant pick | C Side drawer (borrow A sheet layout/44 px cells, B leather header and phone tabs); 9 must-fix items in variants/inventory-panel/decision.md; real customer to confirm on screen review; B is the alternative if they rate theme over seeing the fight | medium
+- 2026-10-13 | inventory-panel Q (pause while open) | no pause, real-time as genre | medium
+- 2026-10-13 | inventory-panel Q (unmet-requirement item dragged onto slot) | pick up and hover allowed, red outline with reason, drop rejected, item returns, never equipped | medium

@@ -57,3 +57,4 @@ Running log for the orchestrator (main Claude session). Update after every step.
 - [iter 2] NOTE: commit cceb860 has 4 failing tests caused by the in-progress S2-3 core agent (not the polish). Re-verify when S2-3 hands back.
 - [iter 2] Inventory-panel variants done (A classic split, B briefcase, C side drawer); shots in variants/inventory-panel/shots. Next: 1 visual reviewer (combined lens) → proxy pick → S2-5 UI implementer.
 - [iter 2] Inventory review: A 30, B 31, C 31, all iterate; pick C (side drawer, keeps the fight visible), fixes: tooltip anchoring, Employee File fits 800px, HUD badge collisions, 44px cells, drag feedback. Proxy picking.
+- [iter 2] Inventory panel decided (PROXY): C side drawer + A's Employee File layout and 44px cells + B's leather skin and phone tabs; 9 must-fix items in decision.md. Waiting for S2-3 core, then the S2 render/UI implementer (S2-5 + S2-6 + loot visuals + new monsters + town).
