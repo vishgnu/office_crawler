@@ -6,7 +6,7 @@
 // they are focusable, labelled and clickable; hudState() is the single description of both.
 import { content, config } from "../core/index.js";
 import { hudLayout, fontPx, SKILL_SLOTS, BELT_SLOTS } from "../ui/layout.js";
-import { xpRatio } from "../ui/itemview.js";
+import { xpRatio, xpProgress } from "../ui/itemview.js";
 import { T } from "../ui/text.js";
 import { keys } from "./keys.js";
 
@@ -16,6 +16,13 @@ const FONT = "'Trebuchet MS','Segoe UI',system-ui,'Helvetica Neue','Liberation S
 
 const xpPercent = (p) => Math.floor(xpRatio(p) * 100); // progress inside the current level (AC-R-077-2)
 const floorLabel = (core) => (core.depth > 0 ? `${T.floorWord} ${core.depth}: ${core.floor.name}` : core.floor.name);
+
+const num = (n) => Number(n).toLocaleString("en-US");
+/** Within-level numbers for the label ("320 / 1,280 (25%)"); the total XP goes in the tooltip (S2 fix contract). */
+function xpLabelParts(p) {
+  const v = xpProgress(p);
+  return { into: v.into, span: v.span, total: v.total, label: v.capped ? T.xpMax : `${num(v.into)} / ${num(v.span)} (${v.pct}%)`, tip: `${T.xpTotal}: ${num(v.total)}` };
+}
 
 /** HUD values + rects for the hook, the DOM slot layer and tests (pure). */
 export function hudState(core, w, h, style, hoverId = null) {
@@ -37,7 +44,7 @@ export function hudState(core, w, h, style, hoverId = null) {
   const prev = config.xpTable[p.level - 1] ?? 0;
   return {
     health: gauge("health", p.hp, p.hpMax, L.health), mana: gauge("mana", p.mp, p.mpMax, L.mana),
-    xp: { value: p.xp, next: p.xpNext, ratio: ratio(p.xp, p.xpNext), level: p.level, percent: xpPercent(p), rect: { ...L.xp } },
+    xp: { value: p.xp, next: p.xpNext, ratio: ratio(p.xp, p.xpNext), level: p.level, percent: xpPercent(p), ...xpLabelParts(p), rect: { ...L.xp } },
     xpBar: { value: p.xp - prev, span: Math.max(0, p.xpNext - prev), ratio: xpRatio(p), level: p.level, percent: xpPercent(p) },
     level: p.level, points: { attr: p.attrPoints, skill: p.skillPoints },
     skills: slots, skillBar: { primary: bar.primary, secondary: bar.secondary, selected: bar.selected, hotkeys: [...bar.hotkeys], slots },
@@ -96,7 +103,7 @@ export function createHud(style) {
       this.frame(g, "health", L.health.rect, ref, pad, atlas, dpr, base);
       if (low) this.crack(g, L.health.rect, s);
       this.frame(g, "mana", L.mana.rect, ref, pad, atlas, dpr, base);
-      const cl = layer("centre", `${base}|${p.level}|${pct}`, cr, dpr, (bg) => this.bakeCentre(bg, L, atlas, p, pct, hc));
+      const cl = layer("centre", `${base}|${p.level}|${p.xp}|${p.xpNext}`, cr, dpr, (bg) => this.bakeCentre(bg, L, atlas, p, pct, hc));
       g.drawImage(cl.c, cl.x, cl.y, cl.w, cl.h);
       // dynamic: XP fill, numbers
       const xp = L.xp, xr = xpRatio(p);
@@ -154,7 +161,8 @@ export function createHud(style) {
       // level text and XP track
       const tfs = fontPx(s, 10, 12), ty = L.xp.y - 4 * s;
       text(g, `${S.level} ${p.level}`, L.xp.x, ty, tfs, hc ? "#fff" : U.xp, "left", 800, null);
-      text(g, L.compactXp ? `${pct}%` : `${pct}% ${S.toLevel} ${p.level + 1}`, L.xp.x + L.xp.w, ty, tfs, hc ? "#fff" : U.subtle, "right", 700, null);
+      const xl = xpLabelParts(p).label;
+      text(g, L.compactXp ? `${pct}%` : xl, L.xp.x + L.xp.w, ty, tfs, hc ? "#fff" : U.subtle, "right", 700, null);
       g.beginPath(); g.roundRect(L.xp.x, L.xp.y, L.xp.w, L.xp.h, L.xp.h / 2); g.fillStyle = hc ? "#2a2a2a" : "#0d0a1c"; g.fill(); g.lineWidth = 2; g.strokeStyle = hc ? "#fff" : U.panelEdge; g.stroke();
       // empty slot wells; the DOM slot layer puts icons, badges and the selection ring on top of them
       const slotE = atlas.get(keys.ui("skill-slot")), beltE = atlas.get(keys.ui("belt-slot"));

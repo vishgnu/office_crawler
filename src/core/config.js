@@ -42,7 +42,10 @@ export const config = {
   // Character (S2-2). Derived stats are a pure function of level, attributes and gear (items/derive.js).
   startGold: 50,
   damageTypes: ["fire", "cold", "shock", "acid"],
-  unarmed: { min: 1, max: 4 },
+  unarmed: { min: 1, max: 2 },       // used only when no weapon is worn (a weapon replaces it, it is not added to it)
+  // Sanity caps on derived stats (S2 review). Resistances are percentages (75 is the usual ceiling); defense and attack rating
+  // are already bounded in effect by hitChanceMin/Max, so their caps only stop display and affix stacking from running away.
+  caps: { resist: 75, defense: 400, attackRating: 600 },
   derived: {
     rounding: "floor",               // "floor" | "round" | "ceil", applied to every derived stat
     hpBase: 10, hpPerLevel: 10, hpPerStamina: 3,
@@ -85,12 +88,15 @@ export const config = {
   inventory: { w: 10, h: 4 },
   stash: { w: 10, h: 8 },
   beltSlots: 4,
-  groundItemCap: 60,                 // oldest ground item is removed beyond this (keeps state small)
+  groundItemCap: 60,                 // beyond this, gold then the cheapest normal items go first; uniques, the released cursor item and the new entry never do
+  affixTierDecay: 0.5,               // affix tiers: the highest tier unlocked at the item level has weight 1, each lower one this factor less
   rarityValue: { normal: 1, magic: 2, rare: 4, unique: 8 },
   affixWorth: 0.5,                   // share of the base value an affix at its range maximum adds
   ilvlValue: 0.1,                    // base value grows by this per item level
   buyOverSell: 4,                    // vendor price = sell value * this (at least sell value + 1)
-  vendor: { gearSlots: 8, potionTiers: { 1: 1, 2: 5, 3: 12 } }, // potion tier -> minimum player level
+  vendor: { gearSlots: 8, potionTiers: { 1: 1, 2: 5, 3: 12 } }, // potion tier -> minimum player level; stock is re-rolled on each return to the Lobby, not on each window open
+  exploreRadius: 6,                  // R-075: tiles within this distance of the hero count as explored (the Lobby is explored from the start)
+  portal: { lobbyTile: { x: 10, y: 9 } }, // R-046: where the Emergency Exit door stands in the Lobby
 
   // Skills and projectiles (S2-3). Mana cost only, no cooldowns (QF-06-5).
   castTicks: 12,                     // the hero is busy (action "cast") for this long after a skill

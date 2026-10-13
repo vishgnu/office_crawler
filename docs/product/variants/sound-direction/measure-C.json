@@ -1,0 +1,374 @@
+{
+ "variant": "C",
+ "kit": "Foley-synth",
+ "sampleRate": 44100,
+ "channels": 2,
+ "method": "OfflineAudioContext, all volumes at 1.0; SFX started at 0.05 s and measured from start to last sample above -50 dBFS (RMS and centroid over that window, peak/clipping over the whole 1.7 s render, tail included); ambient rendered 10 s, peak/clipping over all 10 s, RMS and centroid over 1.0-10.0 s (after the 0.6 s fade-in). Clipping = samples with |x| >= 0.999. Centroid = magnitude-weighted mean frequency of 2048-point Hann FFT frames. nodes = Web Audio nodes created by one play() call (shared bus and room excluded).",
+ "sfx": {
+  "swing": {
+   "duration_s": 0.358,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -19.5,
+   "crest_dB": 17.3,
+   "centroid_Hz": 10633,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 8,
+   "renderMs": 41
+  },
+  "hitFlesh": {
+   "duration_s": 0.288,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -22,
+   "crest_dB": 19.8,
+   "centroid_Hz": 673,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 11,
+   "renderMs": 19
+  },
+  "hitPaper": {
+   "duration_s": 0.285,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -24.5,
+   "crest_dB": 22.2,
+   "centroid_Hz": 10798,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 12,
+   "renderMs": 19
+  },
+  "miss": {
+   "duration_s": 0.31,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -20.1,
+   "crest_dB": 17.9,
+   "centroid_Hz": 10716,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 8,
+   "renderMs": 18
+  },
+  "hurtZombie": {
+   "duration_s": 0.602,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -19,
+   "crest_dB": 16.8,
+   "centroid_Hz": 1065,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 11,
+   "renderMs": 20
+  },
+  "hurtImp": {
+   "duration_s": 0.501,
+   "peak_dBFS": -2.8,
+   "rms_dBFS": -17,
+   "crest_dB": 14.3,
+   "centroid_Hz": 2552,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 12,
+   "renderMs": 22
+  },
+  "hurtManager": {
+   "duration_s": 0.511,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -18.2,
+   "crest_dB": 16,
+   "centroid_Hz": 1507,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 11,
+   "renderMs": 18
+  },
+  "deathZombie": {
+   "duration_s": 0.963,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -19,
+   "crest_dB": 16.8,
+   "centroid_Hz": 977,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 11,
+   "renderMs": 22
+  },
+  "deathImp": {
+   "duration_s": 0.896,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -19.7,
+   "crest_dB": 17.5,
+   "centroid_Hz": 3408,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 11,
+   "renderMs": 23
+  },
+  "deathManager": {
+   "duration_s": 0.886,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -20.1,
+   "crest_dB": 17.9,
+   "centroid_Hz": 923,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 10,
+   "renderMs": 24
+  },
+  "heroHurt": {
+   "duration_s": 0.305,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -18.7,
+   "crest_dB": 16.4,
+   "centroid_Hz": 844,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 10,
+   "renderMs": 21
+  },
+  "heartbeat": {
+   "duration_s": 0.525,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -17.2,
+   "crest_dB": 15,
+   "centroid_Hz": 102,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 12,
+   "renderMs": 18
+  },
+  "potion": {
+   "duration_s": 0.649,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -23.1,
+   "crest_dB": 20.8,
+   "centroid_Hz": 470,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 11,
+   "renderMs": 22
+  },
+  "coin": {
+   "duration_s": 0.544,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -17.6,
+   "crest_dB": 15.4,
+   "centroid_Hz": 3845,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 10,
+   "renderMs": 18
+  },
+  "pickupItem": {
+   "duration_s": 0.434,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -18.4,
+   "crest_dB": 16.2,
+   "centroid_Hz": 2914,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 11,
+   "renderMs": 19
+  },
+  "pickupRare": {
+   "duration_s": 0.78,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -17,
+   "crest_dB": 14.8,
+   "centroid_Hz": 2208,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 12,
+   "renderMs": 19
+  },
+  "pickupUnique": {
+   "duration_s": 0.72,
+   "peak_dBFS": -5.2,
+   "rms_dBFS": -17,
+   "crest_dB": 11.8,
+   "centroid_Hz": 1612,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 12,
+   "renderMs": 20
+  },
+  "levelUp": {
+   "duration_s": 0.71,
+   "peak_dBFS": -5.2,
+   "rms_dBFS": -16.6,
+   "crest_dB": 11.4,
+   "centroid_Hz": 912,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 12,
+   "renderMs": 19
+  },
+  "castStapler": {
+   "duration_s": 0.384,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -22.6,
+   "crest_dB": 20.4,
+   "centroid_Hz": 5238,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 12,
+   "renderMs": 20
+  },
+  "castReplyAll": {
+   "duration_s": 0.468,
+   "peak_dBFS": -2.8,
+   "rms_dBFS": -17,
+   "crest_dB": 14.2,
+   "centroid_Hz": 1575,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 12,
+   "renderMs": 19
+  },
+  "castCoffee": {
+   "duration_s": 0.66,
+   "peak_dBFS": -5.2,
+   "rms_dBFS": -16.2,
+   "crest_dB": 11,
+   "centroid_Hz": 540,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 11,
+   "renderMs": 20
+  },
+  "castMute": {
+   "duration_s": 0.319,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -17.2,
+   "crest_dB": 14.9,
+   "centroid_Hz": 1838,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 9,
+   "renderMs": 18
+  },
+  "uiClick": {
+   "duration_s": 0.029,
+   "peak_dBFS": -4.1,
+   "rms_dBFS": -17,
+   "crest_dB": 12.9,
+   "centroid_Hz": 2963,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 5,
+   "renderMs": 16
+  },
+  "uiOpen": {
+   "duration_s": 0.557,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -23.7,
+   "crest_dB": 21.5,
+   "centroid_Hz": 1354,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 10,
+   "renderMs": 18
+  },
+  "uiEquip": {
+   "duration_s": 0.336,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -21.6,
+   "crest_dB": 19.4,
+   "centroid_Hz": 4472,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 11,
+   "renderMs": 17
+  },
+  "stairs": {
+   "duration_s": 0.704,
+   "peak_dBFS": -2.2,
+   "rms_dBFS": -22.9,
+   "crest_dB": 20.7,
+   "centroid_Hz": 1060,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 11,
+   "renderMs": 18
+  },
+  "ding": {
+   "duration_s": 0.676,
+   "peak_dBFS": -2.4,
+   "rms_dBFS": -17,
+   "crest_dB": 14.6,
+   "centroid_Hz": 1261,
+   "clipping": 0,
+   "nan": 0,
+   "nodes": 8,
+   "renderMs": 19
+  }
+ },
+ "ambient": {
+  "open-plan": {
+   "duration_s": 10,
+   "peak_dBFS": -12.1,
+   "rms_dBFS": -25,
+   "crest_dB": 12.9,
+   "centroid_Hz": 2841,
+   "clipping": 0,
+   "nan": 0,
+   "renderMs": 170
+  },
+  "basement": {
+   "duration_s": 10,
+   "peak_dBFS": -12.2,
+   "rms_dBFS": -25,
+   "crest_dB": 12.8,
+   "centroid_Hz": 1015,
+   "clipping": 0,
+   "nan": 0,
+   "renderMs": 171
+  },
+  "lobby": {
+   "duration_s": 10,
+   "peak_dBFS": -13.7,
+   "rms_dBFS": -25,
+   "crest_dB": 11.3,
+   "centroid_Hz": 264,
+   "clipping": 0,
+   "nan": 0,
+   "renderMs": 202
+  }
+ },
+ "summary": {
+  "sfxCount": 27,
+  "ambientCount": 3,
+  "sfxPeak_dBFS": {
+   "min": -5.2,
+   "max": -2.2,
+   "inRange_m6_m1": true
+  },
+  "sfxRms_dBFS": {
+   "min": -24.5,
+   "max": -16.2,
+   "spread_dB": 8.3,
+   "spreadOk_le12": true
+  },
+  "sfxClippingTotal": 0,
+  "ambientClippingTotal": 0,
+  "sfxDuration_s": {
+   "max": 0.963,
+   "over1s": []
+  },
+  "sfxNodes": {
+   "max": 12,
+   "over12": []
+  },
+  "ambientRms_dBFS": {
+   "min": -25,
+   "max": -25,
+   "inRange_m30_m20": true
+  },
+  "sfxPeakOutOfRange": [],
+  "maxRenderMs": {
+   "sfx": 41,
+   "ambient10s": 202
+  },
+  "allPass": true
+ }
+}

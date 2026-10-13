@@ -45,10 +45,11 @@ h2 { margin: 0 0 8px; font-size: clamp(26px, 4.5vw, 44px); color: #dfe5f5; text-
 /* HUD slot layer, placed on the rects of hudLayout() */
 .hudui{position:absolute;inset:0}
 .hudui>*{pointer-events:none}
-.hudui button,.hudui .dock{pointer-events:auto}
+.hudui button,.hudui .dock,.hudui .xptip{pointer-events:auto}
+.xptip{position:absolute;background:transparent}
 .hgroup{display:contents}
 .sk,.hb{position:absolute;margin:0;padding:0;background:transparent;border:0;border-radius:9px;touch-action:manipulation}
-.sk .ic,.hb .ic{position:absolute;left:12%;right:12%;top:20%;bottom:6%;width:auto;height:auto}
+.sk .ic,.hb .ic{position:absolute;left:14%;right:14%;top:14%;bottom:14%;width:72%;height:72%}
 .sk.on{box-shadow:0 0 0 3px var(--focus),0 0 0 5px var(--ol)}
 .sk.on .sel{position:absolute;left:18%;right:18%;bottom:-6px;height:4px;border-radius:3px;background:var(--focus);border:1px solid var(--ol)}
 .sk.dis,.hb.none{opacity:.6}
@@ -57,7 +58,7 @@ h2 { margin: 0 0 8px; font-size: clamp(26px, 4.5vw, 44px); color: #dfe5f5; text-
 .sk.none .ic{display:none}
 .sk:hover,.hb:hover{background:rgba(255,255,255,.08)}
 .kb{position:absolute;left:-3px;top:-6px;min-width:calc(var(--fs) * 1.7);height:calc(var(--fs) * 1.4);border-radius:calc(var(--fs) * .7);background:var(--ol);border:2px solid #cfc2ff;color:#fff;font:800 var(--fs)/calc(var(--fs) * 1.15) 'Trebuchet MS','Segoe UI',system-ui,sans-serif;text-align:center;padding:0 3px;z-index:3;box-sizing:border-box}
-.sn{position:absolute;text-align:center;font:700 var(--fs)/1.1 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#fff;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.sn{position:absolute;text-align:center;font:700 var(--fs)/1.1 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#fff;margin-top:2px;white-space:normal;overflow:visible;text-shadow:0 0 3px #0d0a1c,0 1px 2px #0d0a1c,1px 0 2px #0d0a1c,-1px 0 2px #0d0a1c;pointer-events:none;overflow-wrap:normal;word-break:keep-all}
 .dock{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:5px;align-items:stretch}
 .hbtn{background:var(--btn);border:3px solid var(--ol);box-shadow:inset 0 0 0 2px var(--rim);border-radius:10px;padding:5px 10px;font-weight:800;font-size:14px;text-align:left;white-space:nowrap;display:flex;align-items:center;gap:2px;min-height:34px}
 .hbtn span:first-child{margin-right:auto;padding-right:8px}
@@ -247,7 +248,7 @@ button.plus:disabled{background:var(--disabled-bg);color:var(--disabled-fg);bord
 #ui.phone .bgrid{grid-template-columns:repeat(4,calc(var(--cw) * 1.2))}
 #ui.phone .sheet{margin:4px;padding:8px}
 #ui.phone .dstats{grid-template-columns:1fr}
-#ui.phone .toast{font-size:14px}
+#ui.phone .toast{font-size:14px;top:calc(var(--hudtop) - 43px);padding:4px 12px;max-width:94vw;line-height:1.2}
 #ui.phone .tip{left:8px;right:8px;width:auto}
 #ui.phone .xbtn{width:44px;height:44px}
 #ui.phone .plus{width:44px;height:44px}

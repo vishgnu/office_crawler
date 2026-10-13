@@ -12,6 +12,7 @@ import { newEquipment } from "./items/equipment.js";
 import { newBelt } from "./items/belt.js";
 import { deriveStats } from "./items/derive.js";
 import { makeItem } from "./items/roll.js";
+import { initFloorMap } from "./systems/explore.js";
 
 const STREAMS = ["world", "combat", "ai", "loot"];
 
@@ -99,12 +100,14 @@ export function newGame(seedOrOpts, opts = {}) {
     nextId: 1, nextItemId: 1, floor, player: newPlayer(floor.entry, cls), monsters: [],
     projectiles: [], groundItems: [], floaters: [],
     inventory: newGrid(config.inventory.w, config.inventory.h), equipment: newEquipment(), belt: newBelt(),
-    cursorItem: null, stash: newGrid(config.stash.w, config.stash.h), vendor: null, vendorVisits: {}, uniquesFound: [],
+    cursorItem: null, stash: newGrid(config.stash.w, config.stash.h), vendor: null, vendorVisits: {}, uniquesFound: [], vendorStocks: {}, townVisit: 0, portal: null,
     events: [], eventLog: [],
     input: { mouse: { down: false, button: 0, tile: null, mode: null, applied: null } },
     ui: { notice: null, dialog: null }, options: {},
   };
-  floor.spawns.forEach((s, i) => spawnMonster(state, s.type, s.tile, s.packId, { ...s, spawn: i }));
+  state.blockedSpawns = [];
+  floor.spawns.forEach((s, i) => { if (!spawnMonster(state, s.type, s.tile, s.packId, { ...s, spawn: i })) state.blockedSpawns.push(i); });
+  initFloorMap(state);
   giveStartKit(state);
   return state;
 }

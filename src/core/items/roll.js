@@ -62,6 +62,7 @@ function fromBase(base, rarity, ilvl) {
   if (base.defense) item.defense = base.defense;
   if (base.twoHanded) item.twoHanded = true;
   if (base.kind === "potion") { item.restores = base.restores; item.restore = base.restore; }
+  if (base.kind === "consumable") item.effect = base.effect;
   return item;
 }
 

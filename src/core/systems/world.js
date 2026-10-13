@@ -10,6 +10,7 @@ import { applyDerived } from "../items/derive.js";
 import { npcs } from "../content/npcs.js";
 import { STAIRS_UP } from "../tiles.js";
 import { closeVendor, openVendor } from "./vendors.js";
+import { initFloorMap } from "./explore.js";
 export { vendorInReach } from "./vendors.js";
 
 const fail = (error) => ({ ok: false, error });
@@ -20,10 +21,11 @@ export const inTown = (state) => state.depth === 0;
 
 /** Remember what must persist of the current floor (killed spawns, ground items; a prepared test floor is kept whole). */
 function parkFloor(state) {
-  const alive = new Set(state.monsters.filter((m) => m.ai !== "dead" && m.spawn !== undefined).map((m) => m.spawn));
+  // A spawn that was blocked on entry (its tile was taken) never existed: it is not a kill and returns next time.
+  const alive = new Set([...state.monsters.filter((m) => m.ai !== "dead" && m.spawn !== undefined).map((m) => m.spawn), ...(state.blockedSpawns ?? [])]);
   const killed = [];
   state.floor.spawns.forEach((_, i) => { if (!alive.has(i)) killed.push(i); });
-  state.floors[state.depth] = { killed, groundItems: state.groundItems, ...(state.floor.custom ? { floor: state.floor } : {}) };
+  state.floors[state.depth] = { killed, groundItems: state.groundItems, explored: state.floor.explored, ...(state.floor.custom ? { floor: state.floor } : {}) };
 }
 
 /** A free walkable tile next to `tile`, not a monster start (nearest first, smaller y then x on ties). */
@@ -39,14 +41,16 @@ function tileBeside(floor, grid, tile) {
 }
 
 /**
- * Leave the current floor and arrive on `depth` (0 = Lobby). `at`: "entry" (from above: the entry tile) or "exit"
- * (from below: beside the way down). Updates deepestDepth, parks and restores floors.
+ * Leave the current floor and arrive on `depth` (0 = Lobby). `at`: "entry" (from above: the entry tile), "exit"
+ * (from below: beside the way down) or "tile" (a given tile, for the Emergency Exit door). Updates deepestDepth, parks and restores floors.
  */
-export function enterFloor(state, depth, { at = "entry", from = state.depth } = {}) {
+export function enterFloor(state, depth, { at = "entry", from = state.depth, tile = null } = {}) {
   parkFloor(state);
   const parked = state.floors[depth];
   const floor = parked?.floor ?? generateFloor(state.seed, depth);
+  if (parked?.explored && !floor.explored) floor.explored = parked.explored;
   state.floor = floor; state.depth = depth;
+  if (depth === 0 && from > 0) { state.townVisit = (state.townVisit ?? 0) + 1; state.vendorStocks = {}; } // a new Lobby visit: fresh vendor stock
   state.scene = depth === 0 ? "town" : "floor";
   state.deepestDepth = Math.max(state.deepestDepth, depth);
   state.monsters = []; state.projectiles = []; state.floaters = [];
@@ -54,10 +58,13 @@ export function enterFloor(state, depth, { at = "entry", from = state.depth } = 
   state.vendor = null; state.ui.dialog = null;
   state.input.mouse = { down: false, button: 0, tile: null, mode: null, applied: null };
   const p = state.player, ctx = getCtx(state);
-  p.tile = at === "exit" && floor.exit ? tileBeside(floor, ctx.grid, floor.exit) : { ...floor.entry };
+  p.tile = at === "exit" && floor.exit ? tileBeside(floor, ctx.grid, floor.exit)
+    : at === "tile" && tile ? (ctx.grid.walkable(tile.x, tile.y) ? { x: tile.x, y: tile.y } : tileBeside(floor, ctx.grid, tile)) : { ...floor.entry };
   Object.assign(p, { next: null, moveT: 0, moveTotal: 0, path: [], goal: null, target: null, pickup: null, stairs: null, interact: null, castT: 0, blockedT: 0, attackT: 0, swingTarget: null, repathT: 0, action: "idle" });
   const killed = new Set(parked?.killed ?? []);
-  floor.spawns.forEach((s, i) => { if (!killed.has(i)) spawnMonster(state, s.type, s.tile, s.packId, { ...s, spawn: i }); });
+  state.blockedSpawns = [];
+  floor.spawns.forEach((s, i) => { if (!killed.has(i) && !spawnMonster(state, s.type, s.tile, s.packId, { ...s, spawn: i })) state.blockedSpawns.push(i); });
+  initFloorMap(state);
   emit(state, { type: "floorEnter", depth, from });
   return OK;
 }
@@ -99,6 +106,40 @@ export function useStairs(state, dir, issueMove) {
   if (!p.next && p.tile.x === t.x && p.tile.y === t.y) return takeStairs(state, dir);
   const r = issueMove(state, t);
   if (r.ok) p.stairs = dir;
+  return r;
+}
+
+// Emergency Exit (R-046): using the item on a floor leaves a door open at the hero's tile and moves the hero to the Lobby; the
+// Lobby door (config.portal.lobbyTile) leads back to that tile and closes. One door at a time: a new one replaces the old.
+export const portalAt = (state, tile) => !!state.portal && state.depth === 0 && state.portal.lobbyTile.x === tile.x && state.portal.lobbyTile.y === tile.y;
+
+export function openPortal(state) {
+  const p = state.player;
+  if (state.depth === 0) return fail("not on a floor");
+  if (p.hp <= 0) return fail("player is dead");
+  const depth = state.depth;
+  state.portal = { depth, tile: { x: p.tile.x, y: p.tile.y }, lobbyTile: { ...config.portal.lobbyTile } };
+  emit(state, { type: "portalOpen", depth, tile: { ...state.portal.tile }, lobbyTile: { ...state.portal.lobbyTile } });
+  enterFloor(state, 0, { at: "entry", from: depth });
+  return OK;
+}
+
+function takePortal(state) {
+  const door = state.portal;
+  if (!door) return fail("no portal");
+  state.portal = null;
+  emit(state, { type: "portalUse", depth: door.depth, tile: { ...door.tile } });
+  return enterFloor(state, door.depth, { at: "tile", tile: door.tile, from: 0 });
+}
+
+/** Walk to the Lobby door and step through on arrival. */
+export function usePortal(state, issueMove) {
+  const p = state.player, door = state.portal;
+  if (p.hp <= 0) return fail("player is dead");
+  if (!door || state.depth !== 0) return fail("no portal here");
+  if (!p.next && p.tile.x === door.lobbyTile.x && p.tile.y === door.lobbyTile.y) return takePortal(state);
+  const r = issueMove(state, door.lobbyTile);
+  if (r.ok) p.portal = true;
   return r;
 }
 
@@ -163,6 +204,12 @@ export function world(state) {
     if (!n) p.interact = null;
     else if (!p.next && cheb(p.tile, n.tile) <= config.interactRange) { p.interact = null; p.path = []; openDialog(state, n); }
     else if (!p.next && p.path.length === 0) p.interact = null;
+  }
+  if (p.portal) {
+    const d = state.portal;
+    if (!d || state.depth !== 0) p.portal = false;
+    else if (!p.next && p.tile.x === d.lobbyTile.x && p.tile.y === d.lobbyTile.y) { p.portal = false; takePortal(state); return; }
+    else if (!p.next && p.path.length === 0) p.portal = false;
   }
   if (p.stairs) {
     const t = stairsTile(state, p.stairs);

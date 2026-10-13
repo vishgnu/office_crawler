@@ -16,6 +16,7 @@ Gate authority for this project is delegated to `customer-proxy` while the user 
 "Delegation record"). All proxy decisions: `proxy-log.md`.
 
 ## Waiting for the real customer
+- **Listen and pick the sound kit**: open docs/product/variants/sound-direction/{A,B,C}.html, play the ambients and SFX (about 2 minutes). Agents cannot judge sound by ear.
 - Review `proxy-log.md` whenever you are back.
 - Answer or confirm Q1 (legal/IP) in `circles/circle-01.md`.
 - Q1 (legal/IP, escalated 2026-10-13): how close names and visuals may go to the original. Safe default A (strict originality) stays in force provisionally.

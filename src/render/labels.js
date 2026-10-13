@@ -24,7 +24,7 @@ const overlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h 
 
 export function createLabels(style) {
   const P = style.palette, cache = new Map();
-  const placed = Array.from({ length: MAX_PLATES }, () => ({ x: 0, y: 0, w: 0, h: 0, ax: 0, ay: 0, sprite: null, ratio: 0, moved: false, id: "" }));
+  const placed = Array.from({ length: MAX_PLATES }, () => ({ x: 0, y: 0, w: 0, h: 0, ax: 0, ay: 0, sprite: null, ratio: 0, moved: false, id: "", name: "" }));
   const cand = [], pips = Array.from({ length: MAX_PIPS }, () => ({ x: 0, y: 0, w: 0, h: 0, ratio: 0, id: "" }));
   let pipN = 0;
   const heroRect = { x: 0, y: 0, w: 0, h: 0 };
@@ -83,12 +83,17 @@ export function createLabels(style) {
       const fs = fontPx(s, 9.5, 12);
       let n = 0, others = 0;
       for (const a of cand) {
-        const forced = a.pr <= 1 || a.npc, full = forced || (a.pr < 9 && others < 2);
+        // S2 fix: full plates only for the target, the hovered monster, champions and NPCs; the rest of a pack gets a health pip.
+        // A second plate with the same name near an existing one is never stacked (it would read as a duplicate on one leader line).
+        const forced = a.pr <= 1 || a.npc || a.champ, full = forced || (n === 0 && a.pr < 9 && !a.npc); // nobody targeted: the nearest awake enemy keeps one plate
         if (!full || n >= MAX_PLATES) continue;
+        let dup = false;
+        for (let j = 0; j < n && !dup; j++) if (placed[j].name === a.name && !a.npc && a.pr > 0 && Math.abs(placed[j].ax - a.sx) < placed[j].w * 1.2) dup = true;
+        if (dup) continue;
         const head = style.dims[a.type]?.head ?? 50;
         const sp = L.sprite(a.name, fs, hc, dpr, !a.npc, a.sub, a.champ), r = placed[n];
         const ax = Math.round(a.sx), ay = Math.round(a.sy - head * z - 5 * s);
-        r.w = sp.w; r.h = sp.h; r.sprite = sp; r.ax = ax; r.ay = ay; r.id = a.id; r.ratio = a.hpMax > 0 ? Math.max(0, Math.min(1, a.hp / a.hpMax)) : 0;
+        r.w = sp.w; r.h = sp.h; r.sprite = sp; r.ax = ax; r.ay = ay; r.id = a.id; r.name = a.name; r.ratio = a.hpMax > 0 ? Math.max(0, Math.min(1, a.hp / a.hpMax)) : 0;
         let ok = false;
         for (let k = 0; k < 5 && !ok; k++) {
           r.x = Math.min(cam.w - SAFE - r.w, Math.max(SAFE, ax - Math.round(r.w / 2)));
@@ -114,6 +119,20 @@ export function createLabels(style) {
         if (ok) pipN++;
       }
       return n;
+    },
+
+    /**
+     * The space the placement pass has claimed this frame, for the other label layers (ground-loot plates, floaters): plate and pip
+     * rectangles go to `rects`, leader lines to `segs` ([x1, y1, x2, y2] each). Both arrays are cleared first.
+     */
+    collect(rects, segs) {
+      rects.length = 0; segs.length = 0;
+      for (let i = 0; i < L.count; i++) {
+        const r = placed[i];
+        rects.push({ x: r.x - 2, y: r.y - 2, w: r.w + 4, h: r.h + 4, plate: true });
+        if (r.moved) segs.push([r.x + r.w / 2, r.y + r.h, r.ax, r.ay]);
+      }
+      for (let i = 0; i < pipN; i++) { const p = pips[i]; rects.push({ x: p.x - 2, y: p.y - 2, w: p.w + 4, h: p.h + 4, plate: false }); }
     },
 
     draw(g) {

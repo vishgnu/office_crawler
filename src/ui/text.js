@@ -27,7 +27,7 @@ export const T = {
   offhandBlocked: "A two-handed weapon blocks the off-hand", inventoryFull: "The drawer is full", noRoomForSwap: "No room to swap",
   notice: "Notice",
   // employee file
-  fileTitle: "Employee File", jobTitle: "Junior Associate", fileDesk: "Open-plan floor", probation: "PROBATION", experience: "Experience",
+  fileTitle: "Employee File", jobTitle: "Junior Associate", fileDesk: "Open-plan floor", probation: "PROBATION", experience: "Experience", xpTotal: "Total experience", xpOf: "of", xpToLevel: "to level", xpMax: "Max level",
   attributes: "Attributes", pointsToSpend: "Points to spend", derived: "Derived stats", unusable: "Gear you cannot use yet", unusableNone: "None. Everything in the drawer fits you.",
   raisesDamage: "raises damage", raisesDefense: "raises defense and aim", raisesHealth: "raises health", raisesMana: "raises mana", gearWord: "gear",
   previewHint: "Hover or focus a + to preview its effect.", previewNone: "No points left. Level up to earn more.", addPoint: "Add one point to", left: "left", unlocks: "Unlocks",
@@ -53,6 +53,9 @@ export const T = {
   msgBeltFull: "Belt is full", msgReqs: "Requirements not met", msgBlocked: "Two-handed weapon in the way", msgRespawned: "Back in the Lobby.", msgFloor: "Floor", msgLobby: "The Lobby",
   msgHeldWorld: "Place the item first, or press Esc to put it back.",
   stairsLocked: "The way down is locked. Something waits below.",
+  // map (R-075) and Emergency Exit (R-046)
+  mapTitle: "Floor map", openMap: "Map", closeMap: "Close map (M)", mapLegend: "You, stairs, people, exit door", mapUnexplored: "Nothing explored yet.",
+  msgPortalOpen: "Emergency Exit: a door opens. Step through to return here.", msgPortalUse: "You step through the Emergency Exit.", msgPortalBack: "The Emergency Exit leads back to your floor.", msgExitUse: "Emergency Exit used.", useItem: "Use", exitItemHint: "Right-click to use",
   statAttr: { grit: "Grit", agility: "Agility", stamina: "Stamina", focus: "Focus" },
   attrOrder: ["grit", "agility", "stamina", "focus"],
 };

@@ -138,3 +138,9 @@ export function xpRatio(p) {
   const prev = config.xpTable[p.level - 1] ?? 0, span = p.xpNext - prev;
   return span > 0 ? Math.min(1, Math.max(0, (p.xp - prev) / span)) : 1;
 }
+
+/** XP inside the current level for display: { into, span, pct, total, next, capped } (AC-R-077-2; the contract shows within-level numbers, the total goes in a tooltip). */
+export function xpProgress(p) {
+  const prev = config.xpTable[p.level - 1] ?? 0, span = Math.max(0, p.xpNext - prev), into = Math.max(0, p.xp - prev), ratio = xpRatio(p);
+  return { into: Math.min(into, span), span, pct: Math.floor(ratio * 100), total: p.xp, next: p.xpNext, capped: span <= 0 };
+}
