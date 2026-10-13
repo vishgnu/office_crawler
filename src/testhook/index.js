@@ -58,6 +58,7 @@ export function installTestHook(game, win = window) {
     cheat: {
       spawnMonster: (type, tile) => (tileArg(tile) ? game.spawnMonster(type, tileArg(tile)) : fail("invalid tile")),
     },
+    pick: (x, y) => (game.core && Number.isFinite(x) && Number.isFinite(y) ? game.pickAt(x, y) : fail("pick needs a running game and finite screen coordinates")),
     perf: () => game.perf(),
   };
   const docs = {
@@ -76,7 +77,8 @@ export function installTestHook(game, win = window) {
     input: "Apply a raw input command (what DOM handlers emit).",
     cmd: "Agent commands: moveTo(tile), attack(id).",
     cheat: "Debug cheats: spawnMonster(type, tile).",
-    perf: "Frame and simulation timing, atlas completeness.",
+    pick: "pick(x, y): what a click at this canvas point means ({ tile, monsterId }), through the camera that is on screen.",
+    perf: "Frame and simulation timing, atlas completeness, fx flags, nameplate rects.",
   };
   function describe() {
     return Object.keys(api).map((name) => ({ name, kind: typeof api[name] === "function" ? "fn" : "obj", doc: docs[name] }));

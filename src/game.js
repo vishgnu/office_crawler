@@ -1,23 +1,28 @@
 // The browser shell around the pure core: owns the state, the fixed-step loop, the camera, input
 // translation and rendering. Everything the test hook needs goes through this object.
 import { newGame, step, applyInput, snapshot, hashState, advance, config, spawnMonster, content } from "./core/index.js";
-import { makeCamera } from "./render/view.js";
-import { drawWorld, drawLight, actorPos } from "./render/world.js";
-import { drawHud, hudState } from "./render/hud.js";
+import { makeCamera, easeFollow } from "./ui/camera.js";
+import { hudLayout } from "./ui/layout.js";
+import { drawWorld, actorPos } from "./render/world.js";
+import { createHud, hudState } from "./render/hud.js";
 import { createFx } from "./render/fx.js";
+import { createLighting } from "./render/light.js";
+import { createLabels } from "./render/labels.js";
 import { pick } from "./input/pick.js";
 import { requiredKeys } from "./render/keys.js";
 
 const MAX_CATCHUP_TICKS = 8;
 
-export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed, atlasMs = 0 }) {
+export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed, atlasMs = 0, lowFx = false, hc = false }) {
   const g = canvas.getContext("2d");
-  const fx = createFx();
+  const fx = createFx(style), lighting = createLighting(style), labels = createLabels(style), hud = createHud(style);
+  fx.lowFx = lowFx;
   const rs = { facing: new Map() };
   const game = {
     core: null, titleSeed: seed >>> 0, backdrop: null, error: null,
     manual: testMode && !realtime, alpha: 1, acc: 0, prev: new Map(), hover: null,
-    cam: null, w: 0, h: 0, dpr: 1, frameMs: [], simMs: 0, simTicks: 0, listeners: [],
+    cam: null, w: 0, h: 0, dpr: 1, frameMs: [], renderMs: [], simMs: 0, simTicks: 0, listeners: [],
+    focus: null, lowFx, hc, atlas, atlasChanges: 0, onResize: null,
   };
   const emitChange = () => game.listeners.forEach((fn) => fn());
   game.onChange = (fn) => game.listeners.push(fn);
@@ -32,7 +37,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (game.core.paused) return "pause";
     return null;
   };
-  const resetRender = () => { game.prev.clear(); rs.facing.clear(); fx.reset(); game.acc = 0; game.hover = null; };
+  const resetRender = () => { game.prev.clear(); rs.facing.clear(); fx.reset(); game.acc = 0; game.hover = null; game.focus = null; };
   game.setBackdrop = () => { game.backdrop = newGame(game.titleSeed); resetRender(); };
   game.newGame = (s = game.titleSeed) => {
     game.titleSeed = Number(s) >>> 0;
@@ -44,10 +49,15 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   game.setSeed = (s) => { game.titleSeed = Number(s) >>> 0; if (!game.core) game.setBackdrop(); };
 
   // ---- simulation ----
-  const capture = () => {
-    game.prev.clear();
-    game.prev.set("player", actorPos(game.core.player));
-    for (const m of game.core.monsters) game.prev.set(m.id, actorPos(m));
+  const capture = () => { // previous-tick positions, written into reused objects
+    const set = (a) => { let o = game.prev.get(a.id); if (!o) game.prev.set(a.id, o = { x: 0, y: 0 }); actorPos(a, o); };
+    set(game.core.player);
+    for (const m of game.core.monsters) set(m);
+    if (game.prev.size > game.core.monsters.length + 24) { // forget monsters that are gone
+      const live = new Set(["player"]);
+      for (const m of game.core.monsters) live.add(m.id);
+      for (const id of game.prev.keys()) if (!live.has(id)) game.prev.delete(id);
+    }
   };
   const dispatchFrom = (from) => { const ev = game.core.events; for (let i = from; i < ev.length; i++) bus.emit(ev[i]); };
   game.tick = () => {
@@ -75,9 +85,12 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   };
 
   // ---- camera, picking ----
-  const place = (a) => {
-    const cur = actorPos(a), pv = game.prev.get(a.id) ?? cur;
-    return { x: pv.x + (cur.x - pv.x) * game.alpha, y: pv.y + (cur.y - pv.y) * game.alpha };
+  const cur = { x: 0, y: 0 };
+  const place = (a, out = { x: 0, y: 0 }) => {
+    actorPos(a, cur);
+    const pv = game.prev.get(a.id) ?? cur;
+    out.x = pv.x + (cur.x - pv.x) * game.alpha; out.y = pv.y + (cur.y - pv.y) * game.alpha;
+    return out;
   };
   const world = () => game.core ?? game.backdrop;
   game.camera = () => {
@@ -130,10 +143,16 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     return { ok: true, id: m.id };
   };
   game.perf = () => {
-    const missing = requiredKeys(content).filter((k) => !atlas.has(k));
-    const f = game.frameMs;
-    return { frameMs: f.slice(-120), simMsPerTick: game.simTicks ? game.simMs / game.simTicks : 0, samples: f.length, atlasMs, atlasKeys: atlas.keys().length, atlasMissing: missing };
+    const atlas = game.atlas, missing = requiredKeys(content).filter((k) => !atlas.has(k));
+    const f = game.frameMs, r = game.renderMs, avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+    const sorted = [...r].sort((a, b) => a - b);
+    return {
+      frameMs: f.slice(-120), simMsPerTick: game.simTicks ? game.simMs / game.simTicks : 0, samples: f.length, atlasMs, atlasKeys: atlas.keys().length, atlasMissing: missing,
+      fps: avg(f) ? 1000 / avg(f) : 0, renderMsAvg: avg(r), renderMsP95: sorted.length ? sorted[Math.floor(sorted.length * 0.95)] : 0,
+      fx: { lowFx: game.lowFx, hc: game.hc }, labels: game.labels(), atlasScale: atlas.scale, atlasRim: atlas.meta.rim, atlasChanges: game.atlasChanges, dpr: game.dpr,
+    };
   };
+  game.clearPerf = () => { game.frameMs.length = 0; game.renderMs.length = 0; };
 
   // ---- sizing, rendering, loop ----
   game.resize = () => {
@@ -141,34 +160,55 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     game.dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(game.w * game.dpr); canvas.height = Math.round(game.h * game.dpr);
     canvas.style.width = game.w + "px"; canvas.style.height = game.h + "px";
+    game.onResize?.(game.w, game.h, game.dpr); // main.js rebuilds the atlas when the zoom / devicePixelRatio bucket changes (S5)
   };
+  /** Swap in a freshly built atlas (after a resize or devicePixelRatio change). */
+  game.setAtlas = (a) => { game.atlas = a; game.atlasChanges++; };
+  game.setLowFx = (on) => { game.lowFx = !!on; fx.lowFx = game.lowFx; };
+  const focus = { x: 0, y: 0 }, target = { x: 0, y: 0 }, env = { lighting, style, lowFx: false, hc: false };
+  let lastRender = 0;
   game.render = (now) => {
-    const w = world();
+    const w = world(), atlas = game.atlas;
     g.setTransform(game.dpr, 0, 0, game.dpr, 0, 0);
     g.fillStyle = "#07080c"; g.fillRect(0, 0, game.w, game.h);
     if (!w || !atlas) return;
-    const p = place(w.player), shake = fx.shake(now, 1);
-    const c = makeCamera(game.w, game.h, p.x + 0.5, p.y + 0.5);
+    place(w.player, target);
+    target.x += 0.5; target.y += 0.5;
+    // Camera: eased follow in real time (frame-rate independent, bounded lag); exact snap in the manual test clock.
+    if (game.manual || !game.focus) { game.focus = game.focus ?? focus; game.focus.x = target.x; game.focus.y = target.y; }
+    else easeFollow(game.focus, target, Math.min(100, now - lastRender), undefined, undefined, game.focus);
+    lastRender = now;
+    const shake = fx.shake(now, 1);
+    const c = makeCamera(game.w, game.h, game.focus.x, game.focus.y);
     c.ox += shake.x; c.oy += shake.y;
     game.cam = c;
-    const out = drawWorld(g, c, atlas, w, game.prev, game.alpha, fx, now, rs);
-    fx.draw(g, c, atlas, now, out.heroDir);
-    drawLight(g, c, out.heroScreen);
-    if (fx.hurtUntil > now) {
-      const k = Math.min(1, (fx.hurtUntil - now) / 260);
-      const grad = g.createRadialGradient(game.w / 2, game.h / 2, game.h * 0.35, game.w / 2, game.h / 2, game.h * 0.85);
-      grad.addColorStop(0, "rgba(160,0,10,0)"); grad.addColorStop(1, `rgba(160,0,10,${0.5 * k})`);
-      g.fillStyle = grad; g.fillRect(0, 0, game.w, game.h);
+    env.lowFx = game.lowFx; env.hc = game.hc;
+    lighting.ensure(c, game.lowFx, game.hc);
+    const out = drawWorld(g, c, atlas, w, game.prev, game.alpha, fx, now, rs, env);
+    lighting.draw(g, c, out.heroScreen, now);
+    if (game.core) {
+      const L = layoutFor(game.w, game.h);
+      labels.place(out.actors, c, L.scale, game.core.player.target, game.hover, out.heroScreen, hudRects(L), game.hc, game.dpr);
+      labels.draw(g);
     }
-    if (game.core) drawHud(g, game.w, game.h, game.core, atlas, style, now, game.core.player.target ?? game.hover);
+    fx.draw(g, c, atlas, now, out.heroDir);
+    fx.drawHurt(g, game.w, game.h, now);
+    if (game.core) hud.draw(g, game.w, game.h, game.core, atlas, now, game.core.player.target ?? game.hover, game.dpr, game.hc);
   };
+  let lay = null, rectsFor = null, rectsL = null;
+  const layoutFor = (w, h) => (lay && lay.w === w && lay.h === h ? lay.L : (lay = { w, h, L: hudLayout(w, h) }).L);
+  const hudRects = (L) => (rectsFor === L ? rectsL : (rectsFor = L, rectsL = [L.health.rect, L.mana.rect, L.panel, L.beltPanel]));
+  game.labels = () => labels.placed.slice(0, labels.count).map((r) => ({ id: r.id, x: r.x, y: r.y, w: r.w, h: r.h, moved: r.moved }));
   let last = 0, running = false;
   const frame = (t) => {
     if (!running) return;
     requestAnimationFrame(frame);
     const dt = Math.min(250, t - last || 16); last = t;
     try {
-      if (game.core && !game.manual && !game.menu()) {
+      if (game.core && !game.manual && !game.menu() && t < fx.hitStopUntil) {
+        // hit-stop: a few frames of frozen simulation on impact (render keeps running; the time is not banked)
+        game.alpha = game.acc / 1000;
+      } else if (game.core && !game.manual && !game.menu()) {
         const r = advance(game.acc, dt, config.tickHz);
         let ticks = r.ticks; game.acc = r.acc;
         if (ticks > MAX_CATCHUP_TICKS) { ticks = MAX_CATCHUP_TICKS; game.acc = 0; }
@@ -176,7 +216,9 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
         game.alpha = game.acc / 1000;
         if (ticks) emitChange();
       } else { game.acc = 0; game.alpha = 1; }
+      const r0 = performance.now();
       game.render(t);
+      game.renderMs.push(performance.now() - r0); if (game.renderMs.length > 600) game.renderMs.shift();
     } catch (err) {
       game.error = String(err?.message ?? err); running = false; emitChange();
       console.error(err);

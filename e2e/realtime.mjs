@@ -30,5 +30,33 @@ await g.page.screenshot({ path: `${SHOTS}/realtime.png` });
 check("no page errors during real-time play", g.errors.length === 0, g.errors);
 check("AC-NFR-O02-1 only file:/data: requests", g.requests.every((u) => /^(file|data|blob):/.test(u)), g.requests);
 await g.context.close();
+{ // a fresh quiet game: the hero walks on its own for a second
+  const g2 = await open(browser, { query: "test=1&seed=1&realtime=1" });
+  await g2.page.click('[data-testid="new-game"]');
+// camera easing keeps the click mapping exact: the camera the hook reports is the one on screen, and picking in the same
+// task goes through it, however far the eased camera lags behind the moving hero (the hero is walking here)
+{ const s0 = await g2.state(), far = freeTilesNear(s0, s0.player.tile, 10, 7)[0]; await g2.app("clickTile", far.x, far.y); }
+const exact = await g2.page.evaluate(async () => {
+  const app = window.__app;
+  let ok = 0, n = 0, lagged = 0, maxLag = 0;
+  for (let f = 0; f < 40; f++) {
+    await new Promise((r) => requestAnimationFrame(r)); // sample right after a frame: the camera on screen is the one the hook reports
+    const st = app.getState(), c = st.ui.camera, p = st.player.pos;
+    const lag = Math.hypot(c.ox + (p.x - p.y) * 32 * c.z - c.w / 2, c.oy + (p.x + p.y + 1) * 16 * c.z - (c.h / 2 + 12 * c.z));
+    if (lag > 2) lagged++;
+    maxLag = Math.max(maxLag, Math.round(lag));
+    for (const [dx, dy] of [[2, 0], [-2, 1], [1, -2]]) {
+      const t = { x: st.player.tile.x + dx, y: st.player.tile.y + dy };
+      if (st.monsters.some((m) => m.ai !== "dead" && Math.abs(m.pos.x - t.x) < 2 && Math.abs(m.pos.y - t.y) < 2)) continue;
+      const x = c.ox + (t.x - t.y) * 32 * c.z, y = c.oy + (t.x + t.y + 1) * 16 * c.z, pk = app.pick(x, y);
+      n++; if (pk.tile.x === t.x && pk.tile.y === t.y && pk.monsterId === null) ok++;
+    }
+  }
+  return { ok, n, lagged, maxLag };
+});
+check("camera easing: pick() through the reported camera lands on the intended tile (moving hero, eased camera)", exact.n >= 30 && exact.ok === exact.n && exact.lagged >= 3, exact); // lagged: the camera really trails the walking hero in at least 3 samples
+  check("no page errors while the camera eases", g2.errors.length === 0, g2.errors);
+  await g2.context.close();
+}
 await browser.close();
 finish("realtime");

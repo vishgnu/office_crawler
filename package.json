@@ -7,7 +7,11 @@
     "build": "node build.mjs",
     "test": "node --test",
     "e2e": "node build.mjs && node e2e/run-all.mjs",
-    "bench": "node build.mjs && node bench/bench.mjs"
+    "bench": "node build.mjs && node bench/bench.mjs",
+    "bot": "node bot/run-headless.mjs",
+    "bot:browser": "node build.mjs && node bot/run-browser.mjs",
+    "bot:report": "node build.mjs && node bot/write-report.mjs",
+    "shots": "node build.mjs && node e2e/shots.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.10",

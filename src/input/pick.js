@@ -1,5 +1,5 @@
 // Screen point -> what the player means (pure). Monsters win over the floor tile (sprite box test).
-import { screenToWorld, worldToScreen } from "../render/view.js";
+import { screenToWorld, worldToScreen } from "../ui/camera.js";
 
 /**
  * actors: [{ id, tile:{x,y}, pos:{x,y} (float), dead }]. Returns { tile:{x,y}, monsterId|null }.

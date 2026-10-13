@@ -27,3 +27,17 @@ test("core imports only core files and the shared rng", () => {
     }
   }
 });
+
+test("N5: input and ui code never import from render/ (shared camera maths lives in ui/camera.js)", () => {
+  for (const f of [...files("src/input"), ...files("src/ui")].filter((x) => x.endsWith(".js"))) {
+    for (const m of strip(readFileSync(f, "utf8")).matchAll(/from\s+"([^"]+)"/g)) {
+      const target = resolve(dirname(f), m[1]);
+      assert.ok(!target.startsWith(resolve("src/render")), `${f} imports from render/: ${m[1]}`);
+    }
+  }
+});
+
+test("the bot policy is pure: no DOM, clocks, timers or Math.random", () => {
+  const banned = /\b(window|document|navigator|Date|performance|setTimeout|setInterval|requestAnimationFrame)\b|Math\.random/;
+  for (const f of ["bot/policy.js", "bot/report.js"]) assert.ok(!banned.test(strip(readFileSync(f, "utf8"))), `${f} uses a forbidden global`);
+});

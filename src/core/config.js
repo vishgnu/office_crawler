@@ -18,6 +18,7 @@ export const config = {
   pathDiagCost: 1,     // A* diagonal cost; 1 makes path length equal the BFS step count (AC-R-005-8)
   clickSnapRadius: 3,  // QF-01-2: click on a wall walks to the nearest reachable tile within this radius
   meleeRange: 1,
+  holdRadius: 2,       // a hero whose target is already chasing it waits once the target is this close (no mutual-pursuit orbits)
 
   // Combat
   attackTicks: 20,

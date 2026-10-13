@@ -61,5 +61,56 @@ for (const [width, height] of [[1280, 720], [1920, 1080], [3840, 2160]]) {
   check(`[${tag}] no page errors`, g.errors.length === 0, g.errors);
   await g.context.close();
 }
+
+// ---- style port checks (S1-6): label discipline, rim width, atlas rebuild, lighting switches, high contrast ----
+{
+  const g = await open(browser, { query: "test=1&seed=3&zoom=1", viewport: { width: 1920, height: 1080 } });
+  await g.app("newGame", { seed: 3 });
+  let s = await g.app("step", 30);
+  let n = 0;
+  for (const t of freeTilesNear(s, s.player.tile, 12, 2)) { if (n >= 50) break; if ((await g.app("cheat.spawnMonster", n % 2 ? "printer-imp" : "zombie-intern", { x: t.x, y: t.y })).ok) n++; }
+  await g.app("step", 6);
+  await g.page.waitForTimeout(300);
+  const perf = await g.app("perf");
+  const L = perf.labels;
+  check("label discipline: 50 monsters on screen give at most 5 nameplates", n === 50 && L.length >= 1 && L.length <= 5, { n, plates: L.length });
+  const inSafe = (r) => r.x >= 8 && r.y >= 8 && r.x + r.w <= 1920 - 8 && r.y + r.h <= 1080 - 8;
+  const ovl = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  check("plates stay inside the 8 px safe area and never overlap each other", L.every(inSafe) && L.every((a, i) => L.every((b, j) => i >= j || !ovl(a, b))), L);
+  check("rim ring is 2 screen px at the game's zoom (atlas rim x camera scale)", Math.abs(perf.atlasRim * 1.5 * 1 - 2) <= 0.6, { rim: perf.atlasRim });
+  check("lowFx and hc are off by default", perf.fx.lowFx === false && perf.fx.hc === false, perf.fx);
+  check(`[1920x1080] no page errors`, g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+for (const [flag, expect] of [["lowfx=1", { lowFx: true, hc: false }], ["hc=1", { lowFx: false, hc: true }]]) {
+  const g = await open(browser, { query: `test=1&seed=1&${flag}` });
+  await g.app("newGame", { seed: 1 });
+  await g.app("step", 30);
+  await g.page.waitForTimeout(200);
+  const perf = await g.app("perf");
+  check(`?${flag} selects ${JSON.stringify(expect)} and renders without errors`, perf.fx.lowFx === expect.lowFx && perf.fx.hc === expect.hc && perf.atlasMissing.length === 0 && g.errors.length === 0, { fx: perf.fx, errors: g.errors });
+  if (flag === "hc=1") check("high contrast bakes a thicker rim (3.5 screen px)", perf.atlasRim >= 1.5, perf.atlasRim);
+  await g.context.close();
+}
+{ // S5: the atlas follows the zoom / devicePixelRatio bucket
+  const g = await open(browser, { viewport: { width: 1280, height: 720 } });
+  await g.app("newGame", { seed: 1 });
+  const before = await g.app("perf");
+  await g.page.setViewportSize({ width: 1920, height: 1080 });
+  await g.page.waitForFunction(() => window.__app.perf().atlasChanges >= 1, null, { timeout: 20000 });
+  const after = await g.app("perf");
+  check("S5 atlas is rebuilt after a resize that changes the zoom bucket (sharper atlas, nothing missing)", after.atlasScale > before.atlasScale && after.atlasMissing.length === 0, { before: before.atlasScale, after: after.atlasScale });
+  await g.app("step", 2);
+  const st = await g.state(), t = freeTilesNear(st, st.player.tile, 4, 2)[0], p = tileScreen(st.ui.camera, t.x, t.y);
+  await g.page.mouse.click(p.x, p.y);
+  const s2 = await g.state();
+  check("click mapping is still exact after the atlas swap", (s2.player.path.at(-1) ?? s2.player.next)?.x === t.x && (s2.player.path.at(-1) ?? s2.player.next)?.y === t.y);
+  check("no page errors after the rebuild", g.errors.length === 0, g.errors);
+  await g.context.close();
+  const hi = await open(browser, { viewport: { width: 1280, height: 720 }, deviceScaleFactor: 2 });
+  const hp = await hi.app("perf");
+  check("S5 a devicePixelRatio 2 screen gets a sharper atlas than dpr 1 at the same size", hp.atlasScale > before.atlasScale && hp.dpr === 2, { dpr1: before.atlasScale, dpr2: hp.atlasScale });
+  await hi.context.close();
+}
 await browser.close();
 finish("render");

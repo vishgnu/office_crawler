@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { content } from "../src/core/index.js";
-import { requiredKeys, keys, dirIndex, ANIMS, DIRS, FLOOR_KINDS } from "../src/render/keys.js";
+import { requiredKeys, keys, dirIndex, ANIMS, DIRS, FLOOR_KINDS, WALL_VARIANTS } from "../src/render/keys.js";
 import { propsByRoomKind } from "../src/core/content/props.js";
 
 test("AC-R-101-3 sprite keys cover every theme, prop and monster id and are unique", () => {
@@ -9,7 +9,7 @@ test("AC-R-101-3 sprite keys cover every theme, prop and monster id and are uniq
   assert.equal(new Set(all).size, all.length);
   for (const id of Object.keys(content.props)) assert.ok(all.includes(keys.prop(id)), id);
   for (const id of Object.keys(content.monsters)) assert.ok(all.includes(keys.mon(id, "idle", 0, 0)) && all.includes(keys.mon(id, "death", DIRS - 1, ANIMS.death - 1)), id);
-  assert.equal(all.filter((k) => k.startsWith("wall:open-plan:")).length, 16);
+  assert.equal(all.filter((k) => k.startsWith("wall:open-plan:")).length, 16 * WALL_VARIANTS);
 });
 
 test("floor kinds in the sprite keys match the generator's room kinds plus corridor", () => {

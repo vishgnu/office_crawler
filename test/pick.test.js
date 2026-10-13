@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { pick } from "../src/input/pick.js";
-import { makeCamera, worldToScreen, screenToWorld } from "../src/render/view.js";
+import { makeCamera, worldToScreen, screenToWorld } from "../src/ui/camera.js";
 
 const cam = makeCamera(1280, 720, 10.5, 10.5);
 

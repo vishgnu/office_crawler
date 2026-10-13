@@ -72,3 +72,16 @@ Verification: `npm test` 99/99 three times in a row, `npm run e2e` all 7 scripts
 | N4 | Won't fix (documented) | `?seed=` stays honoured in every mode, so players can share runs; comment added in `src/main.js`. |
 | N5 | Deferred | To the render port: `src/input/pick.js` imports `render/view.js`. Moving the camera maths to `src/ui/camera.js` requires editing `src/render/{fx,world}.js` imports, which was out of scope. Suggested: create `ui/camera.js`, make `render/view.js` re-export or drop it, point `pick.js`, `game.js` and `test/pick.test.js` at it. |
 | N6 | Won't fix (documented by design) | The death overlay deliberately swallows clicks during its 0.5 s fade-in delay (final frame stays visible; no accidental Restart). Comment added in `src/style.css`. |
+
+## Resolution 2 (implementer, style port and S1-6)
+
+The deferred render items are closed with the art-style port of `src/render/**` (2026-10-13).
+
+| Finding | Status | How |
+|---|---|---|
+| S4 | Fixed | The per-frame path no longer allocates: pooled draw items and actor records (`world.js`), allocation-free projection (`project()` in `ui/camera.js`), figure sprites looked up through a precomputed table instead of template-string keys, `blocked` tiles precomputed per floor (Uint8Array) instead of `props.some`, in-place expiry of floaters and particles (`fx.js`), reused camera-shake object, light selection without closures, HUD layout memoised per size, plates and HUD text fonts cached. The hurt-flash gradient in `game.js` is now one baked vignette canvas per size drawn at an alpha (`fx.drawHurt`). |
+| S5 | Fixed | The atlas is rebuilt when the zoom x HUD scale x devicePixelRatio bucket changes (`main.js`, debounced 250 ms, the old atlas stays in use until the new one is ready, HUD layers re-bake on the new atlas id). e2e: resize 1280x720 to 1920x1080 rebuilds with a sharper atlas and the click mapping stays exact; a dpr 2 screen gets a sharper atlas than dpr 1. |
+| N3 | Fixed | `pruneFacing()` (world.js) drops facing memory of monsters that no longer exist once the map exceeds the monster count by 16; `game.prev` is pruned the same way. Unit test in `test/render-pure.test.js`. |
+| N5 | Fixed | Camera maths moved to `src/ui/camera.js`; `render/view.js` is gone; `input/pick.js` and `test/pick.test.js` import from `ui/`. `test/layering.test.js` now fails if anything under `src/input` or `src/ui` imports from `render/`. |
+
+New findings from the S1-6 bot run are in `S1-bot-report.md` (mutual-pursuit orbit, fixed in `systems/intent.js` with `config.holdRadius`; residual orbit at 3+ tiles is a follow-up).

@@ -16,6 +16,11 @@ export const strings = {
   health: "Health",
   mana: "Mana",
   beltLabel: "Belt",
+  level: "Level",
+  toLevel: "to level",
+  keyF: "F",
+  skillStrike: "Strike",
+  skillEmpty: "Empty",
   noscript: "This game needs JavaScript.",
   errorTitle: "Something went wrong.",
 };

@@ -1,5 +1,5 @@
 // Style-neutral drawing helpers (paths, colour maths, an isometric box). No game knowledge.
-export const INK = "#0a0c12";
+export const INK = "#0d0a1c";
 
 export function poly(g, pts) {
   g.beginPath();

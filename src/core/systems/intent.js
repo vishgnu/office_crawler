@@ -117,6 +117,11 @@ export function playerIntent(state) {
   if (p.repathT > 0) p.repathT--;
   if (!p.next && isAdjacent(ctx.grid, p.tile, m.tile)) { p.path = []; return; } // in reach: stand and fight
   if (p.next && isAdjacent(ctx.grid, p.next, m.tile)) { p.path = []; return; }   // will be in reach after this step
+  // S1 hardening (bot run): a monster that is already coming for us and ends up within holdRadius tiles of where we stand is
+  // waited for (the step in progress is finished, the rest of the path dropped). Two actors that both path to where the
+  // other WAS orbit each other forever, round a ring of corridors or a prop cluster (the faster Printer Imp did this).
+  const at = p.next ?? p.tile;
+  if (m.ai === "chase" && (m.next || m.path.length > 0) && Math.max(Math.abs(m.tile.x - at.x), Math.abs(m.tile.y - at.y)) <= config.holdRadius) { p.path = []; return; }
   const stale = !p.goal || p.goal.x !== m.tile.x || p.goal.y !== m.tile.y;
   if ((p.path.length === 0 || stale) && p.repathT === 0) {
     const path = planPath(ctx, p.next ?? p.tile, m.tile, { adjacent: true });

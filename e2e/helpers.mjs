@@ -14,8 +14,8 @@ export async function launch(name = "chromium") {
 }
 
 /** Open the built game. Records page errors, console errors and every request URL. */
-export async function open(browser, { query = "test=1&seed=1", viewport = { width: 1280, height: 720 }, wait = true } = {}) {
-  const context = await browser.newContext({ viewport });
+export async function open(browser, { query = "test=1&seed=1", viewport = { width: 1280, height: 720 }, wait = true, deviceScaleFactor = 1 } = {}) {
+  const context = await browser.newContext({ viewport, deviceScaleFactor });
   const page = await context.newPage();
   const errors = [], requests = [];
   page.on("pageerror", (e) => errors.push(e.message));

@@ -7,7 +7,7 @@ const { app, state } = g;
 
 const members = await app("describe");
 const names = members.map((m) => m.name);
-const expected = ["describe", "getState", "newGame", "setSeed", "step", "click", "clickTile", "clickScreen", "mouseMove", "mouseUp", "key", "pause", "input", "cmd", "cheat", "perf"];
+const expected = ["describe", "getState", "newGame", "setSeed", "step", "click", "clickTile", "clickScreen", "mouseMove", "mouseUp", "key", "pause", "input", "cmd", "cheat", "pick", "perf"]; // pick: S1-6 addition (read-only: what a click at a screen point means)
 check("AC-R-121-1 describe() lists exactly the documented members", JSON.stringify([...names].sort()) === JSON.stringify([...expected].sort()), names);
 check("AC-R-121-1 every listed function exists", await g.page.evaluate((ms) => ms.every((m) => (m.kind === "fn" ? typeof window.__app[m.name] === "function" : typeof window.__app[m.name] === "object")), members));
 
