@@ -50,7 +50,7 @@ Date: 2026-10-13. All items are `draft`. No NFR comes from the user's words; pro
 
 ### NFR-A01 Remappable keys
 - All keyboard bindings can be changed in options and persist in the save/options. Mouse buttons stay as defaults in MVP.
-- Provenance: ASSUMED (user listed it as a likely topic via the brief to the facilitator; not the user's words) | Priority: must | Status: draft
+- Provenance: ASSUMED (not the user's words) | Priority: must | Status: draft
 
 ### NFR-A02 Pause
 - The game can be paused at any time outside menus with Esc; simulation and audio stop; panels may be opened while paused. No time-limited input anywhere.

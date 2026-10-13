@@ -1,6 +1,13 @@
 # STATE
 
-**Phase: Intake → Circles.** Readiness: not scored yet.
+**Phase: Circles. Circle 1 open** (`circles/circle-01.md`, 7 questions awaiting answers).
+Readiness: 9/20 (threshold 16/20, no item at 0; item 9 "acceptance criteria" is at 0). Not ready.
+
+Artifacts: `00-brief.md`, `20-requirements.md` (79 draft requirements, 68 MVP / 11 later; only R-001, R-002 (intent), R-003 and the browser part of R-110 trace to the user's words), `40-nfr.md`, `circles/circle-01.md`.
+
+## Open questions
+- **Q1 ESCALATE - real customer (not delegated): how close names and visuals may go to the original.** Safe default: strict originality.
+- Q2-Q7 (look and tone, MVP scope, save, audio, monetisation/hosting, session length) may be answered by `customer-proxy`; defaults proposed.
 
 ## Delegation
 Gate authority for this project is delegated to `customer-proxy` while the user is away (see `00-brief.md`,
@@ -8,3 +15,5 @@ Gate authority for this project is delegated to `customer-proxy` while the user 
 
 ## Waiting for the real customer
 - Review `proxy-log.md` whenever you are back.
+- Answer or confirm Q1 (legal/IP) in `circles/circle-01.md`.
+- Q1 (legal/IP, escalated 2026-10-13): how close names and visuals may go to the original. Safe default A (strict originality) stays in force provisionally.

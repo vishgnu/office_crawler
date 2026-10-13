@@ -472,7 +472,7 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 
 ### R-112 Render with HTML5 canvas (2D) in the browser; no plug-ins
 - Priority: must | Scope: MVP
-- Source: ASSUMED; links to art direction Q1/Q2
+- Source: ASSUMED; links to art direction, circle-01 Q2
 - Status: draft | Provenance: ASSUMED
 - Notes: framework choice belongs to the architect (ADR).
 
