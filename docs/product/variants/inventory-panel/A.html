@@ -265,7 +265,7 @@ function stat(id){const it=IT[id];if(it._s)return it._s;const s={};if(it.dmg){s.
 /* ---------- state ---------- */
 const ST={gold:1274,lv:7,xp:6420,xp0:5000,xp1:8150,attr:{grit:11,agility:9,stamina:10,focus:8},pts:5,skp:1,hp:0,mp:0,
  eq:{head:null,amulet:'lanyard',body:'blazer',weapon:'kbd',offhand:null,hands:null,feet:'loafers',belt:null,ring1:'signet',ring2:null},
- grid:[['opener',0,0],['chairleg',1,0],['vest',2,0],['headset',4,0],['clipboard',6,0],['keycard',8,0],['overtime',9,0],['coffee',8,1],['energy',9,1],['cinch',8,2],['gloves',4,2],['staples',6,2]].map(a=>({id:a[0],x:a[1],y:a[2]})),
+ grid:[['opener',0,0],['chairleg',1,0],['vest',2,0],['headset',4,0],['clipboard',6,0],['keycard',8,0],['overtime',9,0],['coffee',8,1],['energy',9,1],['cinch',8,2],['gloves',4,2],['staples',8,3]].map(a=>({id:a[0],x:a[1],y:a[2]})),
  belt:['coffee2','energy2',null,null],held:null,notice:'',cur:{x:0,y:0},apv:''};
 function calc(att){att=att||ST.attr;const g={};for(const k in ST.eq)if(ST.eq[k]){const s=stat(ST.eq[k]);for(const q in s)g[q]=(g[q]||0)+s[q];}
  const A={};for(const k in att)A[k]=att[k]+(g[k]||0);const lv=ST.lv;
@@ -292,7 +292,7 @@ function pickup(t){const f=itemOf(t);if(!f)return false;
 function dropCheck(t){const h=ST.held,it=IT[h.id];
  if(t.t==='grid'){const x=t.x-h.gx,y=t.y-h.gy;if(!inB(it,x,y))return{ok:0,msg:'It does not fit there.',x,y};const ov=overlaps(h.id,x,y);if(ov.length>1)return{ok:0,msg:'That would overlap two items.',x,y};return{ok:1,ov:ov[0]||null,x,y,msg:ov.length?'Swap with '+IT[ov[0].id].n+'.':'Place here.'};}
  if(t.t==='belt'){return it.slot==='potion'?{ok:1,msg:'Put on belt.'}:{ok:0,msg:'Only potions fit on the belt.'};}
- const k=t.k;if(!slotOK(it,k))return{ok:0,msg:it.n+' does not go in the '+SL[k].toLowerCase()+' slot.'};
+ const k=t.k;if(!slotOK(it,k))return{ok:0,msg:it.n+' does not go in the '+SL[k]+' slot.'};
  const u=unmet(it);if(u.length)return{ok:0,msg:'Requirement not met: '+u.map(r=>`${r.k} ${r.need} (you have ${r.have})`).join(', ')+'.'};
  if(k==='offhand'&&ST.eq.weapon&&IT[ST.eq.weapon].two)return{ok:0,msg:'A two-handed weapon blocks the off-hand slot.'};
  if(it.two&&ST.eq.offhand&&!freeSpot(ST.eq.offhand))return{ok:0,msg:'No room in the drawer for your off-hand item.'};
