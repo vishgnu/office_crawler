@@ -1,0 +1,12 @@
+{
+  "name": "office-crawler",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test",
+    "e2e": "node e2e/smoke.mjs"
+  },
+  "devDependencies": { "esbuild": "0.25.10" }
+}
