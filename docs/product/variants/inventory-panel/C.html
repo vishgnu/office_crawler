@@ -414,7 +414,7 @@ function renderAll(){const fk=document.activeElement&&document.activeElement.dat
 /* ---------- held item: ghost + drop preview ---------- */
 let LASTP={x:0,y:0,kb:false};
 function cellPx(){const c=$('.cell');return c?c.getBoundingClientRect().width:44;}
-function refreshHeld(){const g=$('#ghost'),h=ST.held;$$('.slot.ok,.slot.bad,.bslot.ok,.bslot.bad').forEach(n=>n.classList.remove('ok','bad'));$$('.pv').forEach(n=>n.remove());$$('.item.kf').forEach(n=>n.classList.remove('kf'));
+function refreshHeld(hint){const g=$('#ghost'),h=ST.held;$$('.slot.ok,.slot.bad,.bslot.ok,.bslot.bad').forEach(n=>n.classList.remove('ok','bad'));$$('.pv').forEach(n=>n.remove());$$('.item.kf').forEach(n=>n.classList.remove('kf'));
  if(!h){g.hidden=true;return;}
  const it=IT[h.id],cp=cellPx();g.hidden=false;g.innerHTML=itemEl(h.id).replace('class="item','style="--x:0;--y:0" class="item');g.style.width=it.w*cp+'px';g.style.height=it.h*cp+'px';
  let el=LASTP.kb?document.activeElement:document.elementFromPoint(LASTP.x,LASTP.y);const t=targetAt(el);
@@ -423,7 +423,7 @@ function refreshHeld(){const g=$('#ghost'),h=ST.held;$$('.slot.ok,.slot.bad,.bsl
  if(!t)return;const c=dropCheck(t);
  if(t.t==='grid'){const pv=document.createElement('div');pv.className='pv'+(c.ok?'':' bad');pv.style.cssText=`--x:${c.x};--y:${c.y};--w:${it.w};--h:${it.h}`;$('.items',$('#inv')).appendChild(pv);}
  else t.el.classList.add(c.ok?'ok':'bad');
- note((c.ok?'':'Cannot place: ')+c.msg,false);}
+ if(hint)note((c.ok?'':'Cannot place: ')+c.msg,false);}
 
 /* ---------- input ---------- */
 function setupInput(){
@@ -431,7 +431,7 @@ function setupInput(){
   LASTP={x:e.clientX,y:e.clientY,kb:false};const t=targetAt(e.target);
   if(ST.held){if(t&&ST.held.mode==='click'){e.preventDefault();doDrop(t);}return;}
   if(!t||!itemOf(t))return;e.preventDefault();pickup(t);ST.held.mode='drag';ST.held.sx=e.clientX;ST.held.sy=e.clientY;ST.held.moved=false;ST.held.touch=e.pointerType==='touch';renderAll();});
- document.addEventListener('pointermove',e=>{LASTP={x:e.clientX,y:e.clientY,kb:false};const h=ST.held;if(h){if(h.mode==='drag'&&Math.hypot(e.clientX-h.sx,e.clientY-h.sy)>6)h.moved=true;refreshHeld();}else if(e.pointerType!=='touch')tipFor(e.target);});
+ document.addEventListener('pointermove',e=>{LASTP={x:e.clientX,y:e.clientY,kb:false};const h=ST.held;if(h){if(h.mode==='drag'&&Math.hypot(e.clientX-h.sx,e.clientY-h.sy)>6)h.moved=true;refreshHeld(1);}else if(e.pointerType!=='touch')tipFor(e.target);});
  document.addEventListener('pointerup',e=>{const h=ST.held;if(!h||h.mode!=='drag')return;LASTP={x:e.clientX,y:e.clientY,kb:false};
   if(!h.moved){h.mode='click';refreshHeld();return;}
   const t=targetAt(document.elementFromPoint(e.clientX,e.clientY));if(!(t&&doDrop(t)))cancelHold(true);});
@@ -441,7 +441,7 @@ function setupInput(){
  document.addEventListener('pointerover',e=>{const p=e.target.closest&&e.target.closest('.plus');if(p&&!p.disabled){ST.apv=previewAlloc(p.dataset.alloc);const n=$('.apv');if(n)n.textContent=ST.apv;}});
  document.addEventListener('focusin',e=>{const t=e.target,p=t.closest&&t.closest('.plus');if(p&&!p.disabled){ST.apv=previewAlloc(p.dataset.alloc);const n=$('.apv');if(n)n.textContent=ST.apv;}
   if(t.classList&&t.classList.contains('cell')){ST.cur={x:+t.dataset.x,y:+t.dataset.y};$$('.cell').forEach(c=>c.tabIndex=c===t?0:-1);const g=gridAt(ST.cur.x,ST.cur.y);if(g&&!ST.held){const n=$(`.item[data-item="${g.id}"]`,$('#inv'));if(n)n.classList.add('kf');}}
-  if(ST.held){LASTP.kb=true;refreshHeld();}else if(t.matches&&t.matches('.cell,.slot,.bslot'))tipFor(t);else hideTip();});
+  if(ST.held){LASTP.kb=true;refreshHeld(1);}else if(t.matches&&t.matches('.cell,.slot,.bslot'))tipFor(t);else hideTip();});
  document.addEventListener('focusout',e=>{if(e.target.classList&&e.target.classList.contains('cell'))$$('.item.kf').forEach(n=>n.classList.remove('kf'));if(!ST.held)hideTip();});
  document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key,t=e.target;
   if(t.matches&&t.matches('.cell')){const x=+t.dataset.x,y=+t.dataset.y,d={ArrowRight:[1,0],ArrowLeft:[-1,0],ArrowDown:[0,1],ArrowUp:[0,-1]}[k];
