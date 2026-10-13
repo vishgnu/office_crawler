@@ -12,18 +12,20 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 
 ## Summary
 
+79 requirements: 68 MVP, 11 later. The count is above the 35-60 target because each HUD panel, slot type and testability hook is listed separately; the Spec phase may merge them.
+
 | Area | MVP | Later |
 |---|---|---|
-| A Core loop and controls | 5 | 0 |
-| B Character | 6 | 2 |
+| A Core loop and controls | 6 | 1 |
+| B Character | 7 | 2 |
 | C Combat | 6 | 1 |
 | D Monsters and AI | 5 | 1 |
 | E World | 7 | 2 |
-| F Items and loot | 10 | 3 |
-| G UI/HUD | 6 | 1 |
-| H Audio | 2 | 1 |
+| F Items and loot | 10 | 2 |
+| G UI/HUD | 8 | 0 |
+| H Audio | 3 | 1 |
 | I Save/load | 3 | 1 |
-| J Office theme and tone | 4 | 0 |
+| J Office theme and tone | 5 | 0 |
 | K Tech | 4 | 0 |
 | L Testability | 4 | 0 |
 
@@ -90,7 +92,7 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 - Priority: must | Scope: MVP
 - Source: genre
 - Status: draft | Provenance: INFERRED
-- Notes: max health, max mana, damage range, defence (armour), chance to be hit, resistances (see R-031).
+- Notes: max health, max mana, damage range, defence (armour), chance to be hit, resistances (see R-026).
 
 ### R-013 Experience and levelling
 - Priority: must | Scope: MVP
@@ -250,12 +252,14 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 ### R-047 Floor-specific mini-bosses and set pieces
 - Priority: could | Scope: LATER
 - Source: ASSUMED
+- Status: draft | Provenance: ASSUMED
 
 ### R-048 Additional difficulty levels (replay at higher difficulty)
 - Priority: could | Scope: LATER
 - Source: genre
 
 ## F. Items and loot
+- Status: draft | Provenance: INFERRED
 
 ### R-050 Item drops from monsters and containers
 - Priority: must | Scope: MVP
@@ -320,6 +324,7 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 ### R-060 Gambling, crafting, socketed gems
 - Priority: could | Scope: LATER
 - Source: genre
+- Status: draft | Provenance: INFERRED
 
 ### R-061 Item comparison tooltip
 - Priority: should | Scope: MVP
@@ -367,10 +372,11 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 - Status: draft | Provenance: INFERRED
 
 ### R-077 Monster health bar on target, experience bar
-- Priority: should | Scope: LATER
+- Priority: should | Scope: MVP
 - Source: genre
 
 ## H. Audio
+- Status: draft | Provenance: INFERRED
 
 ### R-080 Sound effects for core actions
 - Priority: should | Scope: MVP
@@ -388,13 +394,14 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 - Priority: must | Scope: MVP
 - Source: ASSUMED standard; NFR-A
 - Status: draft | Provenance: ASSUMED
-- Notes: hmm counted under H for MVP.
+- Notes: sound and music volume sliders plus mute, persisted in options.
 
 ### R-083 Positional/stereo audio, voice lines
 - Priority: could | Scope: LATER
 - Source: ASSUMED
 
 ## I. Save/load
+- Status: draft | Provenance: ASSUMED
 
 ### R-090 Save character and progress in the browser
 - Priority: must | Scope: MVP
@@ -419,6 +426,7 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 - Source: genre
 
 ## J. Office theme and tone
+- Status: draft | Provenance: INFERRED
 
 ### R-100 Town is the office lobby/break room
 - Priority: must | Scope: MVP
@@ -458,7 +466,7 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 
 ### R-111 Static, single self-contained build (one HTML file or one folder, no server needed)
 - Priority: should | Scope: MVP
-- Source: ASSUMED; helps hosting and agent testing; Q?
+- Source: ASSUMED; helps hosting and agent testing; not yet a question, falls out of ADR on stack
 - Status: draft | Provenance: ASSUMED
 - Notes: "if feasible"; works when opened as a file or from any static host.
 
