@@ -1,0 +1,30 @@
+# Terms that must not appear in game code, game text or generated assets (safe default A, circle 1 Q1).
+# One case-insensitive term per line. Enforced by test/ip-denylist.test.js. Q1 itself stays escalated.
+diablo
+blizzard
+tristram
+deckard
+cain the elder
+horadric
+sanctuary
+lord of terror
+prime evil
+the butcher
+leoric
+skeleton king
+griswold
+pepin
+ogden
+adria
+wirt
+gharbad
+lazarus
+mephisto
+baal
+lachdanan
+zhar
+arkaine
+valor
+khanduras
+westmarch
+nephalem
