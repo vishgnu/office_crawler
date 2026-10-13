@@ -1,10 +1,10 @@
-// Floor themes. S1 has the open-plan office only (lobby and basement arrive in S2).
+// Floor themes (R-043, R-101): the Lobby (town, depth 0), open-plan offices (1-4) and the basement / server zone (5-8).
+import { config } from "../config.js";
+
 export const themes = {
-  "open-plan": {
-    id: "open-plan",
-    roomKinds: ["cubicle", "conference", "copy", "storage"],
-  },
+  lobby: { id: "lobby", nameKey: "lobbyName", roomKinds: ["reception", "breakroom"] },
+  "open-plan": { id: "open-plan", nameKey: "floorName", roomKinds: ["cubicle", "conference", "copy", "storage"] },
+  basement: { id: "basement", nameKey: "basementName", roomKinds: ["server", "archive", "boiler", "storage"] },
 };
 
-// Every depth uses open-plan until the basement theme exists.
-export const themeForDepth = () => "open-plan";
+export const themeForDepth = (depth) => (depth <= 0 ? "lobby" : depth <= config.zoneSplit ? "open-plan" : "basement");

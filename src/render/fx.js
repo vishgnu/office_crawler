@@ -103,7 +103,7 @@ export function createFx(style) {
         const pop = 1 + 0.9 * Math.max(0, 1 - t / 0.14), miss = f.kind === 1;
                 const fs = Math.max(miss ? 15 : 30, Math.round((miss ? 10 : 21) * z * pop));
         // spawns above the head and clear of the nameplate, then drifts up (right for monsters, left for the hero); stacked rows sit higher
-        const side = f.kind === 2 ? -1 : 1, x = pos.x + side * Math.max((f.kind === 2 ? 62 : 40) * z, 72) + side * 16 * e * z, y = pos.y - (f.head + 10 + 32 * e + f.row * 24) * z;
+        const side = f.kind === 2 ? -1 : 1, x = pos.x + side * Math.max((f.kind === 2 ? 62 : 40) * z, 88) + side * 16 * e * z, y = pos.y - (f.head + 10 + 32 * e + f.row * 24) * z;
         g.globalAlpha = t < 0.65 ? 1 : Math.max(0, 1 - (t - 0.65) / 0.35);
         g.font = fontFor(fs);
         g.lineWidth = Math.max(4, fs * 0.32); g.strokeStyle = P.ink; g.strokeText(f.text, x, y);

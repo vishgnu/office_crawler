@@ -6,6 +6,7 @@ export function buildGrid(floor) {
   const walk = new Uint8Array(w * h);
   for (let i = 0; i < w * h; i++) walk[i] = isWalkableTile(tiles[i]) ? 1 : 0;
   for (const p of floor.props) if (p.blocks) walk[p.y * w + p.x] = 0;
+  for (const n of floor.npcs ?? []) walk[n.tile.y * w + n.tile.x] = 0; // NPCs stand in the way: talk from an adjacent tile
   const inBounds = (x, y) => x >= 0 && y >= 0 && x < w && y < h;
   return {
     width: w, height: h, walk, inBounds,

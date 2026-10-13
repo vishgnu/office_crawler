@@ -1,12 +1,16 @@
-// Places monster packs and singles on reachable floor tiles, away from the stairs.
+// Places monster packs, singles and champion packs on reachable floor tiles, away from the stairs.
+// The population spends a depth-scaled budget (R-034): sum of cost * tierFactor over all spawns stays within floor.budget.
 import { buildGrid, flood } from "../grid.js";
-import { monsters } from "../content/monsters.js";
+import { monsters, championModIds } from "../content/monsters.js";
 import { config } from "../config.js";
+
+export const floorBudget = (depth) => config.budgetBase + config.budgetPerDepth * (Math.max(1, depth) - 1);
 
 export function populate(rng, floor) {
   const grid = buildGrid(floor);
   const { dist } = flood(grid, floor.entry.x, floor.entry.y);
   const { w, h } = floor;
+  floor.budget = floorBudget(floor.depth);
   const types = Object.values(monsters).filter((t) => t.minDepth <= floor.depth);
   const weighted = types.flatMap((t) => Array(t.weight).fill(t));
   const used = new Set([floor.entry, floor.exit].map((t) => t.y * w + t.x));
@@ -14,29 +18,43 @@ export function populate(rng, floor) {
   const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
   const free = (x, y) => grid.walkable(x, y) && dist[y * w + x] >= 0 && !used.has(y * w + x) && cheb({ x, y }, floor.entry) > config.safeRadius;
   const anyTile = () => { for (let i = 0; i < 80; i++) { const x = rng.int(1, w - 2), y = rng.int(1, h - 2); if (free(x, y)) return { x, y }; } return null; };
+  let spent = 0;
 
+  // Champion modifiers: 1 to championMaxMods distinct ones (more of them deeper down).
+  const rollMods = () => {
+    const max = Math.min(config.championMaxMods, 1 + Math.floor((floor.depth - 1) / 3));
+    const n = rng.int(1, max), pool = [...championModIds], mods = [];
+    while (mods.length < n && pool.length) mods.push(pool.splice(rng.int(0, pool.length - 1), 1)[0]);
+    return mods;
+  };
+
+  // A champion pack comes first so the budget cannot starve it: its leader is a champion, the rest are normal.
   let packs = 0;
-  for (let want = rng.int(3, 5), tries = 0; packs < want && tries < 60; tries++) {
-    const type = rng.pick(weighted), first = anyTile();
-    if (!first) continue;
-    const size = rng.int(type.pack[0], type.pack[1]);
+  const champPack = floor.depth >= 2 && rng.next() < config.championChance;
+  for (let tries = 0, want = 3 + rng.int(0, 2); tries < 80 && spent < floor.budget && packs < 12; tries++) {
+    const champ = champPack && packs === 0;
+    const type = rng.pick(champ ? weighted.filter((t) => t.pack[1] > 1) : weighted), first = anyTile();
+    if (!first || !type) continue;
+    if (type.pack[1] === 1) { // elites come alone
+      const cost = type.cost * config.tierFactor[champ ? "champion" : "normal"];
+      if (spent + cost > floor.budget) continue;
+      used.add(first.y * w + first.x); spent += cost;
+      spawns.push({ type: type.id, tile: first, packId: null, ...(champ ? { tier: "champion", mods: rollMods() } : {}) });
+      continue;
+    }
+    const size = champ ? rng.int(config.championPackSize[0], config.championPackSize[1]) : rng.int(type.pack[0], type.pack[1]);
     const members = [first];
     used.add(first.y * w + first.x);
     for (let k = 0; k < 40 && members.length < size; k++) {
       const x = first.x + rng.int(-config.packRadius, config.packRadius), y = first.y + rng.int(-config.packRadius, config.packRadius);
       if (grid.inBounds(x, y) && free(x, y)) { members.push({ x, y }); used.add(y * w + x); }
     }
-    if (members.length < 2) { for (const m of members) used.delete(m.y * w + m.x); continue; } // a pack needs 2+
-    packs++;
-    for (const t of members) spawns.push({ type: type.id, tile: t, packId: `p${packs}` });
-  }
-  if (config.singlesAllowed) {
-    for (let i = rng.int(0, 2); i > 0; i--) {
-      const t = anyTile();
-      if (!t) break;
-      used.add(t.y * w + t.x);
-      spawns.push({ type: rng.pick(weighted).id, tile: t, packId: null });
-    }
+    const cost = type.cost * (members.length - 1 + config.tierFactor[champ ? "champion" : "normal"]);
+    if (members.length < 2 || spent + cost > floor.budget) { for (const m of members) used.delete(m.y * w + m.x); continue; } // a pack needs 2+ and must be affordable
+    packs++; spent += cost;
+    const mods = champ ? rollMods() : null;
+    members.forEach((t, i) => spawns.push({ type: type.id, tile: t, packId: `p${packs}`, ...(champ && i === 0 ? { tier: "champion", mods } : {}) }));
+    if (packs >= want && spent >= floor.budget * 0.6) break;
   }
   floor.spawns = spawns;
 }

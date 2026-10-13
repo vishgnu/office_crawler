@@ -53,9 +53,15 @@ export const config = {
     attackRatingBase: 10, attackRatingPerAgility: 3,
   },
   levelCap: 30,
+  // xpTable[i] = total xp needed for level i+1 (level 1 at 0, strictly increasing, levelCap entries): 20*i^2 + 60*i.
+  xpTable: Array.from({ length: 30 }, (_, i) => 20 * i * i + 60 * i),
+  xpPastCap: 99999999,               // QF-06-2: xp keeps counting for display up to this value at the level cap
+  attrPointsPerLevel: 5,
+  skillPointsPerLevel: 1,
+  skillMaxLevel: 5,
   player: {
     attrs: { grit: 10, agility: 10, stamina: 10, focus: 10 },
-    xpNext: 100,
+    xpNext: 80,
   },
   startKit: { weapon: "ruler-rapier", healthPotions: 2, healthPotion: "lukewarm-coffee" },
 
@@ -85,4 +91,31 @@ export const config = {
   ilvlValue: 0.1,                    // base value grows by this per item level
   buyOverSell: 4,                    // vendor price = sell value * this (at least sell value + 1)
   vendor: { gearSlots: 8, potionTiers: { 1: 1, 2: 5, 3: 12 } }, // potion tier -> minimum player level
+
+  // Skills and projectiles (S2-3). Mana cost only, no cooldowns (QF-06-5).
+  castTicks: 12,                     // the hero is busy (action "cast") for this long after a skill
+  hitRecoveryMinDamage: 5,           // AC-R-024-1: a hit of at least this much staggers a monster ...
+  hitRecoveryTicks: 14,              // ... for this many ticks (no attack, no move)
+  flashTicks: 8,                     // AC-R-025-2: hit flash on monsters and the hero
+  floaterTicks: 50,                  // AC-R-025-1: lifetime of a state-backed damage floater
+  projectileHitRadius: 0.6,          // tiles
+  fleeHpFraction: 0.25,              // QF-03-2: weak swarmers flee below this health share, once per life
+  fleeTicks: 150,
+  championMaxMods: 3,
+  championChance: 0.3,               // chance that a populated floor from depth 2 on carries a champion pack
+  championPackSize: [3, 4],
+  tierFactor: { normal: 1, champion: 3, boss: 10 },
+
+  // Depth scaling of monster stats, percent per depth beyond the first (depth 1 = registry values).
+  scaling: { hpPct: 28, damagePct: 14, defensePct: 16, attackRatingPct: 12, xpPct: 20 },
+  // Floor population budget (AC-R-034-3): sum of cost * tierFactor stays within it.
+  budgetBase: 22, budgetPerDepth: 5,
+
+  // World (S2-4)
+  maxDepth: 8,                       // floors 1-8; the boss arena (depth 9, S3) hangs off floor 8
+  bossDepth: 9,
+  townStairsTarget: "deepest",       // QF-01-1
+  zoneSplit: 4,                      // depths 1-4 open-plan, 5-8 basement
+  interactRange: 2,                  // Chebyshev tiles to talk to an NPC
+  townHealerFree: true,
 };
