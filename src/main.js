@@ -62,7 +62,7 @@ async function boot() {
     restart: () => game.input({ t: "restart" }),
     quit: () => game.toTitle(),
   });
-  const sync = () => screens.show(game.menu(), { seed: game.titleSeed, error: game.error });
+  const sync = () => screens.show(game.menu(), { seed: game.titleSeed, error: game.error, summary: game.menu() === "dead" ? game.summary() : null });
   game.onChange(sync);
 
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());

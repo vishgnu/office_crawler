@@ -70,12 +70,15 @@ export function createHud(style) {
     /** Draw the whole HUD. */
     draw(g, w, h, core, atlas, now, targetId, dpr, hc) {
       const { L, cr } = layoutFor(w, h), s = L.scale, p = core.player, ref = style.ui.vesselRef, pad = style.ui.vesselPad;
+      const hr0 = ratio(p.hp, p.hpMax), low = hr0 > 0 && hr0 < 0.3; // low-HP state: the mug shakes and cracks
+      if (low) { g.save(); g.translate(Math.sin(now * 0.05) * 1.6 * s, Math.cos(now * 0.07) * 1.1 * s); }
       // live liquid first (the baked frame is drawn over it)
-      style.ui.drawVesselLive(g, "health", L.health.rect.x, L.health.rect.y, L.health.rect.w, L.health.rect.h, ratio(p.hp, p.hpMax), now);
+      style.ui.drawVesselLive(g, "health", L.health.rect.x, L.health.rect.y, L.health.rect.w, L.health.rect.h, hr0, now);
       style.ui.drawVesselLive(g, "mana", L.mana.rect.x, L.mana.rect.y, L.mana.rect.w, L.mana.rect.h, ratio(p.mp, p.mpMax), now);
       // baked frames
       const pct = xpPercent(p), base = `${w}|${h}|${dpr}|${hc ? 1 : 0}|${atlas.meta.id}`;
       this.frame(g, "health", L.health.rect, ref, pad, atlas, dpr, base);
+      if (low) this.crack(g, L.health.rect, s);
       this.frame(g, "mana", L.mana.rect, ref, pad, atlas, dpr, base);
       const cl = layer("centre", `${base}|${p.level}|${pct}`, cr, dpr, (bg) => this.bakeCentre(bg, L, atlas, p, pct, hc));
       g.drawImage(cl.c, cl.x, cl.y, cl.w, cl.h);
@@ -90,6 +93,7 @@ export function createHud(style) {
       if (labels.mpV !== p.mp || labels.mpM !== p.mpMax) { labels.mpV = p.mp; labels.mpM = p.mpMax; labels.mp = `${p.mp}/${p.mpMax}`; }
       const hr = L.health.rect, mr = L.mana.rect, hk = hr.w / ref.health.w, mk = mr.w / ref.mana.w;
       text(g, labels.hp, hr.x + 42 * hk, hr.y + 82 * hk, nfs, "#ffffff");
+      if (low) g.restore();
       text(g, labels.mp, mr.x + 42 * mk, mr.y + 100 * mk, nfs, "#ffffff");
       // floor name (top left)
       text(g, S.floorName, L.floorName.x, L.floorName.y, fontPx(s, 13, 14), U.subtle, "left", 600);
@@ -107,6 +111,16 @@ export function createHud(style) {
       }
     },
 
+    /** A crack across the mug body (drawn only in the low-HP state). */
+    crack(g, r, s) {
+      const x = r.x, y = r.y, w = r.w, h = r.h;
+      g.save(); g.lineCap = "round"; g.lineJoin = "round";
+      const path = () => { g.beginPath(); g.moveTo(x + w * 0.46, y + h * 0.2); g.lineTo(x + w * 0.38, y + h * 0.36); g.lineTo(x + w * 0.5, y + h * 0.46); g.lineTo(x + w * 0.4, y + h * 0.62); g.lineTo(x + w * 0.46, y + h * 0.72); g.moveTo(x + w * 0.5, y + h * 0.46); g.lineTo(x + w * 0.62, y + h * 0.52); };
+      path(); g.lineWidth = Math.max(3, 3.4 * s); g.strokeStyle = P.ink; g.stroke();
+      path(); g.lineWidth = Math.max(1.4, 1.5 * s); g.strokeStyle = "#ffe9ee"; g.stroke();
+      g.restore();
+    },
+
     frame(g, kind, r, ref, pad, atlas, dpr, base) {
       const k = r.w / ref[kind].w, l = layers[kind];
       if (!l || l.key !== base) {
@@ -120,7 +134,8 @@ export function createHud(style) {
     bakeCentre(g, L, atlas, p, pct, hc) {
       const s = L.scale;
       panel(g, L.panel, hc, s);
-      if (L.beltPanel.x >= L.panel.x + L.panel.w - 1 || L.stacked) panel(g, L.beltPanel, hc, s);
+      // the belt is empty until S2: a ghost panel (faint, no numbers on the slots) instead of a full-weight placeholder
+      if (L.beltPanel.x >= L.panel.x + L.panel.w - 1 || L.stacked) { g.globalAlpha = hc ? 0.7 : 0.4; panel(g, L.beltPanel, hc, s); g.globalAlpha = 1; }
       // level text and XP track
       const tfs = fontPx(s, 10, 12), ty = L.xp.y - 4 * s;
       text(g, `${S.level} ${p.level}`, L.xp.x, ty, tfs, hc ? "#fff" : U.xp, "left", 800, null);
@@ -129,16 +144,13 @@ export function createHud(style) {
       // skill slots
       const slotE = atlas.get(keys.ui("skill-slot")), icon = atlas.get(keys.ui("skill-icon-strike")), plus = atlas.get(keys.ui("icon-plus")), beltE = atlas.get(keys.ui("belt-slot"));
       L.skills.forEach((r, i) => {
-        g.drawImage(slotE.img, r.x, r.y, r.w, r.h);
+        if (i === 0) g.drawImage(slotE.img, r.x, r.y, r.w, r.h);
         if (i === 0) { g.drawImage(icon.img, r.x, r.y, r.w, r.h); g.beginPath(); g.roundRect(r.x + 1.5, r.y + 1.5, r.w - 3, r.h - 3, r.w * 0.2); g.lineWidth = 2.6; g.strokeStyle = U.xp; g.stroke(); }
-        else { g.globalAlpha = 0.6; g.drawImage(plus.img, r.x, r.y, r.w, r.h); g.globalAlpha = 1; }
-        if (L.showNames) text(g, i === 0 ? S.skillStrike : S.skillEmpty, r.x + r.w / 2, r.y + r.h + fontPx(s, 10, 12) + 1, fontPx(s, 10, 12), i === 0 ? U.text : U.empty, "center", 700, null);
-        badge(g, `${S.keyF}${i + 1}`, r.x + r.w * 0.2, r.y, s, hc);
+        else { g.globalAlpha = hc ? 0.5 : 0.3; g.drawImage(slotE.img, r.x, r.y, r.w, r.h); g.globalAlpha = 1; } // empty: a faint hollow slot (the slot was already drawn once above)
+        if (L.showNames && i === 0) text(g, S.skillStrike, r.x + r.w / 2, r.y + r.h + fontPx(s, 10, 12) + 1, fontPx(s, 10, 12), U.text, "center", 700, null);
+        g.globalAlpha = i === 0 ? 1 : 0.55; badge(g, `${S.keyF}${i + 1}`, r.x + r.w * 0.2, r.y, s, hc); g.globalAlpha = 1;
       });
-      L.belt.forEach((r, i) => {
-        g.drawImage(beltE.img, r.x, r.y, r.w, r.h);
-        badge(g, String(i + 1), r.x + r.w * 0.2, r.y, s, hc);
-      });
+      L.belt.forEach((r) => { g.globalAlpha = hc ? 0.7 : 0.35; g.drawImage(beltE.img, r.x, r.y, r.w, r.h); g.globalAlpha = 1; });
     },
   };
   return H;

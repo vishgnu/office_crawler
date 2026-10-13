@@ -6,15 +6,27 @@
 import { fontPx } from "../ui/layout.js";
 
 export const MAX_PLATES = 5;
+const MAX_PIPS = 16;
 const SAFE = 8;
 const FONT = "'Trebuchet MS','Segoe UI',system-ui,'Helvetica Neue','Liberation Sans',Arial,sans-serif";
 const byPriority = (p, q) => p.pr - q.pr;
+/** True when the plate rect covers the body of another actor (its sprite spans about 40 px across, from the feet to the head). */
+function onSprite(r, actors, self, cam, style) {
+  const z = cam.z;
+  for (const o of actors) {
+    if (o === self || o.dead || o.sx < r.x - 30 * z || o.sx > r.x + r.w + 30 * z) continue;
+    const head = (style.dims[o.type]?.head ?? 50) * z, b = { x: o.sx - 18 * z, y: o.sy - head, w: 36 * z, h: head * 0.92 };
+    if (overlap(r, b)) return true;
+  }
+  return false;
+}
 const overlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
 export function createLabels(style) {
   const P = style.palette, cache = new Map();
   const placed = Array.from({ length: MAX_PLATES }, () => ({ x: 0, y: 0, w: 0, h: 0, ax: 0, ay: 0, sprite: null, ratio: 0, moved: false, id: "" }));
-  const cand = [];
+  const cand = [], pips = Array.from({ length: MAX_PIPS }, () => ({ x: 0, y: 0, w: 0, h: 0, ratio: 0, id: "" }));
+  let pipN = 0;
   const heroRect = { x: 0, y: 0, w: 0, h: 0 };
   const L = {
     count: 0, placed,
@@ -48,38 +60,61 @@ export function createLabels(style) {
      * obstacles: [{x,y,w,h}] (HUD rects). Returns the number of plates placed (L.placed[0..n)).
      */
     place(actors, cam, s, targetId, hoverId, heroS, obstacles, hc, dpr) {
-      cand.length = 0;
+      cand.length = 0; pipN = 0;
+      const z = cam.z;
+      // 1. visible, live candidates; full plates go to the target, the hovered monster and the nearest 2 others (plate discipline)
       for (const a of actors) {
         if (a.dead) continue;
-        const pr = a.id === targetId ? 0 : a.id === hoverId ? 1 : a.d <= 5 && a.ai !== "idle" ? 2 + a.d / 10 : a.d <= 3 ? 3 + a.d / 10 : -1;
-        if (pr < 0 || a.sy - (style.dims[a.type]?.head ?? 50) * cam.z < 6 || a.sy > cam.h + 140 || a.sx < -40 || a.sx > cam.w + 40) continue;
-        a.pr = pr; cand.push(a);
+        const head = style.dims[a.type]?.head ?? 50;
+        if (a.d > 7 || a.sy - head * z < 6 || a.sy > cam.h + 140 || a.sx < -40 || a.sx > cam.w + 40) continue;
+        a.pr = a.id === targetId ? 0 : a.id === hoverId ? 1 : a.d <= 5 && a.ai !== "idle" ? 2 + a.d / 10 : a.d <= 3 ? 3 + a.d / 10 : 9 + a.d / 10;
+        cand.push(a);
       }
       cand.sort(byPriority);
-      heroRect.x = heroS.x - 22 * cam.z; heroRect.w = 44 * cam.z; heroRect.h = 56 * cam.z; heroRect.y = heroS.y - heroRect.h;
+      heroRect.x = heroS.x - 22 * z; heroRect.w = 44 * z; heroRect.h = 56 * z; heroRect.y = heroS.y - heroRect.h;
       const fs = fontPx(s, 9.5, 12);
-      let n = 0;
+      let n = 0, others = 0;
       for (const a of cand) {
-        if (n >= MAX_PLATES) break;
+        const forced = a.pr <= 1, full = forced || (a.pr < 9 && others < 2);
+        if (!full || n >= MAX_PLATES) continue;
+        const head = style.dims[a.type]?.head ?? 50;
         const sp = L.sprite(a.name, fs, hc, dpr), r = placed[n];
-        const ax = Math.round(a.sx), ay = Math.round(a.sy - (style.dims[a.type]?.head ?? 50) * cam.z - 5 * s);
+        const ax = Math.round(a.sx), ay = Math.round(a.sy - head * z - 5 * s);
         r.w = sp.w; r.h = sp.h; r.sprite = sp; r.ax = ax; r.ay = ay; r.id = a.id; r.ratio = a.hpMax > 0 ? Math.max(0, Math.min(1, a.hp / a.hpMax)) : 0;
         let ok = false;
-        for (let k = 0; k < 4 && !ok; k++) {
+        for (let k = 0; k < 5 && !ok; k++) {
           r.x = Math.min(cam.w - SAFE - r.w, Math.max(SAFE, ax - Math.round(r.w / 2)));
           r.y = Math.max(SAFE, ay - r.h - k * (r.h + 3));
-          ok = !overlap(r, heroRect);
+          ok = !overlap(r, heroRect) && !onSprite(r, actors, a, cam, style);
           for (let j = 0; j < n && ok; j++) if (overlap(r, placed[j])) ok = false;
           for (let j = 0; j < obstacles.length && ok; j++) if (overlap(r, obstacles[j])) ok = false;
           r.moved = Math.abs(r.x + r.w / 2 - ax) > 6 || ay - r.h - r.y > 4;
         }
-        if (ok || a.pr <= 1) n++; // the target and the hovered monster always get a plate
+        if (ok || forced) { n++; if (!forced) others++; a.pr = -1; }
       }
       L.count = n;
+      // 2. everyone else in the light gets a mini health pip right above the head (skipped when a plate already sits there)
+      const pw = Math.round(26 * s), ph = Math.max(4, Math.round(4.5 * s));
+      for (const a of cand) {
+        if (a.pr < 0 || pipN >= MAX_PIPS) continue;
+        const head = style.dims[a.type]?.head ?? 50, pp = pips[pipN];
+        pp.w = pw; pp.h = ph; pp.x = Math.round(a.sx - pw / 2); pp.y = Math.round(a.sy - head * z - 4 * s - ph);
+        pp.ratio = a.hpMax > 0 ? Math.max(0, Math.min(1, a.hp / a.hpMax)) : 0; pp.id = a.id;
+        let ok = pp.x > SAFE && pp.x + pw < cam.w - SAFE && pp.y > SAFE;
+        for (let j = 0; j < n && ok; j++) if (overlap(pp, placed[j])) ok = false;
+        for (let j = 0; j < obstacles.length && ok; j++) if (overlap(pp, obstacles[j])) ok = false;
+        if (ok) pipN++;
+      }
       return n;
     },
 
     draw(g) {
+      for (let i = 0; i < pipN; i++) { // mini health pips for the rest of the pack
+        const p = pips[i];
+        g.fillStyle = P.ink; g.fillRect(p.x - 1.5, p.y - 1.5, p.w + 3, p.h + 3);
+        g.fillStyle = P.plate.hpTrack; g.fillRect(p.x, p.y, p.w, p.h);
+        g.fillStyle = P.plate.hp; g.fillRect(p.x, p.y, p.w * p.ratio, p.h);
+      }
       for (let i = 0; i < L.count; i++) {
         const r = placed[i], sp = r.sprite;
         if (r.moved) { // leader line from the plate to the head

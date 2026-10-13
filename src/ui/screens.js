@@ -21,10 +21,11 @@ export function createScreens(root, h) {
   let current = null;
   const build = {
     title: (info) => {
-      const s = el("section", "screen title");
-      s.append(el("h1", "", S.gameTitle), el("p", "tagline", S.tagline));
-      s.append(button(S.newGame, "new-game", h.newGame));
-      s.append(el("p", "hint", S.controlsHint), el("p", "seed", `${S.seedLabel} ${info.seed}`));
+      const s = el("section", "screen title"), box = el("div", "panel");
+      box.append(el("h1", "", S.gameTitle), el("p", "tagline", S.tagline));
+      box.append(button(S.newGame, "new-game", h.newGame));
+      box.append(el("p", "hint", S.controlsHint), el("p", "seed", `${S.seedLabel} ${info.seed}`));
+      s.append(box);
       return s;
     },
     pause: () => {
@@ -32,9 +33,15 @@ export function createScreens(root, h) {
       s.append(el("h2", "", S.paused), button(S.resume, "resume", h.resume), button(S.quitToTitle, "quit", h.quit));
       return s;
     },
-    dead: () => {
-      const s = el("section", "screen dead");
-      s.append(el("h2", "", S.youDied), button(S.restart, "restart", h.restart), button(S.quitToTitle, "quit", h.quit));
+    dead: (info) => {
+      const s = el("section", "screen dead"), r = info.summary;
+      s.append(el("h2", "", S.youDied));
+      if (r) { // run summary: kills, time survived, depth
+        const mm = Math.floor(r.seconds / 60), ss = String(r.seconds % 60).padStart(2, "0"), list = el("dl", "summary");
+        for (const [k, v] of [["Kills", String(r.kills)], ["Time", `${mm}:${ss}`], ["Depth", String(r.depth)]]) { const d = el("div"); d.append(el("dt", "", k), el("dd", "", v)); list.append(d); }
+        s.append(list);
+      }
+      s.append(button(S.restart, "restart", h.restart), button(S.quitToTitle, "quit", h.quit));
       return s;
     },
     error: (info) => {
@@ -46,7 +53,7 @@ export function createScreens(root, h) {
   return {
     /** Show the screen for `menu` (null hides everything). Rebuilds only when something changed. */
     show(menu, info = {}) {
-      const key = menu ? `${menu}:${info.seed ?? ""}` : "";
+      const key = menu ? `${menu}:${info.seed ?? ""}:${info.summary ? `${info.summary.kills}/${info.summary.seconds}/${info.summary.depth}` : ""}` : "";
       if (key === current) return;
       current = key;
       root.replaceChildren();

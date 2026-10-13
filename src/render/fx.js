@@ -20,8 +20,8 @@ export function createFx(style) {
   let hurtCanvas = null, hurtW = 0, hurtH = 0;
   const fx = {
     floaters: [], parts: [], flash: new Map(), slashes: [],
-    hurtUntil: 0, shakeUntil: 0, hitStopUntil: 0, deathAt: null, lowFx: false,
-    reset() { fx.floaters.length = 0; fx.parts.length = 0; fx.flash.clear(); fx.slashes.length = 0; fx.hurtUntil = fx.shakeUntil = fx.hitStopUntil = 0; fx.deathAt = null; },
+    hurtUntil: 0, lowHp: false, beat: -1, shakeUntil: 0, hitStopUntil: 0, deathAt: null, lowFx: false,
+    reset() { fx.floaters.length = 0; fx.parts.length = 0; fx.flash.clear(); fx.slashes.length = 0; fx.hurtUntil = fx.shakeUntil = fx.hitStopUntil = 0; fx.deathAt = null; fx.lowHp = false; fx.beat = -1; },
     handle(ev, core, now) {
       const find = (id) => (id === "player" ? core.player : core.monsters.find((m) => m.id === id));
       if (ev.type === "hit" || ev.type === "miss") {
@@ -30,9 +30,13 @@ export function createFx(style) {
         const cx = actorPos(t, pos).x + 0.5, cy = pos.y + 0.5, toPlayer = ev.target === "player";
         const head = style.dims[toPlayer ? PLAYER_CLASS : t.type]?.head ?? 50;
         if (fx.floaters.length > 24) fx.floaters.shift();
-        fx.floaters.push({ x: cx, y: cy, head, text: ev.type === "hit" ? String(ev.value) : S.miss, born: now, kind: ev.type === "miss" ? 1 : toPlayer ? 2 : 0 });
+        // stack: a floater that spawns while another one of the same target is still near its spawn point goes one row higher, and
+        // damage numbers to the hero get their own column (left of the hero) so "miss" and damage never share a spot
+        let row = 0;
+        for (const o of fx.floaters) if (o.target === ev.target && now - o.born < 420) row = Math.max(row, o.row + 1);
+        fx.floaters.push({ x: cx, y: cy, head, target: ev.target, row, text: ev.type === "hit" ? String(ev.value) : S.miss, born: now, kind: ev.type === "miss" ? 1 : toPlayer ? 2 : 0 });
         if (ev.type === "hit") {
-          fx.flash.set(ev.target, now + 110);
+          fx.flash.set(ev.target, now + (toPlayer ? 220 : 110));
           if (toPlayer) { fx.hurtUntil = now + 260; fx.shakeUntil = now + 140; }
           else { fx.slashes.push({ x: cx, y: cy, head, born: now }); fx.hitStopUntil = Math.max(fx.hitStopUntil, now + HIT_STOP_MS); }
           fx.burst(cx, cy, toPlayer ? 4 : 9, now);
@@ -97,9 +101,9 @@ export function createFx(style) {
         const f = fx.floaters[i], t = (now - f.born) / FLOATER_MS, e = ease(t);
         project(cam, f.x, f.y, pos);
         const pop = 1 + 0.9 * Math.max(0, 1 - t / 0.14), miss = f.kind === 1;
-        const fs = Math.max(miss ? 14 : 22, Math.round((miss ? 9 : 15) * z * pop));
-        // spawns above the head and clear of the nameplate, then drifts up and to the right
-        const x = pos.x + (40 + 16 * e) * z, y = pos.y - (f.head + 10 + 32 * e) * z;
+                const fs = Math.max(miss ? 15 : 30, Math.round((miss ? 10 : 21) * z * pop));
+        // spawns above the head and clear of the nameplate, then drifts up (right for monsters, left for the hero); stacked rows sit higher
+        const side = f.kind === 2 ? -1 : 1, x = pos.x + side * Math.max((f.kind === 2 ? 62 : 40) * z, 72) + side * 16 * e * z, y = pos.y - (f.head + 10 + 32 * e + f.row * 24) * z;
         g.globalAlpha = t < 0.65 ? 1 : Math.max(0, 1 - (t - 0.65) / 0.35);
         g.font = fontFor(fs);
         g.lineWidth = Math.max(4, fs * 0.32); g.strokeStyle = P.ink; g.strokeText(f.text, x, y);
@@ -108,17 +112,36 @@ export function createFx(style) {
       }
       g.globalAlpha = 1;
     },
+    /**
+     * Low-HP warning (below 30%): a pulsing red edge vignette. Returns the pulse 0..1 (0 when healthy); `fx.lowHp` is the state the
+     * shell reads to emit the bus hooks "ui:lowhp" (state change) and "ui:heartbeat" (one per pulse peak; audio subscribes in S3).
+     */
+    drawLowHp(g, w, h, now, ratio, bus) {
+      const low = ratio > 0 && ratio < 0.3;
+      if (low !== fx.lowHp) { fx.lowHp = low; bus?.emit({ type: "ui:lowhp", low, ratio }); }
+      if (!low) { fx.beat = -1; return 0; }
+      const period = 700 + 900 * ratio / 0.3 * 0.5, phase = (now % period) / period, beat = Math.floor(now / period);
+      if (beat !== fx.beat) { fx.beat = beat; bus?.emit({ type: "ui:heartbeat", ratio, period }); }
+      const pulse = Math.max(0, 1 - phase * 2.2) ** 2; // sharp thump then fade
+      fx.ensureVignette(w, h);
+      g.globalAlpha = Math.min(1, 0.35 + 0.65 * pulse) * (fx.lowFx ? 0.8 : 1);
+      g.drawImage(hurtCanvas, 0, 0, w, h);
+      g.globalAlpha = 1;
+      return pulse;
+    },
+    ensureVignette(w, h) {
+      if (hurtCanvas && hurtW === w && hurtH === h) return;
+      hurtCanvas = hurtCanvas ?? document.createElement("canvas");
+      hurtW = hurtCanvas.width = Math.ceil(w / 2); hurtH = hurtCanvas.height = Math.ceil(h / 2);
+      const v = hurtCanvas.getContext("2d"), grad = v.createRadialGradient(hurtW / 2, hurtH / 2, hurtH * 0.35, hurtW / 2, hurtH / 2, hurtH * 0.85);
+      grad.addColorStop(0, "rgba(160,0,10,0)"); grad.addColorStop(1, "rgba(160,0,10,0.5)");
+      v.fillStyle = grad; v.fillRect(0, 0, hurtW, hurtH);
+      hurtW = w; hurtH = h;
+    },
     /** Red edge flash when the hero is hurt: one baked vignette per size, drawn at an alpha. */
     drawHurt(g, w, h, now) {
       if (fx.hurtUntil <= now) return;
-      if (!hurtCanvas || hurtW !== w || hurtH !== h) {
-        hurtCanvas = hurtCanvas ?? document.createElement("canvas");
-        hurtW = hurtCanvas.width = Math.ceil(w / 2); hurtH = hurtCanvas.height = Math.ceil(h / 2);
-        const v = hurtCanvas.getContext("2d"), grad = v.createRadialGradient(hurtW / 2, hurtH / 2, hurtH * 0.35, hurtW / 2, hurtH / 2, hurtH * 0.85);
-        grad.addColorStop(0, "rgba(160,0,10,0)"); grad.addColorStop(1, "rgba(160,0,10,0.5)");
-        v.fillStyle = grad; v.fillRect(0, 0, hurtW, hurtH);
-        hurtW = w; hurtH = h;
-      }
+      fx.ensureVignette(w, h);
       g.globalAlpha = Math.min(1, (fx.hurtUntil - now) / 260);
       g.drawImage(hurtCanvas, 0, 0, w, h);
       g.globalAlpha = 1;

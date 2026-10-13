@@ -79,7 +79,7 @@ const pool = [], items = [], actorOut = [], posA = { x: 0, y: 0 }, posB = { x: 0
 const out = { heroScreen: { x: 0, y: 0 }, heroDir: 0, actors: actorOut, heroItem: null };
 let nPool = 0;
 const grab = (d, e, x, y) => {
-  const it = pool[nPool++] ?? (pool[nPool - 1] = { d: 0, e: null, x: 0, y: 0, a: 1, actor: false, isPlayer: false, alert: false, shade: 0, tint: "", tintA: 0, flash: false, head: 0 });
+  const it = pool[nPool++] ?? (pool[nPool - 1] = { d: 0, e: null, x: 0, y: 0, a: 1, actor: false, isPlayer: false, alert: false, shade: 0, tint: "", tintA: 0, flash: false, head: 0, hurt: false });
   it.d = d; it.e = e; it.x = x; it.y = y; it.a = 1; it.actor = false; it.isPlayer = false; it.alert = false; it.shade = 0; it.tint = ""; it.tintA = 0; it.flash = false;
   return it;
 };
@@ -92,6 +92,16 @@ function lerpPos(a, o) {
   o.x = pv ? pv.x + (posA.x - pv.x) * F.alpha : posA.x; o.y = pv ? pv.y + (posA.y - pv.y) * F.alpha : posA.y;
 }
 
+/** A subtle ground ring (and faint pool) under the hero so he is findable in a pile. */
+function heroRing(g, sx, sy, r, z, now) {
+  const rx = r * 1.0 * z, ry = rx * 0.5, pulse = 0.5 + 0.08 * Math.sin(now / 420);
+  g.beginPath(); g.ellipse(sx, sy, rx, ry, 0, 0, Math.PI * 2);
+  g.fillStyle = "rgba(255,255,255,0.10)"; g.fill();
+  g.lineWidth = Math.max(1.5, 1.6 * z); g.strokeStyle = `rgba(255,255,255,${pulse})`; g.stroke();
+  g.beginPath(); g.ellipse(sx, sy, rx * 1.12, ry * 1.12, 0, 0, Math.PI * 2);
+  g.lineWidth = Math.max(1, 0.9 * z); g.strokeStyle = "rgba(13,10,28,0.55)"; g.stroke();
+}
+
 function addActor(a, isPlayer, pos, dir, sx, sy) {
   const { g, cam, atlas, fx, now, env, light } = F, z = cam.z;
   const af = animFor(a, isPlayer, now), table = isPlayer ? F.figs.plr : F.figs.mon[a.type];
@@ -102,19 +112,26 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
     alphaV = isPlayer ? 1 : Math.max(0, Math.min(1, (1 - t) * 3));
   } else if ((fx.flash.get(a.id) ?? 0) > now) flash = true;
   const dm = env.style.dims[isPlayer ? PLAYER_CLASS : a.type];
+  // lit state first: an actor deep in the dark (outside every light) is not drawn at all, so no ghost silhouettes at the screen edge
+  let shade = 0, tint = "", tintA = 0;
+  if (!isPlayer) {
+    light.sample(pos.x + 0.5, pos.y + 0.5, LS);
+    shade = LS.shade;
+    if (!env.lowFx) { tint = LS.tint; tintA = Math.min(LS.tintA, 0.1); } // capped so the imp's red eyes and rim stay saturated
+    if (shade >= 0.6 && !tint && af.anim !== "death") return null;
+  }
   // contact shadow on the ground, under everything that stands there
-  const k = (dm.shadowR * 2) / 62, sh = F.shadowE;
-  g.globalAlpha = 0.5 * alphaV;
+  const k = (dm.shadowR * 2.25) / 62, sh = F.shadowE;
+  if (isPlayer && af.anim !== "death") heroRing(g, sx, sy, dm.shadowR * 1.7, z, now);
+  g.globalAlpha = 0.85 * alphaV;
   g.drawImage(sh.img, Math.round(sx - sh.ox * k * z), Math.round(sy - sh.oy * k * z), Math.round(sh.w * k * z), Math.round(sh.h * k * z));
   g.globalAlpha = 1;
   const it = grab(pos.x + pos.y + 1.02, e, sx, sy);
   it.actor = true; it.isPlayer = isPlayer; it.a = alphaV; it.flash = flash; it.head = dm.head;
   it.alert = !isPlayer && a.ai === "notice";
-  if (!isPlayer) { // tint from the light model at the feet (lowFx: darkness only)
-    light.sample(pos.x + 0.5, pos.y + 0.5, LS);
-    it.shade = LS.shade;
-    if (!env.lowFx) { it.tint = LS.tint; it.tintA = LS.tintA; }
-  }
+  it.shade = shade; it.tint = tint; it.tintA = tintA;
+  it.hurt = isPlayer && af.anim !== "death" && (fx.flash.get("player") ?? 0) > now; // hero hurt flash: red wash over the sprite
+  if (it.hurt) it.flash = false;
   items.push(it);
   return it;
 }
@@ -225,6 +242,14 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     addActor(m, false, o, faceFor(m, false, core, rs), o.sx, o.sy);
   }
 
+  // enemies standing in front of the hero (and overlapping his sprite) fade, so he never disappears behind a pile
+  const hi = out.heroItem;
+  if (hi) for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    if (!it.actor || it.isPlayer || it.d <= hi.d) continue;
+    const dx = Math.abs(it.x - hi.x), dy = it.y - hi.y;
+    if (dx < 30 * z && dy > -8 * z && dy < 60 * z && it.a > 0.62) it.a = 0.62;
+  }
   items.sort(byDepth);
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
@@ -233,6 +258,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     blit(g, it.flash ? atlas.flash(it.e) : it.e, it.x, it.y, z);
     if (it.shade > 0) { g.globalAlpha = it.shade * it.a; blit(g, atlas.shade(it.e, "#070518"), it.x, it.y, z); }
     if (it.tintA > 0) { g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), it.x, it.y, z); }
+    if (it.hurt) { g.globalAlpha = 0.6; blit(g, atlas.tint(it.e, "#ff1f2e"), it.x, it.y, z); }
     g.globalAlpha = 1;
     if (it.alert) blit(g, atlas.get("fx:alert"), it.x, it.y - (it.head + 2) * z, z);
   }

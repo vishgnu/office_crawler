@@ -70,6 +70,13 @@ function human(g, L, o) {
       fillPoly(g, [[tx - 6, shY + ly + 10 * sc], [tx - 1.6, shY + ly + 10 * sc], [tx - 1.6, shY + ly + 15 * sc], [tx - 6, shY + ly + 15 * sc]], "#ffffff", INK, 1);
     }
   }
+  if (!front && L.lanyard) { // back view: lanyard strap in a V across the shoulders and the tie tail swinging out behind
+    const bx = lx + fx * 2, y0 = shY + ly;
+    fillPoly(g, [[bx - 1.6, y0 + 6], [bx + 1.6, y0 + 6], [bx + 1.3, y0 + 13 * sc], [bx, y0 + 15.5 * sc], [bx - 1.3, y0 + 13 * sc]], L.tie, INK, 1);
+    line(g, bx - 5.6, y0 + 0.5, bx - 0.4, y0 + 9.5, INK, 3); line(g, bx + 5.6, y0 + 0.5, bx + 0.4, y0 + 9.5, INK, 3);
+    line(g, bx - 5.6, y0 + 0.5, bx - 0.4, y0 + 9.5, "#33e0ff", 1.6); line(g, bx + 5.6, y0 + 0.5, bx + 0.4, y0 + 9.5, "#33e0ff", 1.6);
+    ellipse(g, bx, y0 + 10, 1.8, 1.4, "#ffffff", INK, 1);
+  }
   if (L.torn) { // ragged hem
     fillPoly(g, [[tl + lx, hipY - 5], [tl + lx + 2, hipY + 3], [tl + lx + 4, hipY - 1], [tl + lx + 6, hipY + 4], [tl + lx + 8, hipY - 3]], L.shirt, INK, 1);
     fillPoly(g, [[tr + lx - 8, hipY - 3], [tr + lx - 5, hipY + 3.5], [tr + lx - 3, hipY - 1], [tr + lx - 1, hipY + 3], [tr + lx, hipY - 5]], shade(L.shirt, -0.22), INK, 1);
@@ -99,6 +106,10 @@ function human(g, L, o) {
     }
   } else {
     ellipse(g, hx, hy - 0.5, hr + 0.4, hr * 1.02, L.hair, INK, 1.8);
+    if (L.headset) { // headband over the crown and both earcups, so the hero still reads as the headset clerk from behind
+      g.beginPath(); g.arc(hx, hy + 0.5, hr + 0.9, Math.PI * 1.04, Math.PI * 1.96); g.lineCap = "round"; g.lineWidth = 3.8; g.strokeStyle = INK; g.stroke(); g.lineWidth = 2; g.strokeStyle = "#c4ecff"; g.stroke();
+      ellipse(g, hx - hr * 1.0, hy + 1.2, 2.8, 3.6, "#c4ecff", INK, 1.2); ellipse(g, hx + hr * 1.0, hy + 1.2, 2.8, 3.6, "#c4ecff", INK, 1.2);
+    }
   }
   g.beginPath(); g.arc(hx, hy, hr - 1, Math.PI * 1.05, Math.PI * 1.55); g.lineWidth = 1.2; g.strokeStyle = shade(L.skin, 0.45); g.stroke(); // rim light
   // near arm (+ weapon or reach)

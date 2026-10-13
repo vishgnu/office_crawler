@@ -28,6 +28,11 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   game.onChange = (fn) => game.listeners.push(fn);
 
   bus.on("*", (ev) => fx.handle(ev, game.core ?? game.backdrop, performance.now()));
+  // run summary for the death screen, derived from the event stream (the core keeps no kill counter)
+  game.run = { kills: 0 };
+  bus.on("kill", () => { if (game.core) game.run.kills++; });
+  /** { kills, seconds, depth } of the current run (shown on the death screen). */
+  game.summary = () => (game.core ? { kills: game.run.kills, seconds: Math.floor(game.core.tick / config.tickHz), depth: game.core.depth ?? 1 } : null);
 
   // ---- state transitions ----
   game.menu = () => {
@@ -37,7 +42,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (game.core.paused) return "pause";
     return null;
   };
-  const resetRender = () => { game.prev.clear(); rs.facing.clear(); fx.reset(); game.acc = 0; game.hover = null; game.focus = null; };
+  const resetRender = () => { game.run.kills = 0; game.prev.clear(); rs.facing.clear(); fx.reset(); game.acc = 0; game.hover = null; game.focus = null; };
   game.setBackdrop = () => { game.backdrop = newGame(game.titleSeed); resetRender(); };
   game.newGame = (s = game.titleSeed) => {
     game.titleSeed = Number(s) >>> 0;
@@ -78,6 +83,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   game.input = (cmd) => {
     if (!game.core) return { ok: false, error: "no game running" };
     const from = game.core.events.length;
+    if (cmd?.t === "restart") { game.run.kills = 0; fx.reset(); }
     const res = applyInput(game.core, cmd);
     dispatchFrom(from);
     emitChange();
@@ -193,6 +199,8 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     }
     fx.draw(g, c, atlas, now, out.heroDir);
     fx.drawHurt(g, game.w, game.h, now);
+    if (game.core && game.core.scene === "floor") fx.drawLowHp(g, game.w, game.h, now, game.core.player.hp / Math.max(1, game.core.player.hpMax), bus);
+    else if (fx.lowHp) fx.drawLowHp(g, game.w, game.h, now, 0, bus);
     if (game.core) hud.draw(g, game.w, game.h, game.core, atlas, now, game.core.player.target ?? game.hover, game.dpr, game.hc);
   };
   let lay = null, rectsFor = null, rectsL = null;

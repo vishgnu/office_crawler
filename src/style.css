@@ -4,18 +4,26 @@ canvas { display: block; position: fixed; inset: 0; touch-action: none; user-sel
 #overlay { position: fixed; inset: 0; pointer-events: none; }
 #overlay.loading { display: grid; place-items: center; font-size: 20px; color: #9aa6c0; }
 .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; pointer-events: auto; text-align: center; padding: 16px; box-sizing: border-box; animation: fade-in 0.45s ease-out both; }
-.screen.title { background: radial-gradient(ellipse at center, rgba(7, 8, 12, 0.55), rgba(7, 8, 12, 0.92)); }
+.screen.title { background: radial-gradient(ellipse at center, rgba(7, 8, 12, 0.4), rgba(7, 8, 12, 0.75)); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+.screen.title .panel { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 28px 40px 22px; max-width: min(94vw, 860px); box-sizing: border-box; background: rgba(7, 8, 12, 0.72); border: 2px solid #2b3550; border-radius: 14px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55); }
 .screen.pause { background: rgba(7, 8, 12, 0.72); }
 /* By design the death screen is fully present (and swallows clicks) during its 0.5 s fade-in delay: the player sees the final frame, and stray clicks cannot hit Restart by accident. */
-.screen.dead { background: radial-gradient(ellipse at center, rgba(60, 4, 10, 0.55), rgba(7, 8, 12, 0.9)); animation-delay: 0.5s; }
+.screen.dead { background: radial-gradient(ellipse at center, rgba(60, 4, 10, 0.55), rgba(7, 8, 12, 0.9)); animation: none; }
+.dead .btn { pointer-events: none; animation: unlock 0s 0.5s forwards; }
+@keyframes unlock { to { pointer-events: auto; } }
+.summary { display: flex; gap: 28px; margin: 4px 0 10px; padding: 10px 24px; background: rgba(7, 8, 12, 0.6); border: 2px solid #4a2a3a; border-radius: 10px; }
+.summary div { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.summary dt { color: #d3a9b0; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; }
+.summary dd { margin: 0; color: #fff; font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .screen.error { background: rgba(7, 8, 12, 0.92); }
-h1 { margin: 0; font-size: clamp(36px, 7vw, 72px); letter-spacing: 0.04em; text-transform: uppercase; color: #dfe5f5; text-shadow: 0 3px 0 #0a0c12, 0 0 24px rgba(120, 150, 220, 0.35); }
+h1 { margin: 0; font-size: clamp(32px, 6vw, 64px); letter-spacing: 0.04em; text-transform: uppercase; color: #dfe5f5; text-shadow: 0 3px 0 #0a0c12, 0 0 24px rgba(120, 150, 220, 0.35); }
 h2 { margin: 0 0 8px; font-size: clamp(26px, 4.5vw, 44px); color: #dfe5f5; text-shadow: 0 2px 0 #0a0c12; }
 .dead h2 { color: #ff8b8b; }
-.tagline { margin: 0 0 12px; color: #9aa6c0; font-size: 18px; }
-.hint, .seed { margin: 0; color: #7c88a4; font-size: 14px; }
+.tagline { margin: 0 0 12px; color: #dbe3f6; font-size: 18px; }
+.hint, .seed { margin: 0; color: #c3cde6; font-size: 16px; }
 .btn { min-width: 220px; padding: 12px 28px; font: inherit; font-size: 20px; font-weight: 600; color: #e8ecf6; background: #2b3550; border: 3px solid #0a0c12; border-radius: 6px; box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.18), 0 3px 0 #0a0c12; cursor: pointer; }
 .btn:hover, .btn:focus-visible { background: #3a4770; outline: 2px solid #9fb0d8; outline-offset: 2px; }
 .btn:active { transform: translateY(2px); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.12); }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 480px) { .screen.title .panel { padding: 20px 18px 16px; } .summary { gap: 18px; padding: 8px 14px; } }
 @media (prefers-reduced-motion: reduce) { .screen { animation: none; } }
