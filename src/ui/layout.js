@@ -54,3 +54,60 @@ export function hudLayout(w, h) {
     floorName: { x: 16 * s, y: 26 * s },
   };
 }
+
+/** Phone layout (one panel at a time, tabs) below this width or height. Desktop minimum width is 1024 (NFR-B02). */
+export const PHONE_MAX_W = 899, PHONE_MAX_H = 519;
+export const isPhone = (w, h) => w <= PHONE_MAX_W || h <= PHONE_MAX_H;
+
+/**
+ * Side drawers (S2): the Employee File / Skills / NPC window on the left, the Desk Drawer on the right. Both stop above the
+ * health mug and mana jug so the vessels stay visible; the world camera re-centres the hero in the gap that stays free.
+ * Cells are 44 px from 1024 px up (the decision's minimum), 40 px on the narrow desktop band; on a phone the grid fits the width.
+ */
+export function drawerLayout(w, h) {
+  const L = hudLayout(w, h), phone = isPhone(w, h);
+  const vesselTop = Math.min(L.health.rect.y, L.mana.rect.y), hudTop = Math.min(L.panel.y, L.beltPanel.y, vesselTop);
+  if (phone) {
+    const cell = Math.max(24, Math.floor((w - 56) / 10));
+    return { phone, top: 6, bottom: Math.floor(hudTop - 6), left: 6, right: 6, leftW: w - 12, rightW: w - 12, cell, hudTop };
+  }
+  const cell = w >= 1024 ? 44 : 40;
+  const leftW = w >= 1024 ? 340 : 320, rightW = cell * 10 + 44;
+  return { phone, top: 8, bottom: Math.floor(vesselTop - 8), left: 0, right: 0, leftW, rightW, cell, hudTop };
+}
+
+/** Horizontal camera shift (px) that keeps the hero centred in the gap left by the open drawers. */
+export function cameraInset(w, h, { left = false, right = false } = {}) {
+  const D = drawerLayout(w, h);
+  if (D.phone) return 0;
+  return ((left ? D.leftW : 0) - (right ? D.rightW : 0)) / 2;
+}
+
+const hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+const area = (a, b) => (hit(a, b) ? (Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * (Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)) : 0);
+
+/**
+ * Tooltip position (pure). Rules (inventory decision, must-fix 1): beside the item toward the drawer's inner edge, flipped to stay
+ * on screen, never over the bottom bar (bounds.bottom), never over the hero (`hero` rect), and not over the drawer it belongs to.
+ * Covering the other drawer is the last resort before covering the hero.
+ * in: { w, h, anchor, panel (the anchor's drawer rect or null), side ("left"|"right"|null), drawers: [rect], hero, bounds: {left, top, right, bottom} }.
+ */
+export function placeTip({ w, h, anchor, panel, side = null, drawers = [], hero, bounds }) {
+  const gap = 8, maxH = Math.max(80, bounds.bottom - bounds.top);
+  h = Math.min(h, maxH);
+  const clampY = (y) => Math.min(Math.max(bounds.top, y), bounds.bottom - h);
+  const clampX = (x) => Math.min(Math.max(bounds.left, x), bounds.right - w);
+  const xs = [];
+  if (panel) {
+    const inner = side === "left" ? panel.x + panel.w + gap : panel.x - w - gap, outer = side === "left" ? panel.x - w - gap : panel.x + panel.w + gap;
+    xs.push(inner, outer, bounds.left + gap, bounds.right - w - gap);
+  } else xs.push(anchor.x + anchor.w / 2 - w / 2, anchor.x - w - gap, anchor.x + anchor.w + gap);
+  const ys = panel ? [anchor.y - 20, bounds.top, bounds.bottom - h] : [anchor.y - h - gap, anchor.y + anchor.h + gap, bounds.top];
+  const cands = [];
+  for (const x of xs) for (const y of ys) cands.push({ x: clampX(x), y: clampY(y), w, h });
+  const ok = (r, passes) => !hit(r, hero) && !(panel && hit(r, panel)) && (!passes.drawers || !drawers.some((d) => d !== panel && hit(r, d)));
+  const pick = cands.find((r) => ok(r, { drawers: true })) ?? cands.find((r) => ok(r, { drawers: false }));
+  if (pick) return { x: Math.round(pick.x), y: Math.round(pick.y), h };
+  const best = cands.reduce((a, r) => (area(r, hero) < area(a, hero) ? r : a), cands[0]);
+  return { x: Math.round(best.x), y: Math.round(best.y), h };
+}

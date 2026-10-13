@@ -1,29 +1,52 @@
 // HUD: coffee-mug health and water-cooler-jug mana vessels (glyph + numbers inside), an XP bar with level text,
-// a skill bar (F1-F4 key badges, names under the icons), the potion belt (keys 1-4), the target bar and the floor
-// name. The static parts are baked into three small layers (rebuilt only when the size, level or XP percent changes);
-// only the liquid, the XP fill, the numbers and the target bar are drawn per frame.
-import { content } from "../core/index.js";
+// the skill bar and potion belt frames, the target bar and the floor name. The static parts are baked into small layers
+// (rebuilt only when the size, level or XP percent changes); only the liquid, the XP fill, the numbers and the target
+// bar are drawn per frame. The slot contents (skill icons, F1-F4 and 1-4 badges, potion icons, the selected-slot
+// highlight, the panel buttons with point badges) are DOM buttons placed on the rects below (src/ui/panels.js), so
+// they are focusable, labelled and clickable; hudState() is the single description of both.
+import { content, config } from "../core/index.js";
 import { hudLayout, fontPx, SKILL_SLOTS, BELT_SLOTS } from "../ui/layout.js";
+import { xpRatio } from "../ui/itemview.js";
+import { T } from "../ui/text.js";
 import { keys } from "./keys.js";
 
 const S = content.strings;
 const ratio = (v, max) => (max > 0 ? Math.min(1, Math.max(0, v / max)) : 0);
 const FONT = "'Trebuchet MS','Segoe UI',system-ui,'Helvetica Neue','Liberation Sans',Arial,sans-serif";
 
-const xpPercent = (p) => Math.floor(ratio(p.xp, p.xpNext) * 100);
+const xpPercent = (p) => Math.floor(xpRatio(p) * 100); // progress inside the current level (AC-R-077-2)
+const floorLabel = (core) => (core.depth > 0 ? `${T.floorWord} ${core.depth}: ${core.floor.name}` : core.floor.name);
 
-/** HUD values + rects for the hook and tests (pure). */
-export function hudState(core, w, h, style) {
-  const L = hudLayout(w, h), p = core.player;
+/** HUD values + rects for the hook, the DOM slot layer and tests (pure). */
+export function hudState(core, w, h, style, hoverId = null) {
+  const L = hudLayout(w, h), p = core.player, bar = p.skillBar;
   const gauge = (kind, value, max, geo) => ({
     value, max, ratio: ratio(value, max), shape: style.ui.shapes[kind], label: `${value} / ${max}`,
     rect: { ...geo.rect },
   });
+  const slotOf = (i) => {
+    const id = bar.hotkeys[i], def = id ? content.skills[id] : null, level = id === "strike" ? 1 : id ? p.skills[id] ?? 0 : 0;
+    const cost = def?.mana ? def.mana(Math.max(1, level)) : 0;
+    return {
+      index: i, key: `${S.keyF}${i + 1}`, skill: id ?? null, name: def ? def.name : S.skillEmpty, empty: !def, level, cost,
+      disabled: !!def && (level < 1 || p.mp < cost), selected: bar.selected === i, rect: { ...L.skills[i] },
+    };
+  };
+  const slots = Array.from({ length: SKILL_SLOTS }, (_, i) => slotOf(i));
+  const m = hoverId ? core.monsters.find((o) => o.id === hoverId && o.ai !== "dead") : null;
+  const prev = config.xpTable[p.level - 1] ?? 0;
   return {
     health: gauge("health", p.hp, p.hpMax, L.health), mana: gauge("mana", p.mp, p.mpMax, L.mana),
     xp: { value: p.xp, next: p.xpNext, ratio: ratio(p.xp, p.xpNext), level: p.level, percent: xpPercent(p), rect: { ...L.xp } },
-    skills: Array.from({ length: SKILL_SLOTS }, (_, i) => ({ key: `${S.keyF}${i + 1}`, name: i === 0 ? S.skillStrike : S.skillEmpty, empty: i !== 0, rect: { ...L.skills[i] } })),
-    belt: L.belt.map((r, i) => ({ key: String(i + 1), empty: true, rect: { ...r } })),
+    xpBar: { value: p.xp - prev, span: Math.max(0, p.xpNext - prev), ratio: xpRatio(p), level: p.level, percent: xpPercent(p) },
+    level: p.level, points: { attr: p.attrPoints, skill: p.skillPoints },
+    skills: slots, skillBar: { primary: bar.primary, secondary: bar.secondary, selected: bar.selected, hotkeys: [...bar.hotkeys], slots },
+    belt: L.belt.map((r, i) => {
+      const it = core.belt[i];
+      return { index: i, key: String(i + 1), empty: !it, item: it ? { id: it.id, name: it.name, restores: it.restores, restore: it.restore, base: it.base, w: 1, h: 1 } : null, rect: { ...r } };
+    }),
+    target: m ? { id: m.id, name: m.name ?? content.monsters[m.type].name, hp: m.hp, hpMax: m.hpMax, ratio: ratio(m.hp, m.hpMax) } : null,
+    floor: { depth: core.depth, name: core.floor.name, label: floorLabel(core) },
   };
 }
 
@@ -59,13 +82,6 @@ export function createHud(style) {
     g.lineWidth = hc ? 3 : 3.4; g.strokeStyle = hc ? "#ffffff" : U.panelEdge; g.stroke();
     if (!hc) { g.beginPath(); g.roundRect(r.x + 2.2, r.y + 2.2, r.w - 4.4, r.h - 4.4, 6 * s); g.lineWidth = 1.4; g.strokeStyle = U.slotEdge; g.globalAlpha = 0.55; g.stroke(); g.globalAlpha = 1; }
   };
-  const badge = (g, str, cx, cy, s, hc) => {
-    const fs = fontPx(s, 8, 10), w = Math.max(fs * 1.7, g.measureText(str).width + 6), h = fs * 1.35;
-    g.beginPath(); g.roundRect(cx - w / 2, cy - h / 2, w, h, h / 2);
-    g.fillStyle = hc ? "#ffffff" : "#3a2f78"; g.fill(); g.lineWidth = 2; g.strokeStyle = hc ? "#000" : U.panelEdge; g.stroke();
-    g.font = `800 ${fs}px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = hc ? "#000000" : U.text; g.fillText(str, cx, cy + 0.5);
-  };
-
   const H = {
     /** Draw the whole HUD. */
     draw(g, w, h, core, atlas, now, targetId, dpr, hc) {
@@ -83,7 +99,7 @@ export function createHud(style) {
       const cl = layer("centre", `${base}|${p.level}|${pct}`, cr, dpr, (bg) => this.bakeCentre(bg, L, atlas, p, pct, hc));
       g.drawImage(cl.c, cl.x, cl.y, cl.w, cl.h);
       // dynamic: XP fill, numbers
-      const xp = L.xp, xr = ratio(p.xp, p.xpNext);
+      const xp = L.xp, xr = xpRatio(p);
       if (xr > 0) {
         g.beginPath(); g.roundRect(xp.x, xp.y, Math.max(xp.h, xp.w * xr), xp.h, xp.h / 2); g.fillStyle = U.xp; g.fill();
         g.fillStyle = "rgba(255,255,255,0.4)"; g.fillRect(xp.x + xp.h / 2, xp.y + 1, Math.max(0, xp.w * xr - xp.h), xp.h * 0.3);
@@ -96,7 +112,7 @@ export function createHud(style) {
       if (low) g.restore();
       text(g, labels.mp, mr.x + 42 * mk, mr.y + 100 * mk, nfs, "#ffffff");
       // floor name (top left)
-      text(g, S.floorName, L.floorName.x, L.floorName.y, fontPx(s, 13, 14), U.subtle, "left", 600);
+      text(g, floorLabel(core), L.floorName.x, L.floorName.y, fontPx(s, 13, 14), U.subtle, "left", 600);
 
       const m = targetId && core.monsters.find((o) => o.id === targetId && o.ai !== "dead");
       if (m) {
@@ -107,7 +123,7 @@ export function createHud(style) {
         g.fillStyle = "rgba(255,255,255,0.35)"; g.fillRect(t.x, t.y, t.w * ratio(m.hp, m.hpMax), t.h * 0.38);
         g.restore();
         g.beginPath(); g.roundRect(t.x, t.y, t.w, t.h, t.h / 2); g.lineWidth = 3 * s; g.strokeStyle = hc ? "#fff" : P.ink; g.stroke();
-        text(g, def.name, w / 2, t.y + t.h + fontPx(s, 13, 14) + 4, fontPx(s, 13, 14), "#ffffff");
+        text(g, m.name ?? def.name, w / 2, t.y + t.h + fontPx(s, 13, 14) + 4, fontPx(s, 13, 14), "#ffffff");
       }
     },
 
@@ -134,23 +150,16 @@ export function createHud(style) {
     bakeCentre(g, L, atlas, p, pct, hc) {
       const s = L.scale;
       panel(g, L.panel, hc, s);
-      // the belt is empty until S2: a ghost panel (faint, no numbers on the slots) instead of a full-weight placeholder
-      if (L.beltPanel.x >= L.panel.x + L.panel.w - 1 || L.stacked) { g.globalAlpha = hc ? 0.7 : 0.4; panel(g, L.beltPanel, hc, s); g.globalAlpha = 1; }
+      panel(g, L.beltPanel, hc, s);
       // level text and XP track
       const tfs = fontPx(s, 10, 12), ty = L.xp.y - 4 * s;
       text(g, `${S.level} ${p.level}`, L.xp.x, ty, tfs, hc ? "#fff" : U.xp, "left", 800, null);
       text(g, L.compactXp ? `${pct}%` : `${pct}% ${S.toLevel} ${p.level + 1}`, L.xp.x + L.xp.w, ty, tfs, hc ? "#fff" : U.subtle, "right", 700, null);
       g.beginPath(); g.roundRect(L.xp.x, L.xp.y, L.xp.w, L.xp.h, L.xp.h / 2); g.fillStyle = hc ? "#2a2a2a" : "#0d0a1c"; g.fill(); g.lineWidth = 2; g.strokeStyle = hc ? "#fff" : U.panelEdge; g.stroke();
-      // skill slots
-      const slotE = atlas.get(keys.ui("skill-slot")), icon = atlas.get(keys.ui("skill-icon-strike")), plus = atlas.get(keys.ui("icon-plus")), beltE = atlas.get(keys.ui("belt-slot"));
-      L.skills.forEach((r, i) => {
-        if (i === 0) g.drawImage(slotE.img, r.x, r.y, r.w, r.h);
-        if (i === 0) { g.drawImage(icon.img, r.x, r.y, r.w, r.h); g.beginPath(); g.roundRect(r.x + 1.5, r.y + 1.5, r.w - 3, r.h - 3, r.w * 0.2); g.lineWidth = 2.6; g.strokeStyle = U.xp; g.stroke(); }
-        else { g.globalAlpha = hc ? 0.5 : 0.3; g.drawImage(slotE.img, r.x, r.y, r.w, r.h); g.globalAlpha = 1; } // empty: a faint hollow slot (the slot was already drawn once above)
-        if (L.showNames && i === 0) text(g, S.skillStrike, r.x + r.w / 2, r.y + r.h + fontPx(s, 10, 12) + 1, fontPx(s, 10, 12), U.text, "center", 700, null);
-        g.globalAlpha = i === 0 ? 1 : 0.55; badge(g, `${S.keyF}${i + 1}`, r.x + r.w * 0.2, r.y, s, hc); g.globalAlpha = 1;
-      });
-      L.belt.forEach((r) => { g.globalAlpha = hc ? 0.7 : 0.35; g.drawImage(beltE.img, r.x, r.y, r.w, r.h); g.globalAlpha = 1; });
+      // empty slot wells; the DOM slot layer puts icons, badges and the selection ring on top of them
+      const slotE = atlas.get(keys.ui("skill-slot")), beltE = atlas.get(keys.ui("belt-slot"));
+      L.skills.forEach((r) => g.drawImage(slotE.img, r.x, r.y, r.w, r.h));
+      L.belt.forEach((r) => g.drawImage(beltE.img, r.x, r.y, r.w, r.h));
     },
   };
   return H;

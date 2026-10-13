@@ -14,7 +14,12 @@ export async function launch(name = "chromium") {
 }
 
 /** Open the built game. Records page errors, console errors and every request URL. */
-export async function open(browser, { query = "test=1&seed=1", viewport = { width: 1280, height: 720 }, wait = true, deviceScaleFactor = 1 } = {}) {
+/**
+ * `lobby: true` keeps the real start (the Lobby, scene town). By default test pages get `&start=floor`, so New game / newGame()
+ * land on floor 1 with monsters at once: the S1 fixtures (combat, input, replay, render) were written for that.
+ */
+export async function open(browser, { query = "test=1&seed=1", viewport = { width: 1280, height: 720 }, wait = true, deviceScaleFactor = 1, lobby = false } = {}) {
+  if (!lobby && query.includes("test=1") && !query.includes("start=")) query += "&start=floor";
   const context = await browser.newContext({ viewport, deviceScaleFactor });
   const page = await context.newPage();
   const errors = [], requests = [];

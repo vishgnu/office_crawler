@@ -19,6 +19,24 @@ function silhouette(e, colour, alpha, mode) {
   return s;
 }
 
+/**
+ * Outline ring of a sprite in `colour`, `px` logical px wide, baked once per sprite and colour (champion outlines: one blit per frame
+ * instead of a ring of silhouette stamps). Same size and anchor as the sprite; draw it under the sprite itself.
+ */
+function outline(e, colour, px) {
+  const cache = (e.sil ??= {}), ck = `ol${colour}${px}`;
+  let o = cache[ck];
+  if (!o) {
+    const sil = silhouette(e, colour, 1, "source-in"), img = document.createElement("canvas");
+    img.width = e.img.width; img.height = e.img.height;
+    const g = img.getContext("2d"), r = px * (e.img.width / e.w);
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; g.drawImage(sil.img, Math.cos(a) * r, Math.sin(a) * r); }
+    o = { ...e, img, sil: null };
+    cache[ck] = o;
+  }
+  return o;
+}
+
 let atlasCounter = 0;
 export function createAtlas(scale = 1, meta = {}) {
   const map = new Map();
@@ -40,6 +58,7 @@ export function createAtlas(scale = 1, meta = {}) {
     flash: (e) => silhouette(e, "rgba(255,255,255,0.78)", 1, "source-atop"),
     /** Solid silhouette in `colour`: drawn over an actor at an alpha to dim it where the light mask is dark. */
     shade: (e, colour) => silhouette(e, colour, 1, "source-in"),
+    outline,
     /** Same, used for pool-coloured tint (a separate cache slot so shade and tint never collide). */
     tint: (e, colour) => silhouette(e, colour, 1, "source-in"),
   };

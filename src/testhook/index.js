@@ -25,7 +25,8 @@ export function installTestHook(game, win = window) {
     describe: () => describe(),
     getState: () => game.getState(),
     newGame: (opts = {}) => {
-      game.newGame(Number.isFinite(opts?.seed) ? opts.seed : game.titleSeed);
+      // start: "town" (default, the Lobby; `?start=floor` changes the default) or "floor" (floor 1, for tests that want monsters at once)
+      game.newGame(Number.isFinite(opts?.seed) ? opts.seed : game.titleSeed, { start: opts?.start === "floor" || opts?.start === "town" ? opts.start : undefined });
       game.render(performance.now());
       return game.getState();
     },
@@ -57,6 +58,17 @@ export function installTestHook(game, win = window) {
     },
     cheat: {
       spawnMonster: (type, tile) => (tileArg(tile) ? game.spawnMonster(type, tileArg(tile)) : fail("invalid tile")),
+      setLevel: (n) => game.cheat.setLevel(n),
+      setHp: (n) => game.cheat.setHp(n),
+      teleportFloor: (depth) => game.cheat.teleportFloor(depth),
+      giveGold: (n) => game.cheat.giveGold(n),
+      spawnItem: (opts, tile) => game.cheat.spawnItem(isObj(opts) ? opts : {}, tileArg(tile) ?? undefined),
+      giveItem: (opts) => game.cheat.giveItem(isObj(opts) ? opts : {}),
+    },
+    ui: {
+      open: (name) => game.openPanel(name),
+      close: (name) => game.closePanel(name),
+      toggle: (name) => game.togglePanel(name),
     },
     pick: (x, y) => (game.core && Number.isFinite(x) && Number.isFinite(y) ? game.pickAt(x, y) : fail("pick needs a running game and finite screen coordinates")),
     perf: () => game.perf(),
@@ -64,7 +76,7 @@ export function installTestHook(game, win = window) {
   const docs = {
     describe: "List every member of this hook.",
     getState: "Snapshot of core state plus ui (menu, hud, camera) and hash.",
-    newGame: "Start a run: newGame({seed}). Returns the snapshot.",
+    newGame: "Start a run: newGame({seed, start}); start is town (default) or floor. Returns the snapshot.",
     setSeed: "Alias for newGame({seed}).",
     step: "Run exactly n ticks (manual clock in test mode).",
     click: "click({tile}|{screen}, {button, hold}) like a mouse press.",
@@ -76,7 +88,8 @@ export function installTestHook(game, win = window) {
     pause: "Toggle pause like Escape; returns paused.",
     input: "Apply a raw input command (what DOM handlers emit).",
     cmd: "Agent commands: moveTo(tile), attack(id).",
-    cheat: "Debug cheats: spawnMonster(type, tile).",
+    cheat: "Debug cheats: spawnMonster(type, tile), setLevel(n), setHp(n), teleportFloor(depth), giveGold(n), spawnItem(opts, tile), giveItem(opts) (spawn + pick up).",
+    ui: "Panels: open(name), close(name), toggle(name) with name inventory | character | skills (same as the I, C, S keys).",
     pick: "pick(x, y): what a click at this canvas point means ({ tile, monsterId }), through the camera that is on screen.",
     perf: "Frame and simulation timing, atlas completeness, fx flags, nameplate rects.",
   };

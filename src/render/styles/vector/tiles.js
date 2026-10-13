@@ -11,10 +11,49 @@ const clipDiamond = (g, cx, cy, hw, hh) => { poly(g, [[cx, cy - hh], [cx + hw, c
  * baked grime: scuffs, a coffee stain, a blood smear (decals live in the static layer, never per frame).
  * 1px bleed hides seams between tiles.
  */
-export function drawFloor(g, kind, v) {
-  const [a, b] = P.floors[kind], cx = 33, cy = 17, hw = W / 2 + 0.5, hh = H / 2 + 0.5;
+const themeOf = (theme) => P.themes[theme] ?? null;
+
+/** Kind-specific floor pattern for the lobby and basement themes (drawn over the base fill). */
+function kindDeco(g, kind, v, theme, b, cx, cy, hw, hh) {
+  const quad = (s, ox, oy, fill) => fillPoly(g, [[cx + ox, cy + oy - hh * s], [cx + ox + hw * s, cy + oy], [cx + ox, cy + oy + hh * s], [cx + ox - hw * s, cy + oy]], fill);
+  if (theme === "lobby" && kind === "reception") { // marble checker with a brass inlay
+    quad(0.5, 0, -hh * 0.5, b); quad(0.5, 0, hh * 0.5, b);
+    g.save(); clipDiamond(g, cx, cy, hw, hh);
+    line(g, cx - hw, cy, cx + hw, cy, "rgba(212,166,74,0.28)", 0.8); line(g, cx, cy - hh, cx, cy + hh, "rgba(212,166,74,0.28)", 0.8);
+    g.restore();
+  } else if (theme === "lobby" && kind === "breakroom") { // lino squares
+    g.save(); clipDiamond(g, cx, cy, hw, hh);
+    line(g, cx - hw * 0.5, cy - hh * 0.5, cx + hw * 0.5, cy + hh * 0.5, "rgba(10,20,26,0.35)", 1);
+    line(g, cx - hw * 0.5, cy + hh * 0.5, cx + hw * 0.5, cy - hh * 0.5, "rgba(10,20,26,0.35)", 1);
+    quad(0.3, 0, 0, b);
+    g.restore();
+  } else if (theme === "basement" && kind === "server") { // raised floor tiles, a cold LED line and a vent
+    g.save(); clipDiamond(g, cx, cy, hw, hh);
+    line(g, cx - hw * 0.5, cy - hh * 0.5, cx + hw * 0.5, cy + hh * 0.5, "rgba(4,10,20,0.55)", 1.2);
+    line(g, cx - hw * 0.5, cy + hh * 0.5, cx + hw * 0.5, cy - hh * 0.5, "rgba(4,10,20,0.55)", 1.2);
+    if (v === 1) { for (let i = -2; i <= 2; i++) line(g, cx + i * 4 - 6, cy + i * 2 - 3, cx + i * 4 + 2, cy + i * 2 + 1, "rgba(3,8,16,0.8)", 1.6); }
+    else if (v === 2) line(g, cx - hw * 0.6, cy, cx + hw * 0.6, cy, "rgba(53,224,200,0.35)", 1.2);
+    g.restore();
+  } else if (theme === "basement" && kind === "boiler") { // steel grating
+    g.save(); clipDiamond(g, cx, cy, hw, hh);
+    for (let i = -6; i <= 6; i++) line(g, cx + i * 5 - 8, cy - 8 + i * 0.2, cx + i * 5 + 8, cy + 8 + i * 0.2, "rgba(0,0,0,0.38)", 1.3);
+    quad(0.2, 0, 0, "rgba(255,150,60,0.07)");
+    g.restore();
+  } else if (theme === "basement" && kind === "archive") { // paper dust
+    g.save(); clipDiamond(g, cx, cy, hw, hh);
+    for (const [x, y, w] of [[-12, -2, 6], [4, 5, 5], [10, -5, 4]]) fillPoly(g, [[cx + x, cy + y], [cx + x + w, cy + y - 1.5], [cx + x + w + 1.5, cy + y + 1.2], [cx + x + 1, cy + y + 2]], "rgba(236,228,207,0.14)");
+    g.restore();
+  }
+}
+
+export function drawFloor(g, kind, v, theme = "open-plan") {
+  const T = themeOf(theme), floors = T ? T.floors : P.floors;
+  const [a, b] = floors[kind] ?? floors.corridor, cx = 33, cy = 17, hw = W / 2 + 0.5, hh = H / 2 + 0.5;
+  const decoKind = T && (kind in floors) && kind !== "corridor" && kind !== "storage";
   fillPoly(g, [[cx, cy - hh], [cx + hw, cy], [cx, cy + hh], [cx - hw, cy]], a);
-  if (v === 1) {
+  if (decoKind) kindDeco(g, kind, v, theme, b, cx, cy, hw, hh);
+  if (decoKind && v >= 1 && v <= 2 && theme === "lobby") { /* the lobby keeps its inlay pattern clean */ }
+  else if (v === 1) {
     const s = 0.62;
     fillPoly(g, [[cx, cy - hh * s], [cx + hw * s, cy], [cx, cy + hh * s], [cx - hw * s, cy]], b);
   } else if (v === 2) {
@@ -24,10 +63,17 @@ export function drawFloor(g, kind, v) {
     if (v === 3) { // scuff marks
       g.strokeStyle = "rgba(6,4,16,0.5)"; g.lineWidth = 1.3; g.lineCap = "round";
       for (const [x0, y0, x1, y1] of [[-14, -2, -3, 3], [-9, 4, 3, 8], [6, -5, 15, -1]]) { g.beginPath(); g.moveTo(cx + x0, cy + y0); g.lineTo(cx + x1, cy + y1); g.stroke(); }
+    } else if (v === 4 && theme === "basement") { // puddle with a highlight and a drip
+      ellipse(g, cx - 2, cy + 1, 12, 5.4, "rgba(24,64,104,0.7)");
+      ellipse(g, cx - 5, cy - 0.5, 5, 1.8, "rgba(160,210,255,0.22)");
+      ellipse(g, cx + 12, cy - 4, 1.6, 0.8, "rgba(24,64,104,0.8)");
     } else if (v === 4) { // coffee ring + splash
       ellipse(g, cx - 3, cy + 1, 11, 5.2, P.decal.coffee);
       ellipse(g, cx - 3, cy + 1, 7, 3.2, "rgba(0,0,0,0.25)");
       ellipse(g, cx + 12, cy - 4, 2.5, 1.2, P.decal.coffee); ellipse(g, cx + 16, cy - 1, 1.6, 0.8, P.decal.coffee);
+    } else if (theme === "lobby") { // the Lobby is a safe place: a scuffed rug patch instead of blood
+      ellipse(g, cx - 2, cy, 13, 5.6, "rgba(10,6,20,0.28)");
+      line(g, cx - 10, cy + 1, cx + 8, cy - 1, "rgba(212,166,74,0.25)", 1);
     } else { // blood smear with drag marks
       ellipse(g, cx - 2, cy, 13, 5.6, P.decal.blood);
       ellipse(g, cx - 1, cy + 0.5, 7.5, 3.1, "rgba(0,0,0,0.3)");
@@ -39,13 +85,20 @@ export function drawFloor(g, kind, v) {
   }
   // soft highlight on the tile centre and an edge line that survives the dark grade (floor value beyond the light)
   fillPoly(g, [[cx, cy - hh * 0.3], [cx + hw * 0.3, cy], [cx, cy + hh * 0.3], [cx - hw * 0.3, cy]], "rgba(255,255,255,0.03)");
-  g.lineWidth = 1; g.strokeStyle = P.floorEdge;
+  g.lineWidth = 1; g.strokeStyle = T ? T.floorEdge : P.floorEdge;
   poly(g, [[cx, cy - hh + 0.5], [cx + hw - 1, cy], [cx, cy + hh - 0.5], [cx - hw + 1, cy]]); g.stroke();
 }
 
-export function drawMarker(g, id) {
-  drawFloor(g, "corridor", 0);
+export function drawMarker(g, id, theme = "open-plan") {
+  drawFloor(g, "corridor", 0, theme);
   const cx = 33, cy = 17;
+  if (theme === "lobby" && id === "stairs-down") { // the elevator pad: brushed steel, centre seam, a lit call arrow
+    fillPoly(g, [[cx, cy - 15], [cx + 30, cy], [cx, cy + 15], [cx - 30, cy]], "#8e9bb4", P.ink, 1.4);
+    fillPoly(g, [[cx, cy - 15], [cx + 30, cy], [cx + 15, cy + 7.5], [cx - 15, cy - 7.5]], "#a6b3cc");
+    line(g, cx - 15, cy - 7.5, cx + 15, cy + 7.5, P.ink, 1.4);
+    fillPoly(g, [[cx - 6, cy - 3], [cx + 6, cy - 3], [cx, cy + 5]], "#5af0a0", P.ink, 1);
+    return;
+  }
   if (id === "door") {
     fillPoly(g, [[cx - 9, cy - 4.5], [cx + 9, cy + 4.5], [cx + 4, cy + 7], [cx - 14, cy - 2]], "#6b4a2f", P.ink, 1.2);
     line(g, cx - 12, cy - 2.5, cx + 6, cy + 6, shade("#6b4a2f", 0.3), 1);
@@ -68,8 +121,8 @@ export function drawMarker(g, id) {
 export const WALL_H = 44;
 export const WALL_W = 64, WALL_CANVAS_H = 80, WALL_CY = 62;
 
-export function drawWall(g, mask, variant = 0) {
-  const w = P.wall, cx = 32, cy = WALL_CY, hw = 32, hh = 16, h = WALL_H;
+export function drawWall(g, mask, variant = 0, theme = "open-plan") {
+  const w = themeOf(theme)?.wall ?? P.wall, cx = 32, cy = WALL_CY, hw = 32, hh = 16, h = WALL_H;
   const T = [cx, cy - hh], R = [cx + hw, cy], B = [cx, cy + hh], L = [cx - hw, cy];
   const up = (p, z = h) => [p[0], p[1] - z];
   const faceLeft = !(mask & 4), faceRight = !(mask & 2);
@@ -88,8 +141,15 @@ export function drawWall(g, mask, variant = 0) {
     quad(pt, 0, 0, 1, 0.13, w.base);                         // skirting
     quad(pt, 0.07, 0.2, 0.93, 0.74, shade(base, 0.1), shade(base, -0.28), 1); // wall panel
     quad(pt, 0, 0.9, 1, 1, w.trim); quad(pt, 0, 0.9, 1, 0.93, w.trimDark); // orange trim
-    if (variant === 1) { blob(pt, 0.36, 0.5, 0.17, 0.13, "rgba(8,6,20,0.3)"); blob(pt, 0.8, 0.3, 0.07, 0.07, "rgba(8,6,20,0.25)"); }
-    if (variant === 2 && edgeSide) { blob(pt, 0.55, 0.55, 0.14, 0.17, "rgba(120,24,48,0.85)"); blob(pt, 0.62, 0.22, 0.04, 0.12, "rgba(120,24,48,0.85)"); blob(pt, 0.4, 0.4, 0.05, 0.06, "rgba(120,24,48,0.85)"); }
+    if (theme === "lobby" && variant === 1) { // framed poster on the wainscot
+      quad(pt, 0.3, 0.36, 0.7, 0.7, "#1a1436", P.ink, 1); quad(pt, 0.35, 0.42, 0.65, 0.64, "#e8b44a"); quad(pt, 0.35, 0.42, 0.5, 0.53, "#5b8cff");
+    } else if (theme === "basement" && variant === 1) { // pipe run with brackets
+      quad(pt, 0, 0.42, 1, 0.54, "#7a5a3c", P.ink, 1.1); quad(pt, 0, 0.5, 1, 0.54, "#a9784a");
+      for (const u of [0.2, 0.62]) quad(pt, u, 0.36, u + 0.06, 0.6, "#2b3640", P.ink, 1);
+    } else if (theme === "basement" && variant === 2) { // damp streaks
+      for (const u of [0.25, 0.5, 0.78]) quad(pt, u, 0.2, u + 0.04, 0.8, "rgba(20,48,80,0.4)");
+    } else if (variant === 1) { blob(pt, 0.36, 0.5, 0.17, 0.13, "rgba(8,6,20,0.3)"); blob(pt, 0.8, 0.3, 0.07, 0.07, "rgba(8,6,20,0.25)"); }
+    if (variant === 2 && edgeSide && theme === "open-plan") { blob(pt, 0.55, 0.55, 0.14, 0.17, "rgba(120,24,48,0.85)"); blob(pt, 0.62, 0.22, 0.04, 0.12, "rgba(120,24,48,0.85)"); blob(pt, 0.4, 0.4, 0.05, 0.06, "rgba(120,24,48,0.85)"); }
     fillPoly(g, [pt(0, 0), pt(1, 0), pt(1, 1), pt(0, 1)], null, P.ink, 1.6);
   };
   if (faceRight) face(rf, w.right, true);

@@ -60,6 +60,59 @@ const draw = {
     box(g, CX, CY, { u0: -0.34, u1: 0.02, v0: -0.2, v1: 0.2, z0: 15, h: 11 }, mat("#a98354"));
     fillPoly(g, [[CX - 14, CY - 14], [CX - 4, CY - 9], [CX - 4, CY - 6], [CX - 14, CY - 11]], "#c9b48a");
   },
+  "server-rack"(g) {
+    shadow(g, 24, 11);
+    const r = box(g, CX, CY, { u0: -0.3, u1: 0.3, v0: -0.28, v1: 0.28, h: 44 }, { top: "#3e4a60", left: "#2a3348", right: "#1c2336", rim: "#9fe8ff" });
+    // front (lower-left face): three rows of drive bays with blinking LEDs, a vent at the bottom
+    for (let i = 0; i < 4; i++) {
+      const z = 9 + i * 8.5;
+      fillPoly(g, [r.P(-0.25, 0.28, z), r.P(0.25, 0.28, z), r.P(0.25, 0.28, z + 6.5), r.P(-0.25, 0.28, z + 6.5)], "#121827", INK, 1);
+      for (let k = 0; k < 3; k++) {
+        const p = r.P(-0.18 + k * 0.1, 0.28, z + 3.2), on = (i * 3 + k) % 3 !== 1;
+        ellipse(g, p[0], p[1], 1.25, 1.25, on ? (k === 2 ? "#ffb35a" : "#35e0c8") : "#46506a");
+      }
+      const s0 = r.P(0.1, 0.28, z + 3.2), s1 = r.P(0.22, 0.28, z + 3.2);
+      line(g, s0[0], s0[1], s1[0], s1[1], "#6a768f", 1.4);
+    }
+    for (let k = 0; k < 4; k++) { const a = r.P(-0.22, 0.28, 2 + k * 1.5), b = r.P(0.22, 0.28, 2 + k * 1.5); line(g, a[0], a[1], b[0], b[1], "#0b0f1a", 0.9); }
+  },
+  generator(g) {
+    shadow(g, 25, 11);
+    const body = box(g, CX, CY, { u0: -0.38, u1: 0.38, v0: -0.3, v1: 0.3, h: 22 }, mat("#6f8a4a", "#d3f0a0"));
+    box(g, CX, CY, { u0: -0.42, u1: 0.42, v0: -0.33, v1: 0.33, h: 4 }, mat("#2c3342"));
+    // hazard stripe on the front, a dial and a vent
+    for (let i = 0; i < 6; i++) {
+      const u = -0.34 + i * 0.12;
+      fillPoly(g, [body.P(u, 0.3, 5), body.P(u + 0.06, 0.3, 5), body.P(u + 0.1, 0.3, 11), body.P(u + 0.04, 0.3, 11)], i % 2 ? "#161425" : "#ffc93a");
+    }
+    const d = body.P(-0.2, 0.3, 17); ellipse(g, d[0], d[1], 3, 3, "#ece4cf", INK, 1); line(g, d[0], d[1], d[0] + 1.5, d[1] - 2, INK, 1);
+    ellipse(g, body.P(0.2, 0.3, 17)[0], body.P(0.2, 0.3, 17)[1], 1.8, 1.8, "#ff9a3a", INK, 1);
+    // exhaust stack
+    box(g, CX, CY, { u0: 0.2, u1: 0.3, v0: -0.25, v1: -0.15, z0: 22, h: 14 }, mat("#2c3342"));
+  },
+  "cable-bundle"(g) {
+    ellipse(g, CX, CY + 2, 20, 8, "rgba(0,0,0,0.28)");
+    const snake = (pts, col, w) => {
+      g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i += 2) g.quadraticCurveTo(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]);
+      g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = INK; g.lineWidth = w + 3; g.stroke(); g.strokeStyle = col; g.lineWidth = w; g.stroke();
+    };
+    snake([[CX - 20, CY - 4], [CX - 8, CY - 14], [CX + 2, CY - 2], [CX + 12, CY + 8], [CX + 22, CY]], "#23283c", 4.4);
+    snake([[CX - 18, CY + 4], [CX - 6, CY + 12], [CX + 4, CY + 4], [CX + 14, CY - 4], [CX + 20, CY + 6]], "#ff9a3a", 3);
+    snake([[CX - 12, CY - 8], [CX - 2, CY - 12], [CX + 8, CY - 6], [CX + 16, CY - 8], [CX + 20, CY - 12]], "#35a0e0", 2.6);
+    for (const x of [-10, 6]) line(g, CX + x, CY - 3 + (x > 0 ? 0 : -1), CX + x + 1, CY + 1, "#d0d6e4", 2.4);
+  },
+  "reception-desk"(g) {
+    shadow(g, 30, 11);
+    const d = box(g, CX, CY, { u0: -0.5, u1: 0.5, v0: -0.34, v1: 0.34, h: 22 }, { top: "#c9a766", left: "#6a4a63", right: "#4a3346", rim: "#ffe3b8" });
+    // front panel: brass band and a glowing logo plate
+    fillPoly(g, [d.P(-0.5, 0.34, 15), d.P(0.5, 0.34, 15), d.P(0.5, 0.34, 17), d.P(-0.5, 0.34, 17)], "#d4a64a");
+    fillPoly(g, [d.P(-0.2, 0.34, 6), d.P(0.2, 0.34, 6), d.P(0.2, 0.34, 12), d.P(-0.2, 0.34, 12)], "#1a1436", INK, 1);
+    line(g, d.P(-0.12, 0.34, 9)[0], d.P(-0.12, 0.34, 9)[1], d.P(0.12, 0.34, 9)[0], d.P(0.12, 0.34, 9)[1], "#5af0d4", 1.6);
+    // a bell and a guest book on top
+    const bell = d.P(0.15, -0.05, 22); ellipse(g, bell[0], bell[1] - 2, 3.4, 2.6, "#e8c25a", INK, 1); line(g, bell[0], bell[1] - 5, bell[0], bell[1] - 7, INK, 1.4);
+    box(g, CX, CY, { u0: -0.3, u1: -0.05, v0: -0.12, v1: 0.1, z0: 22, h: 2 }, mat(P.paper, "#ffffff"));
+  },
   chair(g) {
     ellipse(g, CX, CY + 1, 13, 6, "rgba(0,0,0,0.3)");
     for (const [x, y] of [[-8, 2], [8, 2], [0, 7], [0, -4]]) line(g, CX, CY - 5, CX + x, CY + y, INK, 3);
@@ -75,3 +128,21 @@ const draw = {
 
 export const propIds = Object.keys(draw);
 export const drawProp = (g, id) => (draw[id] ?? draw["box-stack"])(g);
+
+/** The Lobby elevator (drawn at floor.exit): a steel doorframe on the tile's back-left edge, sliding doors a little open, a floor display above. 64x72 canvas like props. */
+export function drawElevator(g) {
+  const bl = [CX - 31, CY - 1], br = [CX, CY - 17], z = 46;
+  const at = (t, h) => [bl[0] + (br[0] - bl[0]) * t, bl[1] + (br[1] - bl[1]) * t - h];
+  const quad = (t0, t1, h0, h1, fill, st = INK, lw = 1.2) => fillPoly(g, [at(t0, h0), at(t1, h0), at(t1, h1), at(t0, h1)], fill, st, lw);
+  quad(0, 1, 0, z, "#0e1424", INK, 1.6);                      // dark cabin interior
+  quad(0.06, 0.34, 0, z - 4, "#9aa7c2");                       // left door, slid aside
+  quad(0.66, 0.94, 0, z - 4, "#7f8cab");                       // right door, slid aside
+  quad(0.06, 0.34, z * 0.55, z * 0.58, "rgba(255,255,255,0.35)", null);
+  quad(0.46, 0.54, 0, z - 4, "rgba(90,240,160,0.18)", null);   // light from inside
+  quad(-0.04, 0.06, 0, z + 6, "#d4a64a");                      // posts
+  quad(0.94, 1.04, 0, z + 6, "#b88e3a");
+  quad(-0.04, 1.04, z, z + 7, "#d4a64a");                      // lintel
+  const c = at(0.5, z + 3.5);
+  fillPoly(g, [[c[0] - 8, c[1] - 3], [c[0] + 8, c[1] - 3 - 4], [c[0] + 8, c[1] + 1 - 4], [c[0] - 8, c[1] + 2]], "#0b0f1a", INK, 1);
+  fillPoly(g, [[c[0] - 2.4, c[1] - 1.2], [c[0] + 2.4, c[1] - 3.2], [c[0], c[1] + 1]], "#5af0a0");
+}

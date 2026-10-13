@@ -31,13 +31,16 @@ export function createLabels(style) {
   const L = {
     count: 0, placed,
     /** Plate sprite for a name; geometry in CSS px, canvas at `dpr`. */
-    sprite(name, fs, hc, dpr) {
-      const key = `${name}|${fs}|${hc ? 1 : 0}|${dpr}`;
+    sprite(name, fs, hc, dpr, bar = true, sub = "", champ = false) {
+      const key = `${name}|${fs}|${hc ? 1 : 0}|${dpr}|${bar ? 1 : 0}|${sub}|${champ ? 1 : 0}`;
       let s = cache.get(key);
       if (s) return s;
       const pal = hc ? P.plateHc : P.plate, probe = document.createElement("canvas").getContext("2d"), font = `800 ${fs}px ${FONT}`;
       probe.font = font;
-      const barH = Math.max(5, Math.round(fs * 0.4)), w = Math.ceil(Math.max(probe.measureText(name).width + 16, fs * 5)), h = fs + barH + 11, pad = 3;
+      const barH = bar ? Math.max(5, Math.round(fs * 0.4)) : 0, subFs = Math.max(10, Math.round(fs * 0.82)), subFont = `700 ${subFs}px ${FONT}`;
+      let subW = 0;
+      if (sub) { probe.font = subFont; subW = probe.measureText(sub).width; probe.font = font; }
+      const w = Math.ceil(Math.max(probe.measureText(name).width + 16, subW + 16, bar ? fs * 5 : fs * 3)), h = fs + (bar ? barH + 11 : 9) + (sub ? subFs + 3 : 0), pad = 3;
       const c = document.createElement("canvas");
       c.width = Math.ceil((w + pad * 2) * dpr); c.height = Math.ceil((h + pad * 2) * dpr);
       const g = c.getContext("2d");
@@ -45,11 +48,13 @@ export function createLabels(style) {
       g.beginPath(); g.roundRect(pad, pad, w, h, 5);
       g.fillStyle = pal.bg; g.fill();
       g.lineWidth = hc ? 3 : 3.2; g.strokeStyle = hc ? pal.edge : P.ink; g.stroke();
+      if (champ) { g.lineWidth = 2; g.strokeStyle = P.champion; g.stroke(); }
       if (hc) { g.lineWidth = 1.5; g.strokeStyle = "#000"; g.stroke(); }
       g.font = font; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = pal.text;
       g.fillText(name, pad + w / 2, pad + fs + 2);
-      g.fillStyle = pal.hpTrack; g.fillRect(pad + 5, pad + h - barH - 4, w - 10, barH);
-      s = { c, w: w + pad * 2, h: h + pad * 2, pad, barX: pad + 5, barY: pad + h - barH - 4, barW: w - 10, barH, hp: pal.hp };
+      if (sub) { g.font = subFont; g.fillStyle = champ && !hc ? "#f0b6d6" : pal.text; g.fillText(sub, pad + w / 2, pad + fs + 2 + subFs + 1); }
+      if (bar) { g.fillStyle = pal.hpTrack; g.fillRect(pad + 5, pad + h - barH - 4, w - 10, barH); }
+      s = { c, w: w + pad * 2, h: h + pad * 2, pad, barX: pad + 5, barY: pad + h - barH - 4, barW: w - 10, barH, hp: pal.hp, bar };
       cache.set(key, s);
       if (cache.size > 40) cache.delete(cache.keys().next().value);
       return s;
@@ -66,8 +71,11 @@ export function createLabels(style) {
       for (const a of actors) {
         if (a.dead) continue;
         const head = style.dims[a.type]?.head ?? 50;
-        if (a.d > 7 || a.sy - head * z < 6 || a.sy > cam.h + 140 || a.sx < -40 || a.sx > cam.w + 40) continue;
+        if (a.npc && a.d > 8) continue;
+        if ((!a.npc && a.d > 7) || a.sy - head * z < 6 || a.sy > cam.h + 140 || a.sx < -40 || a.sx > cam.w + 40) continue;
+        if (a.npc) { if (a.d > 8) continue; a.pr = a.d <= 4 ? 1.5 : 2.5 + a.d / 10; cand.push(a); continue; }
         a.pr = a.id === targetId ? 0 : a.id === hoverId ? 1 : a.d <= 5 && a.ai !== "idle" ? 2 + a.d / 10 : a.d <= 3 ? 3 + a.d / 10 : 9 + a.d / 10;
+        if (a.champ && a.pr > 1.8) a.pr = 1.8; // champions always keep their plate (name and modifiers)
         cand.push(a);
       }
       cand.sort(byPriority);
@@ -75,10 +83,10 @@ export function createLabels(style) {
       const fs = fontPx(s, 9.5, 12);
       let n = 0, others = 0;
       for (const a of cand) {
-        const forced = a.pr <= 1, full = forced || (a.pr < 9 && others < 2);
+        const forced = a.pr <= 1 || a.npc, full = forced || (a.pr < 9 && others < 2);
         if (!full || n >= MAX_PLATES) continue;
         const head = style.dims[a.type]?.head ?? 50;
-        const sp = L.sprite(a.name, fs, hc, dpr), r = placed[n];
+        const sp = L.sprite(a.name, fs, hc, dpr, !a.npc, a.sub, a.champ), r = placed[n];
         const ax = Math.round(a.sx), ay = Math.round(a.sy - head * z - 5 * s);
         r.w = sp.w; r.h = sp.h; r.sprite = sp; r.ax = ax; r.ay = ay; r.id = a.id; r.ratio = a.hpMax > 0 ? Math.max(0, Math.min(1, a.hp / a.hpMax)) : 0;
         let ok = false;
@@ -96,7 +104,7 @@ export function createLabels(style) {
       // 2. everyone else in the light gets a mini health pip right above the head (skipped when a plate already sits there)
       const pw = Math.round(26 * s), ph = Math.max(4, Math.round(4.5 * s));
       for (const a of cand) {
-        if (a.pr < 0 || pipN >= MAX_PIPS) continue;
+        if (a.pr < 0 || a.npc || pipN >= MAX_PIPS) continue;
         const head = style.dims[a.type]?.head ?? 50, pp = pips[pipN];
         pp.w = pw; pp.h = ph; pp.x = Math.round(a.sx - pw / 2); pp.y = Math.round(a.sy - head * z - 4 * s - ph);
         pp.ratio = a.hpMax > 0 ? Math.max(0, Math.min(1, a.hp / a.hpMax)) : 0; pp.id = a.id;
@@ -122,6 +130,7 @@ export function createLabels(style) {
           g.strokeStyle = "#f3eefc"; g.lineWidth = 1.4; g.stroke();
         }
         g.drawImage(sp.c, r.x, r.y, sp.w, sp.h);
+        if (!sp.bar) continue;
         const bw = sp.barW * r.ratio;
         g.fillStyle = sp.hp; g.fillRect(r.x + sp.barX, r.y + sp.barY, bw, sp.barH);
         g.fillStyle = "rgba(255,255,255,0.35)"; g.fillRect(r.x + sp.barX, r.y + sp.barY, bw, sp.barH * 0.38);

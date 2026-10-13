@@ -20,14 +20,40 @@ export const palette = {
   // Rarity colours (Okabe-Ito): blue Magic, yellow Rare, vermillion Unique. Used from S2 (loot); kept here so the palette is one file.
   rarity: { magic: "#56b4e9", rare: "#f0e442", unique: "#e8590c" },
   // Per-actor rim colours (2 px silhouette ring baked into the atlas sprite).
-  rims: { clerk: "#e6fbff", "zombie-intern": "#a6e65a", "printer-imp": "#ff5a46" },
+  rims: {
+    clerk: "#e6fbff", "zombie-intern": "#a6e65a", "printer-imp": "#ff5a46",
+    "temp-worker": "#ffb35a", "printer-demon": "#ff3d6e", "middle-manager": "#ffd2a0", "vending-machine": "#58e0ff", consultant: "#d6c8ff", auditor: "#b8f060",
+    "npc-vendor": "#ffe08a", "npc-healer": "#9ff5d8", "npc-potions": "#9fe08a", "npc-stash": "#bcd0ff",
+  },
+  // Champion outline (distinct from every rim, rarity and the hero ring): reddish purple, Okabe-Ito.
+  champion: "#cc79a7",
+  // Per-theme tiles and darkness. The open-plan theme uses the base `floors` / `wall` above.
+  themes: {
+    lobby: {
+      floors: { corridor: ["#3d3550", "#463d5c"], reception: ["#4a3f5a", "#5a4d6e"], breakroom: ["#2f4f58", "#386068"] },
+      floorEdge: "rgba(255,214,160,0.16)",
+      wall: { top: "#4d3d5a", left: "#8b6a7a", right: "#6a4f63", band: "#3c2f48", base: "#2d2238", trim: "#d4a64a", trimDark: "#9a7428", rim: "#ffe3b8" },
+      dark: "rgba(14,8,26,0.55)",
+    },
+    basement: {
+      floors: { corridor: ["#1f2a36", "#273542"], server: ["#1b2d3d", "#24404f"], archive: ["#2a2d3a", "#33374a"], boiler: ["#2b2724", "#38322d"], storage: ["#242b36", "#2d3644"] },
+      floorEdge: "rgba(120,200,255,0.17)",
+      wall: { top: "#34414d", left: "#566878", right: "#3f4e5c", band: "#2b3640", base: "#1d252d", trim: "#6a7886", trimDark: "#47525d", rim: "#bfe4ff" },
+      dark: "rgba(3,7,18,0.92)",
+    },
+  },
+  proj: { stapler: "#c9d2e4", toner: "#17131f", tonerGlow: "#ff3d6e", slide: "#fffaf0", slideEdge: "#5b8cff" },
   // Light pools: [colour, additive alpha at the centre]
   pools: {
     monitor: ["#45d9ff", 0.2],
     fluor: ["#9bf5d0", 0.2],
     lamp: ["#ff3a2a", 0.2],
+    warm: ["#ffd29a", 0.2],   // lobby: warm lamp
+    cold: ["#8fb8ff", 0.22],  // basement: cold flickering tube
+    rack: ["#35e0c8", 0.2],   // basement: server rack LEDs
+    gen: ["#ff9a3a", 0.2],    // basement: generator work light
   },
-  actorLights: { "printer-imp": "lamp" }, // monsters that carry a coloured light
+  actorLights: { "printer-imp": "lamp", "printer-demon": "lamp" }, // monsters that carry a coloured light
   dark: "rgba(7,5,24,0.86)",
   // Plates: background and text colours; contrast of text on plate is unit-tested (>= 4.5:1).
   plate: { bg: "#1a1436", text: "#f3eefc", edge: "#0d0a1c", hp: "#ff4a52", hpTrack: "#3a1226" },

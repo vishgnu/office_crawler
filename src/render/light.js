@@ -5,7 +5,14 @@
 // The mask is re-baked only when the viewport, zoom or mode changes, never per frame.
 export const MAX_LIGHTS = 4;
 export const HERO_RADIUS = 5.6; // tiles
-const POOL = { monitor: { r: 2.1, lift: 22 }, fluor: { r: 3.6, lift: 0 }, lamp: { r: 2.7, lift: 14 } };
+const POOL = {
+  monitor: { r: 2.1, lift: 22 }, fluor: { r: 3.6, lift: 0 }, lamp: { r: 2.7, lift: 14 },
+  warm: { r: 4.2, lift: 0 },   // Lobby ceiling lamp
+  cold: { r: 3.6, lift: 0 },   // basement tube (flickers harder)
+  rack: { r: 2.3, lift: 24 },  // server rack LEDs
+  gen: { r: 2.4, lift: 12 },   // generator work light
+};
+const FLICKERING = { fluor: 1, cold: 1.6 };
 
 // Band stops from the C2 mock-up: [position, opacity, ...] (toon bands, not a smooth falloff)
 const HERO_BANDS = [0, 1, 0.26, 1, 0.29, 0.78, 0.5, 0.78, 0.53, 0.42, 0.74, 0.42, 0.77, 0.15, 0.98, 0.1, 1, 0];
@@ -53,13 +60,15 @@ export function createLighting(style) {
   const P = style.palette, sprites = new Map();
   const sprite = (colour, bands) => { const k = colour + bands.length; let s = sprites.get(k); if (!s) { s = radialSprite(colour, bands); sprites.set(k, s); } return s; };
   const mask = { canvas: null, w: 0, h: 0, z: 0, mode: "" };
+  const last = { cam: null, lowFx: false, hc: false };
   const L = {
     lights: Array.from({ length: MAX_LIGHTS }, () => ({ kind: "", x: 0, y: 0, a: 0, colour: "", r: 0, d2: 0 })), n: 0,
-    hero: { x: 0, y: 0 }, lowFx: false, hc: false, stats: { rebakes: 0 },
+    hero: { x: 0, y: 0 }, lowFx: false, hc: false, theme: "open-plan", stats: { rebakes: 0 },
 
     /** (Re)bake the darkness mask if the viewport, zoom or mode changed. */
     ensure(cam, lowFx, hc) {
-      const mode = lowFx ? "low" : hc ? "hc" : "full";
+      const mode = (lowFx ? "low" : hc ? "hc" : "full") + L.theme;
+      last.cam = cam; last.lowFx = lowFx; last.hc = hc;
       if (mask.canvas && mask.w === cam.w && mask.h === cam.h && mask.z === cam.z && mask.mode === mode) return;
       L.stats.rebakes++;
       const res = lowFx ? 0.25 : 0.5, cw = Math.max(2, Math.ceil(cam.w * 2 * res)), ch = Math.max(2, Math.ceil(cam.h * 2 * res));
@@ -67,7 +76,7 @@ export function createLighting(style) {
       c.width = cw; c.height = ch;
       const g = c.getContext("2d");
       g.clearRect(0, 0, cw, ch);
-      g.fillStyle = hc ? "rgba(7,5,24,0.6)" : lowFx ? "rgba(7,5,24,0.62)" : P.dark; g.fillRect(0, 0, cw, ch);
+      g.fillStyle = hc ? "rgba(7,5,24,0.6)" : lowFx ? "rgba(7,5,24,0.62)" : P.themes[L.theme]?.dark ?? P.dark; g.fillRect(0, 0, cw, ch);
       const rx = HERO_RADIUS * 45.25 * cam.z * res, ry = HERO_RADIUS * 22.6 * cam.z * res;
       g.globalCompositeOperation = "destination-out";
       if (lowFx) { // flat: a smooth, cheap hole
@@ -84,7 +93,8 @@ export function createLighting(style) {
     },
 
     /** Pick the (at most 4) lights that matter: nearest to the hero, imp lamps first. Allocation-free. */
-    select(cam, hero, candidates, monsters, lowFx, hc) {
+    select(cam, hero, candidates, monsters, lowFx, hc, theme = "open-plan") {
+      if (theme !== L.theme) { L.theme = theme; if (last.cam) L.ensure(last.cam, last.lowFx, last.hc); } // a new floor theme re-bakes the mask once
       L.n = 0; L.hero.x = hero.x; L.hero.y = hero.y; L.lowFx = lowFx; L.hc = hc;
       if (lowFx || hc) return;
       for (let i = 0; i < monsters.length; i++) { const m = monsters[i]; if (m.ai !== "dead" && P.actorLights[m.type]) consider(L, P, P.actorLights[m.type], m.x, m.y, 30); }
@@ -102,7 +112,7 @@ export function createLighting(style) {
         const l = L.lights[i], pc = POOL[l.kind];
         const sx = cam.ox + (l.x - l.y) * 32 * cam.z, sy = cam.oy + (l.x + l.y) * 16 * cam.z - pc.lift * cam.z;
         const rx = l.r * 45.25 * cam.z, ry = l.r * 22.6 * cam.z;
-        g.globalAlpha = l.a * (l.kind === "fluor" ? flicker(now, (l.x * 3 + l.y) | 0) : l.kind === "monitor" ? 0.9 + Math.sin(now / 160 + l.x) * 0.06 : 1);
+        g.globalAlpha = l.a * (FLICKERING[l.kind] ? flicker(now, (l.x * 3 + l.y) | 0) ** FLICKERING[l.kind] : l.kind === "monitor" ? 0.9 + Math.sin(now / 160 + l.x) * 0.06 : 1);
         g.drawImage(sprite(l.colour, POOL_BANDS), sx - rx, sy - ry, rx * 2, ry * 2);
       }
       g.globalAlpha = 1; g.globalCompositeOperation = "source-over";

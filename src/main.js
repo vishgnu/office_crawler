@@ -6,11 +6,14 @@ import { viewConfig } from "./ui/layout.js";
 import { worldScale } from "./ui/camera.js";
 import { createGame } from "./game.js";
 import { createScreens } from "./ui/screens.js";
+import { createPanels } from "./ui/panels.js";
+import { preventsDefault } from "./input/keys.js";
 import { installTestHook } from "./testhook/index.js";
 
 const S = content.strings;
 const params = new URLSearchParams(location.search);
 const testMode = params.get("test") === "1";
+if (testMode) document.documentElement.classList.add("noanim"); // no panel slide in tests: states are asserted at once
 // `?seed=` is honoured in every mode on purpose: it lets players share a run. Without it the seed comes from the clock.
 // Render options: ?hc=1 high-contrast (solid plates, no light tint, thick rims), ?lowfx=1 flat cheap lighting, ?zoom=N camera zoom.
 const hc = params.get("hc") === "1", lowFx = params.get("lowfx") === "1";
@@ -43,6 +46,8 @@ async function boot() {
   const bus = createBus();
   const game = createGame({ canvas, atlas, style, bus, testMode, realtime: params.get("realtime") === "1", seed, atlasMs, lowFx, hc });
 
+  if (testMode && params.get("start") === "floor") game.defaultStart = "floor"; // legacy fixtures: New game lands on floor 1
+
   // S5: rebuild the atlas when the zoom / devicePixelRatio bucket changes (debounced; the old atlas stays in use until the new one is ready).
   let pending = null, building = false;
   game.onResize = (w, h, dpr) => {
@@ -60,22 +65,29 @@ async function boot() {
     newGame: () => game.newGame(game.titleSeed),
     resume: () => game.key("Escape"),
     restart: () => game.input({ t: "restart" }),
+    respawn: () => game.input({ t: "respawn" }),
     quit: () => game.toTitle(),
   });
   const sync = () => screens.show(game.menu(), { seed: game.titleSeed, error: game.error, summary: game.menu() === "dead" ? game.summary() : null });
   game.onChange(sync);
+  createPanels(document.getElementById("ui"), game);
 
-  canvas.addEventListener("contextmenu", (e) => e.preventDefault());
-  canvas.addEventListener("pointerdown", (e) => { canvas.setPointerCapture?.(e.pointerId); game.pointer("down", e); });
+  // Right mouse is a game button (the selected skill): the browser menu never opens in the page (R-005, AC-R-015-2).
+  document.addEventListener("contextmenu", (e) => e.preventDefault());
+  canvas.addEventListener("pointerdown", (e) => { canvas.setPointerCapture?.(e.pointerId); document.activeElement?.blur?.(); game.pointer("down", e); });
   canvas.addEventListener("pointermove", (e) => game.pointer("move", e));
   canvas.addEventListener("pointerup", (e) => game.pointer("up", e));
   canvas.addEventListener("pointercancel", (e) => game.pointer("cancel", e));
   window.addEventListener("resize", () => game.resize());
   window.addEventListener("keydown", (e) => {
-    // Skill selector keys arrive in S2. Tab is only captured while playing, so menu buttons stay reachable.
-    if (/^F[1-4]$/.test(e.code) || (e.code === "Tab" && game.menu() === null)) e.preventDefault();
-    if (e.repeat) return;
-    if (e.code === "Escape") { e.preventDefault(); game.key("Escape"); }
+    // F1-F4 select the right-mouse skill (the browser's own function keys must not fire). Tab stays free: panels and buttons are keyboard-reachable.
+    if (preventsDefault(e.code) || (e.code === "Tab" && game.menu() === null && !game.anyPanel())) e.preventDefault(); // Tab is reserved for the map while no panel is open
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || !game.core) return;
+    if (/^(F[1-4]|Digit[1-4]|Numpad[1-4]|Key[ICSK]|Escape)$/.test(e.code)) {
+      // a focused button keeps Enter/Space; letters and digits still reach the game
+      if (e.code === "Escape") e.preventDefault();
+      game.key(e.code);
+    }
   });
 
   game.start();

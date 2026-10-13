@@ -1,6 +1,7 @@
 // Title / pause / game-over / error screens as DOM overlays above the canvas. All text comes from
 // the string table. Buttons are real <button>s so keyboard, mouse and tests all work.
 import { content } from "../core/index.js";
+import { T } from "./text.js";
 
 const S = content.strings;
 
@@ -41,7 +42,7 @@ export function createScreens(root, h) {
         for (const [k, v] of [["Kills", String(r.kills)], ["Time", `${mm}:${ss}`], ["Depth", String(r.depth)]]) { const d = el("div"); d.append(el("dt", "", k), el("dd", "", v)); list.append(d); }
         s.append(list);
       }
-      s.append(button(S.restart, "restart", h.restart), button(S.quitToTitle, "quit", h.quit));
+      s.append(el("p", "hint", T.respawnHint), button(T.respawn, "respawn", h.respawn), button(S.restart, "restart", h.restart), button(S.quitToTitle, "quit", h.quit));
       return s;
     },
     error: (info) => {

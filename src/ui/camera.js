@@ -7,9 +7,9 @@ import { viewScale, viewConfig } from "./layout.js";
 export const worldScale = (w, h, zoom = viewConfig.zoom) => viewScale(w, h) * zoom;
 
 /** Camera centred on tile-space point (cx, cy) (already a centre point, e.g. actor pos + 0.5). */
-export function makeCamera(w, h, cx, cy, zoom = viewConfig.zoom) {
+export function makeCamera(w, h, cx, cy, zoom = viewConfig.zoom, shiftX = 0) {
   const z = worldScale(w, h, zoom), c = tileToScreen(cx, cy);
-  return { w, h, z, ox: w / 2 - c.x * z, oy: h / 2 - (c.y - 12) * z, cx, cy };
+  return { w, h, z, ox: w / 2 + shiftX - c.x * z, oy: h / 2 - (c.y - 12) * z, cx, cy };
 }
 
 export function worldToScreen(cam, wx, wy) {

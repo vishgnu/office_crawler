@@ -19,14 +19,14 @@ const browser = await launch();
   await g.context.close();
 }
 {
-  const g = await open(browser, { query: "test=1&seed=5" });
+  const g = await open(browser, { query: "test=1&seed=5", lobby: true });
   check("AC-NFR-S01-1 window.__app defined with ?test=1", (await g.page.evaluate(() => typeof window.__app)) === "object");
   const s = await g.state();
   check("AC-R-110-1 scene is title on load", s.scene === "title" && s.ui.menu === "title");
   check("AC-R-076-1 title offers New game", (await g.page.locator('[data-testid="new-game"]').count()) === 1);
   await g.page.click('[data-testid="new-game"]');
   const s2 = await g.state();
-  check("AC-R-001-2 clicking New game starts a floor", s2.scene === "floor" && s2.seed === 5, { scene: s2.scene, seed: s2.seed });
+  check("AC-R-001-2 clicking New game starts in the Lobby (scene town, S2)", s2.scene === "town" && s2.depth === 0 && s2.seed === 5, { scene: s2.scene, seed: s2.seed });
   check("no page errors", g.errors.length === 0, g.errors);
   await g.context.close();
 }

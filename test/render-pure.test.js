@@ -97,3 +97,82 @@ test("N3: facing memory is pruned for monsters that no longer exist (and never f
   pruneFacing(core, rs); // nothing to prune: untouched
   assert.equal(rs.facing.get("m1"), 5);
 });
+
+// ---- S2 WORLD ----
+import { getStyle } from "../src/render/style.js";
+import { createFx, stackRows } from "../src/render/fx.js";
+import { requiredKeys, keys, PLAYER_ANIMS, ANIMS, DIRS, PROJECTILES, LOOT_IDS, FLOOR_KINDS, NPC_FRAMES } from "../src/render/keys.js";
+
+test("S2: every monster type and every NPC has a rim colour and figure metrics; the champion colour is unique among them", () => {
+  for (const id of Object.keys(content.npcs)) {
+    assert.match(palette.rims[`npc-${id}`], /^#[0-9a-f]{6}$/i, id);
+    assert.ok(FIG_DIM[`npc-${id}`].head > 30 && FIG_DIM[`npc-${id}`].shadowR > 5, id);
+  }
+  const taken = new Set([...Object.values(palette.rims), ...Object.values(palette.rarity)].map((c) => c.toLowerCase()));
+  assert.ok(!taken.has(palette.champion.toLowerCase()));
+});
+
+test("S2: every theme draws every room kind; basement and Lobby have their own tile palettes, darkness and pools", () => {
+  for (const kind of ["server", "archive", "boiler", "reception", "breakroom"]) assert.ok(FLOOR_KINDS.includes(kind), kind);
+  const all = new Set(requiredKeys(content));
+  for (const theme of ["lobby", "basement", "open-plan"]) for (const kind of FLOOR_KINDS) assert.ok(all.has(keys.floor(theme, kind, 5)), `${theme}/${kind}`);
+  for (const theme of ["lobby", "basement"]) {
+    assert.ok(palette.themes[theme].floors.corridor && palette.themes[theme].wall.left && palette.themes[theme].dark, theme);
+    for (const [a, b] of Object.values(palette.themes[theme].floors)) { assert.match(a, /^#/); assert.match(b, /^#/); }
+  }
+  const alpha = (c) => Number(c.match(/rgba\(\d+,\d+,\d+,([\d.]+)\)/)[1]);
+  assert.ok(alpha(palette.themes.basement.dark) > alpha(palette.dark), "basement is darker than the open-plan floors");
+  assert.ok(alpha(palette.themes.lobby.dark) < alpha(palette.dark), "the Lobby is lighter (a safe place)");
+  for (const k of ["warm", "cold", "rack", "gen"]) assert.ok(palette.pools[k], k);
+});
+
+test("S2: sprite keys cover projectiles, NPC idle loops, loot art and the hero's cast pose (monsters get no cast frames)", () => {
+  const all = new Set(requiredKeys(content));
+  for (const k of PROJECTILES) assert.ok(all.has(keys.proj(k)), k);
+  for (const k of ["stapler", "toner", "slide"]) assert.ok(PROJECTILES.includes(k));
+  for (const id of LOOT_IDS) assert.ok(all.has(keys.loot(id)), id);
+  for (const id of Object.keys(content.npcs)) for (let f = 0; f < NPC_FRAMES; f++) assert.ok(all.has(keys.npc(id, f)), id);
+  for (let d = 0; d < DIRS; d++) for (let f = 0; f < PLAYER_ANIMS.cast; f++) assert.ok(all.has(keys.plr(PLAYER_CLASS, "cast", d, f)));
+  assert.ok(!all.has(keys.mon("zombie-intern", "cast", 0, 0)) && ANIMS.cast === undefined);
+  for (const id of ["server-rack", "generator", "cable-bundle", "reception-desk"]) assert.ok(all.has(keys.prop(id)), id);
+});
+
+test("S2: loot plate text (Okabe-Ito rarity colours, normal and gold) meets 4.5:1 on the plate", () => {
+  for (const c of [...Object.values(palette.rarity), "#d6d3cb", "#e6c84a", palette.plate.text]) assert.ok(contrast(c, palette.plate.bg) >= 4.5, c);
+  assert.ok(contrast("#f0b6d6", palette.plate.bg) >= 4.5, "champion modifier line");
+});
+
+test("S2: floaters have one source (state.floaters): events create no render-side floaters, and the S1 stacking rule holds", () => {
+  const fx = createFx(getStyle("vector"));
+  assert.equal(fx.floaters, undefined);
+  const core = { player: { tile: { x: 5, y: 5 }, next: null }, monsters: [{ id: "m1", type: "zombie-intern", tile: { x: 6, y: 5 }, next: null }], projectiles: [] };
+  for (const ev of [{ type: "hit", source: "player", target: "m1", value: 7 }, { type: "miss", source: "player", target: "m1" }]) fx.handle(ev, core, 1000);
+  assert.equal(fx.floaters, undefined);
+  // three floaters on one target 5 ticks apart stack upward; another target and a late one start at row 0 again
+  const T = config.tickHz, life = config.floaterTicks;
+  const list = [
+    { target: "m1", life: life - 20 }, { target: "m1", life: life - 15 }, { target: "m1", life: life - 10 },
+    { target: "m2", life: life - 10 }, { target: "m1", life },
+  ];
+  assert.deepEqual(stackRows(list.slice(0, 3)), [0, 1, 2]);
+  assert.deepEqual(stackRows(list.slice(0, 4)), [0, 1, 2, 0]);
+  const late = [{ target: "m1", life: 10 }, { target: "m1", life: 10 + Math.ceil((0.5 * T)) }]; // second spawned 0.5 s later: back to row 0
+  assert.deepEqual(stackRows(late), [0, 0]);
+});
+
+test("S2: projectile and burst events create impact FX; floorEnter clears them", () => {
+  const fx = createFx(getStyle("vector"));
+  const pr = { id: "j1", kind: "toner", pos: { x: 4, y: 4 }, dir: { x: 1, y: 0 }, speed: 0.2 };
+  const core = { player: { tile: { x: 5, y: 5 }, next: null }, monsters: [], projectiles: [pr] };
+  fx.handle({ type: "projectile", id: "j1", kind: "toner", owner: "m1" }, core, 0);
+  assert.equal(fx.impacts.length, 1);
+  fx.handle({ type: "projectileEnd", id: "j1", reason: "hit" }, core, 50);
+  assert.equal(fx.impacts.length, 2);
+  fx.handle({ type: "burst", skill: "reply-all", tile: { x: 5, y: 5 }, radius: 3 }, core, 60);
+  fx.handle({ type: "levelup", level: 2, levels: 1 }, core, 70);
+  fx.handle({ type: "heal", skill: "coffee-break", value: 10 }, core, 80);
+  fx.handle({ type: "cast", skill: "stapler-throw", level: 1, cost: 3, tile: { x: 7, y: 5 } }, core, 90);
+  assert.ok(fx.rings.length >= 4 && fx.pillars.length === 1 && fx.parts.length > 0);
+  fx.handle({ type: "floorEnter", depth: 2, from: 1 }, core, 100);
+  assert.equal(fx.impacts.length + fx.rings.length + fx.pillars.length + fx.parts.length, 0);
+});
