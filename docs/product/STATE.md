@@ -1,5 +1,7 @@
 # STATE
 
+**Slice status (2026-10-13): S1 "playable core" ACCEPTED WITH FOLLOW-UPS by `customer-proxy` (provisional; see `reviews/S1-acceptance.md`).** 120/120 unit tests, 118/118 e2e checks. Gaps to close before S2 acceptance: AC-R-010..012 (character), AC-R-042-5, AC-NFR-S01-2, L05-1, L03-1. Visual acceptance pending `reviews/S1-visual-review.md`. Next: S2 (loot and progression) on the real customer's or proxy's go.
+
 **Phase: Circles. Circle 1 open** (`circles/circle-01.md`, 7 questions awaiting answers).
 Readiness: 9/20 (threshold 16/20, no item at 0; item 9 "acceptance criteria" is at 0). Not ready.
 

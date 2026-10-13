@@ -1,0 +1,25 @@
+# Real brands and trademarks that must not appear in game code or text (AC-NFR-L05-1).
+# Maintained by the orchestrator. Generic office words (stapler, printer, keyboard) are fine; brand names are not.
+# Brand names that are also everyday words (zoom, teams, slack, excel, outlook, canon, apple, staples) are left out:
+# they match ordinary code and text. Never use them as product names in game text (reviewers check by hand).
+microsoft
+powerpoint
+xerox
+epson
+hewlett
+herman miller
+steelcase
+ikea
+post-it
+swingline
+dunder mifflin
+google
+dell
+lenovo
+cisco
+salesforce
+jira
+confluence
+starbucks
+nespresso
+keurig
