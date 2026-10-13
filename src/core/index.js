@@ -1,7 +1,9 @@
 // Public API of the pure simulation core. Nothing here touches the DOM, clocks or Math.random.
 import { hashState } from "./hash.js";
 import { config } from "./config.js";
-import { monsters } from "./content/monsters.js";
+import { monsters, monsterStats, championMods } from "./content/monsters.js";
+import { skills } from "./content/skills.js";
+import { npcs } from "./content/npcs.js";
 import { themes } from "./content/themes.js";
 import { props } from "./content/props.js";
 import { strings } from "./content/strings.js";
@@ -25,12 +27,20 @@ export { dropLoot, dropItem, dropGold, spawnItem, giveGold, takeGround, releaseC
 export { step } from "./step.js";
 export { applyInput } from "./systems/intent.js";
 export { hitChance } from "./systems/combat.js";
+export { monsterStats };
+export { gainXp, allocate, learnSkill, assignSkill, selectSkill, xpNextFor } from "./systems/progression.js";
+export { castSkill, skillLevel } from "./systems/skills.js";
+export { fireProjectile } from "./systems/projectiles.js";
+export { enterFloor, useStairs, interact, respawn, townTarget, stairsTile, stairsAt, npcAt, closeDialog, heal } from "./systems/world.js";
+export { vendorInReach } from "./systems/vendors.js";
+export { setLevel, setHp, teleportFloor } from "./cheats.js";
+export { generateTown } from "./gen/town.js";
 export { generateFloor } from "./gen/floor.js";
 export { findPath } from "./pathfind.js";
 export { advance } from "./clock.js";
 export { hashState };
 
-export const content = { monsters, themes, props, strings, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops };
+export const content = { monsters, championMods, skills, npcs, themes, props, strings, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops };
 
 export const cloneState = (state) => structuredClone(state);
 

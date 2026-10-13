@@ -9,22 +9,26 @@ import { combat } from "./systems/combat.js";
 import { status } from "./systems/status.js";
 import { cleanup } from "./systems/cleanup.js";
 import { scene } from "./systems/scene.js";
+import { projectiles } from "./systems/projectiles.js";
+import { world } from "./systems/world.js";
 
 export function step(state, inputs = []) {
   state.events.length = 0;
   for (const input of inputs) applyInput(state, input);
-  // Paused, dead or not on a floor: nothing in the world moves and the tick counter stays put.
-  if (state.paused || state.scene !== "floor") return state;
+  // Paused, dead or not on a floor (or in the Lobby): nothing in the world moves and the tick counter stays put.
+  if (state.paused || (state.scene !== "floor" && state.scene !== "town")) return state;
 
   rebuildOccupancy(state, getCtx(state));
   playerIntent(state);
   ai(state);
   movement(state);
   pickups(state);
+  projectiles(state);
   combat(state);
   status(state);
   cleanup(state);
   scene(state);
+  world(state);
   state.tick++;
   return state;
 }

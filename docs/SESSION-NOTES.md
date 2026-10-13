@@ -56,3 +56,4 @@ Running log for the orchestrator (main Claude session). Update after every step.
 - [iter 2] S1 visual polish done: hero ring + front-fade, floater stacking, hurt flash, low-HP vignette and mug crack, plate discipline, title/death screens with run summary; bench 47.7 fps. Orchestrator note for the next visual review: hero damage floaters sit in a column far left of the hero (disconnected).
 - [iter 2] NOTE: commit cceb860 has 4 failing tests caused by the in-progress S2-3 core agent (not the polish). Re-verify when S2-3 hands back.
 - [iter 2] Inventory-panel variants done (A classic split, B briefcase, C side drawer); shots in variants/inventory-panel/shots. Next: 1 visual reviewer (combined lens) → proxy pick → S2-5 UI implementer.
+- [iter 2] Inventory review: A 30, B 31, C 31, all iterate; pick C (side drawer, keeps the fight visible), fixes: tooltip anchoring, Employee File fits 800px, HUD badge collisions, 44px cells, drag feedback. Proxy picking.

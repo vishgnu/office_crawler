@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   content, config, createRng, applyInput, step, makeItem, mint, newGrid, canPlace, autoplace, clickCell, spawnItem, giveGold,
-  rollItem, vendorStock, sellValue, buyPrice, deriveStats,
+  rollItem, vendorStock, sellValue, buyPrice, deriveStats, enterFloor,
 } from "../src/core/index.js";
 import { gameOn, run, OPEN } from "./helpers.js";
 
@@ -349,7 +349,8 @@ test("stash moves conserve items (AC-R-059-1)", () => {
 
 // ---- vendor ----
 
-const open = (s) => cmd(s, { t: "openVendor" });
+// Trading needs a town vendor within reach (R-041): move the fixture game into the Lobby, next to the vendor NPC.
+const open = (s) => { if (s.depth !== 0) { enterFloor(s, 0); s.player.tile = { x: 4, y: 6 }; } return cmd(s, { t: "openVendor" }); };
 const firstGear = (s) => s.vendor.stock.findIndex((e) => !e.unlimited);
 
 test("AC-R-057-1 buying costs exactly the price, adds the item and removes it from the stock", () => {

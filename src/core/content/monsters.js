@@ -19,7 +19,7 @@ export const monsters = {
   },
   "temp-worker": {
     id: "temp-worker", name: "Temp Worker", behaviour: "swarmer", canFlee: true,
-    hpBase: 10, damage: 2, defense: 3, attackRating: 24, xp: 5, speed: 1, sightRange: 9,
+    hpBase: 10, damage: 2, defense: 3, attackRating: 24, xp: 5, speed: 0.9, sightRange: 9,
     minDepth: 1, weight: 2, pack: [2, 3], cost: 1.5,
   },
   "printer-demon": {
