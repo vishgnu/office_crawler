@@ -31,3 +31,5 @@ Running log for the orchestrator (main Claude session). Update after every step.
 ## Log
 - [iter 0] Intake, customer-proxy and visual-reviewer agents, static-web pack done. Facilitator circle 1 done (readiness 9/20; Q1 = IP closeness, ESCALATED to the real user, safe default A in force).
 - [iter 1] Proxy answering circle 1 Q2–Q7 (running). Prototyper making art-direction variants A (gritty), B (pixel), C (vector) (running). Next: screenshots, then 2 visual reviewers in parallel, then a prototyper fix round, then a proxy pick.
+- [iter 1] Proxy answered circle 1: Q2 isometric 2:1, dark comedy, no gore; art style comes from the variant pick. Q3 default MVP scope (1 class, 8 floors in 2 zones, 2-phase boss, level cap 30). Q4 autosave in local storage. Q5 procedural SFX **plus generative ambient** (changed from the default because of the "nice sound" addendum). Q6 private. Q7 20–40 min. Q1 escalated.
+- [iter 1] Spec-writer running: 30-spec/ with ACs tagged S1/S2/S3. Next: architect (Sonnet, a deviation from the opus default per the user's cost preference) for ADRs + 50-plan.md, then implementer slice 1.
