@@ -9,7 +9,7 @@ export function createRecorder(seed) {
 export function observe(view, rec) {
   const t = view.tick;
   rec.tick = t;
-  if (rec.total === null) rec.total = view.monsters.length;
+  if (rec.total === null) { rec.total = view.monsters.length; rec.gold0 = view.player.gold; }
   for (const m of view.monsters) {
     if (!rec.firstDamage.has(m.id) && m.hp < m.hpMax) rec.firstDamage.set(m.id, t);
     if (m.ai === "dead" && !rec.seen.has(m.id)) {
@@ -26,7 +26,7 @@ export function finish(view, mem, rec, maxTicks) {
     if (mem.done) { rec.result = "cleared"; rec.clearTick = view.tick; }
     else if (view.tick >= maxTicks) rec.result = "timeout";
   }
-  return { seed: rec.seed, result: rec.result, ticks: rec.tick, kills: rec.kills, total: rec.total, ttk: rec.ttk, stuck: mem.stuck, waitGaveUp: mem.waitGaveUp, failedMoves: mem.failedMoves, hpMin: rec.hpMin };
+  return { seed: rec.seed, result: rec.result, ticks: rec.tick, kills: rec.kills, total: rec.total, ttk: rec.ttk, stuck: mem.stuck, waitGaveUp: mem.waitGaveUp, failedMoves: mem.failedMoves, hpMin: rec.hpMin, gold: view.player.gold - (rec.gold0 ?? 0), worn: Object.values(view.equipment ?? {}).filter(Boolean).length, loot: (view.groundItems ?? []).length };
 }
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);

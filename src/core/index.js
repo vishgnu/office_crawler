@@ -5,10 +5,23 @@ import { monsters } from "./content/monsters.js";
 import { themes } from "./content/themes.js";
 import { props } from "./content/props.js";
 import { strings } from "./content/strings.js";
+import { classes, defaultClass } from "./content/classes.js";
+import { bases, slotKeys, rarities, rarityOrder } from "./content/items.js";
+import { affixes, affixGroups } from "./content/affixes.js";
+import { uniques } from "./content/uniques.js";
+import { drops } from "./content/monsters.js";
 
 export { createRng } from "../rng.js";
 export { config };
-export { newGame, spawnMonster, restartInPlace } from "./state.js";
+export { newGame, spawnMonster, restartInPlace, setSeedSource } from "./state.js";
+export { deriveStats, applyDerived } from "./items/derive.js";
+export { rollItem, rollPotion, rollRarity, rarityWeights, rollAffixes, rollAffixValue, makeItem } from "./items/roll.js";
+export { sellValue, buyPrice } from "./items/price.js";
+export { newGrid, canPlace, findSpot, autoplace, clickCell, itemAt } from "./items/inventory.js";
+export { checkReqs, equipItem, unequipItem, clickSlot } from "./items/equipment.js";
+export { useBelt, toBelt, clickBelt } from "./items/belt.js";
+export { vendorStock, openVendor, closeVendor, buy, sell } from "./systems/vendors.js";
+export { dropLoot, dropItem, dropGold, spawnItem, giveGold, takeGround, releaseCursor, mint } from "./systems/loot.js";
 export { step } from "./step.js";
 export { applyInput } from "./systems/intent.js";
 export { hitChance } from "./systems/combat.js";
@@ -17,7 +30,7 @@ export { findPath } from "./pathfind.js";
 export { advance } from "./clock.js";
 export { hashState };
 
-export const content = { monsters, themes, props, strings };
+export const content = { monsters, themes, props, strings, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops };
 
 export const cloneState = (state) => structuredClone(state);
 

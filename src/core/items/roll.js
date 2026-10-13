@@ -94,7 +94,7 @@ export function rollItem(rng, opts = {}) {
   let base = opts.base ? bases[opts.base] : null;
 
   if (rarity === "unique") {
-    const pool = uniques.filter((u) => u.minIlvl <= ilvl && (!opts.slot || bases[u.base].slot === opts.slot));
+    const pool = uniques.filter((u) => u.minIlvl <= ilvl && (!opts.slot || bases[u.base].slot === opts.slot) && (!opts.base || u.base === opts.base));
     if (pool.length === 0) rarity = "rare";
     else {
       const def = rng.pick(pool);

@@ -1,6 +1,6 @@
 // Unique items: fixed names, fixed bases, fixed affix values (AC-R-051-4). flavour is a key into the string table.
 // stat uses the same keys as affixes; every unique is independent of the random affix tables.
-const u = (id, name, base, minIlvl, affixes, extra = {}) => ({ id, name, base, minIlvl, affixes, flavour: `flavour_${id}`, ...extra });
+const u = (id, name, base, minIlvl, affixes, extra = {}) => ({ id, name, base, minIlvl, affixes, flavour: `flavour_${id.replaceAll("-", "_")}`, ...extra });
 const a = (stat, value, kind = "prefix") => ({ id: `unique-${stat}`, stat, value, kind });
 
 export const uniques = [

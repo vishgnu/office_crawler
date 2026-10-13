@@ -14,10 +14,11 @@ const OPEN = [
   "##############",
 ];
 const room = (x, y) => ({ x, y, w: 3, h: 3, kind: "cubicle" });
+const bare = (s) => { s.inventory.items.length = 0; return s; }; // exploration tests: nothing in the pack to manage
 const chasing = (m, next) => Object.assign(m, { ai: "chase", next, moveT: 1, moveTotal: 10 });
 
 test("S1-6 bot: with nothing in sight it walks to the nearest unexplored room centre", () => {
-  const s = gameOn(OPEN, [["zombie-intern", 12, 4]]);
+  const s = bare(gameOn(OPEN, [["zombie-intern", 12, 4]]));
   s.floor.rooms = [room(0, 0), room(8, 1)];
   const mem = createBotMemory(), cmd = decide(s, mem);
   assert.equal(cmd?.t, "moveTo");
@@ -54,7 +55,7 @@ test("S1-6 bot: waits for a chaser instead of walking into it; gives up after wa
 });
 
 test("S1-6 bot: a refused move is counted; no living monster means the floor is clear", () => {
-  const s = gameOn(OPEN, [["zombie-intern", 12, 4]]);
+  const s = bare(gameOn(OPEN, [["zombie-intern", 12, 4]]));
   s.floor.rooms = [room(8, 1)];
   const mem = createBotMemory(), cmd = decide(s, mem);
   noteResult(mem, cmd, { ok: false, error: "no path" });
@@ -66,7 +67,7 @@ test("S1-6 bot: a refused move is counted; no living monster means the floor is 
 });
 
 test("S1-6 bot: no progress with an order active is counted as a stuck event", () => {
-  const s = gameOn(OPEN, [["zombie-intern", 12, 4]]);
+  const s = bare(gameOn(OPEN, [["zombie-intern", 12, 4]]));
   s.floor.rooms = [room(8, 1)];
   const mem = createBotMemory();
   decide(s, mem);
@@ -105,4 +106,33 @@ test("S1 hardening: a target that is not coming (idle) is still walked to", () =
   p.target = m.id; p.path = [];
   for (let i = 0; i < 20; i++) step(s);
   assert.ok(p.tile.x > 3 || p.next, "the hero moved towards the idle monster");
+});
+
+test("S2 bot: drinks a belt coffee when health is low, picks up loot when the floor is clear, then equips an upgrade", () => {
+  const s = gameOn(OPEN, [["zombie-intern", 12, 4]]);
+  s.floor.rooms = [];
+  s.player.hp = 5;
+  const mem = createBotMemory();
+  assert.deepEqual(decide(s, mem), { t: "useBelt", index: 0 });
+  s.player.hp = s.player.hpMax;
+  s.monsters[0].ai = "dead";
+  s.groundItems.push({ id: "g1", gold: 4, tile: { x: 6, y: 3 }, label: "4 gold" });
+  assert.deepEqual(decide(s, mem), { t: "equip", id: s.inventory.items[0].id, slot: "weapon" }); // the starting weapon beats bare hands
+  s.equipment.weapon = s.inventory.items.shift();
+  assert.deepEqual(decide(s, mem), { t: "pickup", id: "g1" });
+  noteResult(mem, { t: "pickup", id: "g1" }, { ok: false, error: "inventory full" });
+  assert.equal(decide(s, mem), null);
+  assert.equal(mem.done, true);
+});
+
+test("S2 bot runs pick up loot and stay deterministic: seeds 1-5 clear, collect gold and wear gear", () => {
+  let gold = 0, worn = 0;
+  for (let seed = 1; seed <= 5; seed++) {
+    const a = runOne(seed, 30000);
+    assert.equal(a.result, "cleared");
+    assert.equal(a.stuck, 0);
+    gold += a.gold; worn += a.worn;
+  }
+  assert.ok(gold > 0, `gold ${gold}`);
+  assert.ok(worn > 0, `worn ${worn}`);
 });
