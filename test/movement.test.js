@@ -103,3 +103,42 @@ test("floors from the generator can be walked end to end", () => {
   assert.deepEqual(s.player.tile, exit);
   void generateFloor;
 });
+
+test("S1 review B1: releasing the button while paused clears it, so the hero does not follow the cursor after resume", () => {
+  const s = gameOn(OPEN);
+  applyInput(s, { t: "mouse", phase: "down", tile: { x: 14, y: 4 }, button: 0 });
+  assert.equal(s.input.mouse.down, true);
+  applyInput(s, { t: "key", code: "Escape" });
+  assert.equal(s.paused, true);
+  assert.deepEqual(applyInput(s, { t: "mouse", phase: "up" }), { ok: true });
+  assert.equal(s.input.mouse.down, false);
+  applyInput(s, { t: "key", code: "Escape" });
+  run(s, 200); // walk to 14,4 and stop
+  const before = JSON.stringify([s.player.tile, s.player.path]);
+  applyInput(s, { t: "mouse", phase: "move", tile: { x: 3, y: 7 } });
+  run(s, 30);
+  assert.equal(JSON.stringify([s.player.tile, s.player.path]), before);
+  assert.deepEqual(s.player.path, []);
+});
+
+test("S1 review B1: pointer cancel releases the button too, also while paused or dead", () => {
+  for (const setup of [(s) => {}, (s) => { s.paused = true; }, (s) => { s.scene = "dead"; }]) {
+    const s = gameOn(OPEN);
+    applyInput(s, { t: "mouse", phase: "down", tile: { x: 14, y: 4 }, button: 0 });
+    setup(s);
+    assert.equal(applyInput(s, { t: "mouse", phase: "cancel" }).ok, true);
+    assert.equal(s.input.mouse.down, false);
+  }
+});
+
+test("a held button follows the cursor only while down (move after up changes nothing)", () => {
+  const s = gameOn(OPEN);
+  applyInput(s, { t: "mouse", phase: "down", tile: { x: 12, y: 4 }, button: 0 });
+  applyInput(s, { t: "mouse", phase: "move", tile: { x: 5, y: 2 } });
+  run(s, 1);
+  assert.deepEqual(s.input.mouse.applied, { x: 5, y: 2 });
+  applyInput(s, { t: "mouse", phase: "up" });
+  applyInput(s, { t: "mouse", phase: "move", tile: { x: 16, y: 7 } });
+  run(s, 1);
+  assert.deepEqual(s.input.mouse.applied, { x: 5, y: 2 });
+});

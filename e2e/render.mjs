@@ -47,7 +47,8 @@ for (const [width, height] of [[1280, 720], [1920, 1080], [3840, 2160]]) {
     });
     check("AC-R-112-2 canvas has at least 16 distinct colours after newGame + step(30)", colours >= 16, colours);
     const perf = await g.app("perf");
-    check("ADR-0004 atlas built (sprite count recorded; budget is loose, not a unit threshold)", perf.atlasKeys > 400 && perf.atlasMs < 5000, { keys: perf.atlasKeys, ms: Math.round(perf.atlasMs) });
+    // The atlas build time budget is checked by `npm run bench`, not here (no wall-clock asserts in gating tests).
+    check("ADR-0004 atlas built with a full sprite set", perf.atlasKeys > 400 && perf.atlasMissing.length === 0, { keys: perf.atlasKeys });
     console.log(`  atlas: ${perf.atlasKeys} sprites in ${Math.round(perf.atlasMs)} ms`);
   }
   await g.app("newGame", { seed: 1 });

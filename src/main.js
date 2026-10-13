@@ -10,6 +10,7 @@ import { installTestHook } from "./testhook/index.js";
 const S = content.strings;
 const params = new URLSearchParams(location.search);
 const testMode = params.get("test") === "1";
+// `?seed=` is honoured in every mode on purpose: it lets players share a run. Without it the seed comes from the clock.
 const seedParam = Number(params.get("seed"));
 const seed = Number.isFinite(seedParam) && params.get("seed") !== null && params.get("seed") !== "" ? seedParam : testMode ? 1 : Date.now() % 2147483647;
 
@@ -42,10 +43,12 @@ async function boot() {
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
   canvas.addEventListener("pointerdown", (e) => { canvas.setPointerCapture?.(e.pointerId); game.pointer("down", e); });
   canvas.addEventListener("pointermove", (e) => game.pointer("move", e));
-  for (const t of ["pointerup", "pointercancel"]) canvas.addEventListener(t, (e) => game.pointer("up", e));
+  canvas.addEventListener("pointerup", (e) => game.pointer("up", e));
+  canvas.addEventListener("pointercancel", (e) => game.pointer("cancel", e));
   window.addEventListener("resize", () => game.resize());
   window.addEventListener("keydown", (e) => {
-    if (/^F[1-4]$/.test(e.code) || e.code === "Tab") e.preventDefault(); // skill selector keys arrive in S2
+    // Skill selector keys arrive in S2. Tab is only captured while playing, so menu buttons stay reachable.
+    if (/^F[1-4]$/.test(e.code) || (e.code === "Tab" && game.menu() === null)) e.preventDefault();
     if (e.repeat) return;
     if (e.code === "Escape") { e.preventDefault(); game.key("Escape"); }
   });

@@ -1,5 +1,4 @@
 // window.__app (ADR-0003, S1 subset). Installed only with ?test=1. A thin adapter: no game logic here.
-import { content } from "../core/index.js";
 
 const isObj = (v) => v !== null && typeof v === "object";
 const fail = (error) => ({ ok: false, error });
@@ -82,7 +81,6 @@ export function installTestHook(game, win = window) {
   function describe() {
     return Object.keys(api).map((name) => ({ name, kind: typeof api[name] === "function" ? "fn" : "obj", doc: docs[name] }));
   }
-  void content;
   win.__app = api;
   return api;
 }

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { generateFloor } from "../src/core/gen/floor.js";
 import { fallbackFloor } from "../src/core/gen/floor.js";
 import { validateFloor } from "../src/core/gen/validate.js";
+import { hash32 } from "../src/core/hash.js";
 import { buildGrid, flood } from "../src/core/grid.js";
 import { config, content, hashState } from "../src/core/index.js";
 import { STAIRS_UP, STAIRS_DOWN, WALL } from "../src/core/tiles.js";
@@ -40,11 +41,14 @@ test("AC-R-042-3 / AC-R-120-3 same seed is identical, 200 seeds give 200 distinc
   assert.equal(hashes.size, 200);
 });
 
-test("AC-R-042-4 generation takes well under 500 ms per floor", () => {
+// AC-R-042-4 ("well under 500 ms per floor") is a wall-clock budget, so it lives in `npm run bench`
+// (bench/bench.mjs), not here (learning L-06). The unit test bounds the work instead: generation must
+// succeed within the attempt budget (config.maxGenAttempts), i.e. never need the fallback layout.
+test("AC-R-042-4 (bounded work) 50 floors validate within the attempt budget without the fallback", () => {
   for (let i = 0; i < 50; i++) {
-    const t = performance.now();
-    generateFloor(1000 + i, 1);
-    assert.ok(performance.now() - t < 500);
+    const f = generateFloor(1000 + i, 1);
+    assert.ok(validateFloor(f).ok);
+    assert.notDeepEqual(f.tiles, fallbackFloor(hash32(1000 + i, 1), 1).tiles, `seed ${1000 + i} needed the fallback`);
   }
 });
 

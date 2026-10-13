@@ -11,11 +11,12 @@ test("AC-R-113-2 the core runs in Node with no window, document or AudioContext"
   assert.equal(s.tick, 100);
 });
 
-test("AC-R-122-2 10,000 idle ticks take well under 10 s", () => {
-  const s = newGame(1), t = performance.now();
+// The "well under 10 s" budget of AC-R-122-2 is checked by `npm run bench`, not by a wall-clock assert here (L-06).
+test("AC-R-122-2 (bounded work) 10,000 idle ticks complete and leave a live floor", () => {
+  const s = newGame(1);
   for (let i = 0; i < 10000; i++) step(s);
   assert.equal(s.tick, 10000);
-  assert.ok(performance.now() - t < 10000);
+  assert.equal(s.scene, "floor");
 });
 
 test("newGame accepts a number or an options object, and unseeded calls are the caller's job", () => {

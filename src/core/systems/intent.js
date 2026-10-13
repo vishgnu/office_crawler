@@ -62,7 +62,7 @@ function mouseDown(state, tile, button, hold) {
 
 /**
  * Apply one input command now (no time passes). Returns { ok, error? }.
- * Commands: click {tile, button, hold}, mouse {phase: down|move|up, tile, button}, moveTo {tile},
+ * Commands: click {tile, button, hold}, mouse {phase: down|move|up|cancel, tile, button}, moveTo {tile},
  * attack {id}, pause, key {code}, restart.
  */
 export function applyInput(state, input) {
@@ -79,6 +79,9 @@ export function applyInput(state, input) {
       restartInPlace(state);
       return OK;
   }
+  // Releasing the button must always register (also while paused or dead), or the core keeps
+  // following the cursor with no button down (S1 review B1).
+  if (input.t === "mouse" && (input.phase === "up" || input.phase === "cancel")) { state.input.mouse.down = false; return OK; }
   if (!live) return fail("not in a running game");
   if (state.paused) return fail("paused");
   switch (input.t) {
@@ -87,7 +90,6 @@ export function applyInput(state, input) {
       const mouse = state.input.mouse;
       if (input.phase === "down") return mouseDown(state, input.tile, input.button ?? 0, true);
       if (input.phase === "move") { if (mouse.down && isTile(input.tile)) mouse.tile = { ...input.tile }; return OK; }
-      if (input.phase === "up") { mouse.down = false; return OK; }
       return fail("unknown mouse phase");
     }
     case "moveTo": return issueMove(state, input.tile);

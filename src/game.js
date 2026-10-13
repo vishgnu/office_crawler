@@ -94,13 +94,15 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
 
   // ---- pointer + keys (DOM events -> input commands) ----
   game.pointer = (kind, e) => {
-    if (!game.core || game.menu()) return;
+    if (!game.core) return;
+    // Release/cancel must always reach the core, even under a menu or while paused (S1 review B1).
+    if (kind === "up" || kind === "cancel") { game.input({ t: "mouse", phase: kind }); return; }
+    if (game.menu()) return;
     const rect = canvas.getBoundingClientRect(), sx = e.clientX - rect.left, sy = e.clientY - rect.top;
     const pk = game.pickAt(sx, sy);
     game.hover = pk.monsterId;
     if (kind === "down") { if (e.button === 0) game.input({ t: "mouse", phase: "down", tile: pk.tile, button: 0 }); }
     else if (kind === "move") game.input({ t: "mouse", phase: "move", tile: pk.tile });
-    else if (kind === "up") game.input({ t: "mouse", phase: "up" });
   };
   game.key = (code) => game.input({ t: "key", code });
 

@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node build.mjs",
     "test": "node --test",
-    "e2e": "node build.mjs && node e2e/run-all.mjs"
+    "e2e": "node build.mjs && node e2e/run-all.mjs",
+    "bench": "node build.mjs && node bench/bench.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.10",

@@ -49,7 +49,4 @@ test("AC-R-005-9 an enclosed goal returns null quickly on a 100x100 grid", () =>
   // "Quickly" is asserted as a bounded search (deterministic), not wall-clock time, which flaked under
   // parallel test load (harness learning L-06). The grid has 10,000 tiles, so the search must give up within that.
   assert.equal(findPath(g, 0, 0, 50, 50, 10000, config.pathDiagCost), null);
-  const t = performance.now();
-  findPath(g, 0, 0, 50, 50, 10000, config.pathDiagCost);
-  assert.ok(performance.now() - t < 1000, `took ${performance.now() - t} ms (sanity bound only)`);
 });
