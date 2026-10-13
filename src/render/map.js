@@ -72,15 +72,15 @@ export function createMap(style) {
     if (place(hp)) {
       const { x, y } = pt, pulse = 0.5 + 0.5 * Math.sin(now / 300);
       g.beginPath(); g.arc(x, y, u * (1.1 + 0.35 * pulse), 0, Math.PI * 2); g.lineWidth = 2; g.strokeStyle = `rgba(255,255,255,${0.7 - 0.4 * pulse})`; g.stroke();
-      g.beginPath(); g.arc(x, y, u * 0.7, 0, Math.PI * 2); g.fillStyle = "#ffffff"; g.fill(); g.lineWidth = 2.4; g.strokeStyle = P.ink; g.stroke();
-      g.beginPath(); g.arc(x, y, u * 0.3, 0, Math.PI * 2); g.fillStyle = "#e0363f"; g.fill();
+      g.beginPath(); g.arc(x, y, u * 0.9, 0, Math.PI * 2); g.fillStyle = "#ffffff"; g.fill(); g.lineWidth = 2; g.strokeStyle = P.ink; g.stroke();
+      g.beginPath(); g.arc(x, y, u * 0.32, 0, Math.PI * 2); g.fillStyle = "#e0363f"; g.fill();
     }
     g.restore();
   }
 
-  const frame = (g, r, hc) => {
+  const frame = (g, r, hc, a = 0.82) => {
     g.beginPath(); g.roundRect(r.x, r.y, r.w, r.h, 8);
-    g.fillStyle = hc ? "#000" : "rgba(10,8,28,0.82)"; g.fill();
+    g.fillStyle = hc ? "#000" : `rgba(10,8,28,${a})`; g.fill();
     g.lineWidth = 3.4; g.strokeStyle = hc ? "#fff" : P.ui?.panelEdge ?? P.ink; g.stroke();
   };
 
@@ -97,7 +97,7 @@ export function createMap(style) {
     drawMini(g, core, rect, now, hc) {
       const ex = exploredOf(core);
       if (!ex || !rect) return;
-      const b = bake(core, ex), px = 5, vw = rect.w / px, vh = rect.h / px, t = core.player.tile;
+      const b = bake(core, ex), px = 6, vw = rect.w / px, vh = rect.h / px, t = core.player.tile;
       frame(g, rect, hc);
       g.save(); g.beginPath(); g.roundRect(rect.x + 3, rect.y + 3, rect.w - 6, rect.h - 6, 6); g.clip();
       g.imageSmoothingEnabled = false;
@@ -107,7 +107,7 @@ export function createMap(style) {
       if (x1 > x0 && y1 > y0) g.drawImage(b.c, x0 * CELL, y0 * CELL, (x1 - x0) * CELL, (y1 - y0) * CELL, rect.x + (x0 - sx) * px, rect.y + (y0 - sy) * px, (x1 - x0) * px, (y1 - y0) * px);
       g.imageSmoothingEnabled = true;
       g.restore();
-      markers(g, core, ex, (tx, ty) => ({ x: rect.x + (tx - sx) * px, y: rect.y + (ty - sy) * px }), 3.6, now, { x: rect.x + 3, y: rect.y + 3, w: rect.w - 6, h: rect.h - 6 });
+      markers(g, core, ex, (tx, ty) => ({ x: rect.x + (tx - sx) * px, y: rect.y + (ty - sy) * px }), 4.6, now, { x: rect.x + 3, y: rect.y + 3, w: rect.w - 6, h: rect.h - 6 });
     },
 
     /** Full automap: dims the world, centres the whole floor at the largest whole-pixel scale that fits. */
@@ -120,13 +120,23 @@ export function createMap(style) {
       g.textAlign = "center"; g.textBaseline = "alphabetic"; g.lineJoin = "round";
       g.font = `800 ${phone ? 17 : 22}px ${FONT}`; g.lineWidth = 5; g.strokeStyle = P.ink; g.strokeText(`${T.mapTitle}: ${title}`, w / 2, titleH - 14); g.fillStyle = "#f3eefc"; g.fillText(`${T.mapTitle}: ${title}`, w / 2, titleH - 14);
       if (!ex) { g.font = `700 16px ${FONT}`; g.fillStyle = "#c9c3ec"; g.fillText(T.mapUnexplored, w / 2, h / 2); return; }
-      const b = bake(core, ex), availW = w - pad * 2, availH = h - titleH - footH - pad;
-      const sc = Math.max(1, Math.min(availW / f.w, availH / f.h)), mw = f.w * sc, mh = f.h * sc;
-      const rect = { x: Math.round((w - mw) / 2), y: Math.round(titleH + (availH - mh) / 2), w: Math.round(mw), h: Math.round(mh) };
-      frame(g, { x: rect.x - 8, y: rect.y - 8, w: rect.w + 16, h: rect.h + 16 }, hc);
-      g.imageSmoothingEnabled = false; g.drawImage(b.c, rect.x, rect.y, rect.w, rect.h); g.imageSmoothingEnabled = true;
-      markers(g, core, ex, (tx, ty) => ({ x: rect.x + tx * sc, y: rect.y + ty * sc }), Math.max(3.5, Math.min(8, sc * 0.9)), now, { x: rect.x - 6, y: rect.y - 6, w: rect.w + 12, h: rect.h + 12 });
-      g.font = `700 ${phone ? 12 : 14}px ${FONT}`; g.lineWidth = 4; g.strokeStyle = P.ink; g.strokeText(T.mapLegend, w / 2, h - 14); g.fillStyle = "#c9c3ec"; g.fillText(T.mapLegend, w / 2, h - 14);
+      const b = bake(core, ex);
+      // crop to the explored area (plus a margin): a floor is large and a mostly empty frame would waste the screen
+      let x0 = f.w, y0 = f.h, x1 = -1, y1 = -1;
+      for (let y = 0; y < f.h; y++) for (let x = 0; x < f.w; x++) if (ex[y * f.w + x] === 1) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      const pt = core.player.tile;
+      x0 = Math.max(0, Math.min(x0, pt.x) - 2); y0 = Math.max(0, Math.min(y0, pt.y) - 2); x1 = Math.min(f.w - 1, Math.max(x1, pt.x) + 2); y1 = Math.min(f.h - 1, Math.max(y1, pt.y) + 2);
+      const bw = x1 - x0 + 1, bh = y1 - y0 + 1, availW = w - pad * 2 - 16, availH = h - titleH - footH - pad - 16;
+      const sc = Math.max(2, Math.min(14, availW / bw, availH / bh)), mw = bw * sc, mh = bh * sc;
+      const rect = { x: Math.round((w - mw) / 2), y: Math.round(titleH + (availH - mh) / 2 + 8), w: Math.round(mw), h: Math.round(mh) };
+      frame(g, { x: rect.x - 8, y: rect.y - 8, w: rect.w + 16, h: rect.h + 16 }, hc, 0.95);
+      g.save(); g.beginPath(); g.roundRect(rect.x - 4, rect.y - 4, rect.w + 8, rect.h + 8, 5); g.clip();
+      g.imageSmoothingEnabled = false; g.drawImage(b.c, x0 * CELL, y0 * CELL, bw * CELL, bh * CELL, rect.x, rect.y, rect.w, rect.h); g.imageSmoothingEnabled = true;
+      g.restore();
+      markers(g, core, ex, (tx, ty) => ({ x: rect.x + (tx - x0) * sc, y: rect.y + (ty - y0) * sc }), Math.max(3.5, Math.min(8, sc * 0.9)), now, { x: rect.x - 6, y: rect.y - 6, w: rect.w + 12, h: rect.h + 12 });
+      g.font = `700 ${phone ? 12 : 14}px ${FONT}`; g.lineWidth = 4; g.strokeStyle = P.ink;
+      const ly = Math.min(h - 12, rect.y + rect.h + 34);
+      g.strokeText(T.mapLegend, w / 2, ly); g.fillStyle = "#c9c3ec"; g.fillText(T.mapLegend, w / 2, ly);
     },
   };
   return M;

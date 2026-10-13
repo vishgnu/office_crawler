@@ -40,6 +40,7 @@ export function describeItem(item, player) {
   if (item.damage) main.push({ kind: "damage", text: `${T.damage} ${item.damage.min}–${item.damage.max}` });
   if (item.defense) main.push({ kind: "defense", text: `${T.defense} ${item.defense}` });
   if (item.kind === "potion") main.push({ kind: "restores", text: `${T.restores} ${item.restore} ${item.restores === "hp" ? T.health : T.mana}` });
+  if (item.kind === "consumable" && item.effect === "portal") main.push({ kind: "effect", text: T.exitEffect }, { kind: "hint", text: T.exitItemHint });
   return {
     id: item.id, name: item.name, rarity: item.rarity, rarityName: rarityName(item.rarity), mark: content.rarities[item.rarity]?.mark ?? "-",
     base: item.baseName ?? item.name, size: `${item.w}×${item.h}`, kind: item.kind, slot: item.slot, twoHanded: !!item.twoHanded,
@@ -121,7 +122,7 @@ export function dropCheck(state, held, target) {
     const covered = g.items.filter((o) => o !== held && x < o.x + o.w && o.x < x + held.w && y < o.y + o.h && o.y < y + held.h);
     return covered.length > 1 ? { ok: false, reason: T.blocked } : ok;
   }
-  if (target.t === "belt") return held.kind === "potion" ? ok : { ok: false, reason: T.beltOnlyPotions };
+  if (target.t === "belt") return held.kind === "potion" || held.kind === "consumable" ? ok : { ok: false, reason: T.beltOnlyPotions };
   if (target.t === "slot") {
     const accepts = target.k === "ring1" || target.k === "ring2" ? "ring" : target.k;
     if (held.kind !== "gear" || held.slot !== accepts) return { ok: false, reason: T.wrongSlot };

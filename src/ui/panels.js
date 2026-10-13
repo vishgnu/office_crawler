@@ -322,7 +322,7 @@ export function createPanels(root, game) {
       el.tip.style.right = "8px"; el.tip.style.width = "auto";
     } else {
       el.tip.style.right = ""; el.tip.style.width = "";
-      pos = placeTip({ w, h, anchor: anchorRect, panel: panelNode ? rectOf(panelNode) : null, side: panelNode === el.left ? "left" : "right", drawers, hero: heroRect(), bounds: { left: 8, top: 8, right: game.w - 8, bottom: D.hudTop - 8 }, keepClear: [...root.querySelectorAll(".plus,.dock .hbtn")].map(rectOf) });
+      pos = placeTip({ w, h, anchor: anchorRect, panel: panelNode ? rectOf(panelNode) : null, side: panelNode === el.left ? "left" : "right", drawers, hero: heroRect(), bounds: { left: 8, top: 8, right: game.w - 8, bottom: D.hudTop - 8 - (el.toast.hidden ? 0 : 52) }, keepClear: [...root.querySelectorAll(".plus,.dock .hbtn")].map(rectOf) });
     }
     el.tip.style.left = pos.x + "px"; el.tip.style.top = pos.y + "px";
     el.tip.style.maxHeight = Math.max(80, D.hudTop - 16) + "px";

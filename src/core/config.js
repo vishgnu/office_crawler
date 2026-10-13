@@ -1,5 +1,7 @@
 // Every balance and timing constant of the simulation lives here (tests refer to these names).
 // Times are in simulation ticks (tickHz per second). No timed-input values: AC-NFR-A02-4.
+// XP curve constants (see xpTable below)
+const xpCurve = { quad: 36, lin: 110 };
 export const config = {
   tickHz: 60,
 
@@ -37,7 +39,7 @@ export const config = {
   ai: { maxPathNodes: 1500, repathTicks: 15, detourSlack: 6 }, // detourSlack: longest detour (tiles) taken to walk round other actors
 
   // Natural regeneration (QF-02-4 is open; small default, easy to set to 0)
-  regen: { hpEvery: 120, mpEvery: 60 },
+  regen: { hpEvery: 40, mpEvery: 30 },
 
   // Character (S2-2). Derived stats are a pure function of level, attributes and gear (items/derive.js).
   startGold: 50,
@@ -56,8 +58,9 @@ export const config = {
     attackRatingBase: 10, attackRatingPerAgility: 3,
   },
   levelCap: 30,
-  // xpTable[i] = total xp needed for level i+1 (level 1 at 0, strictly increasing, levelCap entries): 20*i^2 + 60*i.
-  xpTable: Array.from({ length: 30 }, (_, i) => 20 * i * i + 60 * i),
+  // xpTable[i] = total xp needed for level i+1 (level 1 at 0, strictly increasing, levelCap entries): xpCurve.quad * i^2 + xpCurve.lin * i.
+  xpCurve,                           // balance pass 2026-10-13 (was 20 / 60): the careful bot is level 13-14 on floor 8
+  xpTable: Array.from({ length: 30 }, (_, i) => xpCurve.quad * i * i + xpCurve.lin * i),
   xpPastCap: 99999999,               // QF-06-2: xp keeps counting for display up to this value at the level cap
   attrPointsPerLevel: 5,
   skillPointsPerLevel: 1,
@@ -71,9 +74,9 @@ export const config = {
   // Items and loot (S2-1). All balance numbers for drops, prices and potions live here (QF-05-7).
   ilvlPerDepth: 3,                   // item level of a drop = depth * this (+ monster bonus)
   dropChance: 0.35,                  // chance that a normal kill drops a gear item; strictly between 0 and 1
-  potionDropChance: 0.12,
+  potionDropChance: 0.08,
   goldDropChance: 0.55,
-  gold: { base: 4, perDepth: 3, spread: 3 }, // pile = (base + perDepth * depth) * goldMult +/- spread
+  gold: { base: 3, perDepth: 2, spread: 2 }, // pile = (base + perDepth * depth) * goldMult +/- spread
   rarityWeights: { normal: 700, magic: 250, rare: 45, unique: 5 },
   rarityDepthShift: 3,               // per depth, this much weight moves from normal to magic/rare/unique
   magicAffixes: [1, 2],
@@ -93,6 +96,7 @@ export const config = {
   rarityValue: { normal: 1, magic: 2, rare: 4, unique: 8 },
   affixWorth: 0.5,                   // share of the base value an affix at its range maximum adds
   ilvlValue: 0.1,                    // base value grows by this per item level
+  consumableValueMult: 2,            // scales the sell value (and so the price) of potions and other consumables
   buyOverSell: 4,                    // vendor price = sell value * this (at least sell value + 1)
   vendor: { gearSlots: 8, potionTiers: { 1: 1, 2: 5, 3: 12 } }, // potion tier -> minimum player level; stock is re-rolled on each return to the Lobby, not on each window open
   exploreRadius: 6,                  // R-075: tiles within this distance of the hero count as explored (the Lobby is explored from the start)
@@ -113,10 +117,10 @@ export const config = {
   tierFactor: { normal: 1, champion: 3, boss: 10 },
 
   // Depth scaling of monster stats, percent per depth beyond the first (depth 1 = registry values).
-  scaling: { hpPct: 28, damagePct: 14, defensePct: 16, attackRatingPct: 12, xpPct: 20 },
+  scaling: { hpPct: 80, damagePct: 14, defensePct: 16, attackRatingPct: 12, xpPct: 20 },
   // Floor population budget (AC-R-034-3): sum of cost * tierFactor stays within it.
-  budgetBase: 22, budgetPerDepth: 5,
-  population: { packsWanted: [3, 5], maxPacks: 12, tries: 80, stopAtBudget: 0.6 }, // how many packs a floor tries to place before it stops
+  budgetBase: 120, budgetPerDepth: 32,
+  population: { packsWanted: [12, 16], maxPacks: 50, tries: 400, stopAtBudget: 0.6 }, // how many packs a floor tries to place before it stops
 
   // World (S2-4)
   maxDepth: 8,                       // floors 1-8; the boss arena (depth 9, S3) hangs off floor 8

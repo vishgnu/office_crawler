@@ -1,4 +1,4 @@
-// Headless bot run on the pure core (no browser). Usage: node bot/run-headless.mjs [runs=20] [maxTicks=150000] [reckless|-] [depth=8]
+// Headless bot run on the pure core (no browser). Usage: node bot/run-headless.mjs [runs=20] [maxTicks=200000] [reckless|-] [depth=8]
 // Drives the same applyInput path as the real game; prints a summary and returns it as JSON on the last line.
 import { newGame, step, applyInput } from "../src/core/index.js";
 import { BOT, createBotMemory, decide, noteResult } from "./policy.js";
@@ -25,9 +25,9 @@ export function runOne(seed, maxTicks = 20000, profile = {}) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  // Usage: node bot/run-headless.mjs [runs=20] [maxTicks=150000] [reckless|-] [depth=8]: plays from the Lobby through the floors, respawning after a death.
-  const n = Number(process.argv[2] ?? 20), maxTicks = Number(process.argv[3] ?? 150000), reckless = process.argv[4] === "reckless", depth = Number(process.argv[5] ?? 8);
-  const runs = Array.from({ length: n }, (_, i) => runOne(i + 1, maxTicks, { reckless, depth, respawn: depth > 1 }));
+  // Usage: node bot/run-headless.mjs [runs=20] [maxTicks=200000] [reckless|-] [depth=8]: plays from the Lobby through the floors, respawning after a death.
+  const n = Number(process.argv[2] ?? 20), maxTicks = Number(process.argv[3] ?? 200000), reckless = process.argv[4] === "reckless", depth = Number(process.argv[5] ?? 8);
+  const runs = Array.from({ length: n }, (_, i) => runOne(i + 1, maxTicks, { reckless, depth, respawn: depth > 1, maxDeaths: 12 }));
   console.log(table(runs));
   const sum = summarise(runs);
   console.log("\n" + JSON.stringify(sum));

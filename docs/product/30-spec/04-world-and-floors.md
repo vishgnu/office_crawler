@@ -32,7 +32,7 @@ Areas: E World (R-040..R-048), J Office theme (R-100, R-101). Contract: `10-tech
 ### R-043 Depth progression (must · MVP)
 
 - **AC-R-043-1** `S2` `E2E` — Given a game, When `cheat.teleportFloor(d)` is called for d = 1..8, Then it succeeds for each, `floor.theme` is `open-plan` for d = 1..4 and `basement` for d = 5..8 (QF-04-4).
-- **AC-R-043-2** `S2` `E2E` — Given the player on floor 8 (last floor), When the snapshot is read, Then there is no stairs-down tile and `cheat.teleportFloor(9)` returns `{ok:false}` (QF-04-5: boss on floor 8 or after it).
+- **AC-R-043-2** `S2` `E2E` — Given the player on floor 8 (last floor), When the snapshot is read, Then `floor.exit` is a stairs-down tile with `floor.bossStairs === true` that is **locked** (amended 2026-10-13 per the proxy answer to QF-04-5: the boss arena is depth 9 and arrives in S3): clicking it or `useStairs` down returns `{ok:false}`, emits `stairsLocked` and the depth stays 8; `cheat.teleportFloor(9)` returns `{ok:false}`. Pinned by `test/s2-fix.test.js` and `test/floors.test.js`.
 - **AC-R-043-3** `S2` `E2E` — Given the player descends from floor n to n+1 for the first time, When arrived, Then `deepestDepth === max(previous deepestDepth, n+1)`.
 - **AC-R-043-4** `S2` `E2E` — Given each floor from 1 to 7, When the exit stairs tile is clicked, Then `depth` increases by 1; the up stairs at the entry tile decrease `depth` by 1 (floor 1 up leads to town).
 

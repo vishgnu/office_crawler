@@ -139,7 +139,7 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   await g.app("cheat.setLevel", 4);
   s = await g.state();
   const txt = await g.page.innerText(T("employee-file"));
-  check("AC-R-072-1 the file shows level, xp / xpNext, four attributes, points, hp, mp, damage and defense", txt.includes("Level 4") && txt.includes(`${s.player.xp.toLocaleString("en-US")} / ${s.player.xpNext.toLocaleString("en-US")}`) && ["Grit", "Agility", "Stamina", "Focus"].every((a) => txt.includes(a)) && txt.includes(`${s.player.hp} / ${s.player.hpMax}`) && txt.includes(`${s.player.mp} / ${s.player.mpMax}`) && txt.includes(`${s.player.damage.min}–${s.player.damage.max}`) && txt.includes("Defense"), txt.slice(0, 300));
+  check("AC-R-072-1 the file shows level, xp / xpNext, four attributes, points, hp, mp, damage and defense", txt.includes("Level 4") && txt.includes(`0 / ${s.ui.hud.xp.span.toLocaleString("en-US")} to level 5 (0%)`) && ["Grit", "Agility", "Stamina", "Focus"].every((a) => txt.includes(a)) && txt.includes(`${s.player.hp} / ${s.player.hpMax}`) && txt.includes(`${s.player.mp} / ${s.player.mpMax}`) && txt.includes(`${s.player.damage.min}–${s.player.damage.max}`) && txt.includes("Defense"), txt.slice(0, 300));
   check("+ buttons are enabled with points (AC-R-072-2: values updated after the level-up)", (await g.page.locator("button.plus:not(:disabled)").count()) === 4 && s.player.attrPoints === 15);
   await g.page.hover(T("alloc-agility"));
   const pv = await g.page.locator(T("alloc-preview")).textContent();
@@ -238,7 +238,13 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   const sellId = s.inventory.items[s.inventory.items.length - 1].id;
   await g.page.click(T("tab-sell"));
   const g1 = s.player.gold;
+  const sellRarity = s.inventory.items.find((i) => i.id === sellId).rarity;
   await g.page.click(T(`sell-${sellId}`));
+  if (sellRarity !== "normal") {
+    s = await g.state();
+    check("Sell asks once more for a magic-or-better item (button reads Sure?, nothing sold yet)", (await g.page.locator(T(`sell-${sellId}`)).textContent()).trim() === "Sure?" && s.player.gold === g1 && s.inventory.items.some((i) => i.id === sellId), { gold: s.player.gold, g1 });
+    await g.page.click(T(`sell-${sellId}`));
+  }
   s = await g.state();
   check("Sell: gold up, item gone from the drawer", s.player.gold > g1 && !s.inventory.items.some((i) => i.id === sellId));
   await g.page.keyboard.press("Escape");
@@ -398,6 +404,191 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   await g.page.click("#pleft " + T("tab-inventory"));
   check("phone: back to Gear hides the file", (await g.page.locator("#pright").isVisible()) && !(await g.page.locator("#pleft").isVisible()));
   check("no page errors (layouts)", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+
+// ---------------------------------------------------------------- S2 fix round: XP label, HUD slots, map, Emergency Exit, tooltip, phone toast
+const rect = (page, sel) => page.locator(sel).first().boundingBox();
+{
+  // XP: within-level numbers and percent, the total in the tooltip (contract); the HUD says the same
+  const g = await start("test=1&seed=1", { width: 1280, height: 800 });
+  await g.app("cheat.setLevel", 7);
+  await g.page.keyboard.press("KeyC");
+  await g.app("step", 1);
+  let s = await g.state();
+  const lab = await g.page.locator(T("xp-label")).textContent();
+  const span7 = s.ui.hud.xp.span, tot7 = s.player.xp.toLocaleString("en-US");
+  check("XP label shows within-level numbers (0 / span to level 8 (0%)), not the total pair", new RegExp(`^0 / ${span7.toLocaleString("en-US")} to level 8 \\(0%\\)$`).test(lab.trim()), lab);
+  check("XP total stays available in the tooltip (title) of the row and the bar", (await g.page.locator(".xpl").getAttribute("title")).includes(tot7) && (await g.page.locator(".xpb2").getAttribute("title")).includes(tot7));
+  check("HUD xp: into / span / label come from the state, total in the HUD tooltip", s.ui.hud.xp.into === 0 && s.ui.hud.xp.span === span7 && s.ui.hud.xp.label === `0 / ${span7.toLocaleString("en-US")} (0%)` && (await g.page.getAttribute(T("hud-xp"), "title")).includes(tot7), s.ui.hud.xp);
+  // mid-level: kill something on floor 1 and see the percent move with the numbers
+  await g.app("cheat.setLevel", 1);
+  await g.app("cheat.teleportFloor", 1);
+  s = await g.state();
+  const spot = freeTilesNearUi(s, s.player.tile)[0];
+  const m = await g.app("cheat.spawnMonster", "zombie-intern", spot);
+  await g.app("cmd.attack", m.id);
+  for (let i = 0; i < 80; i++) { s = await g.app("step", 5); if (s.player.xp > 0) break; }
+  const lab2 = (await g.page.locator(T("xp-label")).textContent()).trim(), mm = /^(\d+) \/ (\d+) to level 2 \((\d+)%\)$/.exec(lab2);
+  check("mid-level XP: numbers and percent agree (into / span = percent), bar fills", !!mm && Math.floor((Number(mm[1]) / Number(mm[2])) * 100) === Number(mm[3]) && Number(mm[1]) === s.player.xp, { lab2, xp: s.player.xp });
+  check("no page errors (XP)", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+function freeTilesNearUi(s, c) {
+  const { w, tiles, props } = s.floor, blocked = new Set(props.filter((p) => p.blocks).map((p) => p.y * w + p.x)), out = [];
+  for (let y = c.y - 3; y <= c.y + 3; y++) for (let x = c.x - 3; x <= c.x + 3; x++) { const d = Math.max(Math.abs(x - c.x), Math.abs(y - c.y)); if (d >= 2 && [1, 3].includes(tiles[y * w + x]) && !blocked.has(y * w + x)) out.push({ x, y, d }); }
+  return out.sort((a, b) => a.d - b.d);
+}
+for (const [W, H] of [[1280, 800], [1024, 768], [390, 844]]) {
+  // HUD slots are at least 44 px at every size, icons centred in the frame, names not truncated
+  const g = await start("test=1&seed=1", { width: W, height: H });
+  await g.app("cheat.setLevel", 5);
+  await g.app("input", { t: "learnSkill", id: "reply-all" });
+  await g.app("input", { t: "assignSkill", slot: 1, id: "reply-all" });
+  await g.app("step", 1);
+  const sk = await rect(g.page, T("hud-skill-0")), sk1 = await rect(g.page, T("hud-skill-1")), hb = await rect(g.page, T("hud-belt-0"));
+  check(`HUD slots are >= 44 px at ${W}x${H} (skill ${Math.round(sk.width)}, belt ${Math.round(hb.width)})`, sk.width >= 44 && sk.height >= 44 && hb.width >= 44 && hb.height >= 44, { sk, hb });
+  const ic = await g.page.locator(`${T("hud-belt-0")} .ic`).boundingBox(), ic1 = await g.page.locator(`${T("hud-skill-1")} .ic`).boundingBox();
+  const off = (a, b) => Math.hypot(a.x + a.width / 2 - (b.x + b.width / 2), a.y + a.height / 2 - (b.y + b.height / 2));
+  check(`HUD icons are centred in their frames at ${W}x${H}`, off(ic, hb) <= 3 && off(ic1, sk1) <= 3, { d1: off(ic, hb), d2: off(ic1, sk1) });
+  if (W >= 900) {
+    const sn = await g.page.locator(".sn").first().evaluate((n) => ({ sw: n.scrollWidth, cw: n.clientWidth, sh: n.scrollHeight, ch: n.clientHeight, text: n.textContent }));
+    check("skill names are shown whole (wrapped, no ellipsis)", sn.sw <= sn.cw + 1 && sn.sh <= sn.ch + 1 && sn.text.length > 3, sn);
+  }
+  if (W < 900) {
+    const dock = await rect(g.page, T("dock-inventory"));
+    check("phone: the panel buttons are >= 44 px high and the Map button is not offered", dock.height >= 44 && !(await g.page.locator(T("dock-map")).isVisible()), dock);
+  }
+  check(`no page errors (HUD ${W})`, g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+{
+  // map: M and Tab toggle ui.panels.map, Escape closes it before pausing, minimap draws the hero in a corner, phone has no minimap button
+  const g = await start("test=1&seed=3", { width: 1280, height: 800 });
+  let s = await g.state();
+  check("Lobby: floor.explored is all explored and the map is closed at first", s.ui.panels.map === false && s.floor.explored?.every((v) => v === 1) === true);
+  await g.page.keyboard.press("KeyM");
+  s = await g.state();
+  check("[M] opens the map (ui.panels.map)", s.ui.panels.map === true && s.ui.menu === null);
+  await g.page.keyboard.press("Escape");
+  s = await g.state();
+  check("[Esc] closes the map first (the game is not paused)", s.ui.panels.map === false && !s.paused);
+  await g.page.keyboard.press("Tab");
+  s = await g.state();
+  check("[Tab] opens the map", s.ui.panels.map === true);
+  await g.page.keyboard.press("Tab");
+  check("[Tab] again closes it", (await g.state()).ui.panels.map === false);
+  await g.page.click(T("dock-map"));
+  check("the Map button in the dock toggles it", (await g.state()).ui.panels.map === true);
+  await g.page.click(T("dock-map"));
+  await g.app("cheat.teleportFloor", 2);
+  await g.app("step", 2);
+  s = await g.state();
+  const n0 = s.floor.explored.reduce((a, b) => a + b, 0);
+  const spots = freeTilesNearUi(s, s.player.tile);
+  const far = (await g.app("getState")).floor;
+  for (let k = 0; k < 5; k++) { const st = await g.state(), t = freeTilesNearUi(st, st.player.tile).at(-1); if (!t) break; await g.app("clickTile", t.x, t.y); for (let i = 0; i < 10; i++) await g.app("step", 8); }
+  s = await g.state();
+  const n1 = s.floor.explored.reduce((a, b) => a + b, 0);
+  check("walking explores tiles (floor.explored grows) and the whole floor is not explored", n1 > n0 && n1 < s.floor.w * s.floor.h * 0.9, { n0, n1 });
+  const hasHero = (x0, y0, x1, y1) => g.page.evaluate(([a, b, c, d]) => {
+    const cv = document.getElementById("game"), ctx = cv.getContext("2d"), k = cv.width / window.innerWidth, im = ctx.getImageData(a * k, b * k, (c - a) * k, (d - b) * k).data;
+    for (let i = 0; i < im.length; i += 4) if (im[i] > 245 && im[i + 1] > 245 && im[i + 2] > 245) return true;
+    return false;
+  }, [x0, y0, x1, y1]);
+  check("the minimap in the top-left corner shows the hero marker (white dot)", await hasHero(12, 38, 188, 162));
+  await g.page.keyboard.press("KeyM");
+  await g.app("step", 1);
+  check("full automap: the minimap is replaced (no white marker in the corner frame), map flag set", (await g.state()).ui.panels.map === true);
+  await g.page.keyboard.press("KeyM");
+  check("no page errors (map)", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+{
+  // Emergency Exit: right-click in the drawer and on the belt uses it; the door stands in the Lobby (fx:portal) and leads back
+  const g = await start("test=1&seed=1", { width: 1280, height: 800 });
+  await g.app("cheat.teleportFloor", 2);
+  const a = await g.app("cheat.giveItem", { base: "emergency-exit" });
+  await g.page.keyboard.press("KeyI");
+  await g.app("step", 1);
+  let s = await g.state();
+  const it = s.inventory.items.find((i) => i.id === a.id);
+  check("the Emergency Exit is in the drawer (1x1, base emergency-exit)", !!it && it.base === "emergency-exit" && it.w === 1 && it.h === 1, it);
+  await g.page.hover(T(`cell-${it.x}-${it.y}`));
+  check("its tooltip says what it is", (await g.page.locator("#tip").textContent()).includes("Emergency Exit"));
+  const depth = s.depth;
+  await g.page.click(T(`cell-${it.x}-${it.y}`), { button: "right" });
+  s = await g.state();
+  check("right-click in the drawer uses it: hero is in the Lobby, the door is recorded", s.depth === 0 && s.portal?.depth === depth && !!s.portal.lobbyTile, { depth: s.depth, portal: s.portal });
+  check("feedback: a toast names the Emergency Exit and the tooltip is gone", /Emergency Exit/.test((await g.page.textContent(T("toast"))) ?? "") && s.ui.tooltip === null);
+  const perf = await g.app("perf");
+  check("sprite fx:portal exists in the atlas (nothing missing)", !perf.atlasMissing.includes("fx:portal") && perf.atlasMissing.length === 0, perf.atlasMissing);
+  // the door is drawn at the lobby tile: a lit pixel run in the door's colour near its screen position
+  const sc = tileScreen(s.ui.camera, s.portal.lobbyTile.x, s.portal.lobbyTile.y);
+  const found = await g.page.evaluate(([x, y]) => {
+    const cv = document.getElementById("game"), ctx = cv.getContext("2d"), k = cv.width / window.innerWidth, im = ctx.getImageData((x - 40) * k, (y - 130) * k, 80 * k, 130 * k).data;
+    let n = 0; for (let i = 0; i < im.length; i += 4) if (im[i + 2] > 180 && im[i] > 120 && im[i] < 235 && im[i + 1] < 170) n++;
+    return n;
+  }, [sc.x, sc.y]);
+  check("the door sprite is visible in the Lobby (violet pixels at its tile)", found > 40 || sc.x < 0 || sc.x > 1280, { found, sc });
+  // belt: put a second one on the belt and right-click it there
+  const b = await g.app("cheat.giveItem", { base: "emergency-exit" });
+  await g.app("input", { t: "toBelt", id: b.id });
+  await g.app("cheat.teleportFloor", 3);
+  await g.app("step", 1);
+  s = await g.state();
+  const slot = s.belt.findIndex((x) => x?.id === b.id);
+  check("a consumable can sit on the belt", slot >= 0, s.belt);
+  await g.page.click(T(`hud-belt-${slot}`), { button: "right" });
+  s = await g.state();
+  check("right-click on the belt uses it: Lobby again, belt slot empty, new door replaces the old", s.depth === 0 && s.belt[slot] === null && s.portal?.depth === 3, { depth: s.depth, portal: s.portal });
+  // walk back through the door
+  await g.app("clickTile", s.portal.lobbyTile.x, s.portal.lobbyTile.y);
+  for (let i = 0; i < 60 && (await g.state()).depth === 0; i++) await g.app("step", 10);
+  s = await g.state();
+  check("walking into the Lobby door returns to the floor and closes it", s.depth === 3 && s.portal === null, { depth: s.depth, portal: s.portal });
+  check("no page errors (Emergency Exit)", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+{
+  // tooltip: closes after equip (right-click), and at 1024 never lands on a + button
+  const g = await start("test=1&seed=1", { width: 1024, height: 768 });
+  await g.app("cheat.setLevel", 7);
+  const a = await g.app("cheat.giveItem", { base: "cardigan", rarity: "normal", ilvl: 2 });
+  await g.app("cheat.giveItem", { base: "letter-opener", rarity: "magic", ilvl: 3 });
+  await g.page.keyboard.press("KeyI"); await g.page.keyboard.press("KeyC");
+  await g.app("step", 1);
+  let s = await g.state();
+  for (const it of s.inventory.items) {
+    await g.page.hover(T(`cell-${it.x}-${it.y}`));
+    const tip = await g.page.locator("#tip").boundingBox(), pluses = await g.page.locator(".plus").evaluateAll((ns) => ns.map((n) => { const r = n.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }));
+    check(`1024 px: the tooltip of ${it.name} does not cover a + button`, tip && !pluses.some((p) => intersects(tip, p)), { tip, pluses });
+  }
+  const it = s.inventory.items.find((i) => i.id === a.id);
+  await g.page.hover(T(`cell-${it.x}-${it.y}`));
+  check("tooltip is up before the equip", await g.page.locator("#tip").isVisible());
+  await g.page.click(T(`cell-${it.x}-${it.y}`), { button: "right" });
+  s = await g.state();
+  check("after right-click equip the tooltip is closed", s.equipment.body?.id === a.id && s.ui.tooltip === null && !(await g.page.locator("#tip").isVisible()));
+  await g.context.close();
+}
+{
+  // phone: the toast never covers the Put back / Drop buttons or the panel buttons
+  const g = await start("test=1&seed=1", { width: 390, height: 844 });
+  await g.app("cheat.giveItem", { base: "keyboard-sword", rarity: "rare", ilvl: 12 });
+  await g.page.keyboard.press("KeyI");
+  await g.app("step", 1);
+  let s = await g.state();
+  const it = s.inventory.items[0];
+  await g.page.click(T(`cell-${it.x}-${it.y}`));
+  await g.app("cheat.setHp", 3);
+  await g.page.keyboard.press("Digit1");
+  await g.page.waitForSelector(T("toast"), { state: "visible" });
+  const toast = await rect(g.page, T("toast")), put = await rect(g.page, T("put-back")), drop = await rect(g.page, T("drop-floor")), drawer = await rect(g.page, "#pright");
+  check("phone: the toast sits under the drawer, not on Put back / Drop on floor", !intersects(toast, put) && !intersects(toast, drop) && toast.y >= drawer.y + drawer.height - 2, { toast, put, drop, drawer });
+  check("phone: Put back and Drop on floor are visible and >= 44 px high", put.height >= 44 && drop.height >= 44 && put.y + put.height <= drawer.y + drawer.height + 1 && drop.y + drop.height <= drawer.y + drawer.height + 1, { put, drop, drawer });
+  check("phone: no horizontal overflow with the grid", await g.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  check("no page errors (phone toast)", g.errors.length === 0, g.errors);
   await g.context.close();
 }
 

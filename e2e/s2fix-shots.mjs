@@ -62,8 +62,10 @@ const begin = async (viewport, seed = 5) => {
 // map: explore a floor a little, open the automap; a second screenshot of the minimap alone is not kept
 {
   const g = await begin({ width: 1280, height: 800 }, 3);
+  await g.app("cheat.setLevel", 30);
   await g.app("cheat.teleportFloor", 2);
   for (let k = 0; k < 6; k++) {
+    await g.app("cheat.setHp", 9999);
     const s = await g.state(), spots = freeTilesNear(s, s.player.tile, 9, 6);
     if (!spots.length) break;
     const t = spots[Math.min(spots.length - 1, 5 + k * 3)];
@@ -76,19 +78,23 @@ const begin = async (viewport, seed = 5) => {
   await g.context.close();
 }
 
-// phone: 390x844 HUD, toast, Gear tab with the held item buttons
+// phone: 390x844 Gear tab with an item in hand (Put back / Drop stay visible) and a toast in its own lane under the drawer
 {
   const g = await begin({ width: 390, height: 844 }, 1);
   await g.app("cheat.setLevel", 4);
+  await g.app("input", { t: "learnSkill", id: "reply-all" });
+  await g.app("input", { t: "assignSkill", slot: 1, id: "reply-all" });
   await g.app("cheat.giveItem", { base: "keyboard-sword", rarity: "rare", ilvl: 12 });
   await g.app("cheat.giveItem", { base: "emergency-exit" });
   await g.page.keyboard.press("KeyI");
   await g.app("step", 2);
-  const s = await g.state(), it = s.inventory.items[0];
+  const s = await g.state(), it = s.inventory.items.find((i) => i.base === "keyboard-sword");
   await g.page.click(T(`cell-${it.x}-${it.y}`));
-  await g.page.click(T("hud-skill-1")).catch(() => {});
-  await g.app("input", { t: "equip", id: s.inventory.items[1]?.id ?? "x" });
+  await g.app("cheat.setHp", 3);
+  await g.page.keyboard.press("Digit1");
+  await g.page.mouse.move(200, 300);
   await shot(g, "phone");
+  if (process.env.PHONE_WORLD) { await g.page.keyboard.press("Escape"); await g.page.keyboard.press("KeyI"); await g.app("step", 1); await g.page.screenshot({ path: process.env.PHONE_WORLD }); }
   await g.context.close();
 }
 await browser.close();

@@ -21,6 +21,9 @@ export const BOT = {
   healBelow: 0.5,       // Coffee Break below this share of hpMax
   muteBelow: 0.6,       // Mute when two or more attackers are on the hero and health is below this share
   shopMinGold: 25,      // buy belt potions in town with at least this much gold
+  gearShopGold: 400,    // visit the vendor for gear upgrades with at least this much gold
+  potionReserve: 150,   // gold kept back for belt potions when buying gear
+  sellAbove: 4,         // sell spare gear to the vendor when more than this many gear items are left in the inventory (keeps the bag from filling up)
   // skill order: [skill, level wanted before moving on]; afterwards every skill is raised to its maximum in this order
   learnOrder: [["stapler-throw", 2], ["dress-code", 2], ["coffee-break", 2], ["reply-all", 2], ["hustle", 2], ["mute", 2]],
   attrWeights: { stamina: 3, grit: 3, agility: 2, focus: 1 }, // points go where (points spent / weight) is lowest
@@ -30,7 +33,7 @@ const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
 /** profile: { reckless } - a reckless bot never waits for chasers; it walks into packs (shows how deadly the floor is). */
 export function createBotMemory(profile = {}) {
-  return { profile, depth: -1, shopped: false, rooms: null, goal: null, lastKey: "", lastMoveTick: 0, stuck: 0, decisions: 0, failedMoves: 0, lootTries: {}, lootSkip: new Set(), noEquip: new Set(), waitSince: -1, waitGaveUp: 0, done: false, skip: new Set() };
+  return { profile, depth: -1, shopped: false, sold: false, rooms: null, goal: null, lastKey: "", lastMoveTick: 0, stuck: 0, decisions: 0, failedMoves: 0, lootTries: {}, lootSkip: new Set(), noEquip: new Set(), waitSince: -1, waitGaveUp: 0, done: false, skip: new Set() };
 }
 
 /** Record the outcome of a command the runner executed (a refused move makes the bot try another room). */
@@ -41,7 +44,8 @@ export function noteResult(mem, cmd, res) {
   if (cmd?.t === "equip" && res && res.ok === false) mem.noEquip.add(cmd.id);
   if (cmd?.t === "learnSkill" && res && res.ok === false) mem.noLearn = true;
   if (cmd?.t === "useStairs" && res && res.ok === false) mem.failedMoves++;
-  if (cmd?.t === "buy" && res && res.ok === false) mem.shopped = true;
+  if (cmd?.t === "buy" && res && res.ok === false) { if (cmd.gear) { mem.noBuy ??= new Set(); mem.noBuy.add(cmd.id); } else mem.shopped = true; }
+  if (cmd?.t === "sell" && res && res.ok === false) mem.sold = true;
 }
 
 /** Rough value of a gear item for the "is this an upgrade" test (bot only; not game balance). */
@@ -126,18 +130,48 @@ function castSkill(view, mem, live, target) {
   return null;
 }
 
-/** Town: spend points, wear upgrades, buy belt potions at the potion seller, then take the elevator. */
+/** The vendor stock entry that raises the hero's gear score most and still leaves `reserve` gold for potions, as { index }, or null. */
+function bestBuy(view, mem) {
+  const eq = view.equipment ?? {}, p = view.player;
+  let best = null, bv = 0;
+  (view.vendor?.stock ?? []).forEach((e, index) => {
+    const it = e.item;
+    if (e.unlimited || it.kind !== "gear" || it.twoHanded || !reqsMet(p, it) || e.price > p.gold - BOT.potionReserve || mem.noBuy?.has(it.id)) return;
+    const slot = it.slot === "ring" ? (!eq.ring1 ? "ring1" : !eq.ring2 ? "ring2" : "ring1") : it.slot, cur = eq[slot];
+    if (cur?.twoHanded) return;
+    const gain = gearScore(it) - (cur ? gearScore(cur) : 0);
+    if (gain > bv) { bv = gain; best = { index, id: it.id }; }
+  });
+  return best;
+}
+
+/** Town: spend points, wear upgrades, sell spare gear and buy upgrades at the vendor, buy belt potions, then take the elevator. */
 function decideTown(view, mem) {
   const p = view.player;
   const pts = spendPoints(view, mem) ?? upgrade(view, mem);
   if (pts) return pts;
   const free = view.belt ? view.belt.findIndex((b) => b === null) : -1;
   const dlg = view.ui?.dialog;
+  // vendor round: spare gear (everything the bot would not wear) is sold so the bag never fills up, then upgrades are bought
+  const spare = view.inventory.items.filter((i) => i.kind === "gear");
+  if (!mem.sold) {
+    if (dlg?.npc === "vendor" && view.vendor) {
+      if (spare.length > BOT.sellAbove) return { t: "sell", id: spare[0].id };
+      const buy = bestBuy(view, mem);
+      if (buy && spare.length < BOT.sellAbove) return { t: "buy", index: buy.index, gear: true, id: buy.id };
+      mem.sold = true;
+      return { t: "closeDialog" };
+    }
+    if (spare.length > BOT.sellAbove || p.gold >= BOT.gearShopGold) {
+      if (p.interact === "vendor" || p.next || p.path.length) return null;
+      return { t: "interact", id: "vendor" };
+    }
+  }
   if (dlg?.npc === "potions" && view.vendor) {
     const potion = view.inventory.items.find((i) => i.kind === "potion" && i.restores === "hp");
     if (potion && free >= 0) return { t: "toBelt", id: potion.id, index: free };
     const best = view.vendor.stock.map((e, i) => ({ e, i })).filter(({ e }) => e.unlimited && e.item.restores === "hp" && e.price <= p.gold).sort((a, b) => b.e.item.restore - a.e.item.restore)[0];
-    if (free >= 0 && best) return { t: "buy", index: best.i };
+    if (!mem.shopped && free >= 0 && best) return { t: "buy", index: best.i };
     mem.shopped = true;
     return { t: "closeDialog" };
   }
@@ -153,7 +187,7 @@ export function decide(view, mem) {
   if (view.scene === "dead") return mem.profile.respawn ? { t: "respawn" } : null;
   if (view.paused) return null;
   if (view.depth !== mem.depth) { // a new floor: forget the old floor's exploration state
-    Object.assign(mem, { depth: view.depth, rooms: null, goal: null, skip: new Set(), waitSince: -1, shopped: false, lootTries: {}, lootSkip: new Set(), lastKey: "", lastMoveTick: view.tick });
+    Object.assign(mem, { depth: view.depth, rooms: null, goal: null, skip: new Set(), waitSince: -1, shopped: false, sold: false, lootTries: {}, lootSkip: new Set(), lastKey: "", lastMoveTick: view.tick });
   }
   if (view.scene === "town") return decideTown(view, mem);
   if (view.scene !== "floor") return null;
@@ -161,13 +195,18 @@ export function decide(view, mem) {
   mem.decisions++;
   if (!mem.rooms) mem.rooms = view.floor.rooms.map((r, i) => ({ i, x: r.x + (r.w >> 1), y: r.y + (r.h >> 1), done: false }));
   const key = `${p.tile.x},${p.tile.y}`;
-  if (key !== mem.lastKey || p.action === "attack" || p.next) { mem.lastKey = key; mem.lastMoveTick = t; } // progress = moving or swinging
+  if (key !== mem.lastKey || p.action === "attack" || p.action === "cast" || p.next) { mem.lastKey = key; mem.lastMoveTick = t; } // progress = moving, swinging or casting
   const live = view.monsters.filter((m) => m.ai !== "dead");
   const busy = !!(p.next || p.path.length || p.target || p.pickup);
   // potions: drink coffee from the belt when health is low
   if (view.belt && p.hp > 0 && p.hp < p.hpMax * BOT.drinkBelow) {
     const i = view.belt.findIndex((b) => b && b.restores === "hp");
     if (i >= 0) return { t: "useBelt", index: i };
+  }
+  // a monster standing on the next tile of the path (asleep in a corridor, say) blocks the walk for good: kill it
+  if (!p.next && p.path.length && live.length) {
+    const b = live.find((m) => m.tile.x === p.path[0].x && m.tile.y === p.path[0].y);
+    if (b && b.id !== p.target) return { t: "attack", id: b.id };
   }
   if (live.length === 0) {
     const c = spendPoints(view, mem) ?? upgrade(view, mem) ?? nextLoot(view, mem);

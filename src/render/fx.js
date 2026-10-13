@@ -132,7 +132,7 @@ export function segHitsRect(sg, r, pad = 2) {
 export function createFx(style) {
   const rng = createRng(7), P = style.palette, pos = { x: 0, y: 0 }, shk = { x: 0, y: 0 }, pos2 = { x: 0, y: 0 };
   let hurtCanvas = null, hurtW = 0, hurtH = 0;
-  const rows = [], fr0 = { x: 0, y: 0, w: 0, h: 0 };
+  const rows = [], fl = [], fr0 = { x: 0, y: 0, w: 0, h: 0 };
   const fx = {
     parts: [], slashes: [], rings: [], impacts: [], pillars: [], proj: new Map(), flash: new Map(), // `flash` is unused (flashTicks is state-backed) and kept so older callers do not break
     core: null, alpha: 1, hc: false, showAllLoot: false, hoverLootId: null, // the shell may set these three (high contrast, Alt held, hovered ground entry)
@@ -315,6 +315,8 @@ export function createFx(style) {
       const list = core.floaters, z = cam.z;
       if (!list || list.length === 0) return;
       stackRows(list, rows);
+      let nf = 0;
+      const frHit = (r) => { for (let j = 0; j < nf; j++) if (rectHit(r, fl[j])) return true; return false; };
       g.textAlign = "center"; g.textBaseline = "middle"; g.lineJoin = "round";
       for (let i = 0; i < list.length; i++) {
         const f = list[i], age = (config.floaterTicks - f.life + fx.alpha) * TICK_MS, t = Math.min(1, Math.max(0, age / FLOATER_MS));
@@ -334,9 +336,10 @@ export function createFx(style) {
         let fy = y, fxx = x;
         for (let tries = 0; tries < 9; tries++) {
           fr.x = fxx - tw / 2; fr.y = fy - th / 2; fr.w = tw; fr.h = th;
-          if (!fx.blocked(fr)) break;
+          if (!fx.blocked(fr) && !frHit(fr)) break;
           if (tries === 5) { fxx = pos.x - side * Math.max((toPlayer ? 62 : 40) * z, 88) - side * 16 * e * z; fy = y; } else fy -= th * 0.7;
         }
+        const done = fl[nf] ?? (fl[nf] = { x: 0, y: 0, w: 0, h: 0 }); done.x = fr.x; done.y = fr.y; done.w = fr.w; done.h = fr.h; nf++;
         g.globalAlpha = t < 0.65 ? 1 : Math.max(0, 1 - (t - 0.65) / 0.35);
         g.lineWidth = Math.max(4, fs * 0.32); g.strokeStyle = P.ink; g.strokeText(text, fxx, fy);
         if (!miss) { g.lineWidth = Math.max(2, fs * 0.12); g.strokeStyle = heal ? "#1f8a4a" : toPlayer ? "#e0363f" : "#ff6a2a"; g.strokeText(text, fxx, fy); }

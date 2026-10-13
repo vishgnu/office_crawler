@@ -49,7 +49,7 @@ h2 { margin: 0 0 8px; font-size: clamp(26px, 4.5vw, 44px); color: #dfe5f5; text-
 .xptip{position:absolute;background:transparent}
 .hgroup{display:contents}
 .sk,.hb{position:absolute;margin:0;padding:0;background:transparent;border:0;border-radius:9px;touch-action:manipulation}
-.sk .ic,.hb .ic{position:absolute;left:14%;right:14%;top:14%;bottom:14%;width:72%;height:72%}
+#ui .sk .ic,#ui .hb .ic{position:absolute;left:14%;right:14%;top:14%;bottom:14%;width:72%;height:72%}
 .sk.on{box-shadow:0 0 0 3px var(--focus),0 0 0 5px var(--ol)}
 .sk.on .sel{position:absolute;left:18%;right:18%;bottom:-6px;height:4px;border-radius:3px;background:var(--focus);border:1px solid var(--ol)}
 .sk.dis,.hb.none{opacity:.6}
@@ -261,3 +261,4 @@ button.plus:disabled{background:var(--disabled-bg);color:var(--disabled-fg);bord
 #ui.phone .hbtn{min-height:44px}
 #ui.phone .dock{gap:4px}
 .rbtn.arm{background:var(--gold);color:var(--ol)}
+#ui.phone .footrow{position:sticky;bottom:-6px;background:var(--panel);padding:6px 0 2px;z-index:5;border-top:2px solid var(--rim)}

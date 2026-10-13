@@ -336,11 +336,9 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (game.core && game.core.scene === "floor") fx.drawLowHp(g, game.w, game.h, now, game.core.player.hp / Math.max(1, game.core.player.hpMax), bus);
     else if (fx.lowHp) fx.drawLowHp(g, game.w, game.h, now, 0, bus);
     if (game.core) {
+      if (game.ui.map) fmap.drawFull(g, game.core, game.w, game.h, now, game.hc); // the automap dims the world; the HUD stays crisp on top
       hud.draw(g, game.w, game.h, game.core, atlas, now, game.core.player.target ?? game.hover, game.dpr, game.hc);
-      if (game.menu() === null || game.menu() === "pause") {
-        if (game.ui.map) fmap.drawFull(g, game.core, game.w, game.h, now, game.hc);
-        else if (game.core.scene !== "dead") fmap.drawMini(g, game.core, fmap.miniRect(game.w, game.h, layoutFor(game.w, game.h)), now, game.hc);
-      }
+      if (!game.ui.map && game.core.scene !== "dead") fmap.drawMini(g, game.core, fmap.miniRect(game.w, game.h, layoutFor(game.w, game.h)), now, game.hc);
     }
   };
   let lay = null, rectsFor = null, rectsL = null;

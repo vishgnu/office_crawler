@@ -77,7 +77,7 @@ export function drawerLayout(w, h) {
   }
   const cell = w >= 1024 ? 44 : 40;
   const leftW = w >= 1024 ? 340 : 320, rightW = cell * 10 + 44;
-  return { phone, top: 8, bottom: Math.floor(vesselTop - 8), left: 0, right: 0, leftW, rightW, cell, hudTop };
+  return { phone, top: 8, bottom: Math.floor(Math.min(vesselTop, hudTop) - 8), left: 0, right: 0, leftW, rightW, cell, hudTop };
 }
 
 /** Horizontal camera shift (px) that keeps the hero centred in the gap left by the open drawers. */
