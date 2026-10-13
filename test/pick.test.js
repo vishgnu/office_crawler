@@ -33,3 +33,13 @@ test("dead monsters are not pickable; the lower one on screen wins when two over
   assert.equal(pick(cam, [a, b], fb.x, fb.y - 20).monsterId, "b");
   assert.equal(pick(cam, [a, { ...b, dead: true }], fb.x, fb.y - 20).monsterId === "b", false);
 });
+
+test("S2: clicking a town NPC's body picks the NPC and returns its own tile (the core turns that into 'talk')", () => {
+  const n = { id: "vendor", tile: { x: 12, y: 10 }, pos: { x: 12, y: 10 }, dead: false, npc: true };
+  const f = worldToScreen(cam, 12.5, 10.5);
+  const r = pick(cam, [n], f.x, f.y - 30);
+  assert.equal(r.npcId, "vendor");
+  assert.equal(r.monsterId, null);
+  assert.deepEqual(r.tile, { x: 12, y: 10 });
+  assert.equal(pick(cam, [n], f.x + 80, f.y).npcId, null);
+});

@@ -15,7 +15,8 @@ const svg = (w, h, body) => `<svg class="ic" viewBox="0 0 ${w * U} ${h * U}" pre
 // Each glyph gets (W, H) in drawing units and returns shapes. Kept deliberately simple.
 const G = {
   blade: (W, H, col = "#d3dcea") => p(`M${W / 2} 4L${W - 8} 18V${H * 0.62}H8V18Z`, col) + r(W / 2 - 9, H * 0.6, 18, H * 0.34, "#c83f38", 5) + c(W / 2, 30, 4, "#ffb81f", 2),
-  kbd: (W, H) => r(6, H * 0.3, W - 12, H * 0.4, "#363a5e", 6) + Array.from({ length: 24 }, (_, i) => r(12 + (i % 8) * ((W - 24) / 8), H * 0.36 + Math.floor(i / 8) * (H * 0.1), (W - 24) / 8 - 2, H * 0.08, "#8793ae", 1.5, 1)).join(""),
+  kbd: (W, H) => (H > W * 1.4 ? `<g transform="translate(${W} 0) rotate(90)">${G.kbdFlat(H, W)}</g>` : G.kbdFlat(W, H)),
+  kbdFlat: (W, H) => r(6, H * 0.3, W - 12, H * 0.4, "#363a5e", 6) + Array.from({ length: 24 }, (_, i) => r(12 + (i % 8) * ((W - 24) / 8), H * 0.36 + Math.floor(i / 8) * (H * 0.1), (W - 24) / 8 - 2, H * 0.08, "#8793ae", 1.5, 1)).join(""),
   mace: (W, H) => r(W / 2 - 5, H * 0.34, 10, H * 0.6, "#8793ae", 3) + r(W / 2 - 14, 6, 28, H * 0.34, "#c83f38", 6) + r(W / 2 - 14, 12, 28, 6, "#d3dcea", 2, 2),
   hammer: (W, H) => r(W / 2 - 5, H * 0.3, 10, H * 0.64, "#b06f3c", 3) + r(8, 6, W - 16, H * 0.28, "#8793ae", 5) + c(W / 2, H * 0.17, 5, "#363a5e", 2),
   pole: (W, H) => r(W / 2 - 4, 8, 8, H - 12, "#b06f3c", 3) + p(`M${W / 2} 2L${W - 8} 28L${W / 2} 22L8 28Z`, "#8793ae") + r(W / 2 - 14, H - 34, 28, 22, "#2f78f0", 5),

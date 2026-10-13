@@ -184,12 +184,12 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   check("assign buttons put a learned skill on F4", s.player.skillBar.hotkeys[3] === "mute");
   check("with no points the other learn buttons are disabled", (await g.page.locator(T("learn-reply-all")).isDisabled()));
   await g.page.keyboard.press("KeyS");
-  await g.page.keyboard.press("F2");
+  await g.page.keyboard.press("F3");
   s = await g.state();
-  check("[F2] on an empty slot selects it: no skill for the right button", s.player.skillBar.selected === 1 && s.player.skillBar.secondary === null && s.ui.hud.skillBar.slots[1].selected === true);
+  check("[F3] on an empty slot selects it: no skill for the right button", s.player.skillBar.selected === 2 && s.player.skillBar.secondary === null && s.ui.hud.skillBar.slots[2].selected === true);
   await g.page.keyboard.press("F1");
   s = await g.state();
-  check("AC-R-015-3 [F1] selects the skill on slot 0; the HUD highlights it", s.player.skillBar.selected === 0 && s.player.skillBar.secondary === "stapler-throw" && s.ui.hud.skillBar.slots[0].selected === true && s.ui.hud.skillBar.slots[1].selected === false);
+  check("AC-R-015-3 [F1] selects the skill on slot 0; the HUD highlights it", s.player.skillBar.selected === 0 && s.player.skillBar.secondary === "stapler-throw" && s.ui.hud.skillBar.slots[0].selected === true && s.ui.hud.skillBar.slots[2].selected === false);
   s = await g.app("step", 2);
   const cam = s.ui.camera, p = s.player.tile;
   const target = { x: p.x + 3, y: p.y }; // any tile: the cast is directional
@@ -222,7 +222,9 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   // click the vendor NPC tile: the hero walks over and the window opens
   const npc = s.floor.npcs.find((n) => n.id === "vendor");
   let sc = tileScreen(s.ui.camera, npc.tile.x, npc.tile.y);
-  await g.page.mouse.click(sc.x, sc.y);
+  const pk = await g.app("pick", sc.x, sc.y - 36 * s.ui.camera.z);
+  check("pick: the body of an NPC (above its tile) picks the NPC", pk.npcId === "vendor" && pk.tile.x === npc.tile.x && pk.tile.y === npc.tile.y, pk);
+  await g.page.mouse.click(sc.x, sc.y - 36 * s.ui.camera.z);
   s = await stepTo(g, (st) => !!st.ui.dialog);
   check("clicking the vendor opens the dialog window with the vendor's stock", s.ui.dialog?.npc === "vendor" && s.ui.panels.vendor === true && (await g.page.locator(T("vendor-stock") + " .row").count()) === s.vendor.stock.length && s.vendor.stock.length > 5);
   check("the inventory drawer opens beside it and the two do not overlap (AC-R-073-3)", s.ui.panels.inventory === true && !intersects(await g.page.locator("#pleft").boundingBox(), await g.page.locator("#pright").boundingBox()));
@@ -332,6 +334,34 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   await g.page.keyboard.press("Enter");
   s = await g.state();
   check("keyboard place: back in the drawer at that cell", s.cursorItem === null && s.inventory.items.some((i) => i.base === "visor-cap" && i.x === 4 && i.y === 2), s.inventory.items.map((i) => [i.base, i.x, i.y]));
+  await g.context.close();
+}
+
+// ---------------------------------------------------------------- cheats under __app.cheat (R-123, ?test=1 only)
+{
+  const g = await start();
+  let r = await g.app("cheat.setLevel", 5), s = await g.state();
+  check("cheat.setLevel(5): level, points and full health", r.ok && s.player.level === 5 && s.player.attrPoints === 20 && s.player.hp === s.player.hpMax, r);
+  r = await g.app("cheat.setLevel", 99);
+  check("cheat.setLevel out of range is rejected", r.ok === false && typeof r.error === "string");
+  r = await g.app("cheat.setHp", 7); s = await g.state();
+  check("cheat.setHp(7)", r.ok && s.player.hp === 7);
+  r = await g.app("cheat.giveGold", 25); s = await g.state();
+  check("cheat.giveGold(25) adds to the purse", r.ok && s.player.gold === 75);
+  r = await g.app("cheat.giveGold", -3);
+  check("cheat.giveGold with a bad amount is rejected", r.ok === false);
+  r = await g.app("cheat.spawnMonster", "zombie-intern", { x: 9, y: 9 });
+  check("spawning a monster in the Lobby is rejected (no hostiles in town)", r.ok === false);
+  r = await g.app("cheat.teleportFloor", 3); s = await g.state();
+  check("cheat.teleportFloor(3) lands on floor 3", r.ok && s.depth === 3 && s.scene === "floor" && s.monsters.length > 0);
+  r = await g.app("cheat.teleportFloor", 99);
+  check("cheat.teleportFloor(99) is rejected", r.ok === false);
+  const n0 = (await g.state()).groundItems.length;
+  r = await g.app("cheat.spawnItem", { rarity: "rare", slot: "head" }); s = await g.state();
+  check("cheat.spawnItem puts a rolled item on the ground", r.ok && s.groundItems.length === n0 + 1 && s.groundItems.some((e) => e.id === r.id && e.rarity === "rare"), r);
+  r = await g.app("cheat.giveItem", { potion: true }); s = await g.state();
+  check("cheat.giveItem puts it straight into the drawer", r.ok && s.inventory.items.some((i) => i.id === r.id));
+  check("no page errors (cheats)", g.errors.length === 0, g.errors);
   await g.context.close();
 }
 

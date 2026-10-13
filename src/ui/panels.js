@@ -123,10 +123,11 @@ export function createPanels(root, game) {
     let h = `<div class="ph"><h2>${esc(T.skillsTitle)}</h2>${closeBtn("skills", T.closeSkills)}</div><div class="pb"><div class="skills" data-testid="skills-panel">${tabsHtml("skills")}`;
     h += `<p class="sp"><b>${esc(T.skillPointsLeft)}: <span data-testid="skill-points">${p.skillPoints}</span></b></p><p class="sk-note">${esc(T.rightMouse)}</p>`;
     const row = (d) => {
-      const lvl = d.id === "strike" ? 1 : p.skills[d.id] ?? 0, max = Math.min(d.maxLevel, content.skills[d.id] ? d.maxLevel : 1);
+      const lvl = d.id === "strike" ? 1 : p.skills[d.id] ?? 0;
       const learnable = d.kind !== "basic", maxed = lvl >= d.maxLevel, canLearn = learnable && p.skillPoints > 0 && !maxed;
       const cost = d.mana ? d.mana(Math.max(1, lvl)) : 0, assignable = d.kind === "basic" || (d.kind === "active" && lvl > 0);
-      let r = `<li class="srow" data-testid="skill-${d.id}"><div class="sic">${skillIcon(d.id)}</div><div class="sbody"><div class="sname"><b>${esc(d.name)}</b> <span class="slv">${esc(T.skillLevel)} <span data-testid="level-${d.id}">${lvl}</span>/${d.kind === "basic" ? 1 : d.maxLevel}</span>${d.kind === "active" ? ` <span class="smana">${esc(T.manaCost)} ${cost}</span>` : ""}</div><div class="stext">${esc(S[d.text] ?? "")}</div>`;
+      let r = `<li class="srow" data-testid="skill-${d.id}"><div class="sic">${skillIcon(d.id)}</div><div class="sbody"><div class="sname"><b>${esc(d.name)}</b><span class="meta"><span class="slv">${esc(T.skillLevel)} <span data-testid="level-${d.id}">${lvl}</span>/${d.kind === "basic" ? 1 : d.maxLevel}</span>${d.kind === "active" ? ` <span class="smana">\u00b7 ${esc(T.manaCost)} ${cost}</span>` : ""}</span></div><div class="stext">${esc(S[d.text] ?? "")}</div></div>`;
+      r += learnable ? `<button class="learn" type="button" data-testid="learn-${d.id}" data-learn="${d.id}" data-fk="l.${d.id}" ${canLearn ? "" : "disabled"} aria-label="${esc(lvl ? T.upgrade : T.learn)} ${esc(d.name)}${maxed ? ", " + esc(T.maxed) : ""}">${esc(maxed ? T.maxed : lvl ? T.upgrade : T.learn)}</button>` : "<span></span>";
       if (assignable) {
         r += `<div class="sassign" role="group" aria-label="${esc(T.assignTo)} ${esc(d.name)}"><span>${esc(T.assignTo)}</span>`;
         for (let i = 0; i < bar.hotkeys.length; i++) {
@@ -135,8 +136,6 @@ export function createPanels(root, game) {
         }
         r += `</div>`;
       }
-      r += `</div>`;
-      if (learnable) r += `<button class="learn" type="button" data-testid="learn-${d.id}" data-learn="${d.id}" data-fk="l.${d.id}" ${canLearn ? "" : "disabled"} aria-label="${esc(lvl ? T.upgrade : T.learn)} ${esc(d.name)}${maxed ? ", " + esc(T.maxed) : ""}">${esc(maxed ? T.maxed : lvl ? T.upgrade : T.learn)}</button>`;
       return r + `</li>`;
     };
     h += `<h3>${esc(T.basicAttack)}</h3><ul class="slist">${defs.filter((d) => d.kind === "basic").map(row).join("")}</ul>`;
@@ -146,7 +145,7 @@ export function createPanels(root, game) {
   }
 
   // ------------------------------------------------------------ NPC windows
-  const rowItem = (it, tipKey, right) => `<li class="row" data-tip="${tipKey}"><span class="ricon" style="--rw:${it.w};--rh:${it.h}">${itemIcon(it)}</span><span class="rname">${nameLine(it, 14)}<small>${esc(it.baseName ?? it.name)}${it.kind === "gear" ? "" : ""}</small></span>${right}</li>`;
+  const rowItem = (it, tipKey, right) => `<li class="row" data-tip="${tipKey}"><span class="ricon" style="--rw:${it.w};--rh:${it.h}">${itemIcon(it)}</span><span class="rname">${nameLine(it, 14)}<small>${esc(describeItem(it, core().player).main[0]?.text ?? "")}</small></span>${right}</li>`;
   function renderNpc(c) {
     const d = c.ui.dialog;
     if (!d) return "";

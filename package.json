@@ -11,7 +11,8 @@
     "bot": "node bot/run-headless.mjs",
     "bot:browser": "node build.mjs && node bot/run-browser.mjs",
     "bot:report": "node build.mjs && node bot/write-report.mjs",
-    "shots": "node build.mjs && node e2e/shots.mjs"
+    "shots": "node build.mjs && node e2e/shots.mjs",
+    "shots:ui": "node build.mjs && node e2e/ui-shots.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.10",

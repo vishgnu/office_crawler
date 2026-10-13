@@ -79,9 +79,12 @@ async function boot() {
   canvas.addEventListener("pointerup", (e) => game.pointer("up", e));
   canvas.addEventListener("pointercancel", (e) => game.pointer("cancel", e));
   window.addEventListener("resize", () => game.resize());
+  window.addEventListener("keyup", (e) => { if (e.code === "AltLeft" || e.code === "AltRight") game.setShowLoot(false); });
+  window.addEventListener("blur", () => game.setShowLoot(false));
   window.addEventListener("keydown", (e) => {
     // F1-F4 select the right-mouse skill (the browser's own function keys must not fire). Tab stays free: panels and buttons are keyboard-reachable.
     if (preventsDefault(e.code) || (e.code === "Tab" && game.menu() === null && !game.anyPanel())) e.preventDefault(); // Tab is reserved for the map while no panel is open
+    if (e.code === "AltLeft" || e.code === "AltRight") game.setShowLoot(true); // Alt held: every loot plate on the floor
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || !game.core) return;
     if (/^(F[1-4]|Digit[1-4]|Numpad[1-4]|Key[ICSK]|Escape)$/.test(e.code)) {
       // a focused button keeps Enter/Space; letters and digits still reach the game

@@ -1,6 +1,6 @@
 // The browser shell around the pure core: owns the state, the fixed-step loop, the camera, input
 // translation and rendering. Everything the test hook needs goes through this object.
-import { newGame, step, applyInput, snapshot, hashState, advance, config, spawnMonster, content, setLevel, setHp, teleportFloor, giveGold, spawnItem, canPlace } from "./core/index.js";
+import { newGame, step, applyInput, snapshot, hashState, advance, config, spawnMonster, content, setLevel, setHp, teleportFloor, giveGold, spawnItem, takeGround, canPlace } from "./core/index.js";
 import { makeCamera, easeFollow } from "./ui/camera.js";
 import { hudLayout, cameraInset } from "./ui/layout.js";
 import { T } from "./ui/text.js";
@@ -19,7 +19,7 @@ const MAX_CATCHUP_TICKS = 8;
 export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed, atlasMs = 0, lowFx = false, hc = false }) {
   const g = canvas.getContext("2d");
   const fx = createFx(style), lighting = createLighting(style), labels = createLabels(style), hud = createHud(style);
-  fx.lowFx = lowFx;
+  fx.lowFx = lowFx; fx.hc = hc;
   const rs = { facing: new Map() };
   const game = {
     core: null, titleSeed: seed >>> 0, backdrop: null, error: null,
@@ -127,6 +127,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   };
   game.pickAt = (sx, sy, cam = game.camera()) => {
     const actors = game.core.monsters.map((m) => ({ id: m.id, tile: m.tile, pos: place(m), dead: m.ai === "dead" }));
+    for (const n of game.core.floor.npcs ?? []) actors.push({ id: n.id, tile: n.tile, pos: n.tile, dead: false, npc: true });
     return pick(cam, actors, sx, sy);
   };
 
@@ -139,7 +140,9 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (game.menu()) return;
     const rect = canvas.getBoundingClientRect(), sx = e.clientX - rect.left, sy = e.clientY - rect.top;
     const pk = game.pickAt(sx, sy);
-    game.hover = pk.monsterId;
+    game.hover = pk.monsterId ?? (pk.npcId ? `npc:${pk.npcId}` : null); // nameplate id of a hovered NPC is "npc:<id>"
+    const loot = !pk.monsterId && !pk.npcId ? game.core.groundItems.find((e) => e.tile.x === pk.tile.x && e.tile.y === pk.tile.y) : null;
+    fx.hoverLootId = loot?.id ?? null; // the plate of the hovered pile is forced visible
     if (kind === "down") {
       if (e.button !== 0 && e.button !== 2) return;
       if (game.core.cursorItem) { game.toast(T.msgHeldWorld); return; }
@@ -226,7 +229,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     const cam = game.camera();
     base.ui = {
       ...(game.core ? game.core.ui : { notice: null }), menu,
-      panels: game.panels(), tooltip: game.ui.tooltip, toast: game.ui.toast?.text ?? null, inset: game.inset,
+      panels: game.panels(), tooltip: game.ui.tooltip, toast: game.ui.toast?.text ?? null, inset: game.inset, fx: { gore: false }, // no gore by default (AC-R-103-3)
       hud: game.core ? hudState(game.core, game.w, game.h, style, game.core.player.target ?? game.hover) : null,
       camera: cam ? { ox: cam.ox, oy: cam.oy, z: cam.z, w: cam.w, h: cam.h } : null,
       hover: game.hover,
@@ -259,8 +262,8 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     spawnItem: (opts = {}, tile) => cheat((c) => { const e = spawnItem(c, opts, tile ?? c.player.tile); return { ok: true, id: e.id, label: e.label }; }),
     /** spawnItem, then pick it up into the inventory. */
     giveItem: (opts = {}) => cheat((c) => {
-      const e = spawnItem(c, opts, c.player.tile), r = applyInput(c, { t: "pickup", id: e.id });
-      return r.ok ? { ok: true, id: e.id, label: e.label } : r;
+      const e = spawnItem(c, opts, c.player.tile), r = takeGround(c, e); // straight into the drawer, wherever the pile landed
+      return r.ok ? { ok: true, id: e.id, label: e.label } : { ok: false, error: r.error };
     }),
   };
   game.perf = () => {
@@ -285,6 +288,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   };
   /** Swap in a freshly built atlas (after a resize or devicePixelRatio change). */
   game.setAtlas = (a) => { game.atlas = a; game.atlasChanges++; };
+  game.setShowLoot = (on) => { fx.showAllLoot = !!on; };
   game.setLowFx = (on) => { game.lowFx = !!on; fx.lowFx = game.lowFx; };
   const focus = { x: 0, y: 0 }, target = { x: 0, y: 0 }, env = { lighting, style, lowFx: false, hc: false };
   let lastRender = 0;
