@@ -34,7 +34,7 @@ function newPlayer(entry, cls) {
     level: 1, xp: 0, xpNext: config.player.xpNext, attrs: { ...cls.attrs }, gold: config.startGold, resist: {},
     action: "idle", target: null, pickup: null, path: [], goal: null, repathT: 0, blockedT: 0, attackT: 0, swingTarget: null,
     attrPoints: 0, skillPoints: 0, skills: {}, skillBar: { primary: "strike", secondary: null, hotkeys: [null, null, null, null], selected: 0 },
-    castT: 0, flashTicks: 0, facing: { x: 0, y: 1 }, stairs: null, interact: null,
+    castT: 0, flashTicks: 0, facing: { x: 0, y: 1 }, stairs: null, interact: null, toPortal: false,
   };
   const s = deriveStats(p, {});
   Object.assign(p, { attrsTotal: s.attrs, hpMax: s.hpMax, mpMax: s.mpMax, hp: s.hpMax, mp: s.mpMax, damage: s.damage, defense: s.defense, attackRating: s.attackRating, resist: s.resist });

@@ -32,7 +32,7 @@ function issueMove(state, tile) {
   const ctx = getCtx(state), p = state.player;
   if (!ctx.grid.inBounds(tile.x, tile.y)) return fail("tile out of bounds");
   if (p.hp <= 0) return fail("player is dead");
-  p.target = null; p.goal = null; p.pickup = null; p.stairs = null; p.interact = null;
+  p.target = null; p.goal = null; p.pickup = null; p.stairs = null; p.interact = null; p.toPortal = false;
   const from = p.next ?? p.tile; // finish the step in progress first
   let path = ctx.grid.walkable(tile.x, tile.y) ? planPath(ctx, from, tile) : null;
   if (!path) {
@@ -55,7 +55,7 @@ function issueAttack(state, id) {
   if (!m || m.ai === "dead") return fail("no such living monster");
   if (state.player.hp <= 0) return fail("player is dead");
   const p = state.player;
-  p.target = id; p.path = []; p.goal = null; p.repathT = 0; p.pickup = null; p.stairs = null; p.interact = null;
+  p.target = id; p.path = []; p.goal = null; p.repathT = 0; p.pickup = null; p.stairs = null; p.interact = null; p.toPortal = false;
   return OK;
 }
 

@@ -119,13 +119,24 @@ export function stackRows(list, rows = [], tickMs = TICK_MS) {
   return rows;
 }
 
+const rectHit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+/** Does the segment (x1,y1)-(x2,y2) touch rect r? (sampled; leader lines are short) */
+export function segHitsRect(sg, r, pad = 2) {
+  for (let k = 0; k <= 10; k++) {
+    const t = k / 10, x = sg[0] + (sg[2] - sg[0]) * t, y = sg[1] + (sg[3] - sg[1]) * t;
+    if (x >= r.x - pad && x <= r.x + r.w + pad && y >= r.y - pad && y <= r.y + r.h + pad) return true;
+  }
+  return false;
+}
+
 export function createFx(style) {
   const rng = createRng(7), P = style.palette, pos = { x: 0, y: 0 }, shk = { x: 0, y: 0 }, pos2 = { x: 0, y: 0 };
   let hurtCanvas = null, hurtW = 0, hurtH = 0;
-  const rows = [];
+  const rows = [], fr0 = { x: 0, y: 0, w: 0, h: 0 };
   const fx = {
     parts: [], slashes: [], rings: [], impacts: [], pillars: [], proj: new Map(), flash: new Map(), // `flash` is unused (flashTicks is state-backed) and kept so older callers do not break
     core: null, alpha: 1, hc: false, showAllLoot: false, hoverLootId: null, // the shell may set these three (high contrast, Alt held, hovered ground entry)
+    avoid: [], avoidSegs: [], // plate / pip rectangles and leader lines claimed by the nameplate pass this frame (set by the shell); loot plates and floaters keep clear of them
     hurtUntil: 0, lowHp: false, beat: -1, shakeUntil: 0, hitStopUntil: 0, deathAt: null, lowFx: false,
     reset() {
       fx.parts.length = 0; fx.slashes.length = 0; fx.rings.length = 0; fx.impacts.length = 0; fx.pillars.length = 0; fx.proj.clear(); fx.flash.clear();
@@ -287,7 +298,16 @@ export function createFx(style) {
       g.globalAlpha = 1;
       for (let i = 0; i < fx.impacts.length; i++) fx.drawImpact(g, cam, fx.impacts[i], now);
       for (let i = 0; i < fx.pillars.length; i++) fx.drawPillar(g, cam, fx.pillars[i], now);
-      if (core) fx.drawFloaters(g, cam, core, now);
+      if (core) { fx.drawLootPlates(g, cam, core, now); fx.drawFloaters(g, cam, core, now); } // ground labels sit above bursts and impacts, floaters above everything
+    },
+
+    /** Is this rectangle on a claimed label (plates, pips, loot plates) or leader line? Used by the loot-plate and floater placement. */
+    blocked(r) {
+      const av = fx.avoid, sg = fx.avoidSegs, pl = fx.platesPlaced;
+      for (let i = 0; i < av.length; i++) if (rectHit(r, av[i])) return true;
+      for (let i = 0; i < sg.length; i++) if (segHitsRect(sg[i], r)) return true;
+      if (pl) for (let i = 1; i < pl.length; i++) if (rectHit(r, pl[i])) return true; // [0] is the hero rect
+      return false;
     },
 
     /** Floaters come from state.floaters only. Position/age/stack rows are derived each frame, so there is nothing to keep in sync. */
@@ -308,11 +328,19 @@ export function createFx(style) {
         // spawns above the head and clear of the nameplate, then drifts up (right for monsters, left for the hero); stacked rows sit higher
         const side = toPlayer ? -1 : 1, x = pos.x + side * Math.max((toPlayer ? 62 : 40) * z, 88) + side * 16 * e * z, y = pos.y - (head + 10 + 32 * e + rows[i] * 24) * z;
         const text = miss ? S.miss : heal ? `+${f.value}` : String(f.value);
-        g.globalAlpha = t < 0.65 ? 1 : Math.max(0, 1 - (t - 0.65) / 0.35);
         g.font = fontFor(fs);
-        g.lineWidth = Math.max(4, fs * 0.32); g.strokeStyle = P.ink; g.strokeText(text, x, y);
-        if (!miss) { g.lineWidth = Math.max(2, fs * 0.12); g.strokeStyle = heal ? "#1f8a4a" : toPlayer ? "#e0363f" : "#ff6a2a"; g.strokeText(text, x, y); }
-        g.fillStyle = miss ? "#c9c3ec" : heal ? "#c8ffd4" : toPlayer ? "#ffd0d4" : "#fff3a0"; g.fillText(text, x, y);
+        // own lane: never on a nameplate, health pip, ground-item label or leader line; lift in steps, then try the other side
+        const tw = g.measureText(text).width + 8, th = fs * 1.15, fr = fr0;
+        let fy = y, fxx = x;
+        for (let tries = 0; tries < 9; tries++) {
+          fr.x = fxx - tw / 2; fr.y = fy - th / 2; fr.w = tw; fr.h = th;
+          if (!fx.blocked(fr)) break;
+          if (tries === 5) { fxx = pos.x - side * Math.max((toPlayer ? 62 : 40) * z, 88) - side * 16 * e * z; fy = y; } else fy -= th * 0.7;
+        }
+        g.globalAlpha = t < 0.65 ? 1 : Math.max(0, 1 - (t - 0.65) / 0.35);
+        g.lineWidth = Math.max(4, fs * 0.32); g.strokeStyle = P.ink; g.strokeText(text, fxx, fy);
+        if (!miss) { g.lineWidth = Math.max(2, fs * 0.12); g.strokeStyle = heal ? "#1f8a4a" : toPlayer ? "#e0363f" : "#ff6a2a"; g.strokeText(text, fxx, fy); }
+        g.fillStyle = miss ? "#c9c3ec" : heal ? "#c8ffd4" : toPlayer ? "#ffd0d4" : "#fff3a0"; g.fillText(text, fxx, fy);
       }
       g.globalAlpha = 1;
     },
@@ -425,6 +453,15 @@ export function createFx(style) {
         marker(g, P, gi, pos.x, my, size * (gi.rarity === "unique" ? 1.15 : 1), colour);
         vis.push({ gi, x: pos.x, my, colour, d: Math.hypot(gi.tile.x - hx, gi.tile.y - hy) });
       }
+      fx.lootHero = heroRect; fx.lootSize = size; fx.lootFs = fs; fx.lootDpr = dpr; fx.lootHc = hc;
+    },
+
+    /** Ground-item plates (after the burst / impact layer): kept off nameplates, health pips, leader lines, the hero and each other. */
+    drawLootPlates(g, cam, core, now) {
+      const vis = fx.lootVis, heroRect = fx.lootHero;
+      if (!vis || vis.length === 0 || !heroRect || !core.groundItems?.length) return;
+      const placed = fx.platesPlaced, size = fx.lootSize, fs = fx.lootFs, dpr = fx.lootDpr, hc = fx.lootHc, SAFE = 8;
+      let plates = 0;
       for (let i = 0; i < vis.length; i++) {
         const { gi, x, my, colour, d } = vis[i];
         // full plates: near the hero, rare+ in sight, the hovered entry (fx.hoverLootId) and everything while Alt is held (fx.showAllLoot, set by the shell)
@@ -434,12 +471,14 @@ export function createFx(style) {
         const r = { x: Math.round(Math.min(cam.w - SAFE - sp.w, Math.max(SAFE, x - sp.w / 2))), y: Math.round(my - size / 2 - 4 - sp.h), w: sp.w, h: sp.h };
         if (r.x < heroRect.x + heroRect.w && heroRect.x < r.x + r.w && r.y < heroRect.y + heroRect.h && heroRect.y < r.y + r.h) r.y = Math.round(heroRect.y - r.h - 2);
         let ok = false;
-        for (let k = 0; k < 5 && !ok; k++) {
-          ok = r.y > SAFE;
-          for (let j = 0; j < placed.length && ok; j++) { const o = placed[j]; if (r.x < o.x + o.w && o.x < r.x + r.w && r.y < o.y + o.h && o.y < r.y + r.h) ok = false; }
-          if (!ok) r.y -= r.h + 2;
+        const y0 = r.y;
+        for (let k = 0; k < 7 && !ok; k++) {
+          ok = r.y > SAFE && r.y + r.h < cam.h - SAFE;
+          for (let j = 0; j < placed.length && ok; j++) if (rectHit(r, placed[j])) ok = false;
+          if (ok && fx.blocked(r)) ok = false;
+          if (!ok) r.y = k === 3 ? Math.round(my + size / 2 + 4) : k > 3 ? r.y + r.h + 2 : r.y - (r.h + 2); // up three times, then below the marker, then further down
         }
-        if (!ok) continue;
+        if (!ok) { r.y = y0; continue; }
         placed.push({ x: r.x, y: r.y, w: r.w, h: r.h });
         plates++;
         g.drawImage(sp.c, r.x, r.y, sp.w, sp.h);

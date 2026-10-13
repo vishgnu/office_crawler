@@ -71,6 +71,6 @@ export function castSkill(state, id, tile) {
     }
   }
   // The hero stops for the cast: any walking, chasing or pickup order ends (a step in progress is finished).
-  p.castT = config.castTicks; p.path = []; p.target = null; p.goal = null; p.pickup = null; p.stairs = null; p.interact = null;
+  p.castT = config.castTicks; p.path = []; p.target = null; p.goal = null; p.pickup = null; p.stairs = null; p.interact = null; p.toPortal = false;
   return OK;
 }

@@ -84,7 +84,7 @@ export function hurtPlayer(state, source, amount) {
   floater(state, amount, p.tile, "player");
   p.flashTicks = config.flashTicks;
   if (p.hp === 0) {
-    p.action = "dead"; p.path = []; p.target = null; p.next = null; p.stairs = null; p.interact = null;
+    p.action = "dead"; p.path = []; p.target = null; p.next = null; p.stairs = null; p.interact = null; p.toPortal = false;
     releaseCursor(state); // QF-02-3: a held item goes back to the inventory, else to the floor
     state.scene = "dead"; // same tick as the killing blow
     emit(state, { type: "death", target: "player" });

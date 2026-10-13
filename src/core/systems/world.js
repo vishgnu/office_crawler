@@ -60,7 +60,7 @@ export function enterFloor(state, depth, { at = "entry", from = state.depth, til
   const p = state.player, ctx = getCtx(state);
   p.tile = at === "exit" && floor.exit ? tileBeside(floor, ctx.grid, floor.exit)
     : at === "tile" && tile ? (ctx.grid.walkable(tile.x, tile.y) ? { x: tile.x, y: tile.y } : tileBeside(floor, ctx.grid, tile)) : { ...floor.entry };
-  Object.assign(p, { next: null, moveT: 0, moveTotal: 0, path: [], goal: null, target: null, pickup: null, stairs: null, interact: null, castT: 0, blockedT: 0, attackT: 0, swingTarget: null, repathT: 0, action: "idle" });
+  Object.assign(p, { next: null, moveT: 0, moveTotal: 0, path: [], goal: null, target: null, pickup: null, stairs: null, interact: null, toPortal: false, castT: 0, blockedT: 0, attackT: 0, swingTarget: null, repathT: 0, action: "idle" });
   const killed = new Set(parked?.killed ?? []);
   state.blockedSpawns = [];
   floor.spawns.forEach((s, i) => { if (!killed.has(i) && !spawnMonster(state, s.type, s.tile, s.packId, { ...s, spawn: i })) state.blockedSpawns.push(i); });
@@ -139,7 +139,7 @@ export function usePortal(state, issueMove) {
   if (!door || state.depth !== 0) return fail("no portal here");
   if (!p.next && p.tile.x === door.lobbyTile.x && p.tile.y === door.lobbyTile.y) return takePortal(state);
   const r = issueMove(state, door.lobbyTile);
-  if (r.ok) p.portal = true;
+  if (r.ok) p.toPortal = true;
   return r;
 }
 
@@ -205,11 +205,11 @@ export function world(state) {
     else if (!p.next && cheb(p.tile, n.tile) <= config.interactRange) { p.interact = null; p.path = []; openDialog(state, n); }
     else if (!p.next && p.path.length === 0) p.interact = null;
   }
-  if (p.portal) {
+  if (p.toPortal) {
     const d = state.portal;
-    if (!d || state.depth !== 0) p.portal = false;
-    else if (!p.next && p.tile.x === d.lobbyTile.x && p.tile.y === d.lobbyTile.y) { p.portal = false; takePortal(state); return; }
-    else if (!p.next && p.path.length === 0) p.portal = false;
+    if (!d || state.depth !== 0) p.toPortal = false;
+    else if (!p.next && p.tile.x === d.lobbyTile.x && p.tile.y === d.lobbyTile.y) { p.toPortal = false; takePortal(state); return; }
+    else if (!p.next && p.path.length === 0) p.toPortal = false;
   }
   if (p.stairs) {
     const t = stairsTile(state, p.stairs);
