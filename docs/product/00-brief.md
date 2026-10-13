@@ -35,3 +35,11 @@ so the harness gets tested and improved on a real project.
   slices (phase gates included) while the user is away.
 - **Not delegated:** anything listed under "Never decide" in `harness/.claude/agents/customer-proxy.md`.
   Also not delegated: gates of the harness project itself.
+
+## Addendum (user, 2026-10-13, verbatim)
+
+> Great have fun and dont play to much 😬, gebrate all you keed wee want to have kuce soubd anf grafics as well generate what you need
+
+Read as: "generate all you need, we want to have nice sound and graphics as well, generate what you need."
+**Status: agreed (real customer, not proxy).** Graphics and sound must be good quality, and the team
+generates all assets itself (procedural or code-drawn art, synthesised audio). Nothing comes from third parties.
