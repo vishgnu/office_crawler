@@ -9,3 +9,68 @@ One line per decision by `customer-proxy`. The real customer can overrule any of
 - 2026-10-13 | circle-01 Q5 (audio) | A instead of proposed B: procedural SFX plus generative ambient per zone, volume sliders, because addendum says "nice sound" | medium
 - 2026-10-13 | circle-01 Q6 (monetisation/hosting) | default A: free, private/static preview, public release left to the user | high
 - 2026-10-13 | circle-01 Q7 (session length) | default A: 20-40 min run, no gold loss on death | medium
+- 2026-10-13 | spec QF-01-1 (town stairs) | to deepest reached floor via elevator (waypoint idea) | high
+- 2026-10-13 | spec QF-01-2 (click on wall) | walk to nearest reachable tile | medium
+- 2026-10-13 | spec QF-01-3 (skill panel key) | S and K both | medium
+- 2026-10-13 | spec QF-01-4 (hotkey collision) | belt potions 1-4; skills on right mouse, selector hotkeys F1-F4 | high
+- 2026-10-13 | spec QF-01-5 (20-40 min measure) | release-gate bot measurement, not an AC | medium
+- 2026-10-13 | spec QF-01-6 (rebind collision) | reject with notice | medium
+- 2026-10-13 | spec QF-02-1 (hit chance) | architect ADR, clamp ~5-95%, values in config | medium
+- 2026-10-13 | spec QF-02-2 (respawn) | full health and mana in town | high
+- 2026-10-13 | spec QF-02-3 (item on cursor at death) | returns to inventory, else drops | medium
+- 2026-10-13 | spec QF-02-4 (regeneration) | no health regen on floors, slow mana regen | low
+- 2026-10-13 | spec QF-02-5 (feel criteria) | independent visual review | high
+- 2026-10-13 | spec QF-03-1 (monster names) | working names OK; final names ESCALATE (brand) | medium
+- 2026-10-13 | spec QF-03-2 (fleeing) | weak swarm melee flee below 25% hp | medium
+- 2026-10-13 | spec QF-03-3 (leash) | lose interest at 2x aggro radius, return to origin | medium
+- 2026-10-13 | spec QF-03-4 (champion drops) | at least magic rarity | medium
+- 2026-10-13 | spec QF-03-5 (safe radius) | add requirement, radius in config | high
+- 2026-10-13 | spec QF-03-6 (archetype mapping) | delegated to spec-writer/architect within limits | low
+- 2026-10-13 | spec QF-04-1 (hostiles in town cheat) | cheats reject | high
+- 2026-10-13 | spec QF-04-2 (healer) | free, health only | medium
+- 2026-10-13 | spec QF-04-3 (potion stock) | unlimited, tiers by level | medium
+- 2026-10-13 | spec QF-04-4 (zones) | floors 1-4 / 5-8 as AC-R-101-2 | medium
+- 2026-10-13 | spec QF-04-5 (boss location) | own final boss arena after floor 8 (not counted in the 8) | high
+- 2026-10-13 | spec QF-04-6 (ground items) | persist within session, not across save | medium
+- 2026-10-13 | spec QF-04-7 (boss loot) | 3 items, rare or better | medium
+- 2026-10-13 | spec QF-04-8 (after keep playing) | in town | medium
+- 2026-10-13 | spec QF-04-9 (boss reset) | resets to full on death or leaving | medium
+- 2026-10-13 | spec QF-04-10 (lobby areas) | reception, breakroom | high
+- 2026-10-13 | spec QF-04-11 (tileset look) | art-direction pick + visual review | high
+- 2026-10-13 | spec QF-05-1 (containers) | supply crates and filing cabinets | medium
+- 2026-10-13 | spec QF-05-2 (unique twice) | at most once per game | low
+- 2026-10-13 | spec QF-05-3 (stat group) | primary stat family, list in config | medium
+- 2026-10-13 | spec QF-05-4 (two-handed) | yes, occupies off-hand slot | medium
+- 2026-10-13 | spec QF-05-5 (potion at full health) | consumed as in genre, config flag | low
+- 2026-10-13 | spec QF-05-6 (sell equipped) | inventory only | high
+- 2026-10-13 | spec QF-05-7 (balance owner) | architect/implementer, single config module, tuned by playtest bots | high
+- 2026-10-13 | spec QF-05-8 (label readability) | visual review | high
+- 2026-10-13 | spec QF-06-1 (class screen) | none for one class; final class name ESCALATE (brand) | medium
+- 2026-10-13 | spec QF-06-2 (xp at cap) | counts for display, no level change | medium
+- 2026-10-13 | spec QF-06-3 (non-player xp) | none in MVP | medium
+- 2026-10-13 | spec QF-06-4 (level-diff xp) | none in MVP | medium
+- 2026-10-13 | spec QF-06-5 (skill cost) | mana only, no cooldowns | high
+- 2026-10-13 | spec QF-06-6 (requirements preview) | item requirements and stat-change preview | medium
+- 2026-10-13 | spec QF-06-7 (skill tree) | list, no prerequisites | medium
+- 2026-10-13 | spec QF-06-8 (starting values) | config, balance owner as QF-05-7 | medium
+- 2026-10-13 | spec QF-07-1 (gauge look) | visual reviewer gate | high
+- 2026-10-13 | spec QF-07-2 (keyboard menus) | add as should: Esc, arrows, Enter in menus | medium
+- 2026-10-13 | spec QF-07-3 (game title) | "Office Crawler" working title only; final title ESCALATE (publication/brand) | high
+- 2026-10-13 | spec QF-07-4 (offensive content) | reviewer plus written checklist kept by orchestrator | medium
+- 2026-10-13 | spec QF-07-5 (delta E) | accept spec proposal | medium
+- 2026-10-13 | spec QF-08-1 (extra cues) | add miss, monster attack, stairs as should | medium
+- 2026-10-13 | spec QF-08-2 (title audio) | soft generative ambient after first gesture | medium
+- 2026-10-13 | spec QF-08-3 (default volumes) | master 0.6, effects 0.8, ambient 0.5 | low
+- 2026-10-13 | spec QF-08-4 (sound assessment) | rendered-WAV review plus automatic checks | medium
+- 2026-10-13 | spec QF-08-5 (R-081 priority) | raised to MVP should, per Q5 A | high
+- 2026-10-13 | spec QF-09-1 (save size) | soft cap 1 MB, visible error on failure | medium
+- 2026-10-13 | spec QF-09-2 (resume point) | floor entry if saved on a floor, else town | medium
+- 2026-10-13 | spec QF-09-3 (save while dead) | resume in town, full health | high
+- 2026-10-13 | spec QF-09-4 (delete character) | keeps options | high
+- 2026-10-13 | spec QF-09-5 (migration test) | synthetic fixture accepted | high
+- 2026-10-13 | spec QF-09-6 (backups) | one | high
+- 2026-10-13 | spec QF-10-1 (performance) | CI headless Chromium software render as relative regression check; 60 fps laptop stated as goal | medium
+- 2026-10-13 | spec QF-10-2 (denylist) | orchestrator maintains docs/product/ip-denylist.txt; implementation of safe default A, IP closeness itself still ESCALATED | medium
+- 2026-10-13 | spec QF-10-3 (sim speed) | 10,000 ticks in 10 s as CI regression bound | medium
+- 2026-10-13 | spec QF-10-4 (browser/OS matrix) | CI: 3 Playwright engines; OS and Safari manual release checks | medium
+- 2026-10-13 | spec QF-10-5 (?test=1) | accept, architect confirms in ADR; cheats only with flag | medium
