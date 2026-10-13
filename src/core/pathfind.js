@@ -1,9 +1,10 @@
 // A* on a tile grid with 8-way movement (no corner cutting). grid.walkable(x, y) → boolean.
-export function findPath(grid, sx, sy, gx, gy, maxNodes = 4000) {
+// diagCost 1 makes the result a fewest-steps path (what a BFS finds); sqrt(2) gives the shortest distance.
+export function findPath(grid, sx, sy, gx, gy, maxNodes = 4000, diagCost = Math.SQRT2) {
   sx = Math.floor(sx); sy = Math.floor(sy); gx = Math.floor(gx); gy = Math.floor(gy);
   if (!grid.walkable(gx, gy)) return null;
   const key = (x, y) => y * grid.width + x;
-  const h = (x, y) => { const dx = Math.abs(x - gx), dy = Math.abs(y - gy); return Math.max(dx, dy) + (Math.SQRT2 - 1) * Math.min(dx, dy); };
+  const h = (x, y) => { const dx = Math.abs(x - gx), dy = Math.abs(y - gy); return Math.max(dx, dy) + (diagCost - 1) * Math.min(dx, dy); };
   const open = new MinHeap();
   const g = new Map([[key(sx, sy), 0]]);
   const came = new Map();
@@ -24,7 +25,7 @@ export function findPath(grid, sx, sy, gx, gy, maxNodes = 4000) {
       const nx = x + dx, ny = y + dy;
       if (!grid.walkable(nx, ny)) continue;
       if (dx && dy && (!grid.walkable(x + dx, y) || !grid.walkable(x, y + dy))) continue;
-      const ng = gc + (dx && dy ? Math.SQRT2 : 1);
+      const ng = gc + (dx && dy ? diagCost : 1);
       const nk = key(nx, ny);
       if (ng < (g.get(nk) ?? Infinity)) { g.set(nk, ng); came.set(nk, { x, y }); open.push(ng + h(nx, ny), nx, ny); }
     }

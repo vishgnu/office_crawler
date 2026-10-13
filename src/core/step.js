@@ -1,0 +1,28 @@
+// One fixed simulation tick. Mutates the state in place and returns the same reference
+// (use cloneState first when the previous state is needed).
+import { getCtx, rebuildOccupancy } from "./ctx.js";
+import { applyInput, playerIntent } from "./systems/intent.js";
+import { ai } from "./systems/ai.js";
+import { movement } from "./systems/movement.js";
+import { combat } from "./systems/combat.js";
+import { status } from "./systems/status.js";
+import { cleanup } from "./systems/cleanup.js";
+import { scene } from "./systems/scene.js";
+
+export function step(state, inputs = []) {
+  state.events.length = 0;
+  for (const input of inputs) applyInput(state, input);
+  // Paused, dead or not on a floor: nothing in the world moves and the tick counter stays put.
+  if (state.paused || state.scene !== "floor") return state;
+
+  rebuildOccupancy(state, getCtx(state));
+  playerIntent(state);
+  ai(state);
+  movement(state);
+  combat(state);
+  status(state);
+  cleanup(state);
+  scene(state);
+  state.tick++;
+  return state;
+}
