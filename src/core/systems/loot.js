@@ -89,11 +89,12 @@ export function dropLoot(state, m) {
     out.push(dropGold(state, amount, m.tile));
   }
 
-  const minRarity = config.tierMinRarity[tier] ?? "normal";
+  const minRarity = tier === "boss" ? config.boss.minRarity : config.tierMinRarity[tier] ?? "normal";
   const itemRoll = rng.next();
-  const count = tier === "boss" ? config.bossDrops : (tier !== "normal" || itemRoll < config.dropChance * table.itemMult ? 1 : 0);
+  const count = tier === "boss" ? config.boss.guaranteedDrops : (tier !== "normal" || itemRoll < config.dropChance * table.itemMult ? 1 : 0);
   for (let i = 0; i < count; i++) {
-    const item = rollItem(rng, { depth, ilvl, minRarity, slot: pickSlot(rng, table.slotWeights), taken: state.uniquesFound });
+    const unique = tier === "boss" && i < config.boss.guaranteedUnique; // the boss's first drop is a unique (rare of its base if all are taken)
+    const item = rollItem(rng, { depth, ilvl, minRarity, ...(unique ? { rarity: "unique" } : {}), slot: pickSlot(rng, table.slotWeights), taken: state.uniquesFound });
     if (item.unique) state.uniquesFound.push(item.unique);
     out.push(dropItem(state, item, m.tile));
   }

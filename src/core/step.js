@@ -3,6 +3,7 @@
 import { getCtx, rebuildOccupancy } from "./ctx.js";
 import { applyInput, playerIntent } from "./systems/intent.js";
 import { ai } from "./systems/ai.js";
+import { boss } from "./systems/boss.js";
 import { movement } from "./systems/movement.js";
 import { pickups } from "./systems/loot.js";
 import { combat } from "./systems/combat.js";
@@ -22,6 +23,7 @@ export function step(state, inputs = []) {
   rebuildOccupancy(state, getCtx(state));
   playerIntent(state);
   ai(state);
+  boss(state);
   movement(state);
   pickups(state);
   projectiles(state);

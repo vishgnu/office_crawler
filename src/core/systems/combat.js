@@ -4,7 +4,7 @@ import { stream } from "../state.js";
 import { emit } from "../events.js";
 import { getCtx } from "../ctx.js";
 import { isAdjacent } from "../grid.js";
-import { monsters as registry } from "../content/monsters.js";
+import { allMonsters as registry } from "../content/monsters.js";
 import { hurtPlayer, damageMonster, rollSwing, floater } from "./damage.js";
 import { fireProjectile } from "./projectiles.js";
 import { canShoot } from "./ai.js";

@@ -15,7 +15,8 @@ import { moveStash } from "./stash.js";
 import { openVendor, closeVendor, buy, sell } from "./vendors.js";
 import { castSkill } from "./skills.js";
 import { allocate, learnSkill, assignSkill, selectSkill } from "./progression.js";
-import { useStairs, stairsAt, interact, npcAt, closeDialog, heal, respawn, usePortal, portalAt } from "./world.js";
+import { keepPlaying } from "./boss.js";
+import { enterFloor, useStairs, stairsAt, interact, npcAt, closeDialog, heal, respawn, usePortal, portalAt } from "./world.js";
 
 const fail = (error) => ({ ok: false, error });
 const OK = { ok: true };
@@ -189,6 +190,7 @@ export function applyInput(state, input) {
       if (state.scene !== "dead") return fail("not dead");
       restartInPlace(state);
       return OK;
+    case "keepPlaying": return keepPlaying(state, enterFloor).ok ? OK : fail("not at the victory screen"); // back to the Lobby after the finale
     case "respawn": return respawn(state).ok ? OK : fail("not dead"); // back to the Lobby, nothing lost (AC-R-023-4)
   }
   // Releasing the button must always register (also while paused or dead), or the core keeps

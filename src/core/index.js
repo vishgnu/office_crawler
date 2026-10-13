@@ -1,7 +1,7 @@
 // Public API of the pure simulation core. Nothing here touches the DOM, clocks or Math.random.
 import { hashState } from "./hash.js";
 import { config } from "./config.js";
-import { monsters, monsterStats, championMods } from "./content/monsters.js";
+import { monsters, bosses, monsterStats, championMods } from "./content/monsters.js";
 import { skills } from "./content/skills.js";
 import { npcs } from "./content/npcs.js";
 import { themes } from "./content/themes.js";
@@ -35,6 +35,11 @@ export { castSkill, skillLevel } from "./systems/skills.js";
 export { fireProjectile } from "./systems/projectiles.js";
 export { enterFloor, useStairs, interact, respawn, townTarget, stairsTile, stairsAt, npcAt, openPortal, usePortal, portalAt, closeDialog, heal } from "./systems/world.js";
 export { vendorInReach } from "./systems/vendors.js";
+import { keepPlaying as keepPlayingBase, runStats } from "./systems/boss.js";
+import { enterFloor as enterFloorBase } from "./systems/world.js";
+/** Victory screen -> Lobby, character unchanged (AC-R-045-5). Also available as the input command { t: "keepPlaying" }. */
+export const keepPlaying = (state) => keepPlayingBase(state, enterFloorBase);
+export { runStats };
 export { setLevel, setHp, teleportFloor } from "./cheats.js";
 export { generateTown } from "./gen/town.js";
 export { generateFloor } from "./gen/floor.js";
@@ -42,7 +47,7 @@ export { findPath } from "./pathfind.js";
 export { advance } from "./clock.js";
 export { hashState };
 
-export const content = { monsters, championMods, skills, npcs, themes, props, strings, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops };
+export const content = { monsters, bosses, championMods, skills, npcs, themes, props, strings, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops };
 
 export const cloneState = (state) => structuredClone(state);
 

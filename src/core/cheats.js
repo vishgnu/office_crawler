@@ -29,9 +29,9 @@ export function setHp(state, n) {
   return OK;
 }
 
-/** Jump to floor 1..maxDepth (0 = the Lobby) and stand on its entry tile (AC-R-123-5). The boss arena (9) is not available yet. */
+/** Jump to floor 1..maxDepth, the boss arena (config.bossDepth) or the Lobby (0) and stand on its entry tile (AC-R-123-5, AC-R-045-1). */
 export function teleportFloor(state, depth) {
-  if (!Number.isInteger(depth) || depth < 0 || depth > config.maxDepth) return fail("no such floor");
+  if (!Number.isInteger(depth) || depth < 0 || depth > config.bossDepth) return fail("no such floor");
   if (state.scene === "dead") return fail("player is dead");
   return enterFloor(state, depth, { at: "entry" });
 }

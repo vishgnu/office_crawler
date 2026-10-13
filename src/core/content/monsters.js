@@ -51,11 +51,22 @@ export const monsters = {
   },
 };
 
+// Bosses live apart from the normal registry (the population, cheats and the style/audio tables work on `monsters`); the core's
+// own systems look types up in `allMonsters`. The arena places the boss by hand.
+export const bosses = {
+  "regional-director": {
+    id: "regional-director", name: "The Regional Director", behaviour: "boss", boss: true,
+    hpBase: 150, damage: 12, defense: 30, attackRating: 70, xp: 150, speed: 0.8, sightRange: 16,
+    minDepth: 99, weight: 0, pack: [1, 1], cost: 0,
+  },
+};
+export const allMonsters = { ...monsters, ...bosses };
+
 const scale = (base, pct, depth) => Math.round((base * (100 + pct * (Math.max(1, depth) - 1))) / 100);
 
 /** Stats of a normal monster of `type` at `depth` (R-031): non-decreasing in depth, depth 1 equals the registry values. */
 export function monsterStats(type, depth) {
-  const d = monsters[type], k = config.scaling;
+  const d = allMonsters[type], k = config.scaling;
   return {
     level: Math.max(1, depth),
     hp: scale(d.hpBase, k.hpPct, depth), damage: scale(d.damage, k.damagePct, depth), defense: scale(d.defense, k.defensePct, depth),

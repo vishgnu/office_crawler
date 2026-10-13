@@ -5,6 +5,7 @@ import { emit } from "../events.js";
 import { getCtx, idx } from "../ctx.js";
 import { dropLoot, releaseCursor } from "./loot.js";
 import { gainXp } from "./progression.js";
+import { onBossKilled, onMonsterKilled } from "./boss.js";
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
@@ -32,11 +33,13 @@ export function floater(state, value, tile, target, kind = "hit") {
 export function killMonster(state, m, source = "player") {
   const p = state.player;
   m.hp = 0; m.ai = "dead"; m.deathT = 0; m.path = []; m.next = null; m.moveT = 0; m.attackT = 0; m.staggerT = 0; m.muteT = 0;
-  const xp = m.xp;
+  const xp = m.summoned ? 0 : m.xp; // staff called by the boss give nothing (no farming)
   emit(state, { type: "kill", source, target: m.id, xp });
   gainXp(state, xp);
-  dropLoot(state, m);
+  if (!m.summoned) dropLoot(state, m);
   if (p.target === m.id) p.target = null;
+  if (state.stats) state.stats.kills++;
+  if (m.tier === "boss") onBossKilled(state, m); else onMonsterKilled(state);
 }
 
 /** Wake a monster that was hit from afar, and its pack. */
@@ -73,7 +76,7 @@ export function damageMonster(state, m, amount, { source = "player", from = null
   alert(state, m);
   if (m.hp === 0) return killMonster(state, m, source);
   if (amount >= config.hitRecoveryMinDamage && m.tier !== "boss") { m.ai = "stagger"; m.staggerT = config.hitRecoveryTicks; m.attackT = 0; m.path = []; m.goal = null; }
-  if (knock && from) knockBack(state, m, from);
+  if (knock && from && m.tier !== "boss") knockBack(state, m, from); // the boss cannot be pushed around
 }
 
 /** Apply damage to the hero; death sets the scene on the same tick (AC-R-023-1). */
@@ -87,6 +90,7 @@ export function hurtPlayer(state, source, amount) {
     p.action = "dead"; p.path = []; p.target = null; p.next = null; p.stairs = null; p.interact = null; p.toPortal = false;
     releaseCursor(state); // QF-02-3: a held item goes back to the inventory, else to the floor
     state.scene = "dead"; // same tick as the killing blow
+    if (state.stats) state.stats.deaths++;
     emit(state, { type: "death", target: "player" });
   }
 }

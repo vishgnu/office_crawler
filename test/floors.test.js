@@ -41,15 +41,18 @@ test("walking over stairs does not take them; only a click or useStairs order do
   assert.equal(s.depth, 1);
 });
 
-test("AC-R-043-2 the last floor's way down is locked until the boss arena exists; teleportFloor(9) fails", () => {
+test("AC-R-043-2 (amended S3) the last floor's way down is locked until the floor is cleared; teleportFloor(9) reaches the arena, 10 fails", () => {
   const s = newGame(3); teleportFloor(s, config.maxDepth); calm(s);
   assert.equal(s.floor.bossStairs, true);
   const r = cmd(s, { t: "useStairs", dir: "down" });
   assert.equal(r.ok, false);
   assert.ok(s.events.some((e) => e.type === "stairsLocked"));
-  assert.equal(teleportFloor(s, 9).ok, false);
+  assert.equal(s.bossUnlocked, false);
+  assert.equal(teleportFloor(s, 10).ok, false);
   assert.equal(teleportFloor(s, -1).ok, false);
   assert.equal(s.depth, 8);
+  assert.equal(teleportFloor(s, 9).ok, true);
+  assert.equal(s.depth, 9);
 });
 
 test("AC-R-123-5 teleportFloor(5): depth 5, hero on the entry tile, basement theme; floors 1-4 are open-plan", () => {

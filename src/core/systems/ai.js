@@ -4,7 +4,7 @@ import { getCtx } from "../ctx.js";
 import { isAdjacent } from "../grid.js";
 import { hasLineOfSight } from "../los.js";
 import { planPath } from "../nav.js";
-import { monsters as registry } from "../content/monsters.js";
+import { allMonsters as registry } from "../content/monsters.js";
 
 function canSee(ctx, m, p) {
   const r = registry[m.type].sightRange, dx = p.tile.x - m.tile.x, dy = p.tile.y - m.tile.y;

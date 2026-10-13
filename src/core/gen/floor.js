@@ -6,6 +6,7 @@ import { WALL, STAIRS_UP, STAIRS_DOWN } from "../tiles.js";
 import { themes, themeForDepth } from "../content/themes.js";
 import { strings } from "../content/strings.js";
 import { generateTown } from "./town.js";
+import { generateArena } from "./arena.js";
 import { buildGrid, flood } from "../grid.js";
 import { placeRooms, carveRooms, planCorridors, carveCorridor, placeDoors, roomCentre } from "./rooms.js";
 import { placeProps } from "./props.js";
@@ -24,7 +25,7 @@ function assemble(seed, depth, rooms, edges, bends, entryRoom) {
   const entry = roomCentre(rooms[entryRoom]);
   const floor = {
     depth, seed, theme: themeForDepth(depth), w, h, tiles, rooms: rooms.map((r) => ({ ...r })),
-    name: strings[themes[themeForDepth(depth)].nameKey], bossStairs: depth >= config.maxDepth, // the way down from the last floor leads to the boss arena (S3)
+    name: strings[themes[themeForDepth(depth)].nameKey], bossStairs: depth >= config.maxDepth, // the way down from the last floor leads to the boss arena; locked until the floor is cleared
     entry, exit: null, props: [], spawns: [], npcs: [], budget: 0,
   };
   const { dist } = flood(buildGrid(floor), entry.x, entry.y);
@@ -66,6 +67,7 @@ export function fallbackFloor(floorSeed, depth) {
 
 export function generateFloor(seed, depth = 1) {
   if (depth <= 0) return generateTown(seed);
+  if (depth >= config.bossDepth) return generateArena(seed);
   const floorSeed = hash32(seed, depth); // a floor regenerates identically on re-entry
   for (let a = 0; a < config.maxGenAttempts; a++) {
     const floor = attempt(createRng(hash32(floorSeed, a)), floorSeed, depth);

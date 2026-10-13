@@ -26,6 +26,10 @@ export const BOT = {
   sellAbove: 4,         // sell spare gear to the vendor when more than this many gear items are left in the inventory (keeps the bag from filling up)
   // skill order: [skill, level wanted before moving on]; afterwards every skill is raised to its maximum in this order
   learnOrder: [["stapler-throw", 2], ["dress-code", 2], ["coffee-break", 2], ["reply-all", 2], ["hustle", 2], ["mute", 2]],
+  restBelow: 0.95,      // on the cleared last floor, wait until health is at least this share before taking the lift to the boss
+  restMaxTicks: 6000,   // ... but not longer than this
+  dodgeMargin: 0.9,     // step this far outside a telegraphed circle (tiles); also covers the hero being mid-step
+  volleyCos: 0.7,       // a volley is dodged by standing where the angle to its aim line is at least acos(this) (about 45 degrees)
   attrWeights: { stamina: 3, grit: 3, agility: 2, focus: 1 }, // points go where (points spent / weight) is lowest
 };
 
@@ -43,6 +47,7 @@ export function noteResult(mem, cmd, res) {
   if (cmd?.t === "pickup") { mem.lootTries[cmd.id] = (mem.lootTries[cmd.id] ?? 0) + 1; if (res && res.ok === false) mem.lootSkip.add(cmd.id); }
   if (cmd?.t === "equip" && res && res.ok === false) mem.noEquip.add(cmd.id);
   if (cmd?.t === "learnSkill" && res && res.ok === false) mem.noLearn = true;
+  if (cmd?.t === "toBelt" && res && res.ok === false) mem.beltFail = true;
   if (cmd?.t === "useStairs" && res && res.ok === false) mem.failedMoves++;
   if (cmd?.t === "buy" && res && res.ok === false) { if (cmd.gear) { mem.noBuy ??= new Set(); mem.noBuy.add(cmd.id); } else mem.shopped = true; }
   if (cmd?.t === "sell" && res && res.ok === false) mem.sold = true;
@@ -130,6 +135,47 @@ function castSkill(view, mem, live, target) {
   return null;
 }
 
+const BLOCKING = new Set(["desk", "partition", "plant", "conference-table", "copier", "filing-cabinet", "box-stack", "server-rack", "generator", "reception-desk"]);
+function walkableIn(view) {
+  const { w, h, tiles, props = [], npcs = [] } = view.floor, blocked = new Set(props.filter((q) => q.blocks ?? BLOCKING.has(q.type)).map((q) => q.y * w + q.x));
+  for (const n of npcs) blocked.add(n.tile.y * w + n.tile.x);
+  return (x, y) => x >= 0 && y >= 0 && x < w && y < h && [1, 3, 4, 5].includes(tiles[y * w + x]) && !blocked.has(y * w + x);
+}
+
+/**
+ * Dodge the boss's telegraphed attacks (the boss exposes its wind-up as state: kind, centre and radius, or aim direction).
+ * Returns a moveTo to the nearest safe tile, or null when the hero is safe / there is nothing to dodge.
+ */
+const HOLD = { t: "hold" };
+function dodge(view, mem, live) {
+  const b = live.find((m) => m.boss?.windup && !m.boss.windup.resolved);
+  if (!b) { mem.dodge = null; return null; }
+  const w = b.boss.windup, p = view.player, at = p.next ?? p.tile, ok = walkableIn(view);
+  const key = `${b.id}:${w.kind}:${w.tile?.x ?? w.dir?.x}:${w.tile?.y ?? w.dir?.y}`;
+  if (mem.dodge?.key === key) return HOLD; // already on the way (or safe): do not walk back into the telegraph
+  let safe, danger;
+  if (w.kind === "slam") {
+    const r = w.radius + BOT.dodgeMargin;
+    danger = (x, y) => (x - w.tile.x) * (x - w.tile.x) + (y - w.tile.y) * (y - w.tile.y) <= r * r;
+    safe = (x, y) => !danger(x, y);
+  } else if (w.kind === "volley") {
+    const cosTo = (x, y) => { const dx = x - b.tile.x, dy = y - b.tile.y, l = Math.sqrt(dx * dx + dy * dy) || 1; return (dx * w.dir.x + dy * w.dir.y) / l; };
+    danger = (x, y) => cosTo(x, y) > BOT.volleyCos;
+    safe = (x, y) => !danger(x, y);
+  } else return null;
+  if (!danger(at.x, at.y)) return HOLD;
+  let best = null, bk = Infinity;
+  for (let dy = -7; dy <= 7; dy++) for (let dx = -7; dx <= 7; dx++) {
+    const x = at.x + dx, y = at.y + dy;
+    if (!ok(x, y) || !safe(x, y) || (x === b.tile.x && y === b.tile.y)) continue;
+    const k = Math.max(Math.abs(dx), Math.abs(dy)) * 10 + Math.abs(x - b.tile.x) + Math.abs(y - b.tile.y);
+    if (k < bk) { bk = k; best = { x, y }; }
+  }
+  if (!best) return null;
+  mem.dodge = { key };
+  return { t: "moveTo", tile: best };
+}
+
 /** The vendor stock entry that raises the hero's gear score most and still leaves `reserve` gold for potions, as { index }, or null. */
 function bestBuy(view, mem) {
   const eq = view.equipment ?? {}, p = view.player;
@@ -187,7 +233,7 @@ export function decide(view, mem) {
   if (view.scene === "dead") return mem.profile.respawn ? { t: "respawn" } : null;
   if (view.paused) return null;
   if (view.depth !== mem.depth) { // a new floor: forget the old floor's exploration state
-    Object.assign(mem, { depth: view.depth, rooms: null, goal: null, skip: new Set(), waitSince: -1, shopped: false, sold: false, lootTries: {}, lootSkip: new Set(), lastKey: "", lastMoveTick: view.tick });
+    Object.assign(mem, { depth: view.depth, rooms: null, goal: null, skip: new Set(), waitSince: -1, shopped: false, sold: false, lootTries: {}, lootSkip: new Set(), lastKey: "", lastMoveTick: view.tick, beltFail: false, dodge: null });
   }
   if (view.scene === "town") return decideTown(view, mem);
   if (view.scene !== "floor") return null;
@@ -203,6 +249,12 @@ export function decide(view, mem) {
     const i = view.belt.findIndex((b) => b && b.restores === "hp");
     if (i >= 0) return { t: "useBelt", index: i };
   }
+  if (!mem.profile.noDodge) { const d = dodge(view, mem, live); if (d) return d === HOLD ? null : d; }
+  // keep the belt stocked from the bag (a free action): spare health potions picked up on the way go to empty belt slots
+  if (view.belt && p.hp > 0 && !mem.beltFail) {
+    const free = view.belt.findIndex((b) => b === null), spare = view.inventory.items.filter((i) => i.kind === "potion" && i.restores === "hp").sort((a, b) => b.restore - a.restore)[0];
+    if (free >= 0 && spare) return { t: "toBelt", id: spare.id, index: free };
+  }
   // a monster standing on the next tile of the path (asleep in a corridor, say) blocks the walk for good: kill it
   if (!p.next && p.path.length && live.length) {
     const b = live.find((m) => m.tile.x === p.path[0].x && m.tile.y === p.path[0].y);
@@ -212,6 +264,8 @@ export function decide(view, mem) {
     const c = spendPoints(view, mem) ?? upgrade(view, mem) ?? nextLoot(view, mem);
     if (c) return c.t === "pickup" && p.pickup === c.id ? null : c;
     if (busy) return null; // still walking to the last pile
+    // before the boss arena: rest on the cleared floor until nearly healthy (natural regeneration), then go down
+    if (view.depth === (mem.profile.depth ?? 1) - 1 && view.depth >= 8 && p.hp < p.hpMax * BOT.restBelow && (mem.restTicks = (mem.restTicks ?? 0) + BOT.decideEvery) < BOT.restMaxTicks) return null;
     if (view.depth < (mem.profile.depth ?? 1)) return p.stairs ? null : { t: "useStairs", dir: "down" }; // floor clear: on to the next one
     mem.done = true;
     return null;

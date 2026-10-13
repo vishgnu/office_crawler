@@ -25,7 +25,11 @@ test("every event type the core emits has a cue or a documented reason to be sil
   const types = new Set();
   for (const f of files("src/core").filter((x) => x.endsWith(".js"))) for (const m of strip(readFileSync(f, "utf8")).matchAll(/emit\([a-zA-Z.]+,\s*\{\s*type:\s*"([^"]+)"/g)) types.add(m[1]);
   assert.ok(types.size > 30, "found the core event types");
-  const missing = [...types].filter((t) => !(t in EVENT_MAP) && !(t in SILENT_EVENTS));
+  // S3 core events (boss, finale, autosave) that the audio package maps in the UI/audio slice (docs/reviews/S3-core-notes.md,
+  // render_needs). They are emitted by the core now; delete an entry here when src/audio/cues.js maps it. Anything else must be mapped.
+  const PENDING_AUDIO_S3 = new Set(["bossTelegraph", "bossSlam", "bossVolley", "bossSummon", "bossPhase", "bossEngage", "bossDefeated", "stairsUnlocked", "victory", "keepPlaying", "autosave", "resisted"]);
+  for (const t of PENDING_AUDIO_S3) assert.ok(types.has(t), `${t} is listed as pending but the core no longer emits it`);
+  const missing = [...types].filter((t) => !(t in EVENT_MAP) && !(t in SILENT_EVENTS) && !PENDING_AUDIO_S3.has(t));
   assert.deepEqual(missing, []);
   for (const t of Object.keys(SILENT_EVENTS)) assert.ok(!(t in EVENT_MAP), `${t} is both mapped and silent`);
 });

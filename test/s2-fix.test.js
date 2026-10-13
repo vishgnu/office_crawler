@@ -109,7 +109,7 @@ test("potions can be drunk with useItem from the inventory", () => {
 });
 
 // ---- floor 8 (AC-R-043-2 as amended) ----
-test("AC-R-043-2 floor 8 keeps a locked stairs-down tile: it is in the snapshot, taking it fails with stairsLocked, floor 9 is unreachable", () => {
+test("AC-R-043-2 floor 8 keeps a locked stairs-down tile: it is in the snapshot, taking it fails with stairsLocked, floor 10 does not exist (S3: the arena, depth 9, opens when floor 8 is cleared)", () => {
   const s = newGame(3); teleportFloor(s, config.maxDepth); s.monsters.length = 0;
   assert.ok(s.floor.exit, "the stairs tile exists");
   assert.equal(s.floor.tiles[s.floor.exit.y * s.floor.w + s.floor.exit.x], 5);
@@ -118,7 +118,7 @@ test("AC-R-043-2 floor 8 keeps a locked stairs-down tile: it is in the snapshot,
   assert.ok(types(s).includes("stairsLocked"));
   until(s, () => false, 600);
   assert.equal(s.depth, config.maxDepth);
-  assert.equal(teleportFloor(s, 9).ok, false);
+  assert.equal(teleportFloor(s, 10).ok, false);
 });
 
 // ---- stash (R-059) ----

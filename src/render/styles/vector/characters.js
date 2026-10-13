@@ -331,7 +331,7 @@ function machine(g, L, o) {
 
 /** Draw one character frame at the origin. type: 'clerk' | monster id. */
 export function drawFigure(g, type, anim, dir, f) {
-  const L = LOOKS[type], o = pose(anim, dir, f);
+  const L = LOOKS[type] ?? LOOKS["temp-worker"], o = pose(anim, dir, f); // an unknown type (new content before its look exists) draws as a stand-in instead of breaking the atlas build
   g.save();
   if (anim === "death") {
     // fall over sideways, pivoting on the feet

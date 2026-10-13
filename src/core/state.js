@@ -3,7 +3,7 @@ import { rngOn } from "../rng.js";
 import { hash32 } from "./hash.js";
 import { config } from "./config.js";
 import { generateFloor } from "./gen/floor.js";
-import { monsters as registry, monsterStats, championMods, championName } from "./content/monsters.js";
+import { allMonsters as registry, monsterStats, championMods, championName } from "./content/monsters.js";
 import { generateTown } from "./gen/town.js";
 import { getCtx } from "./ctx.js";
 import { classes, defaultClass } from "./content/classes.js";
@@ -41,6 +41,9 @@ function newPlayer(entry, cls) {
   return p;
 }
 
+/** The boss's own state: phase 1 until its health falls to config.boss.phase2At, one special attack in progress at a time. */
+const newBossState = () => ({ phase: 1, pattern: "p1", engaged: false, cd: config.boss.slam.cd1, windup: null, summonCd: 0, summoned: 0, seq: 0, volleys: 0, slams: 0 });
+
 /** Monster stats at `level` (default: the floor depth), with champion modifiers applied (R-031, R-033). */
 function makeMonster(state, type, tile, packId, opts = {}) {
   const def = registry[type], level = opts.level ?? Math.max(1, state.depth), st = monsterStats(type, level);
@@ -58,8 +61,12 @@ function makeMonster(state, type, tile, packId, opts = {}) {
       if (mod.speedMult) speed = speed * mod.speedMult;
     }
   }
+  if (tier === "boss") { // the end boss: sturdier and harder hitting than a normal monster of its level (config.boss)
+    hp = Math.round(hp * config.boss.hpMult); damage = Math.round(damage * config.boss.damageMult);
+  }
   return {
     id: `m${state.nextId++}`, type, behaviour: def.behaviour, tier, level: st.level,
+    ...(tier === "boss" ? { boss: newBossState() } : {}),
     ...(tier === "champion" ? { mods, name: championName(type, mods) } : {}),
     ...(opts.spawn !== undefined ? { spawn: opts.spawn } : {}),
     tile: { ...tile }, next: null, moveT: 0, moveTotal: 0,
@@ -100,6 +107,8 @@ export function newGame(seedOrOpts, opts = {}) {
     nextId: 1, nextItemId: 1, floor, player: newPlayer(floor.entry, cls), monsters: [],
     projectiles: [], groundItems: [], floaters: [],
     inventory: newGrid(config.inventory.w, config.inventory.h), equipment: newEquipment(), belt: newBelt(),
+    bossUnlocked: false, bossDefeated: false, victory: null,
+    stats: { kills: 0, deaths: 0, bossAttempts: 0 },
     cursorItem: null, stash: newGrid(config.stash.w, config.stash.h), vendor: null, vendorVisits: {}, uniquesFound: [], vendorStocks: {}, townVisit: 0, portal: null,
     events: [], eventLog: [],
     input: { mouse: { down: false, button: 0, tile: null, mode: null, applied: null } },

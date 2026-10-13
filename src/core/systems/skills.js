@@ -65,6 +65,8 @@ export function castSkill(state, id, tile) {
       if (def.effect === "burst") {
         const dmg = rng.int(def.dmgMin(level), def.dmgMax(level)) + weaponBonus(p, def);
         damageMonster(state, m, dmg, { source: "player", from: p.tile, knock: !!def.knockback, skill: id });
+      } else if (m.tier === "boss") {
+        emit(state, { type: "resisted", target: m.id, skill: id }); // the boss shrugs off Mute (config: bosses cannot be silenced)
       } else {
         m.muteT = def.duration(level); m.path = []; m.attackT = 0; alert(state, m);
         emit(state, { type: "muted", target: m.id, ticks: m.muteT });

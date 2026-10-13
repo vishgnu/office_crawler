@@ -84,7 +84,7 @@ export const config = {
   maxPrefixes: 3, maxSuffixes: 3,
   uniqueOncePerGame: true,           // QF-05-2: a taken unique falls back to a rare of the same base
   tierMinRarity: { normal: "normal", champion: "magic", boss: "rare" }, // QF-03-4 and QF-04-7
-  bossDrops: 3,
+  bossDrops: 3,                      // kept for older tests; config.boss.guaranteedDrops is the source of truth
   dropRadius: 3,                     // loot lands on the kill tile or the nearest free tile within this radius
   pickupRange: 1,                    // Chebyshev tiles
   consumePotionAtFull: true,         // QF-05-5
@@ -124,9 +124,34 @@ export const config = {
 
   // World (S2-4)
   maxDepth: 8,                       // floors 1-8; the boss arena (depth 9, S3) hangs off floor 8
-  bossDepth: 9,
+  bossDepth: 9,                      // the Executive Suite (S3-1), reached from the unlocked stairs on floor 8
   townStairsTarget: "deepest",       // QF-01-1
   zoneSplit: 4,                      // depths 1-4 open-plan, 5-8 basement
   interactRange: 2,                  // Chebyshev tiles to talk to an NPC
   townHealerFree: true,
+
+  // Boss (S3-1, R-045). The Regional Director: two phases, a telegraphed slam, a report volley and summoned staff in phase 2.
+  // All durations are ticks. Damage of the special attacks is a share of the boss's (depth scaled) damage and is not rolled to hit:
+  // the answer to a telegraph is to step out of it.
+  victoryDelayTicks: 150,            // from the boss's last breath to scene "victory" (death animation, loot lands)
+  boss: {
+    phase2At: 0.5,                   // hp share at or below which phase 2 begins (once)
+    guaranteedDrops: 3,              // QF-04-7: at least this many items ...
+    minRarity: "rare",               // ... each of at least this rarity
+    guaranteedUnique: 1,             // the first drop is a unique (a taken unique falls back to a rare of the same base)
+    hpMult: 2.2, damageMult: 1.15, // on top of the depth scaled registry values
+    slam: { windup: 54, radius: 2.6, radius2: 3.4, damageMult: 1.6, cd1: 270, cd2: 200, recover: 24 },
+    volley: { windup: 36, shots: 5, spread: 0.2, damageMult: 0.55, cd: 300, recover: 20, speed: 0.2, range: 14 }, // spread: sine of the angle between shots
+    summon: { windup: 60, types: ["zombie-intern", "consultant"], count: 2, max: 4, cd: 720, radius: 4, level: 6 },
+  },
+
+  // Save and load (S3-3, R-090..R-092). One slot; options are stored apart from the save.
+  saveVersion: 1,
+  saveKey: "office-crawler.save",
+  saveBackupKey: "office-crawler.save.corrupt",
+  optionsKey: "office-crawler.options",
+  saveFileName: "office-crawler-save.json",
+  saveMaxBytes: 1000000,             // QF-09-1: soft cap 1 MB
+  autosaveMinTicks: 30,              // writes closer together than this (by game tick) are coalesced, except on exit
+  resumeAt: "floorEntry",            // QF-09-2: saved on a floor -> that floor's entry tile; saved in the Lobby (or dead) -> the Lobby
 };

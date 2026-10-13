@@ -63,9 +63,11 @@ export function enterFloor(state, depth, { at = "entry", from = state.depth, til
   Object.assign(p, { next: null, moveT: 0, moveTotal: 0, path: [], goal: null, target: null, pickup: null, stairs: null, interact: null, toPortal: false, castT: 0, blockedT: 0, attackT: 0, swingTarget: null, repathT: 0, action: "idle" });
   const killed = new Set(parked?.killed ?? []);
   state.blockedSpawns = [];
+  floor.spawns.forEach((s, i) => { if (s.tier === "boss" && state.bossDefeated) killed.add(i); }); // a defeated boss stays dead (also after a reload)
   floor.spawns.forEach((s, i) => { if (!killed.has(i) && !spawnMonster(state, s.type, s.tile, s.packId, { ...s, spawn: i })) state.blockedSpawns.push(i); });
   initFloorMap(state);
   emit(state, { type: "floorEnter", depth, from });
+  emit(state, { type: "autosave", reason: depth === 0 ? "town" : "floor", depth }); // the shell writes the save (src/save)
   return OK;
 }
 
@@ -76,7 +78,8 @@ function takeStairs(state, dir) {
   const d = state.depth;
   if (dir === "down") {
     if (d === 0) return enterFloor(state, townTarget(state), { at: "entry" });
-    if (d >= config.maxDepth) { emit(state, { type: "stairsLocked", depth: d }); return fail("locked"); } // boss arena: S3
+    if (d >= config.bossDepth) return fail("no way down");
+    if (d >= config.maxDepth && !state.bossUnlocked) { emit(state, { type: "stairsLocked", depth: d }); return fail("locked"); } // clear the floor to open the way to the boss arena
     return enterFloor(state, d + 1, { at: "entry" });
   }
   if (d === 0) return fail("no way up from the Lobby");
@@ -102,7 +105,7 @@ export function useStairs(state, dir, issueMove) {
   if (dir !== "up" && dir !== "down") return fail("unknown direction");
   if (p.hp <= 0) return fail("player is dead");
   if (!t) return fail("no stairs there");
-  if (dir === "down" && state.depth >= config.maxDepth) { emit(state, { type: "stairsLocked", depth: state.depth }); return fail("locked"); }
+  if (dir === "down" && state.depth >= config.maxDepth && !(state.bossUnlocked && state.depth < config.bossDepth)) { emit(state, { type: "stairsLocked", depth: state.depth }); return fail("locked"); }
   if (!p.next && p.tile.x === t.x && p.tile.y === t.y) return takeStairs(state, dir);
   const r = issueMove(state, t);
   if (r.ok) p.stairs = dir;
