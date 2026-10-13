@@ -24,7 +24,7 @@ the orchestrator ran on Opus.
 | **Total (agents)** | | **≈ 2,416** | **≈ 139** | plus orchestrator time |
 
 Notes
-- Calendar time from intake commit to the S1 build: see `git log` (intake 26a676d → port 9ada7b1), about 4 hours elapsed
+- Calendar time from intake commit to the S1 build: see `git log` (intake 26a676d at 19:46 → style port 9ada7b1 at 21:26 UTC), **1 h 40 min elapsed**
   with many steps running in parallel.
 - Human time spent: 0 minutes on S1 decisions (all decisions by the proxy, logged in `product/proxy-log.md`), plus
   the user's short instructions.
