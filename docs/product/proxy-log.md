@@ -74,3 +74,4 @@ One line per decision by `customer-proxy`. The real customer can overrule any of
 - 2026-10-13 | spec QF-10-3 (sim speed) | 10,000 ticks in 10 s as CI regression bound | medium
 - 2026-10-13 | spec QF-10-4 (browser/OS matrix) | CI: 3 Playwright engines; OS and Safari manual release checks | medium
 - 2026-10-13 | spec QF-10-5 (?test=1) | accept, architect confirms in ADR; cheats only with flag | medium
+- 2026-10-13 | art-direction variant pick | C (stylised vector) as primary, graded darker with A's lighting model and B's performance discipline; must-fix list in variants/art-direction/decision.md; real customer may prefer A if "moody" outranks "readable" | medium
