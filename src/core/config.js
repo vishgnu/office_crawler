@@ -139,8 +139,8 @@ export const config = {
     guaranteedDrops: 3,              // QF-04-7: at least this many items ...
     minRarity: "rare",               // ... each of at least this rarity
     guaranteedUnique: 1,             // the first drop is a unique (a taken unique falls back to a rare of the same base)
-    hpMult: 2.2, damageMult: 1.15, // on top of the depth scaled registry values
-    slam: { windup: 54, radius: 2.6, radius2: 3.4, damageMult: 1.6, cd1: 270, cd2: 200, recover: 24 },
+    hpMult: 3, damageMult: 0.7,     // on top of the depth scaled registry values (tuned with the careful bot, 2026-10-13)
+    slam: { windup: 54, radius: 2.6, radius2: 3.4, damageMult: 1.8, cd1: 270, cd2: 200, recover: 24 },
     volley: { windup: 36, shots: 5, spread: 0.2, damageMult: 0.55, cd: 300, recover: 20, speed: 0.2, range: 14 }, // spread: sine of the angle between shots
     summon: { windup: 60, types: ["zombie-intern", "consultant"], count: 2, max: 4, cd: 720, radius: 4, level: 6 },
   },

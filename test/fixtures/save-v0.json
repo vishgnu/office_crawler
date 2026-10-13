@@ -1,0 +1,202 @@
+{
+ "version": 0,
+ "seed": 7,
+ "class": "clerk",
+ "deepestDepth": 1,
+ "bossDefeated": false,
+ "inventory": {
+  "w": 10,
+  "h": 4,
+  "items": [
+   {
+    "base": "ruler-rapier",
+    "name": "Ruler Rapier",
+    "baseName": "Ruler Rapier",
+    "kind": "gear",
+    "rarity": "normal",
+    "ilvl": 1,
+    "slot": "weapon",
+    "w": 1,
+    "h": 3,
+    "reqs": {
+     "level": 1
+    },
+    "affixes": [],
+    "damage": {
+     "min": 1,
+     "max": 3
+    },
+    "id": "i1",
+    "x": 0,
+    "y": 0
+   },
+   {
+    "base": "hole-punch-hammer",
+    "name": "Mandatory Handoff",
+    "baseName": "Hole Punch Hammer",
+    "kind": "gear",
+    "rarity": "rare",
+    "ilvl": 12,
+    "slot": "weapon",
+    "w": 2,
+    "h": 3,
+    "reqs": {
+     "level": 9,
+     "grit": 18
+    },
+    "affixes": [
+     {
+      "id": "resist-shock-t1",
+      "group": "resist-shock",
+      "kind": "suffix",
+      "stat": "resist.shock",
+      "name": "of the Power Strip",
+      "tier": 1,
+      "value": 10,
+      "range": [
+       5,
+       10
+      ]
+     },
+     {
+      "id": "stamina-t3",
+      "group": "stamina",
+      "kind": "suffix",
+      "stat": "stamina",
+      "name": "of the Night Owl",
+      "tier": 3,
+      "value": 5,
+      "range": [
+       5,
+       6
+      ]
+     },
+     {
+      "id": "resist-fire-t3",
+      "group": "resist-fire",
+      "kind": "suffix",
+      "stat": "resist.fire",
+      "name": "of the Fire Door",
+      "tier": 3,
+      "value": 20,
+      "range": [
+       19,
+       26
+      ]
+     },
+     {
+      "id": "accuracy-t3",
+      "group": "accuracy",
+      "kind": "prefix",
+      "stat": "attackRating",
+      "name": "Pinpoint",
+      "tier": 3,
+      "value": 33,
+      "range": [
+       31,
+       50
+      ]
+     },
+     {
+      "id": "mana-t3",
+      "group": "mana",
+      "kind": "prefix",
+      "stat": "mpMax",
+      "name": "Brilliant",
+      "tier": 3,
+      "value": 13,
+      "range": [
+       13,
+       20
+      ]
+     }
+    ],
+    "damage": {
+     "min": 6,
+     "max": 11
+    },
+    "id": "i4",
+    "x": 3,
+    "y": 0
+   }
+  ]
+ },
+ "equipment": {
+  "head": null,
+  "body": null,
+  "hands": null,
+  "feet": null,
+  "belt": null,
+  "weapon": null,
+  "offhand": null,
+  "ring1": null,
+  "ring2": null,
+  "amulet": null
+ },
+ "belt": [
+  {
+   "base": "lukewarm-coffee",
+   "name": "Lukewarm Coffee",
+   "baseName": "Lukewarm Coffee",
+   "kind": "potion",
+   "rarity": "normal",
+   "ilvl": 1,
+   "slot": "potion",
+   "w": 1,
+   "h": 1,
+   "reqs": {},
+   "affixes": [],
+   "restores": "hp",
+   "restore": 25,
+   "id": "i2"
+  },
+  {
+   "base": "lukewarm-coffee",
+   "name": "Lukewarm Coffee",
+   "baseName": "Lukewarm Coffee",
+   "kind": "potion",
+   "rarity": "normal",
+   "ilvl": 1,
+   "slot": "potion",
+   "w": 1,
+   "h": 1,
+   "reqs": {},
+   "affixes": [],
+   "restores": "hp",
+   "restore": 25,
+   "id": "i3"
+  },
+  null,
+  null
+ ],
+ "stash": {
+  "w": 10,
+  "h": 8,
+  "items": []
+ },
+ "hero": {
+  "level": 5,
+  "xp": 1016,
+  "attrs": {
+   "grit": 13,
+   "agility": 10,
+   "stamina": 10,
+   "focus": 10
+  },
+  "attrPoints": 20,
+  "skillPoints": 4,
+  "skills": {},
+  "skillBar": {
+   "primary": "strike",
+   "secondary": null,
+   "hotkeys": [
+    null,
+    null,
+    null,
+    null
+   ],
+   "selected": 0
+  }
+ },
+ "gold": 250
+}

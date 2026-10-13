@@ -1,0 +1,193 @@
+// The save format (S3-3, R-090..R-092, NFR-D03). A save is canonical JSON text: sorted keys, one `checksum` field over the rest
+// (corruption and truncation detection, not anti-cheat). Persisted: the character, items, stash, gold, how deep the hero has been,
+// the boss flags, explored maps, the random streams and the options. Not persisted: anything mid-floor (monsters, ground items,
+// projectiles, the hero's tile, open dialogs); a loaded game resumes in the Lobby or at the entry of the saved floor (QF-09-2).
+//
+// serialize(state) -> text.   deserialize(text) -> { ok: true, state, save } | { ok: false, reason, message }.   Neither throws.
+// reasons: parse | format | newer | no-migration | checksum | schema | size
+import { config } from "../core/config.js";
+import { canonical, hashString } from "../core/hash.js";
+import { newGame } from "../core/state.js";
+import { applyDerived } from "../core/items/derive.js";
+import { enterFloor } from "../core/systems/world.js";
+import { xpNextFor } from "../core/systems/progression.js";
+import { canPlace } from "../core/items/inventory.js";
+import { classes } from "../core/content/classes.js";
+import { slotKeys, rarityOrder } from "../core/content/items.js";
+import { skills as skillDefs } from "../core/content/skills.js";
+import { migrate } from "./migrate.js";
+
+export const SAVE_FORMAT = "office-crawler-save";
+/** The documented schema: exactly these top-level keys (plus `checksum`) and no others (AC-R-090-2). */
+export const SAVE_KEYS = ["format", "version", "savedAtTick", "seed", "class", "resume", "deepestDepth", "bossDefeated", "bossUnlocked", "townVisit",
+  "player", "inventory", "equipment", "belt", "stash", "cursorItem", "uniquesFound", "nextItemId", "rng", "stats", "explored", "options"];
+export const PLAYER_KEYS = ["level", "xp", "attrs", "attrPoints", "skillPoints", "skills", "skillBar", "gold"];
+const ATTRS = ["grit", "agility", "stamina", "focus"];
+
+const fail = (reason, message) => ({ ok: false, reason, message });
+const clone = (v) => JSON.parse(JSON.stringify(v));
+
+// ---- serialize -------------------------------------------------------------------------------------------------------------
+
+/** Run-length encode a 0/1 array as alternating run lengths, starting with a run of zeros (maybe empty). */
+export function rleEncode(arr) {
+  const runs = []; let cur = 0, n = 0;
+  for (const v of arr) { const b = v ? 1 : 0; if (b === cur) n++; else { runs.push(n); cur = b; n = 1; } }
+  runs.push(n);
+  return runs;
+}
+export function rleDecode(runs, size) {
+  const out = new Array(size).fill(0);
+  let i = 0, cur = 0;
+  for (const r of runs) { if (cur) out.fill(1, i, i + r); i += r; cur ^= 1; }
+  return out;
+}
+
+/** The persisted data of a game as a plain object (no checksum). */
+export function toSave(state) {
+  const p = state.player, resumeDepth = state.scene === "floor" ? state.depth : 0; // dead, victory and town all resume in the Lobby
+  const explored = {};
+  const floors = { ...state.floors, [state.depth]: { ...(state.floors[state.depth] ?? {}), explored: state.floor.explored } };
+  for (const [d, f] of Object.entries(floors)) {
+    const depth = Number(d);
+    if (depth < 1 || !Array.isArray(f.explored) || !f.explored.some((v) => v)) continue;
+    explored[depth] = { size: f.explored.length, runs: rleEncode(f.explored) };
+  }
+  return {
+    format: SAVE_FORMAT, version: config.saveVersion, savedAtTick: state.tick, seed: state.seed, class: p.class,
+    resume: { depth: resumeDepth }, deepestDepth: state.deepestDepth, bossDefeated: !!state.bossDefeated, bossUnlocked: !!state.bossUnlocked, townVisit: state.townVisit ?? 0,
+    player: { level: p.level, xp: p.xp, attrs: { ...p.attrs }, attrPoints: p.attrPoints, skillPoints: p.skillPoints, skills: { ...p.skills }, skillBar: clone(p.skillBar), gold: p.gold },
+    inventory: clone(state.inventory), equipment: clone(state.equipment), belt: clone(state.belt), stash: clone(state.stash), cursorItem: clone(state.cursorItem ?? null),
+    uniquesFound: [...state.uniquesFound], nextItemId: state.nextItemId, rng: clone(state.rng), stats: { ...state.stats }, explored, options: clone(state.options ?? {}),
+  };
+}
+
+export const checksumOf = (save) => { const { checksum, ...rest } = save; return hashString(canonical(rest)); };
+
+/** Save text. Stable: the same state gives the same text. Throws only if the state is not serialisable (a bug, not user input). */
+export function serialize(state) {
+  const save = toSave(state);
+  return canonical({ ...save, checksum: checksumOf(save) });
+}
+
+// ---- validate --------------------------------------------------------------------------------------------------------------
+
+const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+const isInt = (v, lo = -Infinity, hi = Infinity) => Number.isInteger(v) && v >= lo && v <= hi;
+const hasOnly = (o, keys) => isObj(o) && Object.keys(o).every((k) => keys.includes(k));
+
+function itemOk(it, { placed }) {
+  if (!isObj(it) || typeof it.id !== "string" || typeof it.name !== "string" || typeof it.base !== "string") return false;
+  if (!["gear", "potion", "consumable"].includes(it.kind) || !rarityOrder.includes(it.rarity)) return false;
+  if (!isInt(it.w, 1, 6) || !isInt(it.h, 1, 6)) return false;
+  if (placed && (!isInt(it.x, 0, 99) || !isInt(it.y, 0, 99))) return false;
+  if (!Array.isArray(it.affixes ?? []) || (it.affixes ?? []).some((a) => !isObj(a) || typeof a.stat !== "string" || !Number.isFinite(a.value))) return false;
+  if (it.damage !== undefined && !(isObj(it.damage) && Number.isFinite(it.damage.min) && Number.isFinite(it.damage.max))) return false;
+  if (it.defense !== undefined && !Number.isFinite(it.defense)) return false;
+  if (it.restore !== undefined && !Number.isFinite(it.restore)) return false;
+  if (it.reqs !== undefined && !isObj(it.reqs)) return false;
+  return true;
+}
+
+function gridOk(g, w, h, ids) {
+  if (!isObj(g) || g.w !== w || g.h !== h || !Array.isArray(g.items)) return false;
+  const placed = { w, h, items: [] };
+  for (const it of g.items) {
+    if (!itemOk(it, { placed: true }) || ids.has(it.id)) return false;
+    ids.add(it.id);
+    if (!canPlace(placed, it, it.x, it.y)) return false; // inside the grid and not overlapping an earlier item
+    placed.items.push(it);
+  }
+  return true;
+}
+
+/** Check a current-version save against the schema. Returns null when fine, else a message naming the problem. */
+export function schemaProblem(d) {
+  if (!isObj(d)) return "not an object";
+  if (!hasOnly(d, [...SAVE_KEYS, "checksum"])) return "unknown keys";
+  for (const k of SAVE_KEYS) if (!(k in d)) return `missing ${k}`;
+  if (d.format !== SAVE_FORMAT) return "wrong format tag";
+  if (!isInt(d.savedAtTick, 0) || !isInt(d.seed, 0, 0xffffffff) || !classes.some((c) => c.id === d.class)) return "bad header";
+  if (!hasOnly(d.resume, ["depth"]) || !isInt(d.resume.depth, 0, config.bossDepth)) return "bad resume";
+  if (!isInt(d.deepestDepth, 1, config.bossDepth) || typeof d.bossDefeated !== "boolean" || typeof d.bossUnlocked !== "boolean" || !isInt(d.townVisit, 0)) return "bad progress";
+  const p = d.player;
+  if (!hasOnly(p, PLAYER_KEYS) || PLAYER_KEYS.some((k) => !(k in p))) return "bad player";
+  if (!isInt(p.level, 1, config.levelCap) || !isInt(p.xp, 0, config.xpPastCap) || !isInt(p.attrPoints, 0, 1000) || !isInt(p.skillPoints, 0, 1000) || !isInt(p.gold, 0, 1e9)) return "bad player numbers";
+  if (!hasOnly(p.attrs, ATTRS) || ATTRS.some((a) => !isInt(p.attrs[a], 0, 1000))) return "bad attributes";
+  if (!isObj(p.skills) || Object.entries(p.skills).some(([id, l]) => !skillDefs[id] || !isInt(l, 0, config.skillMaxLevel))) return "bad skills";
+  const bar = p.skillBar;
+  if (!hasOnly(bar, ["primary", "secondary", "hotkeys", "selected"]) || !Array.isArray(bar.hotkeys) || bar.hotkeys.length !== 4 || !isInt(bar.selected, 0, 3)) return "bad skill bar";
+  for (const id of [bar.primary, bar.secondary, ...bar.hotkeys]) if (id !== null && !skillDefs[id]) return "bad skill bar";
+  const ids = new Set();
+  if (!gridOk(d.inventory, config.inventory.w, config.inventory.h, ids)) return "bad inventory";
+  if (!gridOk(d.stash, config.stash.w, config.stash.h, ids)) return "bad stash";
+  if (!isObj(d.equipment) || Object.keys(d.equipment).some((k) => !slotKeys.includes(k))) return "bad equipment";
+  for (const it of Object.values(d.equipment)) if (it !== null && (!itemOk(it, { placed: false }) || ids.has(it.id) || !ids.add(it.id))) return "bad equipment item";
+  if (!Array.isArray(d.belt) || d.belt.length !== config.beltSlots) return "bad belt";
+  for (const it of d.belt) if (it !== null && (!itemOk(it, { placed: false }) || ids.has(it.id) || !ids.add(it.id))) return "bad belt item";
+  if (d.cursorItem !== null && (!itemOk(d.cursorItem, { placed: false }) || ids.has(d.cursorItem.id))) return "bad cursor item";
+  if (!Array.isArray(d.uniquesFound) || d.uniquesFound.some((u) => typeof u !== "string")) return "bad uniques";
+  if (!isInt(d.nextItemId, 1)) return "bad item counter";
+  if (!isObj(d.rng) || ["world", "combat", "ai", "loot"].some((n) => !isObj(d.rng[n]) || !isInt(d.rng[n].s, 0, 0xffffffff)) || Object.keys(d.rng).length !== 4) return "bad random streams";
+  if (!hasOnly(d.stats, ["kills", "deaths", "bossAttempts"]) || Object.values(d.stats).length !== 3 || Object.values(d.stats).some((n) => !isInt(n, 0))) return "bad stats";
+  if (!isObj(d.explored)) return "bad explored";
+  for (const [k, e] of Object.entries(d.explored)) {
+    if (!isInt(Number(k), 1, config.bossDepth) || !hasOnly(e, ["size", "runs"]) || !isInt(e.size, 1, 10000) || !Array.isArray(e.runs) || e.runs.length > e.size + 1) return "bad explored map";
+    if (e.runs.some((r) => !isInt(r, 0)) || e.runs.reduce((a, b) => a + b, 0) !== e.size) return "bad explored map";
+  }
+  if (!isObj(d.options)) return "bad options";
+  return null;
+}
+
+// ---- deserialize -----------------------------------------------------------------------------------------------------------
+
+/** Validate and (if needed) migrate a parsed save. Returns { ok: true, save } or a failure. */
+export function check(raw) {
+  if (!isObj(raw) || raw.format !== SAVE_FORMAT && raw.version !== 0) return fail("format", "This is not a save from this game.");
+  if (!isInt(raw.version, 0)) return fail("format", "The save has no version.");
+  if (raw.version > config.saveVersion) return fail("newer", "This save is from a newer version of the game.");
+  if (raw.version >= 1) {
+    if (typeof raw.checksum !== "string" || raw.checksum !== checksumOf(raw)) return fail("checksum", "The save is damaged (checksum mismatch).");
+  }
+  let data = raw;
+  if (raw.version < config.saveVersion) {
+    const m = migrate(raw, config.saveVersion);
+    if (!m.ok) return fail("no-migration", `No way to upgrade a version ${m.from} save.`);
+    data = m.data;
+  }
+  const problem = schemaProblem(data);
+  if (problem) return fail("schema", `The save is not valid: ${problem}.`);
+  return { ok: true, save: data };
+}
+
+/** Build a running game from a checked save. Resumes in the Lobby, or at the entry of the saved floor when config.resumeAt says so. */
+export function loadSave(save) {
+  const state = newGame(save.seed, { class: save.class, start: "town" });
+  const p = state.player, s = save.player;
+  Object.assign(p, { level: s.level, xp: s.xp, xpNext: xpNextFor(s.level), attrs: clone(s.attrs), attrPoints: s.attrPoints, skillPoints: s.skillPoints, skills: clone(s.skills), skillBar: clone(s.skillBar), gold: s.gold });
+  state.inventory = clone(save.inventory); state.stash = clone(save.stash); state.equipment = { ...state.equipment, ...clone(save.equipment) }; state.belt = clone(save.belt);
+  state.cursorItem = clone(save.cursorItem); state.uniquesFound = [...save.uniquesFound]; state.nextItemId = save.nextItemId;
+  state.rng = clone(save.rng); state.stats = { ...save.stats }; state.options = clone(save.options);
+  state.deepestDepth = save.deepestDepth; state.bossDefeated = save.bossDefeated; state.bossUnlocked = save.bossUnlocked; state.townVisit = save.townVisit;
+  state.tick = save.savedAtTick;
+  for (const [d, e] of Object.entries(save.explored)) state.floors[d] = { killed: [], groundItems: [], explored: rleDecode(e.runs, e.size) };
+  applyDerived(state, { fill: true });
+  if (config.resumeAt === "floorEntry" && save.resume.depth > 0) enterFloor(state, save.resume.depth, { at: "entry", from: 0 });
+  state.events.length = 0; state.eventLog.length = 0; // loading is not an autosave trigger
+  return state;
+}
+
+/** Parse, verify, migrate, validate and build. Never throws. */
+export function deserialize(text) {
+  try {
+    if (typeof text !== "string") return fail("parse", "The save is not text.");
+    if (text.length > config.saveMaxBytes * 2) return fail("size", "The save is too large.");
+    let raw;
+    try { raw = JSON.parse(text); } catch { return fail("parse", "The save is not valid JSON."); }
+    const r = check(raw);
+    if (!r.ok) return r;
+    return { ok: true, state: loadSave(r.save), save: r.save };
+  } catch (e) {
+    return fail("schema", `The save could not be loaded: ${e?.message ?? e}`);
+  }
+}
