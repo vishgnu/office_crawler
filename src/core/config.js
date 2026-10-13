@@ -34,7 +34,7 @@ export const config = {
   // Monster AI
   noticeTicks: 15,
   packWakeTicks: 5,
-  ai: { maxPathNodes: 1500, repathTicks: 15 },
+  ai: { maxPathNodes: 1500, repathTicks: 15, detourSlack: 6 }, // detourSlack: longest detour (tiles) taken to walk round other actors
 
   // Natural regeneration (QF-02-4 is open; small default, easy to set to 0)
   regen: { hpEvery: 120, mpEvery: 60 },

@@ -15,8 +15,11 @@ export function planPath(ctx, from, goal, { adjacent = false, maxNodes = 6000 } 
     width: base.width, height: base.height,
     walkable: (x, y) => base.walkable(x, y) && (ctx.occ[idx(ctx, { x, y })] === 0 || (adjacent && x === goal.x && y === goal.y)),
   };
-  let path = findPath(free, from.x, from.y, goal.x, goal.y, maxNodes, config.pathDiagCost)
-    ?? findPath(base, from.x, from.y, goal.x, goal.y, maxNodes, config.pathDiagCost);
+  // Walking round other actors is only worth a short detour: a long loop (two actors in one corridor, each blocked by the
+  // other's next tile, would both walk the whole ring and never meet) loses to waiting for the blocker to move.
+  const terrain = findPath(base, from.x, from.y, goal.x, goal.y, maxNodes, config.pathDiagCost);
+  const around = terrain ? findPath(free, from.x, from.y, goal.x, goal.y, maxNodes, config.pathDiagCost) : null;
+  let path = around && around.length <= terrain.length + config.ai.detourSlack ? around : terrain;
   if (path && adjacent) path = path.slice(0, -1);
   return path;
 }

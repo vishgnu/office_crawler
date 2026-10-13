@@ -20,19 +20,24 @@ export function canShoot(ctx, m, p) {
 /** In position to attack: adjacent for melee types, in range with a clear line for ranged ones. */
 const inPosition = (ctx, m, p) => (registry[m.type].behaviour === "ranged" ? canShoot(ctx, m, p) : isAdjacent(ctx.grid, m.tile, p.tile));
 
-/** Pick the reachable tile far from the hero (within 10 tiles of the monster) and path there. */
+/** Pick a reachable tile far from the hero and path there, preferring a way that never passes closer to the hero than the monster is now. */
 function startFlee(state, ctx, m, p) {
-  const cands = [];
+  const cands = [], cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
   for (let dy = -10; dy <= 10; dy += 2) for (let dx = -10; dx <= 10; dx += 2) {
     const x = m.tile.x + dx, y = m.tile.y + dy;
     if (ctx.grid.walkable(x, y)) cands.push({ x, y, d: (x - p.tile.x) * (x - p.tile.x) + (y - p.tile.y) * (y - p.tile.y) });
   }
   cands.sort((a, b) => b.d - a.d || a.y - b.y || a.x - b.x);
-  for (const c of cands.slice(0, 6)) {
+  const d0 = cheb(m.tile, p.tile);
+  let best = null, bestMin = -1;
+  for (const c of cands.slice(0, 12)) {
     const path = planPath(ctx, m.next ?? m.tile, c, { maxNodes: config.ai.maxPathNodes });
-    if (path && path.length) { m.path = path; m.goal = { x: c.x, y: c.y }; return; }
+    if (!path || !path.length) continue;
+    const near = Math.min(...path.slice(0, 6).map((t) => cheb(t, p.tile)));
+    if (near >= d0) { best = { path, c }; break; }
+    if (near > bestMin) { bestMin = near; best = { path, c }; }
   }
-  m.path = [];
+  if (best) { m.path = best.path; m.goal = { x: best.c.x, y: best.c.y }; } else m.path = [];
 }
 
 function wakePack(state, m) {
