@@ -8,13 +8,14 @@ import { emit } from "../events.js";
 import { createSpatialHash } from "../spatial.js";
 import { restartInPlace } from "../state.js";
 import { groundAt, takeGround, dropItem, releaseCursor } from "./loot.js";
-import { clickCell, findById, remove, autoplace as autoplaceInto } from "../items/inventory.js";
+import { clickCell, findById, remove } from "../items/inventory.js";
 import { equipItem, unequipItem, clickSlot } from "../items/equipment.js";
-import { useBelt, toBelt, clickBelt } from "../items/belt.js";
+import { useBelt, toBelt, clickBelt, useItem } from "../items/belt.js";
+import { moveStash } from "./stash.js";
 import { openVendor, closeVendor, buy, sell } from "./vendors.js";
 import { castSkill } from "./skills.js";
 import { allocate, learnSkill, assignSkill, selectSkill } from "./progression.js";
-import { useStairs, stairsAt, interact, npcAt, closeDialog, heal, respawn } from "./world.js";
+import { useStairs, stairsAt, interact, npcAt, closeDialog, heal, respawn, usePortal, portalAt } from "./world.js";
 
 const fail = (error) => ({ ok: false, error });
 const OK = { ok: true };
@@ -106,14 +107,9 @@ function itemCommand(state, input) {
     case "useBelt": return done(useBelt(state, input.index));
     case "toBelt": return done(toBelt(state, input.id, input.index));
     case "drop": return dropCommand(state, input.id);
-    case "stash": {
-      const [from, to] = input.to === "stash" ? [state.inventory, state.stash] : [state.stash, state.inventory];
-      const item = findById(from, input.id);
-      if (!item) return fail("no such item");
-      remove(from, item);
-      if (!autoplaceInto(to, item)) { autoplaceInto(from, item); emit(state, { type: "inventoryFull", id: item.id }); return fail("no room"); }
-      return OK;
-    }
+    case "stash": return done(moveStash(state, input.id, input.to));
+    case "useItem": return done(useItem(state, input.id));
+    case "usePortal": return done(usePortal(state, issueMove));
     case "openVendor": return done(openVendor(state, input.id));
     case "closeVendor": return done(closeVendor(state));
     case "buy": return done(buy(state, input.index));
@@ -149,6 +145,7 @@ function mouseDown(state, tile, button, hold) {
   const inb = getCtx(state).grid.inBounds(tile.x, tile.y);
   const npc = inb ? npcAt(state, tile) : null;
   if (npc) { Object.assign(state.input.mouse, { down: false, button, tile: { ...tile }, mode: "interact", applied: { ...tile } }); return interact(state, npc.id, issueMove); }
+  if (inb && portalAt(state, tile)) { Object.assign(state.input.mouse, { down: false, button, tile: { ...tile }, mode: "portal", applied: { ...tile } }); return usePortal(state, issueMove); }
   const dir = inb ? stairsAt(state, tile) : null;
   if (dir) { Object.assign(state.input.mouse, { down: false, button, tile: { ...tile }, mode: "stairs", applied: { ...tile } }); return useStairs(state, dir, issueMove); }
   const m = inb ? livingMonsterAt(state, tile) : null;
@@ -168,7 +165,7 @@ function mouseDown(state, tile, button, hold) {
  * Commands: click {tile, button, hold}, mouse {phase: down|move|up|cancel, tile, button}, moveTo {tile},
  * attack {id}, pause, key {code}, restart. Items (S2-2): pickup {id}, invClick {grid, x, y}, slotClick {slot}, beltClick {index},
  * equip {id, slot?}, unequip {slot}, useBelt {index}, toBelt {id, index?}, drop {id?}, stash {id, to}, openVendor {id?}, closeVendor,
- * buy {index}, sell {id}, releaseCursor.
+ * buy {index}, sell {id}, releaseCursor, useItem {id} (potions, Emergency Exit), usePortal (walk to the Lobby door and step through).
  */
 export function applyInput(state, input) {
   const live = state.scene === "floor" || state.scene === "town";

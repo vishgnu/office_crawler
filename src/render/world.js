@@ -339,11 +339,12 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
 
   // enemies standing in front of the hero (and overlapping his sprite) fade, so he never disappears behind a pile
   const hi = out.heroItem;
+  let buried = false;
   if (hi) for (let i = 0; i < items.length; i++) {
     const it = items[i];
     if (!it.actor || it.isPlayer || it.d <= hi.d) continue;
     const dx = Math.abs(it.x - hi.x), dy = it.y - hi.y;
-    if (dx < 30 * z && dy > -8 * z && dy < 60 * z && it.a > 0.62) it.a = 0.62;
+    if (dx < 30 * z && dy > -8 * z && dy < 60 * z) { if (it.a > 0.5) it.a = 0.5; buried = true; }
   }
   items.sort(byDepth);
   const champColour = env.style.palette.champion;
@@ -357,15 +358,23 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
       blit(g, atlas.outline(it.e, champColour, 1.6), x, y, z);
       g.globalAlpha = it.a;
     }
+    if (it.hurt) { g.globalAlpha = 0.9 * it.a; blit(g, atlas.outline(it.e, "#ff2b3a", 2.2), x, y, z); g.globalAlpha = it.a; } // hurt: a red rim, the body stays readable
     blit(g, it.flash ? atlas.flash(it.e) : it.e, x, y, z);
     if (it.mute) { g.globalAlpha = 0.34 * it.a; blit(g, atlas.tint(it.e, "#7c88b8"), x, y, z); }
     if (it.shade > 0) { g.globalAlpha = it.shade * it.a; blit(g, atlas.shade(it.e, "#070518"), x, y, z); }
     if (it.tintA > 0) { g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, z); }
-    if (it.hurt) { g.globalAlpha = 0.6; blit(g, atlas.tint(it.e, "#ff1f2e"), x, y, z); }
+    if (it.hurt) { g.globalAlpha = 0.14; blit(g, atlas.tint(it.e, "#ff1f2e"), x, y, z); }
     g.globalAlpha = 1;
     if (it.icon) drawIcon(g, atlas, it, x, y, z, now);
   }
 
+  // pack readability: when enemies stand in front of the hero he is drawn again above them, half transparent, with his ring's front arc
+  if (buried && hi && hero.action !== "dead") {
+    const rx = env.style.dims[PLAYER_CLASS].shadowR * 1.7 * z, ry = rx * 0.5;
+    g.beginPath(); g.ellipse(hi.x, hi.y, rx, ry, 0, 0.15, Math.PI - 0.15);
+    g.lineWidth = Math.max(2, 2 * z); g.strokeStyle = "rgba(255,255,255,0.8)"; g.stroke();
+    g.globalAlpha = 0.5; blit(g, hi.e, hi.x, hi.y, z); g.globalAlpha = 1;
+  }
   // hero ghost when a wall or tall prop in front may hide the hero
   if (hero.action !== "dead") {
     let hidden = false;

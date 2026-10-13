@@ -79,3 +79,6 @@ One line per decision by `customer-proxy`. The real customer can overrule any of
 - 2026-10-13 | inventory-panel variant pick | C Side drawer (borrow A sheet layout/44 px cells, B leather header and phone tabs); 9 must-fix items in variants/inventory-panel/decision.md; real customer to confirm on screen review; B is the alternative if they rate theme over seeing the fight | medium
 - 2026-10-13 | inventory-panel Q (pause while open) | no pause, real-time as genre | medium
 - 2026-10-13 | inventory-panel Q (unmet-requirement item dragged onto slot) | pick up and hover allowed, red outline with reason, drop rejected, item returns, never equipped | medium
+- 2026-10-13 | sound-direction provisional default kit | C Foley-synth (A close second, B last); all three kits ship in Options (audio.kit); final pick by the real customer by ear | low
+- 2026-10-13 | sound-direction Q (cues separate or merged) | separate: miss, monster attacks, stairs keep own ids | medium
+- 2026-10-13 | sound-direction Q (title ambient, QF-08-2) | soft lobby bed after first gesture, fades into zone ambient, no music | medium

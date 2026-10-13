@@ -28,6 +28,7 @@ export function castSkill(state, id, tile) {
   const level = skillLevel(state, id);
   if (level < 1) return fail("skill not learned");
   if (p.hp <= 0) return fail("player is dead");
+  if (p.castT > 0) return fail("busy casting"); // one cast at a time: a double click does not spend mana twice
   const cost = def.mana(level);
   if (p.mp < cost) { emit(state, { type: "noMana", skill: id, cost }); return fail("not enough mana"); }
   const ctx = getCtx(state), from = posOf(p), rng = stream(state, "combat");

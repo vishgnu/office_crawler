@@ -11,6 +11,7 @@ import { cleanup } from "./systems/cleanup.js";
 import { scene } from "./systems/scene.js";
 import { projectiles } from "./systems/projectiles.js";
 import { world } from "./systems/world.js";
+import { explore } from "./systems/explore.js";
 
 export function step(state, inputs = []) {
   state.events.length = 0;
@@ -29,6 +30,7 @@ export function step(state, inputs = []) {
   cleanup(state);
   scene(state);
   world(state);
+  explore(state);
   state.tick++;
   return state;
 }

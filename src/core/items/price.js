@@ -6,7 +6,7 @@ import { bases } from "../content/items.js";
 export function sellValue(item) {
   const base = bases[item.base];
   const baseValue = base?.value ?? 1;
-  if (item.kind === "potion") return Math.max(1, baseValue);
+  if (item.kind !== "gear") return Math.max(1, baseValue);
   let points = 0;
   for (const a of item.affixes ?? []) points += a.range[1] > 0 ? a.value / a.range[1] : 0;
   const scale = baseValue * (1 + item.ilvl * config.ilvlValue);

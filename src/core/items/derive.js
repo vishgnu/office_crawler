@@ -9,11 +9,10 @@ const ATTRS = ["grit", "agility", "stamina", "focus"];
 export function gearTotals(equipment = {}) {
   const t = { damageMin: 0, damageMax: 0, defense: 0, hpMax: 0, mpMax: 0, attackRating: 0, grit: 0, agility: 0, stamina: 0, focus: 0, resist: {} };
   for (const type of config.damageTypes) t.resist[type] = 0;
-  const seen = new Set();
+  t.armed = false; // a weapon with base damage is worn: it replaces the unarmed range
   for (const item of Object.values(equipment)) {
-    if (!item || seen.has(item)) continue; // a two-handed weapon is listed once
-    seen.add(item);
-    if (item.damage) { t.damageMin += item.damage.min; t.damageMax += item.damage.max; }
+    if (!item) continue; // a two-handed weapon sits in the weapon slot only
+    if (item.damage) { t.armed = true; t.damageMin += item.damage.min; t.damageMax += item.damage.max; }
     t.defense += item.defense ?? 0;
     for (const a of item.affixes ?? []) {
       if (a.stat === "damage") { t.damageMin += a.value; t.damageMax += a.value; }

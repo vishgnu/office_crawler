@@ -421,6 +421,7 @@ export function createFx(style) {
      */
     drawLoot(g, cam, core, now) {
       const list = core.groundItems, z = cam.z;
+      if (fx.platesPlaced) fx.platesPlaced.length = 0;
       if (!list || list.length === 0) return;
       const hero = core.player, hx = hero.tile.x, hy = hero.tile.y, size = Math.max(16, Math.round(6.5 * z)), dpr = Math.min(window.devicePixelRatio || 1, 2);
       const hc = !!fx.hc, fs = Math.max(11, Math.min(14, Math.round(z * 3.4))), SAFE = 8;

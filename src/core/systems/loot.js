@@ -5,6 +5,7 @@ import { emit } from "../events.js";
 import { getCtx } from "../ctx.js";
 import { rollItem, rollPotion } from "../items/roll.js";
 import { autoplace } from "../items/inventory.js";
+import { sellValue } from "../items/price.js";
 import { rarities } from "../content/items.js";
 import { drops, defaultDrops } from "../content/monsters.js";
 
@@ -30,18 +31,34 @@ export function freeGroundTile(state, origin) {
   return cand.length ? { x: cand[0].x, y: cand[0].y } : { x: origin.x, y: origin.y };
 }
 
+/** Eviction order at the ground cap: gold piles, then normal, magic, rare items; cheapest first, oldest first on ties. Never the new entry, a unique or a kept entry. */
+function evictOne(state, keep) {
+  const rankOf = (e) => (e.gold ? 0 : 1 + rarityRank[e.item?.rarity ?? "normal"]);
+  const valueOf = (e) => (e.gold ? e.gold : sellValue(e.item));
+  let best = -1, bk = null;
+  state.groundItems.forEach((e, i) => {
+    if (e === keep || e.keep || e.item?.rarity === "unique") return;
+    const k = [rankOf(e), valueOf(e), i];
+    if (!bk || k[0] < bk[0] || (k[0] === bk[0] && (k[1] < bk[1] || (k[1] === bk[1] && k[2] < bk[2])))) { best = i; bk = k; }
+  });
+  if (best < 0) return false;
+  state.groundItems.splice(best, 1);
+  return true;
+}
+const rarityRank = { normal: 0, magic: 1, rare: 2, unique: 3 };
+
 function addGround(state, entry, origin) {
   entry.tile = freeGroundTile(state, origin);
   state.groundItems.push(entry);
-  while (state.groundItems.length > config.groundItemCap) state.groundItems.shift();
+  while (state.groundItems.length > config.groundItemCap && evictOne(state, entry)) { /* evicting */ }
   return entry;
 }
 
 /** Put an item on the ground near `origin`. The entry's label equals the item name; mark/border/color follow rarity (AC-R-051-3). */
-export function dropItem(state, item, origin) {
+export function dropItem(state, item, origin, { keep = false } = {}) {
   if (!item.id) mint(state, item);
   const r = rarities[item.rarity];
-  return addGround(state, { id: item.id, item, label: item.name, rarity: item.rarity, mark: r.mark, border: r.border, color: r.color }, origin);
+  return addGround(state, { id: item.id, item, label: item.name, rarity: item.rarity, mark: r.mark, border: r.border, color: r.color, ...(keep ? { keep: true } : {}) }, origin);
 }
 
 export function dropGold(state, amount, origin) {
@@ -124,7 +141,7 @@ export function releaseCursor(state) {
   const item = state.cursorItem;
   if (!item) return;
   state.cursorItem = null;
-  if (!autoplace(state.inventory, item)) dropItem(state, item, state.player.tile);
+  if (!autoplace(state.inventory, item)) dropItem(state, item, state.player.tile, { keep: true }); // keep: never evicted at the ground cap
 }
 
 /** Per-tick pickup: gold on the hero's tile is collected; a pending pickup order completes when the hero is in reach. */
