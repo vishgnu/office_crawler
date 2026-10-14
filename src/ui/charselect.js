@@ -203,7 +203,7 @@ export function createCharSelect(h, info) {
     W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height)); dpr = Math.min(window.devicePixelRatio || 1, 2);
     bgCv.width = Math.round(W * dpr); bgCv.height = Math.round(H * dpr); bg = paintBackdrop(W, H, dpr);
     for (const x of btns) {
-      const br = x.b.getBoundingClientRect(), cw = Math.max(1, Math.round(br.width)), ch = Math.max(1, Math.round(br.height - (parseFloat(getComputedStyle(x.b).getPropertyValue("--chip")) || 0)));
+      const ch = Math.max(1, Math.round(Math.min(H * 0.5, x.b.getBoundingClientRect().height))), cw = Math.round((ch * 104) / 96);
       x.fig.width = Math.round(cw * dpr); x.fig.height = Math.round(ch * dpr); x.fig.style.width = cw + "px"; x.fig.style.height = ch + "px";
     }
     const sr = stage.getBoundingClientRect(), fr = btns[sel].fig.getBoundingClientRect();
@@ -233,8 +233,8 @@ export function createCharSelect(h, info) {
     for (let k = 0; k < 22; k++) { const p = (hash(k) * 7 + t * (0.02 + hash(k + 9) * 0.03)) % 1, x = lx + (hash(k + 3) - 0.5) * pr * 1.6 * (0.2 + p * 0.8) + Math.sin(t * 0.7 + k) * 6, y = p * poolY; g.fillStyle = `rgba(255,240,200,${0.25 * Math.sin(p * Math.PI)})`; g.fillRect(x, y, 1.8, 1.8); }
     g.restore();
     // ring on the floor under the chosen class (the ding pulse widens it for a moment)
-    const sc = FH / 97, ringX = spot * W, pulse = flour >= 0 ? ss(0, 1, flour) : 1;
-    g.save(); g.lineWidth = Math.max(3, sc * 2.6); g.strokeStyle = OUT; g.beginPath(); g.ellipse(ringX, GY, 34 * sc, 10 * sc, 0, 0, TAU); g.stroke();
+    const sc = (FH / 100) * 1.14, ringX = spot * W, pulse = flour >= 0 ? ss(0, 1, flour) : 1;
+    g.save(); g.lineWidth = Math.max(3, sc * 2.6); g.strokeStyle = OUT; g.beginPath(); g.ellipse(ringX, GY, 33 * sc, 10 * sc, 0, 0, TAU); g.stroke();
     g.lineWidth = Math.max(1.5, sc * 1.2); g.strokeStyle = "#fff"; g.stroke();
     if (flour >= 0 && !reduced()) { g.globalAlpha = 1 - pulse; g.lineWidth = Math.max(2, sc * 1.6); g.strokeStyle = HERO_ACCENT[cards[sel].id]; g.beginPath(); g.ellipse(ringX, GY, (34 + 30 * pulse) * sc, (10 + 9 * pulse) * sc, 0, 0, TAU); g.stroke(); }
     g.restore();
