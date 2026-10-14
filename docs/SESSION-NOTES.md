@@ -198,3 +198,4 @@ Each round also improves the harness (learnings → agent definitions/rules), as
 - 2026-10-14T11:22:43Z FIX-R6-UI follow-up: refund notice names the attribute (Agility/Focus), generic fallback, false 'marked' claim removed. 743 tests.
 - 2026-10-14T11:51:08Z ADV-R6 round 2: all R6 fixes verified in browser; no false rejections over 2000+ generated items, all uniques, bot states, levels 1-30. New minor: ADV-R6-06 level not tied to xp; ADV-R6-07 non-gear items/gear fields not validated (potion 1e6, invented effect id, slot mismatch, unique twice). Sent to FIX-R6-CORE (time-boxed).
 - 2026-10-14T11:59:56Z FIX-R6-CORE: ADV-R6-06/07 all fixed (xp tied to level, consumables/gear fields equal base, slot check, unique once). 770/770. adv-r6 slots fixture (level 12/3/20 at xp 0) now illegitimate → adversary.
+- 2026-10-14T12:16:02Z ADV-R6 fixture fixed (legal xp); agent e2e 14/14. Orchestrator full verify + 5 bench runs running.
