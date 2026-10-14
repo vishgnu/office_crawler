@@ -63,3 +63,58 @@ Copy of C with the combined round-1 review fixes (`review-r1-appeal.md`, `review
   is "cel-lit" rather than physically lit. Each actor is drawn twice (ring + body), which is the main per-frame cost (about 8 fps) and the thing to watch with 50 monsters;
   a sprite cache per monster type would remove it. File size 58 KB (limit about 60 KB).
 - **Effort for a whole game:** M, unchanged from C; the lighting bake and the placement pass are reusable engine parts.
+
+## C3: stylised vector, round 3 "more detail and polish" (`C3.html`)
+Answers the real customer's fifth briefing ("idea is good but more details and polishing", 2026-10-14). C2 stays the frozen identity (bold outlines, readable
+silhouettes, dark grade, Okabe-Ito rarity, same actors, loot, hit FX and HUD layout); C3 adds a detail layer on top. Switches: `?scene=office|basement|boardroom`,
+`?frame=N` (+ `window.__ready`), `?compare=1` (C2 | C3 wipe, draggable divider or the range input, `&split=NN`), `?legacy=1` (every round-3 addition off, matches
+C2 pixel for pixel apart from 6 e-5 of the pixels; it is what the compare view uses for the left half), `?zoom=3&focus=hero|zom|dem|mgr` (review aid, hides labels).
+**What read as flat or bare in the current game shots** (final-lobby, polish-basement, s3-boss-phase2, final-champion-fight, final-inventory-compare): one repeated floor
+diamond with no tile-to-tile variation; wall panels as flat slabs with only a small framed picture; grey cabinets and desks with no material feel; props sparse and
+floating (no contact shadow or occlusion at wall bases); hero and monsters single-tone cel with no cloth, face or secondary motion; HUD panels flat purple with no depth.
+
+What changed, and what each costs when ported to the game engine (S/M/L = small/medium/large, against the C2 renderer):
+1. **Baked material textures** (carpet plain/twill/basket weave with mirrored tile orientation and per-tile tone drift, wood grain, brushed metal, concrete, plaster,
+   wall panel, paper, cardboard): 11 procedural 64x64 alpha overlays, created once into offscreen canvases and applied as `createPattern` fills with a skew matrix per
+   face type (top, left, right). Per-frame cost 0 (static layer). Port: S, one `texture(name)` + `patternFor(face)` helper, material table maps material to texture.
+2. **Second shade level + ambient occlusion:** every static vertical face gets a base-darkening gradient on top of the existing flat shade steps; floor gets wall-base AO
+   strips and soft contact shadows (four stacked rounded rects) under every prop; bevelled tile seams (dark joint, lit up-left edge). Baked. Port: S for the gradient,
+   S for contact shadows if props already have footprints.
+3. **Light spill and pools:** extra baked pools in the existing light mask (second fixture pool, monitor floor spill, desk-lamp pool, green exit-sign pool, window light shaft
+   across the floor, a brighter inner band on fixture pools); screens spill a cyan glow onto the desk (additive, per frame, 2 sprites). Cost: M-/S (more entries in the
+   same bake; the dynamic part is 2 additive draws). Port: S, the bake already exists.
+4. **Density (office):** a second fixture, door ajar, door mat, runner carpet with stitch lines, hazard tape, painted chevrons, footprints from the door, coffee rings, scuffs,
+   cable tape wraps, plants, bin with paper, wet-floor A-frame sign, box stack, extinguisher, desk lamp, mugs, sticky notes, keyboard keys, filing-cabinet drawers with labels,
+   glass partition panes, skirting boards, sockets, vents, wall clock, framed chart, three humour posters, cork board with notices and sticky notes, whiteboard, a skyline window
+   with reflections, exit sign. All static. Port: M. This is content, not engine: a prop kit of about 40 sprites or draw functions plus a decal/wall-item placement list per room.
+   Wall items draw in a small "wall space" transform (1 unit = 1 design px), which is the reusable piece (S).
+5. **Two more scenes** from the same engine and actors: **basement** (concrete, cracked and stained, safe-lane paint, drain, puddles with glint, pipe runs, server racks with
+   blinking LEDs, filing cabinets, shelving, boiler, barrels, caged bulbs, breaker panel, signage) and **boardroom** (burgundy lattice carpet with gold inlay and a bordered rug,
+   panelled walls, glass-topped table with laptops, high-back chairs, credenza with trophies, projector slide, framed founders, curtained windows, chandeliers). Port: M each
+   (content) on top of the shared S engine work; a per-scene table holds palette overrides, textures, fixtures and light list.
+6. **Characters:** hero gets eyebrow, nose, smile, blush, lens glint, hair highlight strands and cowlick, headset band and boom, collar, lapel notches, pocket square, tie
+   stripes, belt buckle, cuffs, trouser creases, shoe laces and soles, badge photo; zombie gets tears, stitches, eye bags, fangs, drool, skin mottling; manager gets nose,
+   stubble, comb-over strands, sweat drop, pinstripes, buttons, folds, belt buckle, sticky note on the binder; the printer demon gets a control panel (flickering LCD,
+   buttons, blinking LED), vents and CMY toner stripes. Detail is skipped in the silhouette (rim) pass. **Secondary motion:** tie sway (hero, zombie, manager), cowlick and
+   zombie hair-tuft bob, comb-over sway and sweat drip, LCD flicker, monitor scan band and glitch rows, rack LEDs. Cost: about +2 ms per frame for four actors (see below).
+   Port: M, and the right place to cache: per-monster-type sprite caches of the static detail with only the swaying parts drawn live (that was already the recommended fix for
+   50 monsters, and it now matters a little more).
+7. **Outline weight** is clamped (`clamp(2.0*zoom, 1.6, 4.2)` px) instead of growing linearly, so at game scale (hero about 100 px) the line stays about 2.4 px and does not
+   get heavier on big screens. Port: S.
+8. **UI chrome:** panel with top-to-bottom sheen, brushed-metal grain, inner shadow, top bevel and a stitched dashed border; skill slots with inner shadow, bottom light,
+   corner rivets; XP bar with inner shadow and divider; mug with glaze gradient, stitched bands, speckle, rivets; jug with ribbed plastic, rivets, brushed rim; icons snapped to
+   whole pixels, with drop shadow and a specular stroke. Baked once per layout, 0 per frame. Port: S (needs the HUD bake that C2 already has).
+9. **Ambient motion:** dust motes drifting and twinkling inside fixture and hero pools (about 40 tiny additive dots per frame), a second fluorescent with its own flicker pattern,
+   cage-bulb and chandelier glow, blinking rack LEDs. Cost S.
+- **Performance** (headless Chromium, software GL, 1280x800; compositor-capped at 60): C3 office 58, basement 59, boardroom 60 fps; C2 60 fps on the same machine.
+  Render cost per frame including a forced flush: C2 11.7 ms, C3 office 13.5 ms, basement 13.8 ms, boardroom 12.3 ms (so about 74 fps uncapped for C3, against about 85 for C2).
+  Layout/bake on resize: C2 9 ms, C3 14 to 15 ms (textures are built once, patterns re-created per zoom); not per frame.
+- **File size:** 124 KB, over the ~60 KB guideline for variant files, because it carries three scenes, the texture generators, the compare view and a legacy path. It is a
+  style reference, not a product file; the port does not carry the legacy path or the compare view.
+- **Checks:** single self-contained file, no network references (no urls, fetch, link or script src), no ip-denylist terms, no console errors, `window.__ready` set (compare mode
+  sets it when both iframes report ready), phone width 390 renders without horizontal scroll. The compare view loads this same file twice in iframes (`?legacy=1` and normal).
+- **Trade-offs and risks:** (a) the grade is still dark, so floor weave and wall materials show mostly inside light pools; a brighter ambient floor is a one-number change but
+  would dilute the C2 mood; (b) actors are still drawn after the darkness and do not receive pool colour, so monsters can look a touch "pasted on" next to the richer floors;
+  (c) the humour posters and signs are tiny text that is readable at 1280x800 but not at game scale: they are texture, not copy to localise; (d) the basement wall pipes are
+  busy behind the racks; (e) review at 100% size, the compare divider cuts through the hero at the default 50% split (use `&split=30` or drag).
+- **Screenshots:** `shots/r3/C3-default-f92.jpg`, `C3-basement-f92.jpg`, `C3-boardroom-f92.jpg`, `C3-compare-f92.jpg`.

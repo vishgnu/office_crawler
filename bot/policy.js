@@ -30,11 +30,14 @@ export const BOT = {
   // The skill build order, the cast priority and the potion thresholds come from the class (content/classes.js `bot`): one policy, three classes.
   restBelow: 0.95,      // on the cleared last floor, wait until health is at least this share before taking the lift to the boss
   restMaxTicks: 6000,   // ... but not longer than this
+  kiteEvery: 45,        // ticks between two kiting steps of a ranged class
+  kiteMaxSpeed: 0.95,   // only monsters slower than the hero are kited
   dodgeMargin: 0.9,     // step this far outside a telegraphed circle (tiles); also covers the hero being mid-step
   volleyCos: 0.7,       // a volley is dodged by standing where the angle to its aim line is at least acos(this) (about 45 degrees)
   attrWeights: { stamina: 3, grit: 3, agility: 2, focus: 1 }, // points go where (points spent / weight) is lowest
 };
 
+const RANGED = new Set(["printer-demon", "consultant"]); // monsters that shoot: kiting them gains nothing
 const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
 /** profile: { reckless } - a reckless bot never waits for chasers; it walks into packs (shows how deadly the floor is). */
@@ -54,6 +57,31 @@ export function noteResult(mem, cmd, res) {
   if (cmd?.t === "useStairs" && res && res.ok === false) mem.failedMoves++;
   if (cmd?.t === "buy" && res && res.ok === false) { if (cmd.gear) { mem.noBuy ??= new Set(); mem.noBuy.add(cmd.id); } else mem.shopped = true; }
   if (cmd?.t === "sell" && res && res.ok === false) mem.sold = true;
+}
+
+/**
+ * Kiting for the ranged classes (class `bot.kite` = how close a slower melee monster may get): step to the free tile that is farthest from
+ * every awake monster, at most once per `kiteEvery` ticks so the hero shoots in between. Returns a moveTo or null.
+ */
+function kiteMove(view, mem, live) {
+  const p = view.player, cls = classOf(p), r = cls.bot.kite ?? 0;
+  if (!r || view.tick - (mem.lastKite ?? -999) < BOT.kiteEvery || p.next) return null;
+  const threats = live.filter((m) => (m.ai === "chase" || m.ai === "attack") && m.speed <= BOT.kiteMaxSpeed && cheb(m.tile, p.tile) <= r && !RANGED.has(m.type));
+  if (!threats.length) return null;
+  const ok = walkableIn(view), awake = live.filter((m) => m.ai !== "idle");
+  const nearestD = (x, y) => Math.min(...awake.map((m) => Math.max(Math.abs(m.tile.x - x), Math.abs(m.tile.y - y))));
+  const here = nearestD(p.tile.x, p.tile.y);
+  let best = null, bk = -Infinity;
+  for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+    const x = p.tile.x + dx, y = p.tile.y + dy;
+    if ((!dx && !dy) || !ok(x, y) || live.some((m) => m.tile.x === x && m.tile.y === y)) continue;
+    const d = nearestD(x, y);
+    const k = d * 10 - Math.max(Math.abs(dx), Math.abs(dy)); // far from the monsters, but not a long walk
+    if (d >= here + 2 && k > bk && hasLineOfSight(gridOf(view), x, y, threats[0].tile.x, threats[0].tile.y)) { bk = k; best = { x, y }; }
+  }
+  if (!best) return null;
+  mem.lastKite = view.tick;
+  return { t: "moveTo", tile: best };
 }
 
 /** Rough value of a gear item for the "is this an upgrade" test (bot only; not game balance). */
@@ -333,6 +361,8 @@ export function decide(view, mem) {
   for (const r of mem.rooms) if (!r.done && cheb(r, p.tile) <= BOT.arriveRadius) r.done = true;
   if (mem.goal?.done) mem.goal = null;
 
+  const kite = kiteMove(view, mem, live);
+  if (kite) return kite;
   // 1. awake monsters nearby: fight the nearest
   const awake = live.filter((m) => m.ai !== "idle" && !mem.skip.has(m.id)), a = nearest(awake, p.tile);
   // a chaser on its way: stand still and let it come (the hero holds position; a moveTo on the own tile cancels walking)

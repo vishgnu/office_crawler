@@ -59,6 +59,8 @@ export function createAtlas(scale = 1, meta = {}) {
       return e;
     },
     has: (key) => map.has(key),
+    /** False while a lazily drawn sprite has not been drawn yet (true for eager ones, undefined for unknown keys). */
+    isDrawn: (key) => { const e = map.get(key); return e ? !e.lazy : undefined; },
     keys: () => [...map.keys()],
     /** White silhouette of a sprite entry (hit flash). */
     flash: (e) => silhouette(e, "rgba(255,255,255,0.78)", 1, "source-atop"),

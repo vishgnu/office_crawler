@@ -1,0 +1,167 @@
+{
+  "project": "office-crawler",
+  "harnessVersion": "0.3.0",
+  "round": "R2",
+  "slice": "S2 loot and progression (iteration 2), incl. S1 acceptance and polish",
+  "elapsedMin": 136,
+  "humanMin": null,
+  "humanMessages": null,
+  "agents": [
+    {
+      "role": "customer-proxy",
+      "pkg": "S1 acceptance",
+      "tokensK": 94,
+      "minutes": 7.3,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "In-game visual review S1",
+      "tokensK": 129,
+      "minutes": 14.2,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "S1 visual polish",
+      "tokensK": 172,
+      "minutes": 9.6,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "S2-1/2 core",
+      "tokensK": 214,
+      "minutes": 10.8,
+      "status": "done"
+    },
+    {
+      "role": "prototyper",
+      "pkg": "Inventory-panel variants A/B/C",
+      "tokensK": 239,
+      "minutes": 18.4,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "Inventory variants review",
+      "tokensK": 88,
+      "minutes": 1.7,
+      "status": "done"
+    },
+    {
+      "role": "customer-proxy",
+      "pkg": "Inventory pick",
+      "tokensK": 70,
+      "minutes": 0.6,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "S2-3/4 core",
+      "tokensK": 294,
+      "minutes": 18.5,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "S2 WORLD render",
+      "tokensK": 369,
+      "minutes": 29.7,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "S2 UI",
+      "tokensK": 419,
+      "minutes": 49.1,
+      "status": "done"
+    },
+    {
+      "role": "reviewer",
+      "pkg": "S2 code review",
+      "tokensK": 167,
+      "minutes": 7.5,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "S2 visual review",
+      "tokensK": 138,
+      "minutes": 5.9,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "S2 CORE-FIX + balance",
+      "tokensK": 340,
+      "minutes": 26.7,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "S2 UI-FIX + map",
+      "tokensK": 328,
+      "minutes": 35.7,
+      "status": "done"
+    }
+  ],
+  "totals": {
+    "tokensK": 3061,
+    "agentMinutes": 235.7
+  },
+  "defects": {
+    "adversarial": null,
+    "codeReview": {
+      "blocking": 3,
+      "should": 6,
+      "nit": 6
+    },
+    "visualReview": 10,
+    "customer": 7,
+    "escaped": null
+  },
+  "quality": {
+    "unitTests": 360,
+    "e2eChecks": null,
+    "visualScore": 29,
+    "fps50": 49.7,
+    "botWinRate": null
+  },
+  "rework": {
+    "fixRounds": 2,
+    "reverts": 0
+  },
+  "incidents": [
+    "WIP commit cceb860 carried 4 failing tests caused by the in-progress S2-3 core agent while the polish agent committed (L-010)",
+    "Orchestrator reported an XP maths bug from a screenshot; the reviewer showed the label mixed total XP with a within-level percent (L-012)",
+    "Architect and proxy answers conflicted on skill keys and boss location; the proxy answer was made binding (L-005)",
+    "S2 ACs for the map (R-075) and Emergency Exit (R-046) had no implementation; review blocking #1 (L-019)",
+    "Floaters and damage numbers overlapped nameplates in S1 and S2 in-game reviews (L-018)",
+    "A stray /shots directory was created at the container root by an agent and could not be removed (harmless)"
+  ],
+  "learnings": [
+    "L-010",
+    "L-011",
+    "L-012",
+    "L-013"
+  ],
+  "sourceNotes": {
+    "elapsedMin": "Git: 21:26 UTC (metrics commit f406220, end of R1) to 23:42 (S2 UI fixes, commit 58f9f26). Overlaps R3 by about 33 min because sound work started at 23:09.",
+    "humanMin": "Unknown.",
+    "humanMessages": "No user message is recorded in docs/product/00-brief.md for this period; SESSION-NOTES standing instructions are undated. Null, not 0.",
+    "agents": "Includes S1 acceptance, S1 in-game visual review and S1 polish, which docs/metrics-iter2-3.md lists in this period. Agent rows are copied from docs/metrics-iter1.md and docs/metrics-iter2-3.md (subagent tokens, agent wall time, all Sonnet). Rows are assigned to the round in which they ran (SESSION-NOTES iteration labels). Orchestrator (Opus) tokens and time are not recorded.",
+    "totals": "Sum of the rows above. Source table subtotal for R2+R3 (3,690k) = R2 3,061k + R3 629k.",
+    "adversarial": "No adversarial pass in this round, null.",
+    "codeReview": "docs/reviews/S2-code-review.md: 3 blocking, 6 should, 6 nit.",
+    "visualReview": "Count of fix groups in the review JSON: S1 in-game 5 (30/40) + S2 5 (29/40). Counting unit is one fix group, not one finding.",
+    "customer": "7 AC gaps without evidence in the S1 acceptance by customer-proxy (docs/reviews/S1-acceptance.md). No S2 acceptance file exists; the real customer has not reviewed.",
+    "visualScore": "S2 in-game review 29/40 'iterate'. The S1 in-game review in this period scored 30/40.",
+    "unitTests": "360 after CORE-FIX (SESSION-NOTES). 312 after S2 UI, before the fix round.",
+    "e2eChecks": "Not recorded as a total. UI script 103 checks after S2 UI, 149 after UI-FIX.",
+    "fps50": "Bench 49.7 after UI-FIX (SESSION-NOTES).",
+    "botWinRate": "Bot reached floor 8 in 20 of 20 careful runs, no boss yet; reckless 18/20 cleared. Not a win rate.",
+    "fixRounds": "CORE-FIX and UI-FIX (E2 in docs/harness-experiments.md counts 2).",
+    "reverts": "No commit subject mentions revert."
+  }
+}

@@ -45,11 +45,19 @@ export function heroFigs(atlas, cls) {
   const t = figureTable(atlas), type = heroType(cls);
   if (t.plrBy[type]) return t.plrBy[type];
   const o = {};
-  for (const [anim, n] of Object.entries(PLAYER_ANIMS)) o[anim] = Array.from({ length: DIRS }, (_, d) => Array.from({ length: n }, (_, f) => atlas.get(keys.plr(type, anim, d, f))));
+  for (const [anim, n] of Object.entries(PLAYER_ANIMS)) o[anim] = Array.from({ length: DIRS }, () => new Array(n)); // filled frame by frame (each sprite is drawn the first time it is shown, no hitch)
   return (t.plrBy[type] = o);
 }
-/** Draw all frames of a class hero now (the lazy atlas otherwise pays the cost on the first fight frame). The shell can call this on class selection. */
-export const warmHero = (atlas, cls) => { heroFigs(atlas, cls); };
+/** Draw the frames of a class hero ahead of use (the lazy atlas otherwise pays ~0.4 s on the first frame in play). With a budget it returns false until all are drawn, so the shell can spread it over frames on class selection / continue. */
+export function warmHero(atlas, cls, budgetMs = Infinity) {
+  const t0 = performance.now(), type = heroType(cls);
+  for (const [anim, n] of Object.entries(PLAYER_ANIMS)) for (let d = 0; d < DIRS; d++) for (let f = 0; f < n; f++) {
+    const k = keys.plr(type, anim, d, f);
+    if (atlas.isDrawn?.(k) === false) { atlas.get(k); if (performance.now() - t0 > budgetMs) return false; }
+  }
+  heroFigs(atlas, cls);
+  return true;
+}
 
 function allyFigs(atlas, id) {
   const t = figureTable(atlas);
@@ -263,10 +271,12 @@ function tempRing(g, sx, sy, r, z) {
   g.setLineDash([3 * z, 3 * z]); g.lineWidth = Math.max(1, 1.1 * z); g.strokeStyle = "rgba(235,232,220,0.6)"; g.stroke(); g.restore();
 }
 
+const heroFrame = (atlas, anim, dir, f) => { const row = F.hfigs[anim][dir]; return row[f] ?? (row[f] = atlas.get(keys.plr(F.htype, anim, dir, f))); };
+
 function addActor(a, isPlayer, pos, dir, sx, sy) {
   const { g, cam, atlas, fx, now, env, light } = F, z = cam.z;
   const af = animFor(a, isPlayer, now), boss = !isPlayer && a.tier === "boss";
-  const e = boss ? atlas.get(keys.mon(bossType(a.type, a.boss?.phase ?? 1), af.anim, dir, af.frame)) : (isPlayer ? F.hfigs : F.figs.mon[a.type])[af.anim][dir][af.frame];
+  const e = boss ? atlas.get(keys.mon(bossType(a.type, a.boss?.phase ?? 1), af.anim, dir, af.frame)) : (isPlayer ? heroFrame(atlas, af.anim, dir, af.frame) : F.figs.mon[a.type][af.anim][dir][af.frame]);
   let alphaV = 1, flash = false;
   const dying = af.anim === "death";
   if (dying) {
@@ -438,7 +448,8 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     items.push(grab(gi.tile.x + gi.tile.y + 1 - 0.25, e, pt.x, pt.y));
   }
   F.prev = prev; F.alpha = alpha; fx.heroType = heroType(core.player.class);
-  fx.drawGround(g, cam, atlas, now); // cast runes, burst and heal rings: flat on the floor, under every actor
+  fx.drawGround(g, cam, atlas, now); out.lights = fx.lights; // light hook: [{x, y, r, colour, intensity}] for the lighting rounds
+  // cast runes, burst and heal rings: flat on the floor, under every actor
 
   // ---- actors: positions first (lights need them), then lit sprites ----
   F.g = g; F.cam = cam; F.atlas = atlas; F.prev = prev; F.alpha = alpha; F.fx = fx; F.now = now; F.env = env; F.light = light;

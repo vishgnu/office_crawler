@@ -12,6 +12,7 @@ import { posOf } from "../src/core/pos.js";
 import { hasLineOfSight } from "../src/core/los.js";
 import { getCtx } from "../src/core/ctx.js";
 import { requiredKeys, HERO_CLASSES } from "../src/render/keys.js";
+import { drawFigure, figureKeys } from "../src/render/figure.js";
 import { damageMonster } from "../src/core/systems/damage.js";
 
 const W = { atlas: null, fx: null, light: null, labels: null, core: null, rs: { facing: new Map() }, size: { w: 1920, h: 1080 }, now: 1000 };
@@ -312,4 +313,13 @@ W.distinct = (h = 60) => {
     out.push({ pair: `${ids[i]} / ${ids[j]}`, iou: +(inter / uni).toFixed(2), colourDist: Math.round(Math.hypot(a.rgb[0] - b.rgb[0], a.rgb[1] - b.rgb[1], a.rgb[2] - b.rgb[2])) });
   }
   return { rgb: Object.fromEntries(ids.map((id) => [id, feats[id].rgb])), pairs: out };
+};
+
+// drawFigure(canvas, figureKey, opts) for DOM screens: every figure key, portrait and card-idle, on the main canvas (check of render/figure.js)
+W.figures = () => {
+  const main = document.getElementById("game"), g = main.getContext("2d"), keysList = figureKeys();
+  g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = "#2b3647"; g.fillRect(0, 0, main.width, main.height);
+  const c = document.createElement("canvas"); c.width = 256; c.height = 256;
+  keysList.forEach((k, i) => ["portrait", "card-idle"].forEach((anim, j) => { drawFigure(c, k, { anim, t: 0.6 }); g.drawImage(c, 40 + i * 270, 40 + j * 270); }));
+  return keysList;
 };

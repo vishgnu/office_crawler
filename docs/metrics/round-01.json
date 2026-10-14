@@ -1,0 +1,179 @@
+{
+  "project": "office-crawler",
+  "harnessVersion": "0.3.0",
+  "round": "R1",
+  "slice": "S1 playable core (iteration 1)",
+  "elapsedMin": 100,
+  "humanMin": null,
+  "humanMessages": 2,
+  "agents": [
+    {
+      "role": "requirements-facilitator",
+      "pkg": "Circle 1",
+      "tokensK": 76,
+      "minutes": 2.6,
+      "status": "done"
+    },
+    {
+      "role": "customer-proxy",
+      "pkg": "Circle 1 answers",
+      "tokensK": 59,
+      "minutes": 0.4,
+      "status": "done"
+    },
+    {
+      "role": "spec-writer",
+      "pkg": "Spec (341 ACs)",
+      "tokensK": 140,
+      "minutes": 8.2,
+      "status": "done"
+    },
+    {
+      "role": "architect",
+      "pkg": "ADR-0001..0004 + plan",
+      "tokensK": 131,
+      "minutes": 5.8,
+      "status": "done"
+    },
+    {
+      "role": "customer-proxy",
+      "pkg": "Spec questions (65)",
+      "tokensK": 83,
+      "minutes": 2.1,
+      "status": "done"
+    },
+    {
+      "role": "prototyper",
+      "pkg": "Art variants A/B/C",
+      "tokensK": 258,
+      "minutes": 23.3,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "Review r1 x2",
+      "tokensK": 156,
+      "minutes": 2.4,
+      "status": "done"
+    },
+    {
+      "role": "customer-proxy",
+      "pkg": "Art pick",
+      "tokensK": 75,
+      "minutes": 0.6,
+      "status": "done"
+    },
+    {
+      "role": "prototyper",
+      "pkg": "Art round 2 (C2)",
+      "tokensK": 199,
+      "minutes": 14.2,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "Review r2 x2",
+      "tokensK": 175,
+      "minutes": 3.2,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "S1-1..3 core",
+      "tokensK": 205,
+      "minutes": 11.6,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "S1-4..5 render/loop/hook",
+      "tokensK": 226,
+      "minutes": 14.2,
+      "status": "done"
+    },
+    {
+      "role": "reviewer",
+      "pkg": "S1 code review",
+      "tokensK": 108,
+      "minutes": 2.4,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "S1 review fixes",
+      "tokensK": 97,
+      "minutes": 3.3,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "Style port + S1-6",
+      "tokensK": 428,
+      "minutes": 44.2,
+      "status": "done"
+    }
+  ],
+  "totals": {
+    "tokensK": 2416,
+    "agentMinutes": 138.5
+  },
+  "defects": {
+    "adversarial": null,
+    "codeReview": {
+      "blocking": 1,
+      "should": 6,
+      "nit": 6
+    },
+    "visualReview": null,
+    "customer": null,
+    "escaped": null
+  },
+  "quality": {
+    "unitTests": 120,
+    "e2eChecks": 118,
+    "visualScore": null,
+    "fps50": 48,
+    "botWinRate": null
+  },
+  "rework": {
+    "fixRounds": 1,
+    "reverts": 0
+  },
+  "incidents": [
+    "Flaky unit test with a 50 ms wall-clock threshold failed 1 run in ~12 under parallel load (L-006)",
+    "Reviewer found 4 more wall-clock thresholds because the new rule did not reach the implementer already in flight (L-007)",
+    "Architect and customer-proxy ran in parallel and both decided the same spec questions (L-005)",
+    "Blocking input bug (mouse-up while paused) missed by 96 unit tests and 89 e2e checks written by the implementer (L-008)",
+    "Portal showed no readiness because the facilitator wrote a table row instead of a canonical line (L-009)",
+    "No stack pack for a static browser game (L-001)"
+  ],
+  "learnings": [
+    "L-001",
+    "L-002",
+    "L-003",
+    "L-004",
+    "L-005",
+    "L-006",
+    "L-007",
+    "L-008",
+    "L-009",
+    "L-017"
+  ],
+  "sourceNotes": {
+    "elapsedMin": "Intake commit 26a676d 19:46 to style-port commit 9ada7b1 21:26 UTC, as stated in docs/metrics-iter1.md. Many steps ran in parallel.",
+    "humanMin": "Unknown. metrics-iter1.md records 0 minutes on S1 decisions (proxy) plus 'the user's short instructions', not timed.",
+    "humanMessages": "docs/product/00-brief.md records 2 user messages on 2026-10-13: the original request and the sound/graphics addendum. SESSION-NOTES lists further standing instructions without timestamps; not counted.",
+    "adversarial": "No adversarial test-engineer pass existed in this round (introduced for round 4, L-008), so null rather than 0.",
+    "codeReview": "docs/reviews/S1-code-review.md: 1 blocking, 6 should, 6 nit.",
+    "visualReview": "Visual reviews in this round assessed prototypes (C2 mock 33/40 and 32/40, 'ship'); the first in-game review ran in R2. Not comparable, so null.",
+    "customer": "S1 acceptance by customer-proxy ran in the R2 period per the source metrics table, see R2.",
+    "escaped": "Not defined retroactively; null in all baseline rounds.",
+    "unitTests": "120 = 118 + 2 lint (SESSION-NOTES, style port + S1-6).",
+    "e2eChecks": "118 checks over 7 scripts (docs/product/proxy-log.md S1 acceptance entry, line 78).",
+    "fps50": "Bench 50 monsters, full fx 48 fps, lowFx 54.5 (SESSION-NOTES). Bench under headless software GL.",
+    "botWinRate": "Careful bot: 30 of 30 floors cleared (not a win rate, there was no boss yet).",
+    "fixRounds": "One implementer fix round after the S1 code review.",
+    "reverts": "No commit subject mentions revert (git log, office-crawler and harness).",
+    "general": "Agent rows are copied from docs/metrics-iter1.md and docs/metrics-iter2-3.md (subagent tokens, agent wall time, all Sonnet). Rows are assigned to the round in which they ran (SESSION-NOTES iteration labels). Orchestrator (Opus) tokens and time are not recorded."
+  }
+}

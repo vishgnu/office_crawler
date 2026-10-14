@@ -1,0 +1,141 @@
+{
+  "project": "office-crawler",
+  "harnessVersion": "0.3.0",
+  "round": "R3",
+  "slice": "S3 sound and finale (iteration 3), through FINAL-FIX",
+  "elapsedMin": 158,
+  "humanMin": null,
+  "humanMessages": null,
+  "agents": [
+    {
+      "role": "prototyper",
+      "pkg": "Sound variants A/B/C + measurements",
+      "tokensK": 156,
+      "minutes": 10.5,
+      "status": "done"
+    },
+    {
+      "role": "customer-proxy",
+      "pkg": "Sound default",
+      "tokensK": 66,
+      "minutes": 0.5,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "S3-2 audio engine",
+      "tokensK": 135,
+      "minutes": 6.3,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "S3 core (boss, save)",
+      "tokensK": 272,
+      "minutes": 20.0,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "WORLD-S3",
+      "tokensK": null,
+      "minutes": null,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "UI-S3",
+      "tokensK": null,
+      "minutes": null,
+      "status": "done"
+    },
+    {
+      "role": "reviewer",
+      "pkg": "Final S3 code review",
+      "tokensK": null,
+      "minutes": null,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "Final visual review",
+      "tokensK": null,
+      "minutes": null,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "FINAL-FIX (first run, killed by container restart)",
+      "tokensK": null,
+      "minutes": null,
+      "status": "redo"
+    },
+    {
+      "role": "implementer",
+      "pkg": "FINAL-FIX (resumed)",
+      "tokensK": null,
+      "minutes": null,
+      "status": "done"
+    }
+  ],
+  "totals": {
+    "tokensK": null,
+    "agentMinutes": null,
+    "recordedTokensK": 629,
+    "recordedAgentMinutes": 37.3
+  },
+  "defects": {
+    "adversarial": null,
+    "codeReview": {
+      "blocking": 3,
+      "should": 11,
+      "nit": 10
+    },
+    "visualReview": 5,
+    "customer": null,
+    "escaped": null
+  },
+  "quality": {
+    "unitTests": 427,
+    "e2eChecks": 410,
+    "visualScore": 31,
+    "fps50": 57,
+    "botWinRate": 1.0
+  },
+  "rework": {
+    "fixRounds": 1,
+    "reverts": 0
+  },
+  "incidents": [
+    "Container restart killed the 40-minute FINAL-FIX implementer; partial edits survived, plan and progress did not (L-015)",
+    "Bench NFR-P01 reported red (31.7 and 36.9 fps) at load average 5.6 on 4 cores; re-measured on a quiet box at 57-60 fps; one cold atlas build took 5.17 s against a 5 s budget (L-020)",
+    "Renderer crash (drawImpact negative radius under stepped ticks) found by the final visual review, not by 415 tests or the code review",
+    "R-104 story frame fell between work packages (UI-S3 notes: 'not in this package's brief'); code review blocking B2 (L-019)",
+    "Loot labels piled on the hero and white-on-white menu buttons in high contrast; floaters/labels overlap seen again (L-018)",
+    "Quit to title did not save; Continue loaded an older state (code review B1)",
+    "Polish agent reported first-run and crash fixes as 'not done' although FINAL-FIX had landed them (L-016)",
+    "Golden-hash test red mid-run from in-progress CORE-FIX; owner named in notes, as L-010 allows"
+  ],
+  "learnings": [
+    "L-014",
+    "L-015"
+  ],
+  "sourceNotes": {
+    "elapsedMin": "Git: first S3 commit 443c3d0 at 23:09 UTC to final-fix commit c1be6f3 at 01:47 (14 Oct), 157.5 min, last commit before the third briefing. The POLISH agent (commit 25bda36 at 02:03) is logged under r4 in SESSION-NOTES and not counted.",
+    "humanMin": "Unknown.",
+    "humanMessages": "No user message recorded in docs/product/00-brief.md for this period. Null, not 0.",
+    "agents": "Only the first four rows have recorded tokens/minutes (docs/metrics-iter2-3.md says 'so far'). The other agents ran and are listed with null tokens: S3 WORLD, S3 UI, final code review, final visual review, FINAL-FIX (twice), plus the final proxy acceptance, which is not listed because no record of it exists. Agent rows are copied from docs/metrics-iter1.md and docs/metrics-iter2-3.md (subagent tokens, agent wall time, all Sonnet). Rows are assigned to the round in which they ran (SESSION-NOTES iteration labels). Orchestrator (Opus) tokens and time are not recorded.",
+    "totals": "Unknown: the source stops at the S3 core. Recorded subtotal is given separately.",
+    "adversarial": "No adversarial pass, null.",
+    "codeReview": "docs/reviews/S3-code-review.md: 3 blocking (B1-B3), 11 should (S1-S11), 10 nit (N1-N10). B3 (perf) turned out to be load noise.",
+    "visualReview": "Fix groups in the final visual review JSON (31/40, delta +2 vs S2).",
+    "customer": "No acceptance file for S3; human sign-off is 'pending' in the DoD table.",
+    "visualScore": "Final visual review 31/40 'iterate' (S1 30, S2 29).",
+    "unitTests": "427 after FINAL-FIX, three runs green.",
+    "e2eChecks": "410 checks in 10 scripts, orchestrator-verified after UI-S3 (415 unit tests then). After FINAL-FIX the s3ui script has 105 checks and 'all scripts OK'; the new total is not recorded.",
+    "fps50": "57 = lower end of the 57-60 fps range re-measured after FINAL-FIX (quiet box). Under load the same bench gave 31.7-36.9 (full fx).",
+    "botWinRate": "Boss bot 20/20 wins, 70% first try (SESSION-NOTES, CORE-S3).",
+    "fixRounds": "FINAL-FIX, run twice because of the restart, counted as one fix round (E2 says '1 + restart').",
+    "reverts": "No commit subject mentions revert."
+  }
+}

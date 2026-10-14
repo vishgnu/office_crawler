@@ -556,7 +556,8 @@ export function createFx(style) {
       const cx = pos.x, cy = pos.y - im.z * z;
       g.save(); g.globalAlpha = Math.max(0, 1 - k * k); g.lineJoin = "round"; g.lineCap = "round";
       if (im.mode === "muzzle") {
-        const R = (5 + 5 * k) * z;
+        const newKind = MUZZLE[im.kind] && im.kind !== "slide", R = (newKind ? 4 + 4 * k : 5 + 5 * k) * z;
+        if (newKind) g.globalAlpha *= 0.5; // R5 shots: a light flash, so the caster's body stays readable
         g.fillStyle = im.kind === "toner" ? P.proj.tonerGlow : MUZZLE[im.kind] ?? "#e8eef8";
         g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
         g.fillStyle = "#fff"; g.beginPath(); g.arc(cx, cy, R * 0.45, 0, Math.PI * 2); g.fill();
