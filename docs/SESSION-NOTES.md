@@ -1,7 +1,7 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
 _Last updated 2026-10-14T04:16:20Z. Keep this block current after every step; the log below is history._
 
-**Where we are:** R4 core, R5 WORLD, R5 UI (UI-R5 done, verified by orchestrator: 574 tests, e2e 12/12) and G-FIX done. Now: adversarial test-engineer pass (ADV-R5), progress `docs/reviews/R5-adversarial-progress.md`.
+**Where we are:** R4 core, R5 WORLD, R5 UI (UI-R5 done, verified by orchestrator: 574 tests, e2e 12/12) and G-FIX done. Now in parallel: ADV-R5 adversarial (`docs/reviews/R5-adversarial-progress.md`), code review R4+R5+G (`docs/reviews/R4-R5-G-code-review-progress.md`), visual G re-review + char select (`docs/reviews/G2-visual-progress.md`). Then one fix round from all three.
 
 **In flight (check the files, not memory):**
 - ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
