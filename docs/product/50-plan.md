@@ -373,12 +373,70 @@ R4-4 -> R6-1 ; R5 -> R6-2
 - After entering a floor the frame time sits at 33-50 ms (20-30 fps) for about 3 s while 480-740 monster frames are drawn on first use (0.5-0.7 s of drawing spread by the per-floor warm-up). Hide it behind the elevator transition (warm before the floor is shown) or spread it thinner; gate: frame p99 after floor load <= 33 ms.
 
 ### R7-0 Quest journal and next steps (customer request, first item of R7)
-- **Goal:** a journal (own key, plus a button on the HUD and in the pause menu) that lists active and completed quests and,
-  for each active quest, the next concrete step ("Take the lift to floor 3", "Talk to the facilities desk"). The main goal
-  (the memo, R-104) becomes explicit quest steps; close to the original's mechanics, a small set of NPC side quests
-  (count decided in the R7 circle). Quest state is part of the save (schema bump with migration).
-- **Order:** circle (facilitator → proxy or customer) → spec ACs → CORE (quest state machine, events, save) → UI (journal,
-  HUD hint, NPC dialogue) and WORLD (quest markers if specified) in parallel → adversarial + review → visual → acceptance.
+- **Goal:** a journal (own key J, plus a button on the HUD and an entry in the pause menu) that lists active and completed quests and,
+  for each active quest, the next concrete step ("Take the lift down.", "Reach floor 4. Visit the Lobby first: the staff may pay in gear.").
+  The main goal (the memo, R-104) becomes six explicit main-quest steps; three NPC side quests (circle 3 answer: kill task, find an item,
+  a named elite; the two gear quests are the pacing tools before floor 5). Quest state is part of the save (version 4, migration from 3).
+- **Decisions:** `decisions/ADR-0007-quests.md` (data model, step machine, stateless quest stream, generator hooks, pouch, atomic hand-in,
+  revisit of floors 3-4, golden re-pin with proof) and the ADR-0006 amendment "R7 quests" (save v4, slot index fields).
+  Contract, names, owners, tests affected: `docs/reviews/R7-contract.md`. Spec: `30-spec/12-quests-journal.md` (39 ACs).
+- **Order:** circle (done) -> spec ACs (done) -> ADR + contract (done) -> **CORE-R7Q** R7-0.1, then R7-0.2 and R7-0.3 (parallel-ok), then R7-0.4
+  -> **UI-R7Q** R7-0.5, R7-0.6 and **WORLD-R7Q** R7-0.7 in parallel (start after R7-0.1..0.3) -> adversarial + review -> visual -> acceptance.
+  Sequencing against the packages running now: CORE-R7Q starts after AI-R7 hands back (`intent.js`, `state.js`, `config.js`, `bot/policy.js`, the
+  goldens overlap); WORLD-R7Q after STUTTER-R7 (`render/world.js`, `fx.js`, `keys.js`, bench overlap); UI-R7Q also waits for STUTTER-R7 if that
+  package edits `game.js`, `main.js` or `ui/screens.js`.
+- **Scope note (spec, circle 3 Q1):** if R7 is tight, drop in this order: side quest 1, the map marker, the NPC overhead markers. Never drop:
+  journal, the six main steps, the two gear quests. The packages are cut so each of those is a separable piece of its package.
+
+#### R7-0.1 CORE-Q1: quest data, state, step machine, events, hash proof
+- **Goal:** `content.quests` (main quest with six steps, three side quests, working text), `config.quests`, `state.quests` and `player.pouch`, the pure reducer and the tap on `emit`, commands `questAccept/questPin/storyRead`, derived views (`nextStep`, `npcMarker`, `mapMarkers`, snapshot additions), `hashStateWithout`, the quest audio rows, and the one golden re-pin with its proof.
+- **Depends:** AI-R7 handed back. **Parallel-ok with:** nothing in CORE-R7Q. **Estimate:** M (about 550 lines, about 140 of them text and data).
+- **ACs:** AC-R-240-1/2 (state part), 241-1/2, 242-1, 245-1 (offer/accept/decline), 254-1, 255-1, 256-3.
+- **Files:** `src/core/content/quests.js` (new), `config.js`, `state.js`, `events.js`, `systems/quests.js` (new), `systems/questview.js` (new), `systems/intent.js` (hook), `index.js`, `hash.js`, `src/audio/cues.js` (quest rows), `test/quests-model.test.js`, `quests-machine.test.js`, `quests-hash.test.js`, `test/hash.test.js`, `test/fixtures/run-a.pre-quests.hash`, `run-class.pre-quests.json`, re-pinned `run-a.hash`, `run-class.json`, `docs/reviews/R7-core-q-notes.md`.
+- **Migrations:** none yet (save v4 is R7-0.3). Infra: no. **Risk:** medium: the tap in `emit` is on every event; the golden proof depends on the post-AI-R7 baseline.
+
+#### R7-0.2 CORE-Q2: generator hooks, pouch, atomic hand-in, rewards
+- **Goal:** `questRng`, `questSpot`, `placeQuestObjects` (called once from `enterFloor`), `makeMonster` options (`name`, `hpMult`, `quest`), the quest ground entry and its `takeGround` branch into the pouch, `questHandIn` with the dry-run bag check, reward gear (magic or rare, floor-4 item level, reroll for requirements) and potions, gold and xp.
+- **Depends:** R7-0.1. **Parallel-ok with:** R7-0.3 (disjoint files). **Estimate:** M (about 450 lines).
+- **ACs:** AC-R-245-1 (no side effects on trading, healing, stash), 246-1..5, 247-1..3, 250-1, 240-2 (placement part).
+- **Files:** `src/core/systems/quests.js`, `systems/world.js` (one call), `systems/loot.js`, `state.js` (`makeMonster`), `config.js`, `test/quests-gen.test.js` (100 seeds, incl. `fallbackFloor`), `quests-rewards.test.js`, `quests-npc.test.js`.
+- **Risk:** medium: ground entries without `item` meet seven readers (contract 4.4); the champion elite must be beatable (balance gate).
+
+#### R7-0.3 CORE-Q3: save version 4, migration, slot index, cheats, fixtures
+- **Goal:** `saveVersion` 4, `quests` in `SAVE_KEYS` with the schema invariants, `toSave`/`loadSave` (quests set before the resume `enterFloor`), `MIGRATIONS[3]` (main step from milestones read off the v3 save, no retroactive reward), slot index fields `mainStep/mainDone/sidesDone` and `upgradeIndex` (inside `migrateLegacy`), `cheats.js` (`setQuestStep`, `completeQuest`), the helper that builds five legal v3 fixtures.
+- **Depends:** R7-0.1. **Parallel-ok with:** R7-0.2. **Estimate:** M (about 480 lines).
+- **ACs:** AC-R-251-1/2, 252-1 (data), 253-1/2 (core half), 256-1 (cheat functions).
+- **Files:** `src/save/format.js`, `migrate.js`, `slots.js`, `session.js`, `src/core/cheats.js`, `src/core/config.js`, `test/save-v4.test.js`, `save-v4-migrate.test.js`, `test/save-slots.test.js`, `test/helpers.js`, `test/fixtures/save-v3-{lobby,floor1,floor4,boss-unlocked,boss-defeated}.json`; one-line fixes `test/save-v3.test.js`, `test/adv-r6-fix.test.js:191`.
+- **Migrations:** yes (save 3 to 4; slot index fields; index rebuilt once). **Risk:** medium: every save path; legal fixtures (L-038).
+
+#### R7-0.4 CORE-Q4: bot quest paths
+- **Goal:** `bot/quests.js` (talk to the three givers and accept before the first descent, climb from the cleared floor 4 to the Lobby, hand in, retry after selling on `bagFull`), call sites in `policy.js`, report counters, parity and balance runs with quests.
+- **Depends:** R7-0.2 (and AI-R7's watchdog fix). **Parallel-ok with:** R7-0.5..0.7 (disjoint: `bot/**`). **Estimate:** S-M (about 300 lines).
+- **ACs:** AC-R-256-2, AC-R-241-2 (bot shows steps 1..6 in order), 246-3 (pouch pickup path), 247-3.
+- **Files:** `bot/quests.js` (new), `bot/policy.js`, `bot/report.js`, `bot/run-headless.mjs`, `test/quests-bot.test.js`, `test/bot*.test.js`, `test/balance-gate.test.js`.
+- **Risk:** medium: time to boss within 20-40 minutes with the extra climb; elite fight per class.
+
+#### R7-0.5 UI-Q1: journal, key J, dock button, pause entry, tracker, hook
+- **Goal:** journal panel (desktop side drawer, phone full screen) with main quest first, active side quests, next step, progress, pouch list, pin controls, completed list, "Read the verdict" on step 6; key J (remappable, in Options), dock button with badge, pause-menu entry, one-line tracker, `__app.quests` hook, `dismissStory` sending `storyRead start`, story overlay for the victory text.
+- **Depends:** R7-0.1..0.3. **Parallel-ok with:** R7-0.7. **Estimate:** M (about 550 lines).
+- **ACs:** AC-R-242-1 (shown text), 243-1/2/3, 244-1/2, 248-1/2, 256-1.
+- **Files:** `src/ui/journal.js` (new), `ui/panels.js`, `ui/screens.js`, `ui/text.js`, `ui/options.js`, `input/keymap.js`, `input/keys.js`, `game.js`, `main.js`, `testhook/index.js`, `style.css`, `test/ui-quests.test.js`, `test/ui-keymap.test.js`, `test/ui-options.test.js`, `e2e/hook.mjs`, `e2e/adv-r6.mjs:686` (one line).
+- **Risk:** medium: phone layout and keyboard order; the drawer is shared with character and skills.
+
+#### R7-0.6 UI-Q2: NPC dialogue, toasts, badge, slot card, accessibility
+- **Goal:** quest section in the NPC dialogue (offer text, reward list, Accept/Decline, progress line, Hand in, bag-full notice, normal trade/heal/stash unchanged), toasts for `quest.*` (title and next step, `toastMs`), badge until opened, slot card line (step title and "N/3"), reduced motion, accessible names (state as text), `e2e/r7quest.mjs` and the expectation fixes of the contract.
+- **Depends:** R7-0.5. **Parallel-ok with:** R7-0.7. **Estimate:** M (about 450 lines).
+- **ACs:** AC-R-247-4, 249-2, 251-3, 252-1, 253-1/2, 254-2/3.
+- **Files:** `src/ui/panels.js`, `ui/messages.js`, `ui/slots.js`, `ui/text.js`, `game.js`, `style.css`, `e2e/r7quest.mjs` (new), `e2e/{s3ui,r5ui,ui}.mjs`, `e2e/run-all.mjs` (one line).
+- **Risk:** medium: e2e fixture (legal v3 save in slot 2) and real-time toast timing.
+
+#### R7-0.7 WORLD-Q1: NPC markers, map marker, quest item and elite look
+- **Goal:** two procedural marker shapes over the NPCs (`available`, `handin`; not colour only; static under reduced motion) and `perf().npcMarkers`, the map marker with label from `mapMarkers`, the quest ground entry (mark, colour, plate), the named elite's nameplate, the elite's type warmed while `sq3` is active.
+- **Depends:** R7-0.1..0.3 and STUTTER-R7. **Parallel-ok with:** R7-0.5, R7-0.6. **Estimate:** S-M (about 350 lines).
+- **ACs:** AC-R-249-1, 248-3 (drawing), 246-3 (item visible), look of the elite (`verify: playtest/visual review`).
+- **Files:** `src/render/world.js`, `render/fx.js`, `render/map.js`, `test/render-r7q.test.js`, `docs/shots/r7q-*`.
+- **Risk:** low-medium: no new atlas sprites (atlas budget), no per-frame allocation (STUTTER-R7 gate).
+- **Cut line:** this is the package that goes first if R7 is tight (markers, then the map marker; the quest ground entry stays).
 
 ## Round R8: added item from the seventh briefing (2026-10-14)
 

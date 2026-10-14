@@ -1,0 +1,7 @@
+# R7 architect progress (quests)
+- read definition, spec 12 (39 ACs, QF-12-1..6), circle-03 answers, ADR-0006 (+2 amendments), 50-plan, core (state, events, hash, step, world, loot, boss, damage, vendors, intent, cheats), save (format, migrate, slots, session), ui/game/main/testhook, audio cues, bot policy, tests that pin golden hashes and save version
+- facts found: deepestDepth starts at 1 even in the Lobby (so "never descended" must come from milestones, not deepestDepth); eventLog is inside the hash (quest events must be filtered in the proof); events emitted outside step() (cheats, load) are cleared by the next step (so a per-tick event scan would lose them: the step machine taps emit() instead); SAVE_KEYS and the rng key count are strict; audio.test fails on any unmapped core event; e2e hook.mjs lists describe() members exactly
+- next: ADR-0007, ADR-0006 amendment, R7-contract, 50-plan R7-0 packages
+- done: docs/product/decisions/ADR-0007-quests.md; ADR-0006 amendment "R7 quests" (save v4, migration 3 to 4, index fields, upgradeIndex); docs/reviews/R7-contract.md (ownership, overlaps with AI-R7 and STUTTER-R7, names, consumer tables, tests and owners); 50-plan.md R7-0 expanded into R7-0.1..0.7 (each <= about 550 lines)
+- spec deviations to tell the customer-side owners: spec fixture "deepestDepth 0" is not a legal v3 value (schema forces >= 1): use deepestDepth 1 with no explored[1]; step 6 for a migrated defeated-boss save needs the journal action "Read the verdict"
+- no git, no processes started, only the four named files plus this one edited

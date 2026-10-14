@@ -57,3 +57,4 @@
 {"round": "R7", "role": "requirements-facilitator", "pkg": "circle-03 quests", "tokensK": 98.7, "minutes": 4.0, "status": "done", "questions": 7, "readiness": "11/20", "requirements": "R-240..R-256", "source": "task usage"}
 {"round": "R7", "role": "customer-proxy", "pkg": "circle-03 answers", "tokensK": 80.7, "minutes": 0.9, "status": "done", "readiness": "15/20", "decision": "3 side quests (2 give gear before floor 5), main quest 6 steps, journal J + HUD tracker", "source": "task usage"}
 {"round": "R7", "role": "spec-writer", "pkg": "spec 12 quests", "tokensK": 100.3, "minutes": 2.5, "status": "done", "acs": 39, "source": "task usage"}
+{"round": "R7", "role": "architect", "pkg": "ADR-0007 quests + R7 contract", "tokensK": null, "minutes": null, "status": "done", "packages": ["CORE-R7Q (0.1-0.4)", "UI-R7Q (0.5-0.6)", "WORLD-R7Q (0.7)"], "source": "agent report; usage pending"}

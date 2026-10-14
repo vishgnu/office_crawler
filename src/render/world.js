@@ -100,17 +100,18 @@ export function warmFrames(atlas, core, budgetMs = 1.5) {
  * (attack after) are drawn at AHEAD_BUDGET_MS a frame, so most first-use draws are done long before the stairs are taken and the new floor opens with a
  * warm atlas. Drawing a sprite earlier changes nothing on screen. Returns true when nothing is left to warm.
  */
-const AHEAD_BUDGET_MS = 0.7;
+const AHEAD_BUDGET_MS = 0.7, AHEAD_DELAY_FRAMES = 240; // 4 s at 60 fps
 function warmAhead(atlas, core, w) {
   const depth = core.depth | 0;
   if (depth < 1 || globalThis.__noAhead) return true;
   if (w.aheadDepth !== depth) {
-    w.aheadDepth = depth; w.ahead = []; w.ai = 0;
+    w.aheadDepth = depth; w.ahead = []; w.ai = 0; w.wait = AHEAD_DELAY_FRAMES;
     for (const anim of WARM_ORDER) for (const t of Object.keys(content.monsters)) {
       if (!(content.monsters[t].minDepth <= depth + 1)) continue;
       for (let dir = 0; dir < DIRS; dir++) for (let f = 0; f < ANIMS[anim]; f++) w.ahead.push(keys.mon(t, anim, dir, f));
     }
   }
+  if (w.wait > 0) { w.wait--; if (globalThis.__atlasStats) globalThis.__atlasStats.warmLeft = w.ahead.length - w.ai; return false; } // the first seconds on a floor stay free of warm-up work
   const q = w.ahead, t0 = performance.now();
   while (w.ai < q.length) {
     const k = q[w.ai++];

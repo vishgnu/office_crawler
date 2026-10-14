@@ -1,7 +1,7 @@
 // R7-1 / R7-3 (AI-R7): a held target that cannot be reached must not freeze the hero while another monster hits it; the bot watchdog must not count a trip through the Lobby as a stall.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { config, newGame, step, applyInput } from "../src/core/index.js";
+import { newGame, step, applyInput } from "../src/core/index.js";
 import { createBotMemory, decide } from "../bot/policy.js";
 import { gameOn, run } from "./helpers.js";
 
@@ -23,7 +23,7 @@ function staged() {
 test("R7-3 a standing hero holding an unreachable target strikes the adjacent attacker after retargetTicks", () => {
   const { s, a, t } = staged();
   assert.equal(applyInput(s, { t: "attack", id: t.id }).ok, true);
-  run(s, config.retargetTicks + config.noticeTicks + 120);
+  run(s, 200); // retargetTicks (60) + notice + a few swings
   assert.notEqual(s.player.target, t.id, "the target moved on to something in reach");
   assert.ok(a.hp < a.hpMax || a.ai === "dead", "the adjacent attacker was hit");
 });
@@ -33,7 +33,7 @@ test("R7-3 the hero keeps its target while it is still walking towards it (no ea
   s.player.hp = s.player.hpMax = 100000;
   const t = s.monsters[0];
   applyInput(s, { t: "attack", id: t.id });
-  run(s, config.retargetTicks * 2);
+  run(s, 120);
   assert.equal(s.player.target === t.id || t.ai === "dead", true);
 });
 
