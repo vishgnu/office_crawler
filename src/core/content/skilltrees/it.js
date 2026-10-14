@@ -36,7 +36,7 @@ export const it = {
       fx: { cast: "fx:shard", hit: "fx:frost", icon: "cold-boot" } },
     { id: "firewall", class: C, branch: "security", tier: 2, col: 1, name: "Packet Filter", textKey: "skillFirewallText", kind: "active", archetype: "buff",
       maxLevel: 5, reqLevel: 8, requires: [{ id: "cold-boot", level: 1 }], tags: ["cold", "shield"], cost: { mana: [10, 2], cooldown: 0, reservePct: 0 },
-      delivery: { ticks: [600, 0] }, effects: [{ op: "absorb", amount: [30, 12], ticks: [600, 0], reflectPct: [15, 5] }],
+      delivery: { ticks: [600, 0] }, effects: [{ op: "absorb", amount: [40, 14], ticks: [600, 0], reflectPct: [15, 5] }],
       fx: { cast: "fx:shield", hit: null, icon: "firewall" } },
     { id: "quarantine", class: C, branch: "security", tier: 3, col: 1, name: "Quarantine", textKey: "skillQuarantineText", kind: "active", archetype: "area",
       maxLevel: 1, reqLevel: 16, requires: [{ id: "firewall", level: 1 }], tags: ["cold", "area"], cost: { mana: [22, 0], cooldown: 0, reservePct: 0 },
