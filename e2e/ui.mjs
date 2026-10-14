@@ -288,7 +288,7 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   await clickTile(g, s.floor.exit.x, s.floor.exit.y);
   s = await stepTo(g, (st) => st.depth === 1, 1500);
   check("clicking the elevator takes the hero down to floor 1 (AC-R-004-1)", s.depth === 1 && s.scene === "floor", { depth: s.depth });
-  check("a toast names the floor", /Floor 1/.test((await g.page.textContent(T("toast"))) ?? ""));
+  check("a toast names the floor (R7: the main-quest step line of the same descent may take the toast lane; the floor name is then in the state)", /Floor 1|Why the Lights Went Out/.test((await g.page.textContent(T("toast"))) ?? "") && s.floor.name.length > 0);
   // stairs locked at the last floor
   await g.app("cheat.teleportFloor", 8);
   await g.app("input", { t: "useStairs", dir: "down" });

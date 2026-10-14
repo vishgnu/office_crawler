@@ -398,7 +398,7 @@ let exported = null;
       sawBar = true;
       if (!barShot && bar.ratio < 0.8 && bar.ratio > 0.55 && s.scene === "floor") { await shot(g.page, "boss-bar"); barShot = true; }
     }
-    sawLive = (await g.page.locator(T("live")).textContent()) || sawLive;
+    sawLive += " | " + ((await g.page.locator(T("live")).textContent()) || ""); // R7: a quest line (step 6 on the boss kill) may be the last text, so all live texts are kept
     if (s.scene === "dead") { await g.app("input", { t: "respawn" }); await levelUp(g, 30); await g.app("cheat.teleportFloor", 9); }
   }
   const names = new Set((await g.app("audio.getState")).cueLog.map((c) => c.name));
