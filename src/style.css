@@ -346,8 +346,8 @@ html.hc .opt-val, html.hc .screen.options .hint, html.hc .hint, html.hc .seed, h
 .cs-keys kbd, .create kbd { font: inherit; font-weight: 800; border: 1.5px solid #8d80d0; border-radius: 5px; padding: 0 5px; background: #120e29; color: #f4ecd8; }
 .cs-conf { position: absolute; left: 22px; bottom: 10px; z-index: 3; font-size: 11px; letter-spacing: 3px; color: #b4abe0; opacity: .8; pointer-events: none; }
 .cs-lineup { position: absolute; inset: 0; z-index: 2; --chip: 46px; }
-.cs-cls { position: absolute; top: 12%; bottom: 9%; width: 27%; left: calc(var(--x) * 1% - 13.5%); background: none; border: 0; padding: 0; border-radius: 12px; color: inherit; font: inherit; cursor: pointer; --chip: 0px; display: flex; align-items: flex-end; justify-content: center; }
-.cs-fig { flex: none; display: block; filter: brightness(.74) saturate(.9) drop-shadow(0 0 1px rgba(255, 236, 190, .6)); transition: transform .3s ease, filter .3s ease; transform-origin: 50% 100%; }
+.cs-cls { position: absolute; top: 12%; bottom: 9%; width: 27%; left: calc(var(--x) * 1% - 13.5%); background: none; border: 0; padding: 0; border-radius: 12px; color: inherit; font: inherit; cursor: pointer; --chip: 0px; display: block; }
+.cs-fig { position: absolute; left: 50%; bottom: 0; display: block; filter: brightness(.74) saturate(.9) drop-shadow(0 0 1px rgba(255, 236, 190, .6)); transition: transform .3s ease, filter .3s ease; transform-origin: 50% 100%; }
 .cs-cls:hover .cs-fig { transform: translateY(-2.5%); filter: brightness(.9) saturate(1) drop-shadow(0 0 1px rgba(255, 236, 190, .8)); }
 .cs-cls.on .cs-fig { transform: translateY(2%) scale(1.14); filter: none; }
 .cs-cls .lbl { position: absolute; left: 50%; bottom: -46px; transform: translateX(-50%); white-space: nowrap; font-weight: 800; font-size: 15px; letter-spacing: .5px; padding: 8px 16px; min-height: 40px; box-sizing: border-box; display: inline-flex; align-items: center; border-radius: 99px; background: rgba(13, 10, 28, .88); border: 2px solid #5b4f98; color: #e0daf6; text-transform: uppercase; transition: .25s; }

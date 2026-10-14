@@ -204,7 +204,7 @@ export function createCharSelect(h, info) {
     bgCv.width = Math.round(W * dpr); bgCv.height = Math.round(H * dpr); bg = paintBackdrop(W, H, dpr);
     for (const x of btns) {
       const ch = Math.max(1, Math.round(Math.min(H * 0.5, x.b.getBoundingClientRect().height))), cw = Math.round((ch * 104) / 96);
-      x.fig.width = Math.round(cw * dpr); x.fig.height = Math.round(ch * dpr); x.fig.style.width = cw + "px"; x.fig.style.height = ch + "px";
+      x.fig.width = Math.round(cw * dpr); x.fig.height = Math.round(ch * dpr); x.fig.style.width = cw + "px"; x.fig.style.height = ch + "px"; x.fig.style.marginLeft = -Math.round(cw / 2) + "px";
     }
     const sr = stage.getBoundingClientRect(), fr = btns[sel].fig.getBoundingClientRect();
     GY = fr.bottom - sr.top - fr.height * 0.03; FH = fr.height;
