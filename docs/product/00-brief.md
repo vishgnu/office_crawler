@@ -109,7 +109,7 @@ visible slots; rings, amulet and belt are not), as in the original. Today the he
 **Recorded as real-customer answers** (numbers refer to the "waiting for you" list given in chat the same day):
 1. Sound kit: done (listened). The current default kit stays unless the customer names another.
 2. Respec rule: done. The current rule stays (free respec in the Lobby, with confirmation).
-3. AMBIENT_LIFT +12 %: "no need". Ambiguous (no lift needed vs no need to change); asked once, until then unchanged.
+3. AMBIENT_LIFT +12 %: keep. Clarified the same day, verbatim: "don change it is good".
 4. Graphics gate (proxy pass at 34/33): keep as is.
 5. Note in play/README for file:// play: ok, add it.
 6. Pace: spread the difficulty more evenly across the floors (no wall at floor 5). Round 7 balance work (R7-3).

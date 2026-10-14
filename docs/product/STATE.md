@@ -17,10 +17,10 @@ Gate authority for this project is delegated to `customer-proxy` while the user 
 - IP closeness: keep the current approach (mechanics/feel, everything else original). Names and title approved.
 
 ## Waiting for the real customer
-- **AMBIENT_LIFT**: you answered "no need": remove the +12 % lift (darker look) or keep it? Unchanged until you say.
 - **Portal-overview variant pick** (harness; may fold into the final harness version).
 - Review `proxy-log.md` whenever you are back.
 
 ## Decided by the real customer (2026-10-14)
+- AMBIENT_LIFT +12 %: keep ("don't change it, it is good").
 - Sound kit: current default kept. Respec: current rule kept. Graphics gate: proxy pass kept. Quest names/texts: kept.
 - file:// note in play/README: yes. Pace: spread difficulty across floors. Quests: 3 main quests + 5 side quests.
