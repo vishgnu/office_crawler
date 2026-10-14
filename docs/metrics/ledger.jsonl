@@ -17,3 +17,4 @@
 {"round": "R4", "role": "implementer", "pkg": "CORE-R4", "tokensK": 513.4, "minutes": 47.1, "status": "done", "source": "agent completion report"}
 {"round": "R4", "role": "harness-retro", "pkg": "retro R4", "tokensK": 133.7, "minutes": 3.0, "status": "done", "source": "agent completion report"}
 {"round": "G", "role": "implementer", "pkg": "WORLD-G C3 port", "tokensK": 396.8, "minutes": 22.0, "status": "done", "source": "agent completion report"}
+{"round": "G", "role": "visual-reviewer", "pkg": "G in-game appeal", "tokensK": null, "minutes": null, "status": "done", "score": 32, "source": "agent report"}
