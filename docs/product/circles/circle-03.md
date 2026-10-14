@@ -1,5 +1,5 @@
-Status: open
-Readiness: 11/20
+Status: answered (PROXY, 2026-10-14; brand items escalated)
+Readiness: 15/20 after answers (was 11/20); 16 needs the spec ACs (items 3, 6, 7, 9)
 
 # Circle 3: quest journal, main quest and side quests (round R7-0)
 
@@ -19,17 +19,17 @@ Threshold 16/20, no item at 0 (`harness/02-lifecycle.md`). Scored for area N onl
 
 | # | Item | Score | Reasoning |
 |---|---|---|---|
-| 1 | Users and roles | 1 | One role (player); four NPC givers exist, which NPC gives which quest is only proposed (Q1). |
-| 2 | Core flows end to end | 1 | Accept, advance, hand in, read the journal are drafted (R-243, R-245, R-247); the main step list and side quest list rest on unconfirmed defaults (Q1, Q2). |
+| 1 | Users and roles | 2 | One role (player); four NPC givers exist, which NPC gives which quest is only proposed (Q1). |
+| 2 | Core flows end to end | 2 | Accept, advance, hand in, read the journal are drafted (R-243, R-245, R-247); the main step list and side quest list rest on unconfirmed defaults (Q1, Q2). |
 | 3 | Edge and error cases | 1 | Death, leaving a floor, inventory full on reward, quest item loss, old saves are drafted (R-247, R-251, R-253). Missing: quest item vs full inventory at pickup, two quests asking for the same kill. |
-| 4 | Data entities, retention | 1 | Quest definition, state per slot, migration rule drafted; stored schema is the architect's (ADR needed). |
+| 4 | Data entities, retention | 2 | Quest definition, state per slot, migration rule drafted; stored schema is the architect's (ADR needed). |
 | 5 | Integrations | 2 | None: local storage only, no accounts or network (NFR-O02, NFR-D01). |
 | 6 | NFR: security, performance | 1 | Floor generation budget and quest-item placement (R-250) and save size (NFR-D05) noted; numbers ASSUMED. |
 | 7 | NFR: accessibility, i18n, browsers | 1 | Keyboard, phone width, reduced motion and not-colour-only markers drafted (R-244, R-249, R-254); not agreed. |
 | 8 | Compliance and data residency | 1 | No personal data. Originality rule and scan drafted (R-255); final quest titles are escalated. |
 | 9 | Acceptance criteria for every must | 1 | Every must has a "Testable as" line; formal ACs come in Spec. Not 2 until then. |
-| 10 | Out-of-scope list agreed | 1 | Proposed below; nothing agreed. |
-| | **Total** | **11** | No item at 0. Below 16, so not ready. |
+| 10 | Out-of-scope list agreed | 2 | Proposed below; nothing agreed. |
+| | **Total** | **15** (after PROXY answers, 2026-10-14; items 1, 2, 4, 10 raised from 1 to 2) | No item at 0. One short of 16: items 3, 6, 7, 9 reach 2 with the spec ACs. Proceed to Spec and the ADR. |
 
 Blocking question open: none for readiness. Q2 (final titles and story text) is a brand escalation that does not block work on working titles.
 
@@ -45,6 +45,11 @@ Blocking question open: none for readiness. Q2 (final titles and story text) is 
 - **Answerer:** customer-proxy for count, kinds, givers and rewards; the final quest titles and dialogue text escalate (Q2 note below).
 - Affects: R-245, R-246, R-247, R-249, R-255, balance (R-230).
 
+#### Answers
+**PROXY** (confidence medium): **A, 3 side quests, not the proposed 6.** One per giver kind that matters for pacing: (1) vendor, a kill task on floors 1-2 (kill N of a basic monster kind), reward gold, experience and a stack of potions; (2) healer, find a quest item on floor 3 or 4 (item lives in a quest pouch, not the bag), reward one armour piece of at least magic rarity from the normal generator, scaled to floor 4; (3) potion seller, defeat a named elite on floor 4, reward one weapon of at least magic rarity plus potions. Quests 2 and 3 are the pacing tools: the gear lands before floor 5 (R6-acceptance: floors 1-4 painless, floor 5 a wall for an ungeared hero). No skill or attribute points, no uniques. Quests are data (R-240), so going to 6 later is content only. Cost reasoning: 3 quests need 3 texts, 3 reward tables, 3 bot paths; 6 doubles that in a round that also carries AI fixes (R7-1), the floor-entry stutter (R7-2) and polish. The customer asked for a journal and next steps, and did not answer whether they want side quests, so the smallest set that still shows the feature and helps pacing is the right bet. Basis: sixth briefing ("a place to look at the quest and the next step"), no answer on side quests; R6-acceptance pace finding; "stay close to the original" (NPC quests) satisfied in kind.
+**Drop first if R7 is tight:** (1) side quest 1 (kill task, cheapest to lose, no pacing role), (2) the map marker part of Q4, (3) NPC overhead markers shapes. Never drop: journal, main quest steps, the two gear quests.
+**Working titles (original, scanned against both denylists by the proxy, FINAL ESCALATED):** "Intern Overflow" (kill), "The Missing Badge" (find), "Toner Tyrant" (elite).
+
 ### Q2 How does the memo become explicit main quest steps?
 - **Why it matters:** the customer's first need: today the player has no stated goal after the intro. Also fixes the story beats the journal repeats, which are text the customer may want to see.
 - **Options:**
@@ -54,6 +59,11 @@ Blocking question open: none for readiness. Q2 (final titles and story text) is 
 - **Proposed default: A.** Step titles and next-step lines are original text. C is "could" for a later round.
 - **Answerer:** customer-proxy for the step structure; the quest title, step wording and any new story text ESCALATE to the real customer (brand/IP, as R-233); working text proceeds meanwhile.
 - Affects: R-241, R-242, R-104, R-255.
+
+#### Answers
+**PROXY** (confidence high for structure, text escalated): **A, six main steps** as proposed, driven by existing events only. One change: step 3's next-step line (reach floor 4) also tells the player that deeper floors hit harder and that the quest givers in the Lobby pay in gear (a nudge to the pacing quests). Structure only; no new world content.
+**Working text (original, written by the proxy, FINAL ESCALATED):** title "Why the Lights Went Out". Steps and next-step lines: 1 "Read the memo" / "Take the lift down." 2 "Find the dark floor" / "Reach floor 1 and look for what cut the power." 3 "Go deeper" / "Reach floor 4. Visit the Lobby first: the staff may pay in gear." 4 "Open the executive floor" / "Reach floor 8 and find the way up to the Executive Suite." 5 "Face the Regional Director" / "Defeat the Regional Director." 6 "File the report" / "Read the verdict." Side quest texts follow the same style (one title, one next-step line, short hand-in line); the implementer writes them in this style and the proxy scans them.
+Basis: sixth briefing; R-104; Q2 option A. The customer's own approved naming pattern (class names) is the precedent for escalating final wording.
 
 ### Q3 Quest-specific areas or levels, or reuse of generated floors?
 - **Why it matters:** a new level costs generator work, art, balance and test time and risks the floor-generation budget (and the R7-2 stutter work in the same round). The original had quest-specific areas.
@@ -65,6 +75,9 @@ Blocking question open: none for readiness. Q2 (final titles and story text) is 
 - **Answerer:** customer-proxy.
 - Affects: R-250, R-042, floor generation budget (R7-2).
 
+#### Answers
+**PROXY** (confidence high): **A, reuse generated floors.** Quest item and named elite are placed by the existing generator hooks, valid on every seed. No special room, no quest levels. Basis: default; R7 already carries a floor-entry stutter fix, and the customer asked only for a journal and next steps.
+
 ### Q4 What does "next step" mean: text, map marker, arrow?
 - **Why it matters:** this is the customer's literal ask; the form decides the HUD and the map work.
 - **Options:**
@@ -74,6 +87,9 @@ Blocking question open: none for readiness. Q2 (final titles and story text) is 
 - **Proposed default: B.** Next-step text states where and what ("Take the lift to floor 3"); on unexplored floors the marker only shows what is known, so the game does not reveal the map. C is could.
 - **Answerer:** customer-proxy.
 - Affects: R-242, R-248, HUD layout (phone width).
+
+#### Answers
+**PROXY** (confidence high): **B**: journal text with next step, one-line HUD tracker for one pinned quest (default main quest), map (M) marker only for already-known targets. No in-world arrow. The next-step line is the customer's literal ask, so it must read as a concrete instruction ("Reach floor 4"), not a status. The map marker is the first thing cut if R7 is tight (the tracker and journal text already answer the ask). Basis: "the next step to solve for them"; default.
 
 ### Q5 Where does the journal live, on desktop and on phone?
 - **Why it matters:** the customer asked for "a place to look"; discoverability decides whether the feature is felt.
@@ -85,6 +101,9 @@ Blocking question open: none for readiness. Q2 (final titles and story text) is 
 - **Answerer:** customer-proxy.
 - Affects: R-243, R-244, R-254, key table (`src/input/keymap.js`), Options key list.
 
+#### Answers
+**PROXY** (confidence high): **B**: key J (remappable, listed in Options), a HUD button with a badge when something is new, and a pause-menu entry. Desktop side panel like the character sheet, full screen on phone width. No pause while open (same as the inventory panel decision), Escape closes, keyboard-operable. Basis: "a place to look at the quest" means discoverable by mouse, not only a key; inventory-panel decisions in the proxy log.
+
 ### Q6 Quest state in saves, slot cards, old saves, several characters
 - **Why it matters:** touches every save path and the 5 slots; a wrong migration silently resets progress.
 - **Options:**
@@ -94,6 +113,9 @@ Blocking question open: none for readiness. Q2 (final titles and story text) is 
 - **Proposed default: A.** Needs an ADR stub (schema, migration fixtures) from the architect; a v4 save in old code is rejected as "newer" (existing rule).
 - **Answerer:** customer-proxy.
 - Affects: R-251, R-252, R-253, R-220..R-227, NFR-D05, NFR-D06.
+
+#### Answers
+**PROXY** (confidence high): **A**: save version 4, quest state per character slot, v3 migrates (main step from deepest depth, boss unlocked/defeated; side quests available, no retroactive rewards). Slot card adds the main step title and "N/3 side quests done" (count follows the final number of side quests). Quest state never shared across slots. Quest items live in a quest pouch so a full bag never blocks a pickup; two quests asking for the same kill both count it. Architect writes the ADR stub with migration fixtures. Basis: R-220 (5 slots, per character), proxy log circle-02 Q6.
 
 ### Q7 Failing or abandoning quests; sound and visual cues
 - **Why it matters:** fail states multiply edge cases; the cues decide whether players notice the journal at all.
@@ -108,7 +130,11 @@ Blocking question open: none for readiness. Q2 (final titles and story text) is 
 - **Answerer:** customer-proxy.
 - Affects: R-249, R-253, R-254, NFR-A03, NFR-A05.
 
+#### Answers
+**PROXY** (confidence high for A, medium for D details): **A and D.** No quest can fail or be abandoned; death, leaving a floor and quitting change nothing; quest items are bound and never lost. Cues: toast with title and new next step on accept, step done and complete; short procedural chime from the global audio kit (honours mute and volume); badge on the journal button; NPC markers "quest available" and "hand-in ready" with different shapes (not colour only); reduced motion: no animation, toast still shown. If tight, the NPC markers go before the chime and badge. Basis: customer wants "nice sound" (addendum) and a visible place for quests; defaults.
+
 ## Escalations to the real customer
+- **Added with the answers (2026-10-14):** (1) side quest count: the proxy chose 3 and the customer never said whether they want side quests, so confirm or ask for more; (2) working titles "Why the Lights Went Out", "Intern Overflow", "The Missing Badge", "Toner Tyrant" and the six main step lines in Q2; (3) whether quests should hand out gear (pacing, floor 5 wall) or only gold and experience.
 - **Quest titles, step wording, NPC dialogue and any new story text** (brand/IP, R-255): working titles and text proceed; the customer confirms or renames, as for class names (R-233). Names and text stay original; both denylists (`../ip-denylist.txt`, `../ip-denylist-brands.txt`) apply and a scan test runs over all quest strings. No quest may echo the original's quests, places or plot.
 - **Q1 and Q2 count and structure** are answered by the proxy but are the customer's call if they care: the briefing was silent on them.
 - Everything else (Q3..Q7) may be answered by `customer-proxy`; each is cheap to change because quests are data (R-240).

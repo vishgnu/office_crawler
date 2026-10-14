@@ -28,4 +28,6 @@ Gate authority for this project is delegated to `customer-proxy` while the user 
 - **Pace (new after round 6)**: the early game is quick (level 2 in under a minute, about a minute per floor, floors 1-4
   painless), then floor 5 is a wall for a hero without gear. Say if you want slower early floors or a softer step at floor 5
   (`docs/reviews/R6-acceptance.md`).
+- **Quest journal wording (R7)**: working titles and texts for the main quest and 3 side quests are the proxy's (circle-03). Confirm or rename (docs/product/circles/circle-03.md Q1/Q2).
+- **Side quests: count and rewards**: you did not say whether you want them; the proxy chose 3, two of which give gear before floor 5. Say if you want more, fewer or none.
 - Review `proxy-log.md` whenever you are back.

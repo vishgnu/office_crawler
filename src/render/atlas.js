@@ -56,7 +56,7 @@ export function createAtlas(scale = 1, meta = {}) {
       map.set(key, { key, img, w: img.width / scale, h: img.height / scale, ox, oy, sil: null });
     },
     /** Like add(), but the sprite is only drawn on its first get() (boss sprites: large canvases, only the frames a fight shows). */
-    addLazy(key, w, h, ox, oy, draw) { map.set(key, { lazy: () => { const t0 = performance.now(); self.add(key, w, h, ox, oy, draw); stats.lazy++; stats.lazyMs += performance.now() - t0; } }); },
+    addLazy(key, w, h, ox, oy, draw) { map.set(key, { lazy: () => { const t0 = performance.now(); self.add(key, w, h, ox, oy, draw); (stats.log ??= []).push(key); stats.lazy++; stats.lazyMs += performance.now() - t0; } }); },
     get(key) {
       const e = map.get(key);
       if (e && e.lazy) { e.lazy(); return map.get(key); }

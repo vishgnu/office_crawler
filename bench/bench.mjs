@@ -111,6 +111,33 @@ try {
     console.log(`INFO floor ${depth} load, ${mode} (${new Set(s.monsters.map((m) => m.type)).size} monster types), 300 real frames after the load: frame ms p50 ${r.p50.toFixed(1)} p99 ${r.p99.toFixed(1)} max ${r.max.toFixed(1)}, ${r.over33} frames > 34 ms; ${w.lazy} lazy draws (${w.lazyMs.toFixed(0)} ms); load ${os.loadavg().map((x) => x.toFixed(2)).join(" ")}`);
     result["floor" + depth + (mode === "cold" ? "Cold" : "")] = { p50: +r.p50.toFixed(1), p99: +r.p99.toFixed(1), frameMax: +r.max.toFixed(1), over34: r.over33, lazy: w.lazy };
   }
+  // The same with the R6 method (kept for comparison with docs/reviews/R6-perf.md): test mode, one tick and one extra render by hand per real frame (so p50 is about twice the real one).
+  for (const [mode, depth] of [["ahead", 2], ["ahead", 5], ["cold", 2], ["cold", 5]]) {
+    const g = await open(browser, { query: "test=1&seed=3&zoom=1.8", viewport: { width: 1280, height: 720 } });
+    if (process.env.NOAHEAD) await g.page.evaluate(() => { window.__noAhead = true; });
+    await g.app("newGame", { seed: 3 });
+    await g.page.waitForTimeout(800);
+    if (mode === "ahead") {
+      if (depth > 2) { await g.app("cheat.teleportFloor", depth - 1); await g.page.waitForTimeout(500); }
+      for (let i = 0; i < 100; i++) { const left = await g.page.evaluate(() => window.__atlasStats?.warmLeft ?? 0); if (left === 0 && i > 2) break; await g.page.waitForTimeout(400); }
+    }
+    await g.app("cheat.teleportFloor", depth);
+    const w = await g.page.evaluate(() => new Promise((r) => {
+      const st = window.__atlasStats ?? { lazy: 0, lazyMs: 0 }, s0 = { ...st }, dts = [];
+      let i = 0, last = performance.now();
+      const f = (t) => {
+        dts.push(t - last); last = t;
+        window.__app.step(1);
+        if (++i >= 180) r({ dts: dts.slice(1), lazy: st.lazy - s0.lazy, lazyMs: st.lazyMs - s0.lazyMs });
+        else requestAnimationFrame(f);
+      };
+      requestAnimationFrame(f);
+    }));
+    await g.context.close();
+    const d = [...w.dts].sort((a, b) => a - b);
+    console.log(`INFO floor ${depth} load, ${mode}, stepped (R6 method), 180 frames: frame ms p50 ${d[d.length >> 1].toFixed(1)} p99 ${d[Math.floor(d.length * 0.99)].toFixed(1)} max ${d[d.length - 1].toFixed(1)}; ${w.lazy} lazy draws (${w.lazyMs.toFixed(0)} ms); load ${os.loadavg().map((x) => x.toFixed(2)).join(" ")}`);
+    result["floor" + depth + mode + "Stepped"] = { p99: +d[Math.floor(d.length * 0.99)].toFixed(1), frameMax: +d[d.length - 1].toFixed(1), lazy: w.lazy };
+  }
   const ok = result.fps50 >= FPS_TARGET;
   if (!ok) failed++;
   console.log(`${ok ? "PASS" : "FAIL"} NFR-P01 50 monsters on screen, full fx: ${result.fps50} fps (target >= ${FPS_TARGET}; lowFx ${result.fps50Low} fps)`);
