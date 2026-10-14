@@ -1,0 +1,209 @@
+{
+ "belt": [
+  {
+   "affixes": [],
+   "base": "lukewarm-coffee",
+   "baseName": "Lukewarm Coffee",
+   "h": 1,
+   "id": "i7",
+   "ilvl": 1,
+   "kind": "potion",
+   "name": "Lukewarm Coffee",
+   "rarity": "normal",
+   "reqs": {},
+   "restore": 25,
+   "restores": "hp",
+   "slot": "potion",
+   "w": 1
+  },
+  {
+   "affixes": [],
+   "base": "lukewarm-coffee",
+   "baseName": "Lukewarm Coffee",
+   "h": 1,
+   "id": "i3",
+   "ilvl": 1,
+   "kind": "potion",
+   "name": "Lukewarm Coffee",
+   "rarity": "normal",
+   "reqs": {},
+   "restore": 25,
+   "restores": "hp",
+   "slot": "potion",
+   "w": 1
+  },
+  null,
+  null
+ ],
+ "bossDefeated": false,
+ "bossUnlocked": false,
+ "checksum": "44fce40b686bf8aa",
+ "class": "clerk",
+ "cursorItem": null,
+ "deepestDepth": 4,
+ "equipment": {
+  "amulet": null,
+  "belt": null,
+  "body": {
+   "affixes": [],
+   "base": "cardigan",
+   "baseName": "Cardigan",
+   "defense": 3,
+   "h": 3,
+   "id": "i6",
+   "ilvl": 1,
+   "kind": "gear",
+   "name": "Cardigan",
+   "rarity": "normal",
+   "reqs": {
+    "level": 1
+   },
+   "slot": "body",
+   "w": 2
+  },
+  "feet": null,
+  "hands": null,
+  "head": null,
+  "offhand": null,
+  "ring1": null,
+  "ring2": null,
+  "weapon": null
+ },
+ "explored": {},
+ "format": "office-crawler-save",
+ "inventory": {
+  "h": 4,
+  "items": [
+   {
+    "affixes": [],
+    "base": "ruler-rapier",
+    "baseName": "Ruler Rapier",
+    "damage": {
+     "max": 3,
+     "min": 1
+    },
+    "h": 3,
+    "id": "i1",
+    "ilvl": 1,
+    "kind": "gear",
+    "name": "Ruler Rapier",
+    "rarity": "normal",
+    "reqs": {
+     "level": 1
+    },
+    "slot": "weapon",
+    "w": 1,
+    "x": 0,
+    "y": 0
+   },
+   {
+    "affixes": [],
+    "base": "stapler-mace",
+    "baseName": "Stapler Mace",
+    "damage": {
+     "max": 6,
+     "min": 3
+    },
+    "h": 3,
+    "id": "i4",
+    "ilvl": 3,
+    "kind": "gear",
+    "name": "Stapler Mace",
+    "rarity": "normal",
+    "reqs": {
+     "grit": 12,
+     "level": 3
+    },
+    "slot": "weapon",
+    "w": 1,
+    "x": 2,
+    "y": 0
+   }
+  ],
+  "w": 10
+ },
+ "nextItemId": 8,
+ "options": {},
+ "player": {
+  "attrPoints": 55,
+  "attrs": {
+   "agility": 10,
+   "focus": 10,
+   "grit": 10,
+   "stamina": 10
+  },
+  "gold": 777,
+  "level": 12,
+  "skillBar": {
+   "hotkeys": [
+    "stapler-throw",
+    "mute",
+    null,
+    null
+   ],
+   "primary": "strike",
+   "secondary": "stapler-throw",
+   "selected": 0
+  },
+  "skillPoints": 7,
+  "skills": {
+   "dress-code": 1,
+   "mute": 1,
+   "stapler-throw": 2
+  },
+  "xp": 5566
+ },
+ "resume": {
+  "depth": 0
+ },
+ "rng": {
+  "ai": {
+   "s": 1542905282
+  },
+  "combat": {
+   "s": 898167830
+  },
+  "loot": {
+   "s": 2432708751
+  },
+  "world": {
+   "s": 2215937843
+  }
+ },
+ "savedAtTick": 30,
+ "seed": 12345,
+ "stash": {
+  "h": 8,
+  "items": [
+   {
+    "affixes": [],
+    "base": "hard-hat",
+    "baseName": "Hard Hat",
+    "defense": 4,
+    "h": 2,
+    "id": "i5",
+    "ilvl": 4,
+    "kind": "gear",
+    "name": "Hard Hat",
+    "rarity": "normal",
+    "reqs": {
+     "level": 4,
+     "stamina": 12
+    },
+    "slot": "head",
+    "w": 2,
+    "x": 0,
+    "y": 0
+   }
+  ],
+  "w": 10
+ },
+ "stats": {
+  "bossAttempts": 0,
+  "deaths": 0,
+  "kills": 0
+ },
+ "townVisit": 0,
+ "uniquesFound": [],
+ "version": 1
+}

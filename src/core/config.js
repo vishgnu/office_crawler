@@ -65,11 +65,21 @@ export const config = {
   attrPointsPerLevel: 5,
   skillPointsPerLevel: 1,
   skillMaxLevel: 5,
+  skillTiers: [1, 8, 16],            // ADR-0005: character level gate of tier 1, 2 and 3 skills
+  // Respec (ADR-0005 section 8). mode: free | gold | once | off. Switching the customer's answer is this one value.
+  respec: { mode: "free", townOnly: true, goldBase: 0, goldPerLevel: 0 },
+  crit: { chance: 5, damage: 150 },  // base critical chance (percent) and damage (percent of the normal hit); skills and gear add to them
+  maxAllies: 4,                      // summoned allies alive at once (oldest leave first)
+  allyAttackTicks: 40, allyHitTick: 14, allySightRange: 9, allyFollowDist: 3,
+  dotEvery: 30,                      // burn and heal-over-time pulse every this many ticks
+  auraMinCost: 1,
+  resistCap: { monster: 0.75, boss: 0.5 },
+  tree: { minSkills: 10, maxSkills: 10 }, // the data test constant: ten skills per class tree
   player: {
     attrs: { grit: 10, agility: 10, stamina: 10, focus: 10 },
     xpNext: 80,
   },
-  startKit: { weapon: "ruler-rapier", healthPotions: 2, healthPotion: "lukewarm-coffee" },
+  startKit: { weapon: "ruler-rapier", healthPotions: 2, healthPotion: "lukewarm-coffee", manaPotion: "paper-cup-of-water" }, // fallback kit; each class has its own (content/classes.js)
 
   // Items and loot (S2-1). All balance numbers for drops, prices and potions live here (QF-05-7).
   ilvlPerDepth: 3,                   // item level of a drop = depth * this (+ monster bonus)
@@ -145,12 +155,19 @@ export const config = {
   },
 
   // Save and load (S3-3, R-090..R-092). One slot; options are stored apart from the save.
-  saveVersion: 1,
+  saveVersion: 2,                    // ADR-0006: 2 adds the character name, stats.playTicks and the class trees
   saveKey: "office-crawler.save",
   saveBackupKey: "office-crawler.save.corrupt",
   optionsKey: "office-crawler.options",
   saveFileName: "office-crawler-save.json",
   saveMaxBytes: 1000000,             // QF-09-1: soft cap 1 MB
   autosaveMinTicks: 30,              // writes closer together than this (by game tick) are coalesced, except on exit
+  // Five save slots (ADR-0006). Legacy single-slot keys above are read only by the migration.
+  slotCount: 5,
+  slotKeyPrefix: "office-crawler.slot.",
+  slotIndexKey: "office-crawler.slots",
+  slotMaxBytes: 400000,              // NFR-D05: characters per slot text
+  storageSoftCeiling: 4000000,       // characters of own keys before space recovery starts
+  storageMaxBytes: 2500000,          // NFR-D05-1: five worst-case slots plus options plus a legacy backup stay below this
   resumeAt: "floorEntry",            // QF-09-2: saved on a floor -> that floor's entry tile; saved in the Lobby (or dead) -> the Lobby
 };
