@@ -1,3 +1,31 @@
+# >>> RESUME HERE (orchestrator, read first after any context loss) <<<
+_Last updated 2026-10-14T03:09:10Z. Keep this block current after every step; the log below is history._
+
+**Where we are:** round 4 core done, round 5 WORLD done, round G (graphics detail) ported; round 5 UI and the G gate reviews are running.
+
+**In flight (check the files, not memory):**
+- UI-R5: wiring + character select (variant A) + skill-tree panel + 5 slots in Options + audio cues + e2e fixes
+  (ui.mjs, s3ui.mjs) + per-script e2e timeout. Progress: `docs/reviews/R5-ui-progress.md`. When done: run
+  `npm test` and `npm run e2e` (one command) yourself; test N5 (ui must not import render) must be resolved;
+  wire `src/render/hudchrome.js` into hud.js (see `docs/reviews/G-world-progress.md`).
+- G gate: `docs/reviews/G-visual-review-appeal.md` and `G-visual-review-craft.md` (target ≥ 34/40). Below → a G fix round.
+
+**Next steps, in order:**
+1. After UI-R5: **adversarial test-engineer pass** (never run so far; learning L-021, experiment E1), then code review
+   R4+R5, in-game visual review incl. character select, a fix round, proxy acceptance, then `harness-retro` round 5 and
+   the ledger rows.
+2. R6 class balance (parity ±25 %, Sales Rep weakest; casters scale from weapon/Grit, which is a design flaw) + polish.
+3. R7–8 flawless gameplay → R9–10 lighting (use the `fx.lights` hook) → R11–12 overall test & polish → harness-reviewer post-mortem.
+
+**Standing rules:** record user messages verbatim (00-brief.md + metrics/human-log.jsonl); ledger row per hand-back
+(`docs/metrics/ledger.jsonl`); commit and push after every step; file ownership per parallel package; run the suite yourself
+before calling a package done; never route around permission refusals; harness learnings → `harness/learnings/`.
+
+**Waiting for the customer:** sound kit by ear, respec rule, AMBIENT_LIFT +12 %, harness circle 2, portal-overview pick.
+(Decided: IP closeness OK, names approved.)
+
+---
+
 # Session notes: read this first after any context loss
 
 Running log for the orchestrator (main Claude session). Update after every step. Newest entries at the bottom of each section.

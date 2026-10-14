@@ -51,10 +51,12 @@ function field(label, input, testid) {
  * Build the Options panel. ctl: { get(), setVolume(ch, v), setMuted(b), setKit(id), previewKit(), setFlag(name, bool), setTextScale(n),
  * setKey(action, code) -> {ok, reason?, with?}, restoreKeys(), capture(bool), click() }. onBack() leaves the panel.
  */
-export function createOptionsView(ctl, onBack) {
+export function createOptionsView(ctl, onBack, mountSlots = null) {
   const o = ctl.get(), root = el("section", "screen options"), box = el("div", "panel opt-panel");
   const ac = new AbortController(), sig = { signal: ac.signal };
   box.append(el("h2", "", T.optionsTitle));
+  let slotsEl = null;
+  if (mountSlots) { const grp = el("fieldset", "opt-group opt-slots"); grp.append(el("legend", "", T.saveSlots)); slotsEl = mountSlots(); grp.append(slotsEl); box.append(grp); } // customer: save slots live in the Options menu
 
   // ---- sound
   const snd = el("fieldset", "opt-group"); snd.append(el("legend", "", T.optSound));
@@ -137,6 +139,6 @@ export function createOptionsView(ctl, onBack) {
   back.addEventListener("click", (ev) => { ev.stopPropagation(); stop(); ctl.click(); onBack(); }, sig);
   box.append(back);
   root.append(box);
-  root.destroy = () => { stop(); ac.abort(); };
+  root.destroy = () => { stop(); ac.abort(); slotsEl?.destroy?.(); };
   return root;
 }

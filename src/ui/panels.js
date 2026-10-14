@@ -9,7 +9,9 @@ import { itemIcon, skillIcon, rarityMark, arrow, coinIcon } from "./icons.js";
 import { describeItem, compareToEquipped, unmetGear, allocPreview, dropCheck, rarityName, statLabel, xpRatio, xpProgress } from "./itemview.js";
 import { hudLayout, drawerLayout, placeTip } from "./layout.js";
 import { keyLabel, DEFAULT_KEYS } from "../input/keymap.js";
-import { sellValue, buyPrice } from "../core/index.js";
+import { sellValue, buyPrice, classById } from "../core/index.js";
+import { renderTree, nodeTipHtml, nodeFor } from "./tree.js";
+import { paintBust } from "./slots.js";
 
 const S = content.strings;
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -41,6 +43,7 @@ export function createPanels(root, game) {
     const c = core(), [kind, v] = key.split(":");
     if (!c) return null;
     switch (kind) {
+      case "node": return nodeFor(c, v) ? { node: v } : null;
       case "inv": return c.inventory.items.find((i) => i.id === v) ?? null;
       case "eq": return c.equipment[v] ?? null;
       case "belt": return c.belt[Number(v)] ?? null;
@@ -97,8 +100,8 @@ export function createPanels(root, game) {
   function renderCharacter(c) {
     const p = c.player, xpv = xpProgress(p), pct = xpv.pct, pts = p.attrPoints;
     let h = `<div class="ph"><h2>${esc(T.fileTitle)}</h2>${closeBtn("character", T.closeCharacter)}</div><div class="pb"><div class="sheet" data-testid="employee-file">${tabsHtml("character")}`;
-    h += `<div class="fh"><div class="photo"><svg viewBox="0 0 62 74" width="100%" height="100%" aria-hidden="true"><circle cx="31" cy="34" r="15" fill="#f6c49c" stroke="#0d0a1c" stroke-width="3"/><path d="M15 30Q16 14 31 15Q47 14 47 30Q38 22 31 24Q22 22 15 30Z" fill="#2a1a26" stroke="#0d0a1c" stroke-width="2.5"/><path d="M6 74Q8 54 31 54Q54 54 56 74Z" fill="#3b6cf0" stroke="#0d0a1c" stroke-width="3"/><path d="M31 54L36 62L31 74L26 62Z" fill="#ffb81f" stroke="#0d0a1c" stroke-width="2"/></svg></div>`;
-    h += `<div><h2>${esc(content.classes[0].name)}</h2><p>${esc(T.jobTitle)} · <span data-stat="level">${esc(T.level)} ${p.level}</span></p><p>${esc(c.floor.name)}</p></div><div class="stamp" aria-hidden="true">${esc(T.probation)}</div></div>`;
+    h += `<div class="fh"><div class="photo"><canvas width="112" height="112" data-bust="${esc(p.class)}" aria-hidden="true"></canvas></div>`;
+    h += `<div><h2 data-testid="file-name">${esc(p.name ?? "")}</h2><p data-testid="file-class">${esc(classById(p.class)?.name ?? "")} · <span data-stat="level">${esc(T.level)} ${p.level}</span></p><p>${esc(c.floor.name)}</p></div><div class="stamp" aria-hidden="true">${esc(T.probation)}</div></div>`;
     h += `<div class="xpl" title="${esc(T.xpTotal)}: ${num(xpv.total)}"><span>${esc(T.experience)}</span><span data-stat="xp" data-testid="xp-label" data-total="${xpv.total}">${xpv.capped ? esc(T.xpMax) : `${num(xpv.into)} / ${num(xpv.span)} ${esc(T.xpToLevel)} ${p.level + 1} (${pct}%)`}</span></div><div class="xpb2" role="img" title="${esc(T.xpTotal)}: ${num(xpv.total)}" aria-label="${esc(T.experience)} ${pct}%, ${esc(T.xpTotal)} ${num(xpv.total)}"><i style="width:${pct}%"></i></div>`;
     h += `<section class="sc-attr"><h3>${esc(T.attributes)} <em>${esc(T.pointsToSpend)}: <b data-stat="attrPoints">${pts}</b></em></h3>`;
     for (const k of T.attrOrder) {
@@ -118,32 +121,8 @@ export function createPanels(root, game) {
     return h + `</div></section></div></div>`;
   }
 
-  // ------------------------------------------------------------ Skills
-  function renderSkills(c) {
-    const p = c.player, bar = p.skillBar, defs = Object.values(content.skills);
-    let h = `<div class="ph"><h2>${esc(T.skillsTitle)}</h2>${closeBtn("skills", T.closeSkills)}</div><div class="pb"><div class="skills" data-testid="skills-panel">${tabsHtml("skills")}`;
-    h += `<p class="sp"><b>${esc(T.skillPointsLeft)}: <span data-testid="skill-points">${p.skillPoints}</span></b></p><p class="sk-note">${esc(T.rightMouse)}</p>`;
-    const row = (d) => {
-      const lvl = d.id === "strike" ? 1 : p.skills[d.id] ?? 0;
-      const learnable = d.kind !== "basic", maxed = lvl >= d.maxLevel, canLearn = learnable && p.skillPoints > 0 && !maxed;
-      const cost = d.mana ? d.mana(Math.max(1, lvl)) : 0, assignable = d.kind === "basic" || (d.kind === "active" && lvl > 0);
-      let r = `<li class="srow" data-testid="skill-${d.id}"><div class="sic">${skillIcon(d.id)}</div><div class="sbody"><div class="sname"><b>${esc(d.name)}</b><span class="meta"><span class="slv">${esc(T.skillLevel)} <span data-testid="level-${d.id}">${lvl}</span>/${d.kind === "basic" ? 1 : d.maxLevel}</span>${d.kind === "active" ? ` <span class="smana">\u00b7 ${esc(T.manaCost)} ${cost}</span>` : ""}</span></div><div class="stext">${esc(S[d.text] ?? "")}</div></div>`;
-      r += learnable ? `<button class="learn" type="button" data-testid="learn-${d.id}" data-learn="${d.id}" data-fk="l.${d.id}" ${canLearn ? "" : "disabled"} aria-label="${esc(lvl ? T.upgrade : T.learn)} ${esc(d.name)}${maxed ? ", " + esc(T.maxed) : ""}">${esc(maxed ? T.maxed : lvl ? T.upgrade : T.learn)}</button>` : "<span></span>";
-      if (assignable) {
-        r += `<div class="sassign" role="group" aria-label="${esc(T.assignTo)} ${esc(d.name)}"><span>${esc(T.assignTo)}</span>`;
-        for (let i = 0; i < bar.hotkeys.length; i++) {
-          const on = bar.hotkeys[i] === d.id;
-          r += `<button class="mini key${on ? " on" : ""}" type="button" data-testid="assign-${d.id}-${i}" data-assign="${d.id}" data-slot="${i}" data-fk="a.${d.id}.${i}" aria-pressed="${on}" aria-label="${esc(T.assignTo)} F${i + 1}: ${esc(d.name)}${on ? ", " + esc(T.assigned) : ""}">F${i + 1}</button>`;
-        }
-        r += `</div>`;
-      }
-      return r + `</li>`;
-    };
-    h += `<h3>${esc(T.basicAttack)}</h3><ul class="slist">${defs.filter((d) => d.kind === "basic").map(row).join("")}</ul>`;
-    h += `<h3>${esc(T.activeSkills)}</h3><ul class="slist">${defs.filter((d) => d.kind === "active").map(row).join("")}</ul>`;
-    h += `<h3>${esc(T.passiveSkills)}</h3><ul class="slist">${defs.filter((d) => d.kind === "passive").map(row).join("")}</ul>`;
-    return h + `</div></div>`;
-  }
+  // ------------------------------------------------------------ Skills (the class tree, ui/tree.js)
+  const renderSkills = (c) => renderTree(c).replace("@TABS@", tabsHtml("skills"));
 
   // ------------------------------------------------------------ NPC windows
   const rowItem = (it, tipKey, right) => `<li class="row" data-tip="${tipKey}"><span class="ricon" style="--rw:${it.w};--rh:${it.h}">${itemIcon(it)}</span><span class="rname">${nameLine(it, 14)}<small>${esc(describeItem(it, core().player).main[0]?.text ?? "")}</small></span>${right}</li>`;
@@ -249,7 +228,7 @@ export function createPanels(root, game) {
     const hudSig = sigOf(game.w, game.h, c.options?.keys, p.skillBar.hotkeys, p.skillBar.selected, p.skills, p.mp >= 0 && p.skillBar.hotkeys.map((id) => (id && content.skills[id]?.mana ? p.mp < content.skills[id].mana(Math.max(1, id === "strike" ? 1 : p.skills[id] ?? 0)) : 0)), c.belt.map((b) => b?.id ?? 0), p.attrPoints, p.skillPoints, u.inventory, u.left, u.map, p.xp, p.level);
     if (hudSig !== view.sigs.hud) { view.sigs.hud = hudSig; renderInto(el.hud, renderHud(c)); }
 
-    const base = [game.w, game.h, c.options?.keys, u.front, held?.id ?? 0, game.heldOrigin, !!view.drag, p.level, p.xp, p.xpNext, p.attrs, p.attrsTotal, p.attrPoints, p.skillPoints, p.hp, p.hpMax, p.mp, p.mpMax, p.gold, p.damage, p.defense, p.attackRating, p.resist, p.skills, p.skillBar.hotkeys,
+    const base = [game.w, game.h, c.options?.keys, u.front, held?.id ?? 0, game.heldOrigin, !!view.drag, p.level, p.xp, p.xpNext, p.attrs, p.attrsTotal, p.attrPoints, p.skillPoints, p.hp, p.hpMax, p.mp, p.mpMax, p.gold, p.damage, p.defense, p.attackRating, p.resist, p.skills, p.skillBar.hotkeys, p.aura, p.name, p.class, c.depth, c.scene, c.player.respecsUsed,
       c.inventory.items.map((i) => [i.id, i.x, i.y]), Object.values(c.equipment).map((i) => i?.id ?? 0), c.belt.map((b) => b?.id ?? 0), c.floor.name];
     if (rightOpen) { const sg = sigOf(base); if (sg !== view.sigs.right) { view.sigs.right = sg; renderInto(el.right, renderInventory(c)); } } else view.sigs.right = "";
     if (leftOpen) {
@@ -257,7 +236,7 @@ export function createPanels(root, game) {
       if (sg !== view.sigs.left) {
         view.sigs.left = sg;
         renderInto(el.left, u.left === "skills" ? renderSkills(c) : u.left === "npc" ? renderNpc(c) : renderCharacter(c));
-        if (u.left === "character") flashChanged();
+        if (u.left === "character") { flashChanged(); for (const cv of el.left.querySelectorAll("canvas[data-bust]")) { try { paintBust(cv, cv.dataset.bust); } catch { /* decoration */ } } }
         if (view.preview && u.left === "character") showPreview(view.preview);
       }
     } else { view.sigs.left = ""; view.stats = {}; }
@@ -307,7 +286,9 @@ export function createPanels(root, game) {
     if (!c || c.cursorItem) return hideTip();
     const it = itemFor(key);
     if (!it) return hideTip();
-    const kind = key.split(":")[0], d = describeItem(it, c.player);
+    const kind = key.split(":")[0];
+    if (kind === "node") return showNodeTip(key.slice(5), anchor);
+    const d = describeItem(it, c.player);
     const cmp = kind === "inv" || kind === "vendor" || kind === "stash" ? compareToEquipped(c, it) : null;
     const price = kind === "vendor" ? `${T.price}: ${buyPrice(it)} ${T.gold}` : `${T.sellsFor} ${sellValue(it)} ${T.gold}`;
     el.tip.className = `tip r-${it.rarity}`;
@@ -333,6 +314,25 @@ export function createPanels(root, game) {
     el.tip.style.overflowY = "auto";
     view.hoverKey = key;
     game.ui.tooltip = { key, ...d, compare: cmp, rect: { x: pos.x, y: pos.y, w, h: pos.h } };
+  }
+  function showNodeTip(id, anchor) {
+    const c = core(), n = c && nodeFor(c, id);
+    if (!n) return hideTip();
+    el.tip.className = "tip node";
+    el.tip.innerHTML = nodeTipHtml(n);
+    el.tip.hidden = false;
+    el.tip.style.left = "0px"; el.tip.style.top = "0px"; el.tip.style.maxHeight = "";
+    const ts = parseFloat(document.documentElement.style.getPropertyValue("--ts")) || 1, tr = el.tip.getBoundingClientRect();
+    const D = drawerLayout(game.w, game.h), w = Math.round(tr.width), h = Math.round(tr.height), anchorRect = rectOf(anchor), panelNode = anchor.closest(".drawer");
+    let pos;
+    if (D.phone) { pos = { x: 8, y: Math.min(Math.max(8, anchorRect.y + anchorRect.h + 6), Math.max(8, D.bottom - h)), h }; el.tip.style.right = "8px"; el.tip.style.width = "auto"; }
+    else {
+      el.tip.style.right = ""; el.tip.style.width = "";
+      pos = placeTip({ w, h, anchor: anchorRect, panel: panelNode ? rectOf(panelNode) : null, side: "left", drawers: [el.left, el.right].filter((x) => x.classList.contains("open")).map(rectOf), hero: heroRect(), bounds: { left: 8, top: 8, right: game.w - 8, bottom: D.hudTop - 8 - (el.toast.hidden ? 0 : 52) }, keepClear: [...root.querySelectorAll(".dock .hbtn")].map(rectOf) });
+    }
+    el.tip.style.left = pos.x / ts + "px"; el.tip.style.top = pos.y / ts + "px"; el.tip.style.maxHeight = Math.max(80, D.hudTop - 16) / ts + "px"; el.tip.style.overflowY = "auto";
+    view.hoverKey = `node:${id}`;
+    game.ui.tooltip = { key: `node:${id}`, name: n.name, kind: n.kind, level: n.level, maxLevel: n.maxLevel, now: n.now, next: n.next, lockReason: n.lockReason, rect: { x: pos.x, y: pos.y, w, h: pos.h } };
   }
   function hideTip() { el.tip.hidden = true; view.hoverKey = null; if (game.ui.tooltip) game.ui.tooltip = null; }
 
@@ -483,7 +483,9 @@ export function createPanels(root, game) {
     if (d.close) game.closePanel(d.close);
     else if (d.open) { if (b.classList.contains("tab")) game.openPanel(d.open); else game.togglePanel(d.open); }
     else if (d.alloc) game.input({ t: "allocate", attr: d.alloc });
-    else if (d.learn) game.input({ t: "learnSkill", id: d.learn });
+    else if (d.learn) { const r = game.input({ t: "learnSkill", id: d.learn }); if (!r.ok && T.trLearnFail[r.error]) game.toast(T.trLearnFail[r.error]); }
+    else if (d.respec) { const r = game.input({ t: "respec" }); game.toast(r.ok ? T.trRespecDone : T.trRespecFail[r.error] ?? T.trResetNone); }
+    else if (d.aura) { const r = game.input({ t: "toggleAura", id: d.aura }); if (!r.ok) game.toast(T.trAuraFail[r.error] ?? T.trAuraFail["no-mana"]); }
     else if (d.assign) game.input({ t: "assignSkill", slot: Number(d.slot), id: core().player.skillBar.hotkeys[Number(d.slot)] === d.assign ? null : d.assign });
     else if (d.skillSlot !== undefined) game.input({ t: "selectSkill", index: Number(d.skillSlot) });
     else if (d.useBelt !== undefined) game.input({ t: "useBelt", index: Number(d.useBelt) });

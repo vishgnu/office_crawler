@@ -12,6 +12,7 @@ import { installTestHook } from "./testhook/index.js";
 import { createAudio } from "./audio/index.js";
 import { createSlotStore, createSession, createAdapter } from "./save/index.js";
 import { normalizeOptions } from "./ui/options.js";
+import { errorText } from "./ui/slots.js";
 import { bindKey, defaultKeys } from "./input/keymap.js";
 import { T } from "./ui/text.js";
 
@@ -158,6 +159,7 @@ async function boot() {
   const screens = createScreens(overlay, {
     ...shell,
     openSlots: () => game.openSlots(), closeSlots: () => game.closeSlots(), openCreate: (o) => game.openCreate(o), closeCreate: () => game.closeCreate(),
+    titleMessage: (r) => { game.titleNotice = errorText(r.error); shellSync(); },
     resume: () => game.key("Escape"),
     restart: () => game.input({ t: "restart" }),
     respawn: () => game.input({ t: "respawn" }),

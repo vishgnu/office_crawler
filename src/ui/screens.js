@@ -3,6 +3,8 @@
 import { content } from "../core/index.js";
 import { T } from "./text.js";
 import { createOptionsView } from "./options.js";
+import { createSlotsView, slotSummary } from "./slots.js";
+import { createCharSelect, resetDraft } from "./charselect.js";
 
 const S = content.strings;
 
@@ -60,45 +62,42 @@ export function createScreens(root, h) {
     for (const [k, v] of pairs) { const d = el("div"); d.append(el("dt", "", k), el("dd", "", v)); list.append(d); }
     return list;
   };
-  const confirmBox = (title, text, yes, onYes, testid) => {
-    const s = el("section", "screen title confirm"), box = el("div", "panel");
-    box.setAttribute("role", "alertdialog"); box.setAttribute("aria-label", title);
-    box.append(el("h2", "", title), el("p", "hint", text), button(T.confirmYes, `${testid}-yes`, () => { sub = null; onYes(); }), button(T.confirmNo, `${testid}-no`, () => go(null)));
-    s.append(box);
-    return s;
-  };
   const build = {
     title: (info) => {
-      if (sub === "confirm-new") return confirmBox(T.confirmNewTitle, T.confirmNewText, S.newGame, () => h.newGame(), "confirm-new");
-      if (sub === "confirm-delete") return confirmBox(T.confirmDeleteTitle, T.confirmDeleteText, T.deleteCharacter, () => h.deleteSave(), "confirm-delete");
-      if (sub === "import") return buildImport(info);
-      if (sub === "confirm-import") return confirmBox(T.confirmImportTitle, T.confirmImportText, T.importGo, () => { const t = pendingImport; pendingImport = null; h.importText(t); }, "confirm-import");
       const s = el("section", "screen title"), box = el("div", "panel");
       const art = el("div", "title-art"); art.innerHTML = titleArt(true) + titleArt(false); s.append(art);
       box.append(el("h1", "", S.gameTitle), el("p", "tagline", S.tagline), el("p", "goal", T.titleGoal));
       if (info.notice) { const n = el("p", "notice-line", info.notice); n.setAttribute("role", "status"); n.dataset.testid = "title-notice"; box.append(n); }
-      const cont = button(T.continueGame, "continue", () => h.continueGame());
-      cont.disabled = !info.hasSave;
+      const slots = info.slots?.index.slots ?? [], lastN = info.slots?.index.last, ok = slots.filter((e) => e.state === "ok");
+      const recent = (lastN && slots[lastN - 1]?.state === "ok" ? slots[lastN - 1] : ok.sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0))[0]) ?? null;
+      const cont = button(T.continueGame, "continue", () => { const r = h.session({ t: "continue" }); if (!r.ok) h.titleMessage?.(r); });
+      cont.disabled = !recent;
+      if (recent) { const sub = el("span", "btn-sub"); sub.dataset.testid = "continue-who"; sub.textContent = `${recent.name} · ${slotSummary(recent).split(" · ").slice(0, 2).join(" · ")}`; cont.append(sub); cont.classList.add("two"); cont.setAttribute("aria-label", `${T.continueGame}: ${recent.name}`); }
       box.append(cont);
-      box.append(button(S.newGame, "new-game", () => (info.hasSave ? go("confirm-new") : h.newGame())));
+      box.append(button(S.newGame, "new-game", () => h.openCreate()));
+      const load = button(T.loadGame, "load-game", () => { returnFocus = "load-game"; h.openSlots(); }); load.disabled = ok.length === 0 && !slots.some((e) => e.state !== "empty"); load.title = load.disabled ? T.noSaveYet : "";
+      box.append(load);
       box.append(button(T.options, "options", () => h.openOptions()));
-      const row = el("div", "btn-row");
-      const exp = button(T.exportSave, "export-save", () => h.exportSave("current"), "btn small"); exp.disabled = !info.hasSave;
-      row.append(exp, button(T.importSave, "import-save", () => go("import"), "btn small"));
-      if (info.hasSave) row.append(button(T.deleteCharacter, "delete-save", () => go("confirm-delete"), "btn small"));
-      if (info.hasCorrupt) row.append(button(T.exportCorrupt, "export-corrupt", () => h.exportSave("corrupt"), "btn small"));
-      box.append(row);
       box.append(el("p", "hint", S.controlsHint), el("p", "seed", `${S.seedLabel} ${info.seed}`));
       s.append(box);
       return s;
     },
+    slots: (info) => {
+      const s = el("section", "screen slots-screen"), dlg = el("div", "dlg-card");
+      dlg.setAttribute("role", "dialog"); dlg.setAttribute("aria-modal", "true"); dlg.setAttribute("aria-labelledby", "sl-title");
+      dlg.append(createSlotsView(slotsHost(), { mode: "dialog", onClose: () => h.closeSlots() }));
+      s.append(dlg);
+      s.addEventListener("click", (e) => { if (e.target === s) h.closeSlots(); });
+      return s;
+    },
+    create: (info) => createCharSelect({ session: h.session, closeCreate: h.closeCreate, openSlots: () => { returnFocus = "create-load"; h.openSlots(); }, playTransition, emit: h.emit }, info),
     pause: () => {
       const s = el("section", "screen pause");
-      s.append(el("h2", "", S.paused), button(S.resume, "resume", h.resume), button(T.options, "options", () => h.openOptions()), button(S.quitToTitle, "quit", h.quit));
+      s.append(el("h2", "", S.paused), button(S.resume, "resume", h.resume), button(T.saveSlots, "pause-slots", () => { returnFocus = "pause-slots"; h.openSlots(); }), button(T.options, "options", () => h.openOptions()), button(S.quitToTitle, "quit", h.quit));
       return s;
     },
     options: () => {
-      const v = createOptionsView(h.optionsCtl, () => h.closeOptions());
+      const v = createOptionsView(h.optionsCtl, () => h.closeOptions(), () => createSlotsView(slotsHost(), { mode: "options" }));
       return v;
     },
     story: (info) => {
@@ -134,30 +133,29 @@ export function createScreens(root, h) {
       return s;
     },
   };
-  let pendingImport = null;
-  const requestImport = (text, info) => { // a save already exists: ask before it is replaced
-    if (info.hasSave && h.canImport(text)) { pendingImport = text; go("confirm-import"); } else { h.importText(text); go(null); }
-  };
-  function buildImport(info) {
-    const s = el("section", "screen title import"), box = el("div", "panel");
-    box.append(el("h2", "", T.importTitle));
-    const file = el("input"); file.type = "file"; file.accept = ".json,application/json,text/plain"; file.dataset.testid = "import-file"; file.id = "import-file";
-    const lab = el("label", "hint", T.importFile); lab.htmlFor = "import-file";
-    file.addEventListener("change", async () => { const f = file.files?.[0]; if (!f) return; let text = ""; try { text = await f.text(); } catch { /* reported as a failed import */ } requestImport(text, info);  });
-    const ta = el("textarea"); ta.rows = 5; ta.dataset.testid = "import-text"; ta.setAttribute("aria-label", T.importPasteLabel); ta.spellcheck = false;
-    const row = el("div", "btn-row");
-    row.append(button(T.importGo, "import-go", () => requestImport(ta.value, info), "btn small"), button(T.back, "import-back", () => go(null), "btn small"));
-    box.append(lab, file, el("p", "hint", T.importPaste), ta, row);
-    s.append(box);
-    return s;
+  /** What the slot manager needs from the shell (see ui/slots.js). */
+  const slotsHost = () => ({ session: h.session, slots: h.slots, playing: h.playing, download: h.download, adapter: h.adapter, emit: h.emit, onNewHere: (n) => h.openCreate({ slot: n }) });
+  let returnFocus = null;
+  /** The elevator doors close, the game starts (cb), the doors open (borrowed from variant C). Skipped under reduced motion and in tests. */
+  function playTransition(cb) {
+    if (document.documentElement.classList.contains("noanim")) { cb(); return; }
+    const wrap = el("div", "elevator close"); wrap.setAttribute("aria-hidden", "true");
+    wrap.append(el("div", "door l"), el("div", "door r"));
+    document.body.append(wrap);
+    setTimeout(() => {
+      if (cb() === false) { wrap.remove(); return; }
+      wrap.className = "elevator open";
+      setTimeout(() => wrap.remove(), 800);
+    }, 1100);
   }
   const screens = {
     /** Show the screen for `menu` (null hides everything). Rebuilds only when something changed. */
     show(menu, info = {}, force = false) {
       last = { menu, info };
-      if (menu !== "title") sub = null;
+      sub = null;
       const sm = info.summary ? `${info.summary.kills}/${info.summary.seconds}/${info.summary.depth}` : "", v = info.victory ? `${info.victory.seconds}/${info.victory.kills}` : "";
-      const key = menu ? `${menu}:${sub ?? ""}:${info.seed ?? ""}:${sm}:${v}:${info.hasSave ? 1 : 0}${info.hasCorrupt ? 1 : 0}:${info.notice ?? ""}:${info.story ?? ""}` : "";
+      const sl = menu === "title" ? JSON.stringify(info.slots?.index ?? null) : menu === "create" ? `${info.create?.slot ?? ""}/${(info.slots?.index.slots ?? []).map((e) => e.state[0]).join("")}` : "";
+      const key = menu ? `${menu}:${sub ?? ""}:${info.seed ?? ""}:${sm}:${v}:${sl}:${info.notice ?? ""}:${info.story ?? ""}` : "";
       if (key === current && !force) return;
       current = key;
       active?.destroy?.(); active = null;
@@ -166,9 +164,14 @@ export function createScreens(root, h) {
       const s = build[menu](info);
       active = s;
       root.append(s);
+      s.afterMount?.();
       const first = [...s.querySelectorAll("button")].find((b) => !b.disabled);
-      if (menu === "options") s.querySelector("input,select,button")?.focus({ preventScroll: true });
-      else (sub === "import" ? s.querySelector("input") : first)?.focus({ preventScroll: true });
+      const back = returnFocus && menu !== "slots" ? s.querySelector(`[data-testid="${returnFocus}"]`) : null; // Esc / Close from the Load dialog: focus goes back to the button that opened it
+      if (menu !== "slots") returnFocus = back ? null : returnFocus;
+      if (back && !back.disabled) back.focus({ preventScroll: true });
+      else if (menu === "options") s.querySelector("input,select,button")?.focus({ preventScroll: true });
+      else if (menu === "create") (s.querySelector(".cs-cls.on") ?? first)?.focus({ preventScroll: true });
+      else first?.focus({ preventScroll: true });
     },
   };
   return screens;
