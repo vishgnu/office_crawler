@@ -1,0 +1,127 @@
+{
+  "project": "office-crawler",
+  "harnessVersion": "0.4.0",
+  "round": "R6",
+  "slice": "R6 balance + polish (BAL-R6, UI-R6, WORLD-R6), out-of-plan PERF-R6 (fps variance), code review R6 and ADV-R6 in parallel, fix round (FIX-R6-CORE, FIX-R6-UI, two follow-ups, ADV round 2, fixture fix), visual review R6, proxy acceptance. Harness work done during the round (PORTAL-H1, coverage probe fix) is listed separately under harnessWork and is not in tokensKTotal.",
+  "elapsedMin": null,
+  "elapsedNote": "R6 start not logged; first hand-back WORLD-R6 08:54Z, acceptance 13:07Z, i.e. about 253 min from the first hand-back to acceptance; the sum of agent minutes (371.8) counts parallel work",
+  "humanMin": null,
+  "humanMessages": 9,
+  "humanMessagesNote": "human-log.jsonl 08:48Z-11:55Z: 3 briefings/instructions (quest journal, gear-driven visuals, harness results and to-dos), 1 status question, 1 metrics question, 4 side-quest questions about hosting the game in a storage account (not round work). 0 rework requests. The 05:18Z message had been missing from the log until an audit at 10:40Z (L-037).",
+  "wallClockUtc": {
+    "WORLD-R6": "08:54Z",
+    "UI-R6": "08:58Z",
+    "BAL-R6": "09:19Z",
+    "verifyAfterPackages": "09:30Z",
+    "codeReview": "09:35Z",
+    "PERF-R6": "10:10Z",
+    "ADV-R6": "10:51Z",
+    "FIX-R6-UI": "11:16Z",
+    "FIX-R6-CORE": "11:19Z",
+    "ADV-R6-round2": "11:51Z",
+    "FIX-R6-CORE-ADV06-07": "11:59Z",
+    "verifyFinal": "12:35Z",
+    "visualReview": "12:42Z",
+    "acceptance": "13:07Z"
+  },
+  "agents": [
+    {"role": "implementer", "pkg": "WORLD-R6", "tokensK": 279.3, "minutes": 22.8, "status": "done", "note": "re-sent the same hand-back 4x, stopped by the orchestrator (L-032)"},
+    {"role": "implementer", "pkg": "UI-R6", "tokensK": 214.1, "minutes": 27.4, "status": "done", "note": "e2e_red: adv-r5 respec checks"},
+    {"role": "implementer", "pkg": "BAL-R6", "tokensK": 230.7, "minutes": 47.6, "status": "done"},
+    {"role": "reviewer", "pkg": "code review R6", "tokensK": 167.4, "minutes": 5.1, "status": "done"},
+    {"role": "implementer", "pkg": "PERF-R6", "tokensK": 196.8, "minutes": 40.0, "status": "done", "note": "out-of-plan package after the 2-run bench; ran git checkout once (L-033)"},
+    {"role": "test-engineer", "pkg": "ADV-R6", "tokensK": 309.1, "minutes": 81.0, "status": "done"},
+    {"role": "implementer", "pkg": "FIX-R6-UI", "tokensK": 185.4, "minutes": 24.2, "status": "done", "note": "re-sent its hand-back once with background work running (L-032); one-line edit in src/audio/cues.js outside its list (L-039)"},
+    {"role": "implementer", "pkg": "FIX-R6-CORE", "tokensK": 233.5, "minutes": 27.3, "status": "done"},
+    {"role": "implementer", "pkg": "FIX-R6-UI follow-up (noticeAttr)", "tokensK": 3.0, "minutes": 3.0, "status": "done", "note": "resumed agent; delta"},
+    {"role": "test-engineer", "pkg": "ADV-R6 round 2", "tokensK": 61.8, "minutes": 31.3, "status": "done", "note": "resumed agent; delta"},
+    {"role": "implementer", "pkg": "FIX-R6-CORE ADV-06/07", "tokensK": 10.2, "minutes": 8.6, "status": "done", "note": "resumed agent; delta"},
+    {"role": "test-engineer", "pkg": "ADV-R6 fixture fix", "tokensK": 2.4, "minutes": 15.9, "status": "done", "note": "resumed agent; delta; minutes include wall-clock wait"},
+    {"role": "visual-reviewer", "pkg": "R6 visual review", "tokensK": 144.2, "minutes": 6.4, "status": "done"},
+    {"role": "customer-proxy", "pkg": "R6 acceptance", "tokensK": 184.1, "minutes": 31.2, "status": "done"}
+  ],
+  "tokensKTotal": 2222.0,
+  "tokensKNote": "sum of the 14 agent rows above (ledger rows with round R6, orchestrator verify rows have no usage); the harness-retro row for R6 is added to the ledger after this file",
+  "agentMinutesTotal": 371.8,
+  "harnessWork": [
+    {"role": "implementer", "pkg": "PORTAL-H1 (results + todos visible)", "tokensK": 162.6, "minutes": 6.8, "status": "done", "tests": "portal 62/62", "coverage": {"missing_before": 32, "missing_after": 0, "checks": 42}},
+    {"role": "orchestrator", "pkg": "coverage probe fix (prose-dependent probe)", "tokensK": null, "minutes": null, "status": "done", "note": "harness/portal/coverage-probes.mjs plain() falls back from 34 to 20 to 12 chars; 62/62 x3 (L-036)"}
+  ],
+  "defects": {
+    "adversarial": {
+      "round1": {"blocker": 0, "major": 0, "minor": 4, "trivial": 1},
+      "round2": {"minor": 2, "note": "ADV-R6-06 level not tied to xp, ADV-R6-07 consumables/gear fields not validated; both in code added by the fix round"},
+      "total": 7,
+      "verifiedFixed": 7,
+      "noCheatRuns": "18/18 won (6 seeds x 3 classes), Node and Chromium identical",
+      "overlapWithCodeReview": ["ADV-R6-01 = CR6-02 (forged attribute totals)", "ADV-R6-05 = CR6-15 first bullet (old saves keep power-attribute points)"],
+      "relatedNotSame": ["ADV-R6-04 (focus dropped when Learn disables) vs CR6-08 (respec dialog and tree a11y)"],
+      "uniqueToAdversarial": ["ADV-R6-02", "ADV-R6-03", "ADV-R6-04", "ADV-R6-06", "ADV-R6-07"]
+    },
+    "codeReview": {
+      "blocking": 0,
+      "should": 8,
+      "nit": 7,
+      "uniqueToReview": ["CR6-01", "CR6-03", "CR6-04", "CR6-05", "CR6-06", "CR6-07", "CR6-08", "CR6-09..14"],
+      "note": "CR6-03 (lazyDraw globals not restored) was fixed by PERF-R6 in flight, CR6-04 and CR6-12 too"
+    },
+    "visualReview": {"count": 7, "note": "N9-N15, all low; all 8 G3 findings (N1-N8) verified fixed"},
+    "customer": {"count": 8, "note": "acceptance follow-ups; 1 new defect (F1 hero stand-off with a chasing temp worker, same family as the IT seed 24 floor 8 give-up from FIX-R6-CORE), the rest are plan gaps (size test, licence file, offline/engines scripts), pace (floor 5 wall) and a playtest request"},
+    "escaped": 0,
+    "escapedNote": "none shipped; two things were found late and are open: N11/R7-2 floor-entry stutter (found by the richer bench, no review saw it) and F1 hero stand-off (bot watchdog had masked it, CR6-05)"
+  },
+  "quality": {
+    "unitTests": 770,
+    "unitTestsStart": 668,
+    "unitTestsNote": "770 pass, 6 todo at ADV round 2; 686 after BAL/UI/WORLD",
+    "e2eChecks": null,
+    "e2eScripts": 14,
+    "e2eDetail": "14/14 green at the final verify (adv-r6 429 checks)",
+    "visualScore": {"inGame": [35, 34], "charselect": [35, 34], "uiTreeSlotsPause": [35, 34], "note": "[appeal, craft]; target 34; first time craft reached 34; G3 was 34/33"},
+    "fps50": 52.9,
+    "fps50Runs": [49.0, 51.4, 55.8, 53.7, 52.9],
+    "fps50Min": 49.0,
+    "fps50LowFx": 60,
+    "atlasMs": [443, 458, 399, 393, 545],
+    "perf": {
+      "r5Quiet": {"fps50": 43.9, "atlasMs": 4776},
+      "afterPackages2runs": {"fps50": [46.2, 38.5], "load": "0.5-1.9"},
+      "perfBefore5runsQuiet": {"fps50": [38.9, 41.9, 39.1, 40.7, 41.6], "median": 40.7, "min": 38.9, "p99Ms": 50},
+      "perfAfter5runsLoad2.5to5.2": {"fps50": [52.2, 46.5, 58.1, 56.2, 46.8], "median": 52.2, "min": 46.5, "p99Ms": 33},
+      "orchestratorFinal5runs": {"fps50": [49.0, 51.4, 55.8, 53.7, 52.9], "median": 52.9, "min": 49.0, "load": "1.3-2.0"},
+      "cause": "raster at the vsync edge (15-19 ms raster vs 3-6 ms JS at 1080p full fx; darkness mask 2x upscale 6.5 ms per frame), not the lazy atlas",
+      "floorEntry": "frame p50 33-50 ms for about 3 s after entering a floor (480-740 lazy draws, 0.5-0.7 s total); visual review measured 80-120 ms hitch then about 30 fps for 5 s; open as R7-2",
+      "atlasMsBefore": "3958-5145 (WORLD-R6 start) -> 446-608 (lazy monster frames)"
+    },
+    "botWinRate": {"FM": "23/24", "SR": "24/24", "IT": "24/24"},
+    "parity": {"clearTimeMin": {"FM": 27.0, "SR": 27.4, "IT": 26.1}, "band": "all within 25 % of the 27.0 median", "baseline": "SR 8/12 won, deaths +71 %; FM Pallet Slam 67 %"},
+    "golden": "519989b11a15ab03 -> a4a3cd6a1dac3cb2 (BAL-R6, once, contract rule)"
+  },
+  "rework": {
+    "fixRounds": 2,
+    "reverts": 0,
+    "detail": "1 out-of-plan package (PERF-R6, after the verify showed fps50 38.5); fix round 1 = FIX-R6-CORE + FIX-R6-UI in parallel (+ noticeAttr follow-up); fix round 2 = ADV round 2 findings (FIX-R6-CORE ADV-06/07) + adversary fixture fix. e2e reds in hand-backs: UI-R6 (adv-r5 respec 2), FIX-R6-UI (adv-r6:176, adv-r5 hostile item), FIX-R6-CORE (adv-r5 fixture, adv-r6 respec), FIX-R6-CORE ADV-06/07 (adv-r6 slots fixture); all in adversary-owned scripts, all reported via e2e_red, none escaped."
+  },
+  "contract": {
+    "build": "R6-contract.md written by the orchestrator with a feasibility section: 0 renames, 0 change requests from BAL/UI/WORLD, 0 deviations (golden re-recorded once as allowed)",
+    "fixAdditions": "1 name correction caught in the first progress line (castRefused uses event field `type`, not `t`), no downstream rework; 1 gap found later (notice text promised a mark the UI did not draw: noticeAttr follow-up)"
+  },
+  "incidents": [
+    "WORLD-R6 re-sent the same hand-back 4 times (about 1k tokens each) after finishing, FIX-R6-UI 2 times with background work still running; the orchestrator stopped both (L-032)",
+    "PERF-R6 ran git checkout on its own file despite the no-git rule; the no-git rule was only in the prompt template, not in the agent definitions (L-033)",
+    "2-run bench (46.2 then 38.5, NFR-P01 target 40) triggered a perf package; the orchestrator's suspect (lazy atlas) was refuted by the root cause, raster at the vsync edge (L-034, L-012 pattern)",
+    "Richer bench (p99, max, frames over 25 ms, floor load) found the floor-entry stutter nobody had seen (L-035)",
+    "Portal coverage test went red because a probe needed a 35-character plain-word run and the RESUME line is mostly ids (L-036)",
+    "Human-log missed the 05:18Z message until an audit at 10:40Z (L-037)",
+    "Stricter save validation invalidated two adversary fixtures (adv-r5 hostile item, adv-r6 slots xp), each a red e2e until the adversary rewrote it (L-038)",
+    "FIX-R6-UI edited src/audio/cues.js (one SILENT_EVENTS line for the new castRefused event) outside its edit list and said so; accepted (L-039)",
+    "Plan gate items (size test, ASSET-LICENCES.md, offline and engines e2e scripts) had no owning package; found only by the proxy acceptance (L-019 reopened)",
+    "Final verify ran at load 1.3-2.0, above the playbook's 1.5 quiet limit for part of the runs; the median and min still cleared the target"
+  ],
+  "learnings": ["L-032", "L-033", "L-034", "L-035", "L-036", "L-037", "L-038", "L-039", "L-019", "L-020", "L-022", "L-012", "L-026", "L-028", "L-029", "L-030", "L-025", "L-027", "L-018", "L-031"],
+  "experiments": {
+    "E1": "supported; both thresholds met in R6 (adversarial 7 findings, review blocking 0); passes ran in parallel so the ordering part stays untested",
+    "E2": "leaning supported for the build round (0 contract deviations), still inconclusive overall (see docs/harness-experiments.md)",
+    "E3": "supported and extended: in-game 35/34 at R6"
+  }
+}
