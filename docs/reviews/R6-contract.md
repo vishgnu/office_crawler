@@ -31,3 +31,18 @@ Orchestrator's quiet run before R6: fps50 43.9 (target ≥ 40), lowFx 52.9, atla
 ## e2e (L-022)
 BAL-R6 number changes may move e2e expectations (damage, xp, prices). BAL-R6 lists those in `e2e_red` with the cause. UI-R6
 owns those scripts and fixes them after BAL-R6 hands back (the orchestrator will forward the list).
+
+## Fix round additions (orchestrator, after ADV-R6 and code review R6)
+
+| Package | Owns |
+|---|---|
+| FIX-R6-CORE | `src/core/**`, `src/save/**`, `bot/**`, `package.json` (scripts only), `test/` except `test/ui-*`, `test/render-*`, `test/adv-*`; ADR-0005/0006 amendments |
+| FIX-R6-UI | `src/ui/**`, `src/style.css`, `test/ui-*`, `e2e/**` except `e2e/adv-*.mjs` and `e2e/run-all.mjs` |
+
+Shared names (feasible: both are new, no existing field changes):
+- Core emits event `{ t: "castRefused", skill, reason }` with reason one of `no-direction | no-mana | cooldown | no-target | silenced`
+  (only the ones the core actually has); the UI shows a short toast from text keys `castRefused.<reason>`.
+- Save v3 migration (R5 saves, saveVersion 2): attribute points of a class whose power attribute changed are refunded and a
+  `status.notice = "attributes-refunded"` is set; the UI adds text key `notices["attributes-refunded"]`.
+- Respec in mode gold/once with nothing to refund: the core returns `{ ok:false, reason:"nothing-to-respec" }` and charges
+  nothing; the UI disables the button with that reason as hint.
