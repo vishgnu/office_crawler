@@ -27,11 +27,12 @@ W.init = async (w = 1920, h = 1080, zoom = viewConfig.zoom) => {
   const z = worldScale(w, h);
   const params = { scale: Math.min(2.5, Math.max(1, Math.ceil(z * 2 - 0.01) / 2)), rim: Math.min(3, Math.max(0.5, Math.round((2 / z) * 4) / 4)), hc: false };
   const t0 = performance.now();
-  W.atlas = await style.build(() => {}, params);
+  let tl = t0; W.steps = [];
+  W.atlas = await style.build(() => { const n = performance.now(); W.steps.push(Math.round(n - tl)); tl = n; }, params);
   W.buildMs = performance.now() - t0;
   W.style = style; W.fx = createFx(style); W.light = createLighting(style); W.labels = createLabels(style);
   W.missing = requiredKeys(content).filter((k) => !W.atlas.has(k));
-  return { buildMs: W.buildMs, keys: W.atlas.keys().length, missing: W.missing.slice(0, 10), missingN: W.missing.length, scale: params.scale };
+  return { buildMs: W.buildMs, steps: W.steps.join(","), keys: W.atlas.keys().length, missing: W.missing.slice(0, 10), missingN: W.missing.length, scale: params.scale };
 };
 
 const free = (s, c, r, min = 1) => {
