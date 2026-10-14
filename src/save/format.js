@@ -10,7 +10,7 @@ import { canonical, hashString } from "../core/hash.js";
 import { newGame } from "../core/state.js";
 import { applyDerived } from "../core/items/derive.js";
 import { enterFloor } from "../core/systems/world.js";
-import { xpNextFor } from "../core/systems/progression.js";
+import { xpNextFor, syncBar } from "../core/systems/progression.js";
 import { canPlace } from "../core/items/inventory.js";
 import { classById } from "../core/content/classes.js";
 import { validateName } from "../core/name.js";
@@ -62,7 +62,7 @@ export function toSave(state) {
     resume: { depth: resumeDepth }, deepestDepth: state.deepestDepth, bossDefeated: !!state.bossDefeated, bossUnlocked: !!state.bossUnlocked, townVisit: state.townVisit ?? 0,
     player: { level: p.level, xp: p.xp, attrs: { ...p.attrs }, attrPoints: p.attrPoints, skillPoints: p.skillPoints, skills: { ...p.skills }, skillBar: clone(p.skillBar), gold: p.gold, respecsUsed: p.respecsUsed ?? 0 },
     inventory: clone(state.inventory), equipment: clone(state.equipment), belt: clone(state.belt), stash: clone(state.stash), cursorItem: clone(state.cursorItem ?? null),
-    uniquesFound: [...state.uniquesFound], nextItemId: state.nextItemId, rng: clone(state.rng), stats: { ...state.stats }, explored, options: clone(state.options ?? {}),
+    uniquesFound: [...state.uniquesFound], nextItemId: state.nextItemId, rng: clone(state.rng), stats: { ...state.stats }, explored, options: {}, // options are global and not part of a slot (ADR-0006 section 3, CR-04)
   };
 }
 
@@ -86,25 +86,29 @@ export const ITEM_KEYS = ["id", "base", "baseName", "name", "kind", "rarity", "i
   "restores", "restore", "effect", "unique", "flavour"];
 const AFFIX_KEYS = ["id", "group", "kind", "stat", "name", "tier", "value", "range", "class"];
 const MAX_TEXT = 64, MAX_NUM = 1e6;
+/** Ids that can reach markup or storage keys (item ids, affix ids, unique ids ...): letters, digits, underscore, hyphen (CR-02). */
+export const SAFE_ID = /^[A-Za-z0-9_-]{1,32}$/;
+const safeId = (v) => typeof v === "string" && SAFE_ID.test(v);
 const str = (v, max = MAX_TEXT) => typeof v === "string" && v.length <= max;
 const num = (v, lo = -MAX_NUM, hi = MAX_NUM) => typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi;
 
 function affixOk(a) {
   if (!hasOnly(a, AFFIX_KEYS) || !str(a.stat) || !STAT_IDS.has(a.stat) || !num(a.value)) return false;
-  for (const k of ["id", "group", "kind", "name", "class"]) if (a[k] !== undefined && !str(a[k])) return false;
+  for (const k of ["id", "group", "kind", "class"]) if (a[k] !== undefined && !safeId(a[k])) return false;
+  if (a.name !== undefined && !str(a.name)) return false;
   if (a.tier !== undefined && !isInt(a.tier, 0, 99)) return false;
   if (a.range !== undefined && !(Array.isArray(a.range) && a.range.length === 2 && a.range.every((n) => num(n)))) return false;
   return true;
 }
 
 function itemOk(it, { placed }) {
-  if (!hasOnly(it, ITEM_KEYS) || !str(it.id) || !str(it.name) || !str(it.base) || !own(bases, it.base)) return false;
+  if (!hasOnly(it, ITEM_KEYS) || !safeId(it.id) || !str(it.name) || !str(it.base) || !own(bases, it.base)) return false;
   if (it.baseName !== undefined && !str(it.baseName)) return false;
-  if (it.slot !== undefined && !str(it.slot)) return false;
-  if (it.unique !== undefined && !str(it.unique)) return false;
+  if (it.slot !== undefined && !(safeId(it.slot) && slotKeys.includes(it.slot))) return false;
+  if (it.unique !== undefined && !safeId(it.unique)) return false;
   if (it.flavour !== undefined && !str(it.flavour, 200)) return false;
-  if (it.effect !== undefined && !str(it.effect)) return false;
-  if (it.restores !== undefined && !str(it.restores)) return false;
+  if (it.effect !== undefined && !safeId(it.effect)) return false;
+  if (it.restores !== undefined && !safeId(it.restores)) return false;
   if (it.ilvl !== undefined && !isInt(it.ilvl, 0, 999)) return false;
   if (it.twoHanded !== undefined && typeof it.twoHanded !== "boolean") return false;
   if (!["gear", "potion", "consumable"].includes(it.kind) || !rarityOrder.includes(it.rarity)) return false;
@@ -114,7 +118,7 @@ function itemOk(it, { placed }) {
   if (it.damage !== undefined && !(hasOnly(it.damage, ["min", "max"]) && num(it.damage.min, 0) && num(it.damage.max, 0))) return false;
   if (it.defense !== undefined && !num(it.defense, 0)) return false;
   if (it.restore !== undefined && !num(it.restore, 0)) return false;
-  if (it.reqs !== undefined && !(isObj(it.reqs) && Object.entries(it.reqs).every(([k, v]) => str(k, 16) && num(v, 0, 1000)))) return false;
+  if (it.reqs !== undefined && !(isObj(it.reqs) && Object.entries(it.reqs).every(([k, v]) => safeId(k) && num(v, 0, 1000)))) return false;
   return true;
 }
 
@@ -147,9 +151,22 @@ export function schemaProblem(d) {
   const cls = classById(d.class);
   if (!isObj(p.skills) || Object.entries(p.skills).some(([id, l]) => !own(skillDefs, id) || skillDefs[id].class !== d.class || skillDefs[id].kind === "basic" || !isInt(l, 0, Math.min(skillDefs[id].maxLevel, config.skillMaxLevel)))) return "bad skills";
   if (!(p.skills[cls.signature] >= 1)) return "bad skills";
+  // The point invariant of AC-R-205-1 and the tree rules (ADR-0005 section 2): level gate and prerequisites hold for every learned skill, and the
+  // points spent plus the points left never exceed what the level has granted (the signature's first level is free).
+  let spent = 0;
+  for (const [id, l] of Object.entries(p.skills)) {
+    if (l < 1 || (skillDefs[id].reqLevel ?? 1) > p.level) return "bad skills";
+    for (const r of skillDefs[id].requires ?? []) if (!((p.skills[r.id] ?? 0) >= r.level)) return "bad skills";
+    spent += id === cls.signature ? l - 1 : l;
+  }
+  if (spent + p.skillPoints > (p.level - 1) * config.skillPointsPerLevel) return "bad skill points";
   const bar = p.skillBar;
   if (!hasOnly(bar, ["primary", "secondary", "hotkeys", "selected"]) || !Array.isArray(bar.hotkeys) || bar.hotkeys.length !== 4 || !isInt(bar.selected, 0, 3)) return "bad skill bar";
-  for (const id of [bar.primary, bar.secondary, ...bar.hotkeys]) if (id !== null && !(typeof id === "string" && own(skillDefs, id))) return "bad skill bar";
+  if (bar.primary !== cls.basic) return "bad skill bar"; // the primary slot always holds the class's basic attack
+  for (const id of [bar.secondary, ...bar.hotkeys]) { // castable (active or aura), of this class, learned
+    if (id === null) continue;
+    if (!(typeof id === "string" && own(skillDefs, id)) || skillDefs[id].class !== d.class || !["active", "aura"].includes(skillDefs[id].kind) || !(p.skills[id] >= 1)) return "bad skill bar";
+  }
   const ids = new Set();
   if (!gridOk(d.inventory, config.inventory.w, config.inventory.h, ids)) return "bad inventory";
   if (!gridOk(d.stash, config.stash.w, config.stash.h, ids)) return "bad stash";
@@ -158,7 +175,7 @@ export function schemaProblem(d) {
   if (!Array.isArray(d.belt) || d.belt.length !== config.beltSlots) return "bad belt";
   for (const it of d.belt) if (it !== null && (!itemOk(it, { placed: false }) || ids.has(it.id) || !ids.add(it.id))) return "bad belt item";
   if (d.cursorItem !== null && (!itemOk(d.cursorItem, { placed: false }) || ids.has(d.cursorItem.id))) return "bad cursor item";
-  if (!Array.isArray(d.uniquesFound) || d.uniquesFound.length > 100 || d.uniquesFound.some((u) => !str(u))) return "bad uniques";
+  if (!Array.isArray(d.uniquesFound) || d.uniquesFound.length > 100 || d.uniquesFound.some((u) => !safeId(u))) return "bad uniques";
   if (!isInt(d.nextItemId, 1)) return "bad item counter";
   if (!isObj(d.rng) || ["world", "combat", "ai", "loot"].some((n) => !isObj(d.rng[n]) || !isInt(d.rng[n].s, 0, 0xffffffff)) || Object.keys(d.rng).length !== 4) return "bad random streams";
   if (!hasOnly(d.stats, STATS_KEYS) || Object.values(d.stats).length !== STATS_KEYS.length || Object.values(d.stats).some((n) => !isInt(n, 0))) return "bad stats";
@@ -182,10 +199,12 @@ export function check(raw) {
     if (typeof raw.checksum !== "string" || raw.checksum !== checksumOf(raw)) return fail("checksum", "The save is damaged (checksum mismatch).");
   }
   let data = raw, notes = [];
+  if (raw.version === config.saveVersion && isObj(raw.options) && Object.keys(raw.options).length) data = { ...raw, options: {} }; // checksum was verified on the raw text; stored options are dropped (CR-04)
   if (raw.version < config.saveVersion) {
     const m = migrate(raw, config.saveVersion);
     if (!m.ok) return fail("no-migration", `No way to upgrade a version ${m.from} save.`);
     data = m.data; notes = m.notes ?? [];
+    if (isObj(data.options)) data = { ...data, options: {} };
   }
   const problem = schemaProblem(data);
   if (problem) return fail("schema", `The save is not valid: ${problem}.`);
@@ -199,7 +218,8 @@ export function loadSave(save) {
   Object.assign(p, { respecsUsed: s.respecsUsed, level: s.level, xp: s.xp, xpNext: xpNextFor(s.level), attrs: clone(s.attrs), attrPoints: s.attrPoints, skillPoints: s.skillPoints, skills: clone(s.skills), skillBar: clone(s.skillBar), gold: s.gold });
   state.inventory = clone(save.inventory); state.stash = clone(save.stash); state.equipment = { ...state.equipment, ...clone(save.equipment) }; state.belt = clone(save.belt);
   state.cursorItem = clone(save.cursorItem); state.uniquesFound = [...save.uniquesFound]; state.nextItemId = save.nextItemId;
-  state.rng = clone(save.rng); state.stats = { ...save.stats }; state.options = clone(save.options);
+  state.rng = clone(save.rng); state.stats = { ...save.stats }; state.options = {};
+  syncBar(p.skillBar); // secondary follows hotkeys[selected]
   state.deepestDepth = save.deepestDepth; state.bossDefeated = save.bossDefeated; state.bossUnlocked = save.bossUnlocked; state.townVisit = save.townVisit;
   state.tick = save.savedAtTick;
   for (const [d, e] of Object.entries(save.explored)) state.floors[d] = { killed: [], groundItems: [], explored: rleDecode(e.runs, e.size) };

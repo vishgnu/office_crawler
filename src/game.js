@@ -148,7 +148,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     slotsCache = null;
     if (cmd.t === "createCharacter" && r.ok) { game.startState(r.state, { fresh: true }); }
     else if ((cmd.t === "loadSlot" || cmd.t === "continue") && r.ok) { game.startState(r.state); const m = noticeText(r.notes); if (m) game.toast(m); }
-    else if (cmd.t === "renameSlot" && r.ok && running && cmd.slot === active) { const was = running.paused; running.paused = false; game.input({ t: "setName", name: r.name }); running.paused = was; } // the pause menu is open when this is used: the core refuses input while paused
+    else if (cmd.t === "renameSlot" && r.ok && running && cmd.slot === active) game.input({ t: "setName", name: r.name }); // the core accepts setName while paused or dead (CR-10)
     if (r.ok && ["createCharacter", "loadSlot", "continue"].includes(cmd.t)) { game.ui.slots = false; game.ui.create = null; game.ui.options = null; game.capturing = false; }
     emitChange();
     return r;

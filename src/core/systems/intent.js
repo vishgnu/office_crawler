@@ -126,12 +126,6 @@ function itemCommand(state, input) {
     case "selectSkill": return done(selectSkill(state, input.index));
     case "respec": return done(respec(state));
     case "toggleAura": return done(toggleAura(state, input.id));
-    case "setName": {
-      const n = validateName(input.name);
-      if (!n.ok) return fail("bad-name");
-      state.player.name = n.name; emit(state, { type: "renamed", name: n.name });
-      return OK;
-    }
     case "cast": return done(castSkill(state, input.skill ?? state.player.skillBar.secondary, input.tile));
     case "useStairs": return done(useStairs(state, input.dir, issueMove));
     case "interact": return done(interact(state, input.id, issueMove));
@@ -172,6 +166,13 @@ function mouseDown(state, tile, button, hold) {
   return res;
 }
 
+function setName(state, name) {
+  const n = validateName(name);
+  if (!n.ok) return fail("bad-name");
+  state.player.name = n.name; emit(state, { type: "renamed", name: n.name });
+  return OK;
+}
+
 /**
  * Apply one input command now (no time passes). Returns { ok, error? }.
  * Commands: click {tile, button, hold}, mouse {phase: down|move|up|cancel, tile, button}, moveTo {tile},
@@ -207,6 +208,8 @@ export function applyInput(state, input) {
   // Releasing the button must always register (also while paused or dead), or the core keeps
   // following the cursor with no button down (S1 review B1).
   if (input.t === "mouse" && (input.phase === "up" || input.phase === "cancel")) { if (input.button !== 2) state.input.mouse.down = false; return OK; }
+  // setName is a whitelisted exception to the paused / not-live gates (the slot manager renames from the pause menu and the death screen).
+  if (input.t === "setName") return setName(state, input.name);
   if (!live) return fail("not in a running game");
   if (state.paused) return fail("paused");
   switch (input.t) {

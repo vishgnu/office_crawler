@@ -1,14 +1,14 @@
 // Character names (R4 contract section 6, R-211). Pure: no randomness, no clock.
 export const NAME_MAX = 16;
 export const DEFAULT_NAME = "Employee";
-// Unicode letters and digits (no emoji, no control or markup characters), space, hyphen and apostrophe.
-const ALLOWED = /^[\p{L}\p{N} '’-]+$/u;
+// Unicode letters, combining marks and digits (no emoji, no control or markup characters), space, hyphen and apostrophe.
+const ALLOWED = /^[\p{L}\p{M}\p{N} '’-]+$/u;
 
 /** validateName(name) -> { ok: true, name } (trimmed, inner space runs collapsed) | { ok: false, error: "bad-name" }. */
 export function validateName(name) {
   if (typeof name !== "string") return { ok: false, error: "bad-name" };
   const clean = name.trim().replace(/ {2,}/g, " ");
-  if (clean.length < 1 || [...clean].length > NAME_MAX || !ALLOWED.test(clean)) return { ok: false, error: "bad-name" };
+  if (clean.length < 1 || /^\p{M}/u.test(clean) || [...clean].length > NAME_MAX || !ALLOWED.test(clean)) return { ok: false, error: "bad-name" };
   return { ok: true, name: clean };
 }
 

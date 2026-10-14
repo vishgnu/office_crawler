@@ -77,7 +77,7 @@ export const config = {
   tree: { minSkills: 10, maxSkills: 10 }, // the data test constant: ten skills per class tree
   player: {
     attrs: { grit: 10, agility: 10, stamina: 10, focus: 10 },
-    xpNext: 80,
+    xpNext: 146,                     // = xpTable[1], the level-2 threshold (ADV-R5-05); state.js reads xpTable directly
   },
   startKit: { weapon: "ruler-rapier", healthPotions: 2, healthPotion: "lukewarm-coffee", manaPotion: "paper-cup-of-water" }, // fallback kit; each class has its own (content/classes.js)
 
