@@ -43,6 +43,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   const syncUi = () => { // the NPC window follows the core dialog; the drawers go away with the run
     const u = game.ui;
     if (!game.core) { u.left = null; u.inventory = false; u.tooltip = null; u.map = false; return; }
+    if (!game.core.ui.dialog) u.questNotice = null;
     if (u.left === "npc" && !game.core.ui.dialog) { u.left = null; if (u.inventory) u.front = "inventory"; u.tooltip = null; }
   };
   const emitChange = () => {
@@ -63,7 +64,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (!game.core) return;
     if (ev.type === "floorEnter" && portalToast) return;
     const m = messageFor(ev, game.core);
-    if (m) game.toast(m);
+    if (m) game.toast(m, ev.type.startsWith("quest.") ? config.quests.toastMs : undefined); // a quest line stays for config.quests.toastMs (AC-R-254-2)
     if (ev.type === "portalOpen" || ev.type === "portalUse") portalToast = true;
   });
   // R7: a new, advanced or completed quest lights the journal badge (cleared when the journal opens); the open journal and the tracker redraw on every change
@@ -71,7 +72,10 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (!game.core || (ev.type !== "quest.accepted" && ev.type !== "quest.step" && ev.type !== "quest.completed")) return;
     if (game.ui.left !== "journal") game.ui.badge.journal = true;
   });
-  bus.on("dialog", () => { game.ui.left = "npc"; game.ui.inventory = true; game.ui.front = "left"; game.ui.vendorTab = "buy"; });
+  // R7: the bag-full line of a refused hand-in stays in the NPC window until the dialog closes or the quest is done
+  bus.on("quest.handInRefused", (ev) => { game.ui.questNotice = ev.id; });
+  bus.on("quest.completed", () => { game.ui.questNotice = null; });
+  bus.on("dialog", () => { game.ui.questNotice = null; game.ui.left = "npc"; game.ui.inventory = true; game.ui.front = "left"; game.ui.vendorTab = "buy"; });
   // run summary for the death screen, derived from the event stream (the core keeps no kill counter)
   game.run = { kills: 0 };
   bus.on("kill", () => { if (game.core) game.run.kills++; });
@@ -318,7 +322,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   const insetTarget = () => (game.core && !game.menu() ? cameraInset(game.w, game.h, { left: !!game.ui.left, right: game.ui.inventory }) : 0);
 
   /** Short message for the toast line and the live region (the UI layer shows it). */
-  game.toast = (text) => { game.ui.toast = { text, id: (game.ui.toast?.id ?? 0) + 1 }; emitChange(); };
+  game.toast = (text, ms) => { game.ui.toast = { text, id: (game.ui.toast?.id ?? 0) + 1, ...(ms ? { ms } : {}) }; emitChange(); };
 
   /**
    * One key press. Panel keys (I, C, S/K) toggle drawers; Escape puts a held item back, then closes the drawers, then

@@ -1,11 +1,26 @@
 // Quest journal and tracker (R7, ADR-0007): pure view models and markup. Plain data in (snapshot.quests, the pouch), no game rules here.
 // Quest texts (titles, next-step lines) come from the core (content/quests.js); only the labels around them live in T.
-import { content } from "../core/index.js";
+import { content, config } from "../core/index.js";
 import { T } from "./text.js";
+import { rarityName } from "./itemview.js";
 
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const STATE_TEXT = { available: T.stateAvailable, active: T.stateActive, ready: T.stateReady, completed: T.stateCompleted };
 const ids = () => content.questIds;
+const fill = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => o[k] ?? "");
+
+/** Reward of a side quest as lines of text: gold, experience, gear kind with its minimum rarity, potions. Empty for the main quest. */
+export function rewardLines(id) {
+  const def = content.quests[id], c = config.quests, qc = c[id];
+  if (!def || def.kind !== "side" || !qc) return [];
+  const out = [];
+  if (def.reward.gold) out.push(fill(T.rewardGold, { n: qc.gold.base + qc.gold.perDepth * qc.refDepth }));
+  if (def.reward.xp) out.push(fill(T.rewardXp, { n: qc.xp.base + qc.xp.perDepth * qc.refDepth }));
+  if (def.reward.gear) out.push(fill(T.rewardGear, { kind: qc.slots.includes("weapon") ? T.rewardGearWeapon : T.rewardGearArmour, rarity: rarityName("magic") }));
+  if (def.reward.potions && qc.potions) out.push(fill(T.rewardPotions, { n: qc.potions }));
+  return out;
+}
+
 
 /** The quest the tracker shows: the pinned one while it is not completed, else the first active or ready quest; null when none is. `qv` is snapshot.quests. */
 export function trackerOf(qv) {
@@ -31,9 +46,9 @@ export function journalModel(qv, pouch = [], scene = "floor") {
     const e = {
       id, title: q.title, kind: id === "main" ? "main" : "side", state: q.state, stateText: STATE_TEXT[q.state] ?? q.state, giver: q.giver, nextStep: q.nextStep,
       progress: progressText(q), pinned: qv.pinned === id, canPin: q.state !== "completed" && id !== "main" && qv.pinned !== id, canUnpin: id !== "main" && qv.pinned === id,
-      verdict: id === "main" && q.state === "active" && q.step === q.stepCount && scene !== "victory",
+      rewards: q.state === "completed" ? [] : rewardLines(id), verdict: id === "main" && q.state === "active" && q.step === q.stepCount && scene !== "victory",
     };
-    e.label = [e.title, e.stateText, e.pinned ? T.pinnedMark : null, e.giver ? `${T.giverLabel}: ${e.giver}` : null, e.progress || null, e.nextStep ? `${T.nextStepLabel}: ${e.nextStep}` : null].filter(Boolean).join(", ");
+    e.label = [e.title, e.stateText, e.pinned ? T.pinnedMark : null, e.giver ? `${T.giverLabel}: ${e.giver}` : null, e.progress || null, e.nextStep ? `${T.nextStepLabel}: ${e.nextStep}` : null, e.rewards.length ? `${T.rewardLabel}: ${e.rewards.join(", ")}` : null].filter(Boolean).join(", ");
     (q.state === "completed" ? out.completed : out.active).push(e);
   }
   for (const p of pouch) out.pouch.push({ id: p.id, quest: p.quest, name: content.quests[p.quest]?.item?.name ?? p.id });
@@ -46,6 +61,7 @@ const entryHtml = (e, idx) => `<li class="jq s-${esc(e.state)}${e.pinned ? " pin
   + `${e.progress ? `<span class="jp" data-testid="journal-progress-${esc(e.id)}">${esc(e.progress)}</span>` : ""}</div>`
   + `${e.giver ? `<div class="jg">${esc(T.giverLabel)}: <span data-testid="journal-giver-${esc(e.id)}">${esc(e.giver)}</span></div>` : ""}`
   + `${e.nextStep ? `<p class="jn"><span class="jl">${esc(T.nextStepLabel)}</span> <span data-testid="journal-next-${esc(e.id)}">${esc(e.nextStep)}</span></p>` : ""}`
+  + `${e.rewards.length ? `<p class="jn jrw"><span class="jl">${esc(T.rewardLabel)}</span> <span data-testid="journal-reward-${esc(e.id)}">${esc(e.rewards.join(", "))}</span></p>` : ""}`
   + `${e.canPin || e.canUnpin ? `<button class="mini jpin" type="button" data-testid="journal-pin-${esc(e.id)}" data-fk="j.p.${esc(e.id)}" data-pin="${esc(e.canUnpin ? "main" : e.id)}" aria-label="${esc(`${e.canUnpin ? T.unpinAction : T.pinAction}: ${e.title}`)}">${esc(e.canUnpin ? T.unpinAction : T.pinAction)}</button>` : ""}`
   + `${e.verdict ? `<button class="mini jverdict" type="button" data-testid="journal-verdict" data-fk="j.v" data-verdict="1">${esc(T.readVerdict)}</button>` : ""}</li>`;
 

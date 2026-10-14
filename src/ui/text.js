@@ -148,5 +148,8 @@ Object.assign(T, {
   bagFullNotice: "Your bag has no room for the reward. Free some space and try again.",
   readVerdict: "Read the verdict", verdictRefused: "There is no verdict to read yet.", trackerLabel: "Quest tracker",
   mapMarkerStairsDown: "Stairs down", mapMarkerStairsUp: "Stairs up", mapMarkerNpc: "Talk here", mapMarkerElevator: "Elevator",
+  rewardGearArmour: "an armour piece", rewardGearWeapon: "a weapon", progressNow: "Progress",
+  toastQuestDone: "{title}: completed", toastQuestRewards: "{title}: completed ({rewards})", slotMainDone: "Main quest complete", slotQuestAria: "Quest: {step}, {n} of {m} side quests done",
+  questDialogLabel: "Quests of this person",
   slotQuestLine: "{step} · {n}/{m}", toastQuest: "{title}: {next}", keyJournal: "Journal", pauseJournal: "Journal",
 });

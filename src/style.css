@@ -691,3 +691,25 @@ html.hc .tr-in{background:#000;border-color:#fff;color:#fff}
 #ui.phone .dock .hbtn{padding:3px 6px}
 #ui.phone .dock .hbtn kbd{display:none}
 #ui.phone .dock .hbtn .bdg{margin-left:4px}
+
+/* ---- R7: quest section of the NPC window, slot card quest line, reduced motion ---- */
+.nqs{margin:0}
+.nql{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.nq{background:var(--panel2);border:3px solid var(--ol);box-shadow:inset 0 0 0 2px var(--rim);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:5px;overflow-wrap:anywhere}
+.nq.s-ready{border-color:var(--gold)}
+.nq-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.nq-t{font-size:16px;color:#fff}
+.nq-s{font-size:14px;font-weight:700;background:#2a2456;border:2px solid var(--rim);border-radius:8px;padding:0 8px;white-space:nowrap}
+.nq.s-ready .nq-s{background:var(--gold);color:var(--ol)}
+.nq p{margin:0;font-size:14px}
+.nq-x{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:15px!important}
+.nq-warn{background:#4a1620;color:#fff;border:2px solid #ff8a8a;border-radius:8px;padding:4px 8px;font-weight:700}
+.nq-acts{display:flex;gap:8px;flex-wrap:wrap}
+.nq-acts .rbtn{min-height:38px;min-width:84px}
+.nq-acts .rbtn.pri{background:var(--gold);color:var(--ol)}
+.nq button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+#ui.phone .nq-acts .rbtn{min-height:44px;min-width:96px}
+.sl-card .sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.sl-quest{color:var(--gold)}
+@media (prefers-reduced-motion:reduce){.toast,.bdg,.tracker,.nq{animation:none!important;transition:none!important}}
+.noanim .toast,.noanim .bdg,.noanim .tracker,.noanim .nq{animation:none!important;transition:none!important}

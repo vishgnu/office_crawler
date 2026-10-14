@@ -13,6 +13,7 @@ import { sellValue, buyPrice, classById } from "../core/index.js";
 import { renderTree, nodeTipHtml, nodeFor } from "./tree.js";
 import { paintBust } from "./slots.js";
 import { journalModel, journalHtml, trackerOf } from "./journal.js";
+import { questDialogModel, questDialogHtml } from "./questdialog.js";
 
 const S = content.strings;
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -152,6 +153,7 @@ export function createPanels(root, game) {
     if (!d) return "";
     let h = `<div class="ph"><span class="phi">${skillIcon("panel:talk")}</span><h2>${esc(S[d.nameKey] ?? "")}</h2>${closeBtn("npc", T.closeWindow)}</div><div class="pb"><div class="npc" data-testid="npc-window" data-kind="${esc(d.kind)}">${tabsHtml("npc")}`;
     h += `<p class="say">“${esc(d.lines.map((k) => S[k] ?? "").join(" "))}”</p><div class="gold" data-testid="npc-gold">${coinIcon()}<span>${num(c.player.gold)} ${esc(T.gold)}</span></div>`;
+    if (c.quests) h += questDialogHtml(questDialogModel(questView(c), d.npc), game.ui.questNotice);
     if (d.kind === "vendor" && c.vendor) {
       const tab = game.ui.vendorTab;
       h += `<div class="vtabs" role="tablist"><button type="button" role="tab" data-testid="tab-buy" data-vtab="buy" aria-selected="${tab === "buy"}" class="${tab === "buy" ? "on" : ""}">${esc(T.buyTab)}</button><button type="button" role="tab" data-testid="tab-sell" data-vtab="sell" aria-selected="${tab === "sell"}" class="${tab === "sell" ? "on" : ""}">${esc(T.sellTab)}</button></div>`;
@@ -219,7 +221,7 @@ export function createPanels(root, game) {
     if (!fk) return;
     const find = (k) => scope.querySelector(`[data-fk="${CSS.escape(k)}"]`);
     let t = find(fk);
-    if (!t || t.disabled) t = (fk.startsWith("l.") ? find("n." + fk.slice(2)) : null) ?? (t?.closest?.(".drawer") ?? scope).querySelector?.("[data-close]") ?? null;
+    if (!t || t.disabled) t = (fk.startsWith("l.") ? find("n." + fk.slice(2)) : null) ?? (fk.startsWith("q.") ? scope.querySelector(".nq button") : null) ?? (t?.closest?.(".drawer") ?? scope).querySelector?.("[data-close]") ?? null;
     t?.focus({ preventScroll: true });
   };
   function renderInto(node, html) {
@@ -265,7 +267,7 @@ export function createPanels(root, game) {
       c.inventory.items.map((i) => [i.id, i.x, i.y]), Object.values(c.equipment).map((i) => i?.id ?? 0), c.belt.map((b) => b?.id ?? 0), c.floor.name];
     if (rightOpen) { const sg = sigOf(base); if (sg !== view.sigs.right) { view.sigs.right = sg; renderInto(el.right, renderInventory(c)); } } else view.sigs.right = "";
     if (leftOpen) {
-      const sg = sigOf(base, u.left, u.vendorTab, view.sellArm, view.respecAsk, c.ui.dialog, c.vendor && [c.vendor.id, c.vendor.stock.map((e) => e.item.id)], c.stash.items.map((i) => i.id), u.left === "journal" && [c.quests, c.player.pouch, c.scene]);
+      const sg = sigOf(base, u.left, u.vendorTab, view.sellArm, view.respecAsk, c.ui.dialog, c.vendor && [c.vendor.id, c.vendor.stock.map((e) => e.item.id)], c.stash.items.map((i) => i.id), (u.left === "journal" || u.left === "npc") && [c.quests, c.player.pouch, c.scene, u.questNotice]);
       if (sg !== view.sigs.left) {
         view.sigs.left = sg;
         renderInto(el.left, u.left === "skills" ? renderSkills(c) : u.left === "npc" ? renderNpc(c) : u.left === "journal" ? renderJournal(c) : renderCharacter(c));
@@ -274,6 +276,7 @@ export function createPanels(root, game) {
       }
     } else { view.sigs.left = ""; view.stats = {}; }
     syncJournalFocus(leftOpen && u.left === "journal");
+    syncNpcFocus(leftOpen && u.left === "npc" && !!c.ui.dialog);
     syncTracker(c, D, leftOpen, rightOpen, menu);
     syncGhost();
     syncToast();
@@ -293,6 +296,14 @@ export function createPanels(root, game) {
       const t = p?.fk ? root.querySelector(`[data-fk="${CSS.escape(p.fk)}"]`) : p;
       if (t?.isConnected && !t.disabled && !game.menu()) t.focus({ preventScroll: true });
     }
+  }
+  /** An NPC window with a quest puts focus on its first quest button (else the close button); the window is a labelled region and Escape closes it (core). */
+  function syncNpcFocus(open) {
+    if (open && !view.nOpen) {
+      view.nOpen = true;
+      const a = doc.activeElement;
+      if (!a || a === doc.body || !el.left.contains(a)) (el.left.querySelector(".nq button") ?? el.left.querySelector("[data-close=npc]"))?.focus({ preventScroll: true });
+    } else if (!open) view.nOpen = false;
   }
   /** One line for the pinned quest. It sits between the drawers and the dock, so it never covers a panel control. */
   function syncTracker(c, D, leftOpen, rightOpen, menu) {
@@ -321,7 +332,7 @@ export function createPanels(root, game) {
     el.toast.textContent = t.text; el.toast.hidden = false;
     el.live.textContent = ""; el.live.textContent = t.text;
     clearTimeout(view.toastTimer);
-    view.toastTimer = setTimeout(() => { el.toast.hidden = true; if (game.ui.toast?.id === t.id) game.ui.toast = null; }, 3200);
+    view.toastTimer = setTimeout(() => { el.toast.hidden = true; if (game.ui.toast?.id === t.id) game.ui.toast = null; }, t.ms ?? 3200);
   }
 
   // ------------------------------------------------------------ tooltip
@@ -561,6 +572,9 @@ export function createPanels(root, game) {
     const d = b.dataset;
     if (b.matches(".cell,.slot,.bslot")) { if (e.detail === 0) { const t = targetOf(b); if (t) activate(t); } return; } // keyboard activation (pointer path is handled on pointerdown)
     if (d.pin) { game.input({ t: "questPin", id: d.pin }); return; }
+    if (d.qaccept) { game.input({ t: "questAccept", id: d.qaccept }); return; }
+    if (d.qdecline) { game.input({ t: "closeDialog" }); return; }
+    if (d.qhandin) { game.input({ t: "questHandIn", id: d.qhandin }); return; }
     if (d.verdict) { game.readVerdict(); return; }
     if (d.close) game.closePanel(d.close);
     else if (d.open) { if (b.classList.contains("tab")) game.openPanel(d.open); else game.togglePanel(d.open); }

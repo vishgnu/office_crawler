@@ -1,0 +1,7 @@
+# R7-0.6 progress (UI-R7Q second part)
+
+- start (2026-10-14): names confirmed against code (L-026): `npcs[].marker`, `quests[id].state/progress/goal`, inputs `questAccept`/`questHandIn`/`closeDialog`, event `quest.handInRefused {id, reason}`, `content.quests[id].text.{offer,progress,ready,done}`, `config.quests.{sqN.gold,xp,potions,slots}`, slot index `mainStep/mainDone/sidesDone`. cannot: none.
+- done: NPC window quest section (`ui/questdialog.js`: offer with reward text, Accept/Decline, progress line, Hand in, done line, bag-full alert kept in `game.ui.questNotice` until the window closes or the quest completes); reward lines (`rewardLines` in `ui/journal.js`) also shown in the journal entries (AC-R-247-4); focus goes onto the first quest button (else the close button) when the window opens, and back to a quest button or Close when the focused button disappears.
+- done: toasts through `messageFor` (`quest.accepted`, `quest.step`, `quest.completed` with rewards, `quest.handInRefused`); `game.toast(text, ms)` keeps quest lines for `config.quests.toastMs` (4000 ms, was 3200 for all); reduced motion CSS (no animation or transition on toast, badge, tracker, quest block; the toast already had none).
+- done: slot card line `Step title · N/3` (`slotQuestText`, `data-testid=slot-quest-N`, screen reader gets a full sentence) in the slot manager and the Load dialog (same view).
+- done: test/ui-quests-dialog.test.js (5 tests), e2e/r7quest.mjs (52 checks, real time, https origin, desktop + phone + reduced motion + v3 migration), run-all line, six shots.

@@ -5,7 +5,7 @@
 // shows an Undo button only when the slot entry says hasPrev (guarded: an entry without the field counts as "has an undo copy").
 //   h.onNewHere(slot)  open the class selection for this slot        h.emit(type)  UI click cue
 // Text comes from T / the core strings; the character name is always set with textContent.
-import { content } from "../core/index.js";
+import { content, config } from "../core/index.js";
 import { validateName } from "../core/name.js";
 import { T } from "./text.js";
 import { figures } from "./figureHost.js";
@@ -65,6 +65,12 @@ export function fmtStamp(e) {
 // `deepest` is always >= 1 (the core cannot tell the Lobby from floor 1): "Lobby only" means standing in the Lobby at deepest 1.
 const deepestOf = (e) => (Number.isFinite(e.deepest) ? (e.deepest <= 1 && !(e.depth > 0) ? 0 : e.deepest) : e.depth ?? 0);
 const where = (e) => (deepestOf(e) > 0 ? `${T.slDeepest} ${T.slFloor.toLowerCase()} ${deepestOf(e)}` : `${T.slDeepest}: ${T.slLobby}`);
+/** The quest line of an occupied card: "<main step title> · N/M" (AC-R-252-1), "" when the entry carries no quest fields (an empty, damaged or newer slot, or an index not yet backfilled). */
+export function slotQuestText(e) {
+  if (!e || e.state !== "ok" || !Number.isInteger(e.mainStep)) return "";
+  const steps = content.quests.main.steps, step = e.mainDone ? T.slotMainDone : steps[Math.min(steps.length, Math.max(1, e.mainStep)) - 1].title;
+  return T.slotQuestLine.replace("{step}", step).replace("{n}", String(e.sidesDone ?? 0)).replace("{m}", String(config.quests.sideCount));
+}
 export const slotSummary = (e) => `${CLASS_NAME[e.class] ?? e.class} · ${T.slLevel} ${e.level} · ${where(e)} · ${fmtPlay(e.playSec)} ${T.slPlayed}`;
 
 /**
@@ -107,7 +113,14 @@ export function createSlotsView(h, { mode = "dialog", onClose = null } = {}) {
       const tags = el("span", "sl-tags");
       if (playing) tags.append(el("span", "sl-tag now", T.slPlaying));
       else if (idx().last === n) tags.append(el("span", "sl-tag", T.slMostRecent));
-      body.append(name, tags, el("span", "sl-meta", slotSummary(e)), el("span", "sl-meta", `${T.slLast}: ${fmtStamp(e)}`));
+      body.append(name, tags, el("span", "sl-meta", slotSummary(e)));
+      const qt = slotQuestText(e);
+      if (qt) { // the visible "Step · N/3" is hidden from screen readers in favour of a full sentence
+        const q = el("span", "sl-meta sl-quest", qt); q.dataset.testid = `slot-quest-${n}`; q.setAttribute("aria-hidden", "true");
+        const sr = el("span", "sr", T.slotQuestAria.replace("{step}", qt.split(" · ")[0]).replace("{n}", String(e.sidesDone ?? 0)).replace("{m}", String(config.quests.sideCount)));
+        body.append(q, sr);
+      }
+      body.append(el("span", "sl-meta", `${T.slLast}: ${fmtStamp(e)}`));
       li.append(body);
       const acts = el("div", "sl-acts");
       acts.append(button(playing ? T.slContinueHere : T.slLoad, `slot-load-${n}`, () => {
