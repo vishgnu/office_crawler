@@ -32,6 +32,17 @@ for (const [k, vp] of Object.entries(sizes)) {
     await shot(g, `tree-${k}`);
     await g.context.close();
   }
+  // five characters, no notice: all slots visible without scrolling at 720
+  {
+    const g = await lobby(vp);
+    const names = ["Pat Pending", "Sam Sample", "Ida Idle", "Lou Lobby", "Max Memo"];
+    for (let n = 1; n <= 5; n++) await g.app("slots.run", { t: "createCharacter", slot: n, class: content.classes[(n - 1) % 3].id, name: names[n - 1], seed: n });
+    await g.app("slots.run", { t: "deleteSlot", slot: 4, confirm: true });
+    await g.page.reload(); await g.page.waitForFunction(() => window.__app?.getState().scene === "title");
+    await g.page.click(T("load-game")); await g.page.waitForSelector(T("slots-view"));
+    await shot(g, `slots-${k}-five`);
+    await g.context.close();
+  }
   // slots with a notice and with take-over
   {
     const g = await lobby(vp);
