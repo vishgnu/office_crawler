@@ -18,7 +18,6 @@ export const it = {
       maxLevel: 5, reqLevel: 8, requires: [{ id: "server-overheat", level: 1 }], tags: ["shock", "projectile", "chain"], cost: { mana: [8, 2], cooldown: 0, reservePct: 0 },
       delivery: { kind: "bolt", speed: 0.6, range: 10, count: [1, 0], spreadDeg: 0, pierce: 0, chain: [2, 1, 5], falloff: 0.75, chainRange: 4 },
       effects: [{ op: "damage", type: "shock", min: [7, 2], max: [12, 3], weaponShare: 0.3 }],
-      synergy: [{ from: "server-overheat", stat: "damagePct", perLevel: 4 }],
       fx: { cast: "fx:bolt", hit: "fx:bolt", icon: "power-surge" } },
     { id: "overclock", class: C, branch: "infrastructure", tier: 2, col: 2, name: "Overclock", textKey: "skillOverclockText", kind: "passive", archetype: "passive",
       maxLevel: 5, reqLevel: 8, requires: [{ id: "server-overheat", level: 1 }], tags: ["fire", "shock", "damage"], cost: { mana: [0, 0], cooldown: 0, reservePct: 0 },

@@ -14,6 +14,7 @@ Gate authority for this project is delegated to `customer-proxy` while the user 
 "Delegation record"). All proxy decisions: `proxy-log.md`.
 
 ## Waiting for the real customer
+- **Graphics mood**: the proxy lifted the ambient floor tone by +12 % so the new detail reads (`AMBIENT_LIFT`, 0 = the old darker look). Confirm or revert.
 - **Class names and game title** (brand): working names Facilities Manager / Sales Rep / IT Wizard, title "Office Crawler".
 - **Respec rule** (proxy chose free respec in town at LOW confidence; "stay close to the original" may mean no respec).
 - **Skill names** "Packet Filter" / "Evacuation Drill" (safe-default renames, kept away from a genre skill name). Confirm or overturn.

@@ -274,7 +274,7 @@ test("manaCostPct (Overclock) raises the cost of every cast; mana never drops be
   assert.equal(s.player.mp, 2);
 });
 
-test("skill damage mods and synergies: Overclock raises fire / shock skill damage; Floor Buffer gains from Pallet Slam levels (data-driven synergy)", () => {
+test("skill damage mods and synergies: Overclock raises fire / shock skill damage; a synergy row (schema reserved, no data this round per the proxy answer) works when present", () => {
   const dmg = (cls, setup, skill, tile) => {
     const s = arena(cls, [["zombie-intern", 11, 4]]); setup(s); applyDerived(s); noCrit(s);
     const m = s.monsters[0]; m.hp = m.hpMax = 100000; s.player.damage = { min: 0, max: 0 };
@@ -285,9 +285,14 @@ test("skill damage mods and synergies: Overclock raises fire / shock skill damag
   const b = dmg("it-wizard", (s) => { s.player.skills["power-surge"] = 5; s.player.skills.overclock = 5; }, "power-surge", { x: 11, y: 4 });
   assert.ok(b > a, `${b} > ${a}`);
   assert.ok(Math.abs(b / a - (1 + at([8, 4], 5) / 100)) < 0.1, `close to the curve's percent: ${b / a}`);
+  assert.ok(Object.values(content.skills).every((d) => d.synergy === undefined), "no synergy data in R4 (ADR5-4: only if there is room in round 6)");
+  const def = content.skills["floor-buffer"];
   const c = dmg("facilities-manager", (s) => { s.player.skills["pallet-slam"] = 1; }, "floor-buffer", { x: 11, y: 4 });
-  const d = dmg("facilities-manager", (s) => { s.player.skills["pallet-slam"] = 5; }, "floor-buffer", { x: 11, y: 4 });
-  assert.ok(d > c, "the synergy raised the damage");
+  def.synergy = [{ from: "pallet-slam", stat: "damagePct", perLevel: 4 }];
+  try {
+    const d = dmg("facilities-manager", (s) => { s.player.skills["pallet-slam"] = 5; }, "floor-buffer", { x: 11, y: 4 });
+    assert.ok(d > c, "the synergy raised the damage");
+  } finally { delete def.synergy; }
 });
 
 test("Commission (trigger on kill): a kill restores mana and pays gold scaled by floor; nothing without the skill", () => {

@@ -19,7 +19,6 @@ export const facilities = {
       maxLevel: 5, reqLevel: 8, requires: [{ id: "pallet-slam", level: 1 }], tags: ["physical", "area", "heavy"], cost: { mana: [10, 2], cooldown: 0, reservePct: 0 },
       delivery: { shape: "ring", radius: [3.2, 0.3, 5], at: "self", los: true },
       effects: [{ op: "damage", type: "physical", min: [8, 2], max: [14, 3], weaponShare: 0.5 }, { op: "knockback", tiles: 1 }],
-      synergy: [{ from: "pallet-slam", stat: "damagePct", perLevel: 4 }],
       fx: { cast: "fx:ring", hit: "fx:dust", icon: "floor-buffer" } },
     { id: "demolition-day", class: C, branch: "maintenance", tier: 3, col: 1, name: "Demolition Day", textKey: "skillDemolitionText", kind: "active", archetype: "area",
       maxLevel: 1, reqLevel: 16, requires: [{ id: "floor-buffer", level: 1 }], tags: ["physical", "area", "heavy"], cost: { mana: [22, 0], cooldown: 0, reservePct: 0 },
