@@ -97,3 +97,42 @@ No intermittent failure was observed in the final runs. One check failed on ever
 - BAL-R6 owner: ADV-R6-02 (core), ADV-R6-05 (migration decision), ADV-R6-01 (schema, with ADV-R5-04).
 - UI-R6 owner: ADV-R6-03 (one number in `style.css:625`), ADV-R6-04 (`panels.js:199`).
 - The e2e script builds two variants of the game into the OS temp directory to switch the respec mode; it throws with a clear message if the `config.respec` line changes shape.
+
+---
+
+# Round 2 (after the fix round: FIX-R6-CORE and FIX-R6-UI)
+
+Changed by me: `e2e/adv-r5.mjs` (hostile-item fixture is now a magic weapon with a real `health-t1` affix carrying the hostile name; 150/150, the two old XFAILs show XPASS), `e2e/adv-r6.mjs` (+ section `fix2`, XFAIL lines turned into plain checks), new `test/adv-r6-fix.test.js` (27 cases, 6 todo). `test/adv-r6-core.test.js` was already converted by the fix round (26/26, no todo).
+
+## Verified fixed in the browser (variant builds and seeded storage, https origin)
+
+| id | how | result |
+|---|---|---|
+| ADV-R6-01 | forged saves (1000 in every attribute; forged focus affix) seeded into slot 1 and pasted into Import | slot shown as not ok, Continue never starts it, import refused, no page error |
+| ADV-R6-02 | once and gold variants: Respec with nothing learned | button disabled with "Nothing to respec" hint, forced click and API refuse with `nothing-to-respec`, no gold taken, the once not used; a real respec after learning works and charges / uses the once. Free mode still allows an empty respec (nothing to lose) |
+| ADV-R6-03 | computed geometry of every elbow, three classes | reaches the parent stub |
+| ADV-R6-04 | Enter x6 on Learn until maxed | focus stays in the panel |
+| ADV-R6-05 | the three real R5 fixtures (v2) loaded by Continue | IT Wizard and Sales Rep: 65 points back, attributes at class start, notice naming Focus / Agility in the pause menu with Dismiss, slot rewritten as v3, reload: no second refund and no notice, spending them raises damage; Facilities Manager unchanged, no notice |
+| CR6-07 | 120 refused casts (mana 1) | the reason is shown at most about once a second |
+
+## Re-attack of the new code
+
+- No false rejections: 2 000+ generated gear items (every base x normal/magic/rare x 6 item levels x 3 class tags x 12 seeds, worn), every unique at three item levels (all uniques round-trip, affixes identical, the dotted ids of the four resist uniques included), every potion strength and consumable, vendor purchases of all three classes, and the careful bot's real state every 2 500 ticks over 16 000 ticks for 3 classes x 3 seeds, and levels 1 to 30 by xp with random allocation, learning, respec and loot: all save, load and re-save identically.
+- Attribute invariant: exactly at the limit loads, one over is refused, for every class at levels 1, 2, 16, 30; a hero below the start values and gear attributes are not counted against it.
+- v2 to v3: refund arithmetic over levels 1 to 30 and mixed allocations (attributes back to class start, points conserved, note numbers right), unspent points kept, nothing allocated gives no note, idempotent after re-save, hostile v2 attribute tables (strings, negatives, arrays, fractions, null, 1e9, missing attrPoints) are refused without a throw, a forged v2 over the limit is refused rather than clamped; old fixtures v0 and v1 still load.
+- Dotted affix ids: still refused for item ids, path-like ids and 41-character ids.
+
+## New findings
+
+| id | severity | title |
+|---|---|---|
+| ADV-R6-06 | minor | The level in a save is not tied to its xp: a level 30 hero (145 attribute points, 29 skill points) loads at xp 0 |
+| ADV-R6-07 | minor | Rollable-gear validation stops at gear affixes: potions (restore up to 1 000 000), consumable effect ids, requirements, a head base in the weapon slot and duplicated uniques are accepted |
+
+### ADV-R6-06
+Repro: `test/adv-r6-fix.test.js` "ADV-R6-06". Expected: `xp >= config.xpTable[level - 1]` (every legal save satisfies it, also R5 saves, because the R6 curve is lower). Actual: `src/save/format.js:182` only range-checks level and xp separately, so the new attribute invariant (`format.js:185-188`) and the skill-point invariant are bounded by a level the player can claim freely. Impact: the damage ceiling of a forged hero is now the legal maximum at level 30 (about 150 weapon damage), no longer 500+, but a free level 30.
+
+### ADV-R6-07
+Repros (`test/adv-r6-fix.test.js`, five todo cases): a belt potion `{ restore: 1000000, restores: "hp" }` loads; a consumable with `effect: "anything"`; `makeItem("hard-hat")` in the weapon slot; gear with `reqs: {}`; the same unique twice in the bag. Expected: `kind !== "gear"` items match their base (restore, restores, effect), gear matches its base (`reqs`, `w`, `h`, `twoHanded`, slot against the equipment key), and a unique id appears at most once. Actual: `rollableOk` (`src/save/format.js:109-131`) is called for gear only (`format.js:150`) and compares affixes, `damage` and `defense` only. Impact: single-player self-edit; the infinite potion is the cheapest.
+
+Counts after round 2: blocker 0, major 0, minor 2 new (ADV-R6-06, -07); ADV-R6-01 to -05 fixed and verified.

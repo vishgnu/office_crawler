@@ -93,6 +93,23 @@ test("saving at many points of real play: gain levels 1..30 by xp, random alloca
   }
 });
 
+test("vendor stock: everything every vendor sells, bought at several depths and refreshes, saves and loads", () => {
+  for (const cls of CLASSES) {
+    const s = hero(cls.id); s.player.gold = 1e6;
+    const vendors = (s.floor.npcs ?? s.npcs ?? []).filter((n) => n.vendor || n.kind === "vendor" || n.role === "vendor" || content.npcs[n.type ?? n.id]?.vendor);
+    let bought = 0;
+    for (const v of vendors) {
+      s.player.tile = { x: v.tile.x, y: v.tile.y + 1 }; s.deepestDepth = 6;
+      applyInput(s, { t: "openVendor", id: v.id });
+      for (let i = 0; i < (s.vendor?.stock.length ?? 0); i++) { if (applyInput(s, { t: "buy", index: 0 }).ok) bought++; if (!s.vendor) break; }
+      applyInput(s, { t: "closeVendor" });
+      s.cursorItem = null;
+      const r = rt(s); assert.ok(r.ok, `${cls.id} vendor ${v.id}: ${r.message}`);
+    }
+    assert.ok(vendors.length >= 2 && bought >= 2, `${cls.id}: ${vendors.length} vendors, ${bought} purchases`);
+  }
+});
+
 // ---------------------------------------------------------------- the attribute invariant: exact edge and bypass attempts
 const start = (id) => ATTRS.reduce((n, a) => n + content.classes.find((c) => c.id === id).attrs[a], 0);
 test("attribute invariant: exactly at the limit loads, one over is refused, for every class and level 1, 2, 16, 30", () => {

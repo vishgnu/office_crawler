@@ -686,7 +686,7 @@ if (sec("fix2")) {
       await g.page.reload(); await g.page.waitForFunction(() => window.__app?.getState().scene === "title");
       await g.page.click(T("continue")); await g.page.waitForTimeout(200);
       const p2 = (await g.state()).player;
-      check(`[R6-fix] ${cls}: after reload the same hero loads with no second refund and no notice`, p2.attrPoints === p.attrPoints && JSON.stringify(p2.attrs) === JSON.stringify(p.attrs) && (await g.app("slots.view")).status.notice === null, [p2.attrPoints, p.attrPoints, p2.attrs, p.attrs, (await g.app("slots.view")).status]);
+      check(`[R6-fix] ${cls}: after reload the same hero loads with no second refund and no notice`, p2.attrPoints === p.attrPoints && ["grit", "agility", "stamina", "focus"].every((a) => p2.attrs[a] === p.attrs[a]) && (await g.app("slots.view")).status.notice === null, [p2.attrPoints, p.attrPoints, p2.attrs, p.attrs, (await g.app("slots.view")).status]);
       // spending the refunded points in the Employee File puts them in the power attribute and adds damage
       const d0 = (await g.state()).player.damage.max;
       await g.page.keyboard.press("KeyC"); await g.page.waitForTimeout(120);

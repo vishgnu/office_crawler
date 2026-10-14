@@ -4,3 +4,4 @@
 10:11 done: slots layout; test/adv-r6-core.test.js (20 cases, 4 todo: ADV-R6-01/01b/02/02b); no-cheat headless 18/18 won seeds 101-106; next: lazy atlas e2e, determinism Node vs Chromium, real-browser run, docs
 10:35 done: lazy atlas (33 checks), Node vs Chromium determinism (9 gate runs + 3 whole runs identical), respec layout, class select; findings ADV-R6-01..05; run-all registered; next: npm test x3, build, npm run e2e, write R6-adversarial.md
 10:51 done: verification: npm test x3 = 709 pass / 0 fail / 5 todo; npm run build ok; npm run e2e (one command) all 14 scripts ok, adv-r5 150/150, adv-r6 394/394 (6 XFAIL); docs/reviews/R6-adversarial.md written
+11:33 round2: adv-r5 fixture fixed; adv-r6 XFAILs turned into checks, fix2 section (26 checks); test/adv-r6-fix.test.js (27 cases, 6 todo ADV-R6-06/07); next: verify npm test x3, build, e2e
