@@ -547,7 +547,7 @@ const texts = {};
   const X = "<img src=x onerror=window.__xss=1>", Y = '"><svg onload=window.__xss=2>';
   const s = toSave(newGame(5, { class: CL.sr, name: "Hostile", start: "town", wearStartKit: true }));
   const w = s.equipment.weapon;
-  Object.assign(w, { name: X, baseName: Y, flavour: X, affixes: [{ stat: "defense", value: 1, range: [1, 5], name: Y }] });
+  Object.assign(w, { name: X, baseName: Y, flavour: X, rarity: "magic", affixes: [{ id: "health-t1", group: "health", kind: "prefix", stat: "hpMax", value: 6, range: [5, 10], tier: 1, name: Y }] }); // R6 fix round: a legal rollable affix on a magic item, hostile name kept
   s.inventory.items.push({ ...structuredClone(w), id: "i90", x: 0, y: 0, name: Y, flavour: Y });
   s.stash.items.push({ ...structuredClone(w), id: "i91", x: 0, y: 0, name: X });
   s.belt[0] = { id: "i92", base: "lukewarm-coffee", baseName: Y, name: X, kind: "potion", rarity: "normal", w: 1, h: 1, restore: 25, restores: "hp", slot: "potion", affixes: [] };

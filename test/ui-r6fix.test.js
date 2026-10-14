@@ -8,6 +8,7 @@ import { renderTree } from "../src/ui/tree.js";
 import { attrHint } from "../src/ui/panels.js";
 import { messageFor } from "../src/ui/messages.js";
 import { T } from "../src/ui/text.js";
+import { noticeText } from "../src/ui/savestatus.js";
 
 const css = readFileSync(new URL("../src/style.css", import.meta.url), "utf8");
 
@@ -59,6 +60,10 @@ test("CR6-07 castRefused: a line per reason, throttled when the key is held; unk
 });
 
 test("save v3 notice text and the connector / focus rules", () => {
-  assert.match(T.notices["attributes-refunded"], /attribute points were refunded/);
+  assert.equal(noticeText({ notice: "attributes-refunded", noticeAttr: "focus" }), "Your attribute points were refunded because your class now scales from Focus. Spend them again in the Employee File.");
+  assert.match(noticeText({ notice: "attributes-refunded", noticeAttr: "agility" }), /from Agility\./);
+  assert.match(noticeText({ notice: "attributes-refunded" }), /a different attribute/);
+  assert.ok(!/marked/.test(noticeText({ notice: "attributes-refunded" })));
+  assert.equal(noticeText({ notice: "generic" }), T.notices.generic);
   assert.match(css, /var\(--span\) \* \(100% \+ var\(--gx\) \+ 4px\)/);
 });

@@ -16,6 +16,12 @@ function el(tag, cls, text) {
 }
 
 /** Keep Tab / Shift+Tab inside `box`; Esc calls onEsc. Attach to the box itself (keydown bubbles from its buttons). */
+/** Display text of the status notice; "attributes-refunded" names the attribute (status.noticeAttr) and falls back to a generic line without it. */
+export function noticeText(s) {
+  if (s.notice === "attributes-refunded") { const a = T.statAttr[s.noticeAttr]; return a ? T.notices["attributes-refunded"].replace("{attr}", a) : T.notices["attributes-refunded-generic"]; }
+  return T.notices[s.notice] ?? T.notices.generic;
+}
+
 export function trapDialog(box, onEsc, signal) {
   box.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); onEsc(); return; }
@@ -60,7 +66,7 @@ export function createSaveStatus(h, { errorText = () => "", onChange = null } = 
     if (s.storage === "memory") root.append(line("mem", "save-banner-memory", T.svMemory, T.svMemoryText));
     else if (s.storage === "full") root.append(line("mem", "save-banner-full", T.svFull, T.svFullText));
     if (s.notice) {
-      const d = line("note", "save-notice", T.notices[s.notice] ?? T.notices.generic, "");
+      const d = line("note", "save-notice", noticeText(s), "");
       d.append(btn(T.svDismiss, "save-notice-dismiss", () => { cmd({ t: "dismissSaveNotice" }); render(); onChange?.(); }));
       root.append(d);
     }
