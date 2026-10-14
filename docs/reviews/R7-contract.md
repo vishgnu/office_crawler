@@ -220,3 +220,15 @@ No cue event for a declined offer, a repeated hand-in, a re-pin of the same ques
 6. **Index upgrade.** `upgradeIndex` rebuilds the index once; the existing `rebuild(prev)` keeps `active`, `last`, `owner`; a failure falls back to the old index (entries without quest fields show no quest text).
 7. **Deep migrated characters** get level-4 reward gear and must walk up from floor 8 to reach floors 3 and 4 (ADR-0007 section 9); a fast-travel option is a LATER item for the customer.
 8. **Text is working text** (R-255); the customer may rename everything; only `content/quests.js` and the `T` keys change.
+
+## Fix round + R7-4/R7-3 (orchestrator, after ADV-R7 and code review R7)
+
+| Package | Owns | Scope |
+|---|---|---|
+| FIX-R7-CORE | `src/core/**`, `src/save/**`, `bot/**`, `test/` except `test/ui-*`, `test/render-*` (adv-* only todo flags), `test/fixtures/**` | CR7-01, CR7-02, CR7-03, CR7-05 (core `rewardSummary(questId)` used by UI), CR7-06, ADV-R7-01, ADV-R7-03 |
+| FIX-R7-UI | `src/ui/**`, `src/game.js`, `src/main.js`, `src/style.css`, `src/render/questmark.js` (reduced motion only), `bench/**`, `test/ui-*`, `e2e/**` except `adv-*` and `run-all` | CR7-04 = ADV-R7-02 (toast queue), ADV-R7-04, ADV-R7-05, ADV-R7-06, CR7-07, switch UI reward text to core `rewardSummary` |
+| ARCH-R7-4 | docs only: ADR-0007 amendment, spec 12 addendum, R7-4 work packages | 3 main quests + 5 side quests (customer 2026-10-14) |
+
+New shared name: core exports `rewardSummary(questId) -> { gold, xp, potions, gear: { slot, minRarity } | null }`
+(FIX-R7-CORE adds it; FIX-R7-UI uses it, guarded until it exists). After this round: R7-4 content (CORE then UI/WORLD),
+then R7-3 pace (BAL), each on the fixed base.
