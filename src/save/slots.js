@@ -158,10 +158,10 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
     const o = idx.owner;
     if (!tabId || !o) return "none";
     if (o.id === tabId) return "self";
-    return now() - o.beat > OWNER_STALE_MS ? "stale" : "other";
+    return Math.abs(now() - o.beat) > OWNER_STALE_MS ? "stale" : "other"; // a beat from the future (clock set back, tampered index) is stale too
   }
   /** May this tab write? Yes when nobody or itself owns the index, or when the owner went stale before this tab started. */
-  const ownerOk = (idx) => { const s = ownerState(idx); return s === "none" || s === "self" || (s === "stale" && startedAt > idx.owner.beat); };
+  const ownerOk = (idx) => { const s = ownerState(idx); return s === "none" || s === "self" || (s === "stale" && (startedAt > idx.owner.beat || idx.owner.beat > now())); };
   const claim = (idx) => { if (tabId) idx.owner = { id: tabId, beat: now() }; };
   const refuseOwner = () => { tell("anotherTab"); return fail("another-tab"); };
 
@@ -302,15 +302,21 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
     },
 
     /** Undo the last overwrite or delete of a slot (the single .prev copy). */
-    restorePrev(n) {
+    restorePrev(n, { confirm = false } = {}) {
       if (!validSlot(n)) return fail("bad-slot");
       const idx = index(), prev = get(prevKey(n));
       if (prev === null) return fail("empty-slot");
       if (idx.slots[n - 1].state === "newer") return fail("newer"); // a save from a newer build is never overwritten (ADV-R5-03)
-      if (idx.slots[n - 1].state !== "empty") return fail("occupied");
+      const e = idx.slots[n - 1];
+      if (e.state !== "empty" && !confirm) return fail("occupied", { lost: e.name ?? null });
       if (!ownerOk(idx)) return refuseOwner();
+      const cur = e.state === "empty" ? null : get(slotKey(n)); // undo of a replace: the replaced text swaps places with the undo copy
       const w = putRoom(slotKey(n), prev, idx);
       if (!w.ok) return fail("quota");
+      if (cur !== null) {
+        const k = putRoom(prevKey(n), cur, idx);
+        if (!k.ok) { put(slotKey(n), cur); return fail("quota"); }
+      }
       idx.slots[n - 1] = entryFromText(n, prev, now(), idx.slots[n - 1]);
       writeIndex(idx);
       return { ok: true };

@@ -144,8 +144,10 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (!saves) return { ok: false, error: "no-storage" };
     const running = game.core && !game.error && game.core.scene !== "error" ? game.core : null, active = saves.store.activeSlot();
     if (running && active !== null && cmd.slot === active && ["deleteSlot", "importSlot"].includes(cmd.t)) return { ok: false, error: "playing" };
+    if (running && active !== null && cmd.slot === active && cmd.t === "restoreSlot") return { ok: false, error: "playing" };
     if (running && active !== null && cmd.t === "copySlot" && cmd.to === active) return { ok: false, error: "playing" };
-    const r = cmd.t === "restoreSlot" ? saves.store.restorePrev(cmd.slot) : saves.session.run(cmd, running);
+    const r = cmd.t === "restoreSlot" ? saves.store.restorePrev(cmd.slot, { confirm: cmd.confirm !== false }) : // the Undo button is the confirmation; pass confirm:false to get "occupied"
+    saves.session.run(cmd, running);
     slotsCache = null;
     if (cmd.t === "createCharacter" && r.ok) { game.startState(r.state, { fresh: true }); }
     else if ((cmd.t === "loadSlot" || cmd.t === "continue") && r.ok) { game.startState(r.state); const m = noticeText(r.notes); if (m) game.toast(m); }

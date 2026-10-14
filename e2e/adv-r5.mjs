@@ -11,6 +11,7 @@ mkdirSync(SHOTS, { recursive: true });
 const CL = { fm: "facilities-manager", sr: "sales-rep", it: "it-wizard" };
 const V1 = readFileSync("test/fixtures/save-v1.json", "utf8");
 const xres = [];
+const fixed = (name, ok, id, detail) => check(`[${id}] ${name}`, ok, detail); // a round-1 defect that is now fixed: a plain check
 function xfail(name, ok, id, detail) {
   xres.push({ name, ok: !!ok, id });
   console.log(`${ok ? "XPASS (defect fixed? remove the xfail)" : "XFAIL"} ${id} ${name}${!ok && detail !== undefined ? "  -> " + JSON.stringify(detail).slice(0, 300) : ""}`);
@@ -112,10 +113,10 @@ const texts = {};
 // ---------------------------------------------------------------- ADV-R5-01: index lost while the slot texts exist (and the legacy backup is still there)
 {
   const g = await seeded({ "office-crawler.slot.1": texts.one, "office-crawler.slot.2": texts.two });
-  xfail("slot texts without an index key are found at boot (slots 1 and 2 show as characters)", (await states(g)) === "ok,ok,empty,empty,empty", "ADV-R5-01", await states(g));
+  fixed("slot texts without an index key are found at boot (slots 1 and 2 show as characters)", (await states(g)) === "ok,ok,empty,empty,empty", "ADV-R5-01", await states(g));
   await g.context.close();
   const h = await seeded({ "office-crawler.slot.1": texts.one, "office-crawler.slot.2": texts.two, "office-crawler.save": V1 });
-  xfail("with a legacy backup present the played character in slot 1 is not replaced by the migrated legacy save", (await lsJson(h.page, "office-crawler.slot.1"))?.name === "Factory One", "ADV-R5-01", (await lsJson(h.page, "office-crawler.slot.1"))?.name);
+  fixed("with a legacy backup present the played character in slot 1 is not replaced by the migrated legacy save", (await lsJson(h.page, "office-crawler.slot.1"))?.name === "Factory One", "ADV-R5-01", (await lsJson(h.page, "office-crawler.slot.1"))?.name);
   await h.context.close();
 }
 
@@ -142,18 +143,55 @@ const texts = {};
   }
 }
 
-// ---------------------------------------------------------------- ADV-R5-02: a tab that died while owning the active slot
+// ---------------------------------------------------------------- ADV-R5-02 (fixed): owner = { id, beat }; stale (15 s) is taken over, a live owner blocks and offers Take over
 {
   const g = await lobby();
   await startNew(g.page, { name: "Ghost" }); await g.app("save.write");
-  await g.page.evaluate(() => { const i = JSON.parse(localStorage.getItem("office-crawler.slots")); i.owner = "tab-that-crashed"; localStorage.setItem("office-crawler.slots", JSON.stringify(i)); sessionStorage.clear(); });
+  await g.page.evaluate(() => { const i = JSON.parse(localStorage.getItem("office-crawler.slots")); i.owner = { id: "tab-that-crashed", beat: Date.now() - 60000 }; localStorage.setItem("office-crawler.slots", JSON.stringify(i)); sessionStorage.clear(); });
   await g.page.reload(); await goTitle(g.page);
   await g.page.click(T("continue"));
   await g.page.waitForTimeout(150);
-  xfail("Continue works when the owning tab is gone (a crashed or discarded tab leaves its owner id behind)", (await g.state()).scene === "town", "ADV-R5-02", await g.page.locator(T("title-notice")).innerText().catch(() => null));
-  check("the lock at least tells the player what is wrong (another-tab text)", /another tab/i.test(await g.page.locator(T("title-notice")).innerText().catch(() => "")));
-  await g.page.click(T("new-game")); await g.page.fill(T("create-name"), "Locked"); await g.page.click(T("create-start"));
-  xfail("a new character can be created when the owning tab is gone", (await g.state()).scene === "town", "ADV-R5-02", await g.page.locator(T("create-error")).innerText().catch(() => null));
+  fixed("Continue works when the owner's heartbeat is stale (a crashed or discarded tab)", (await g.state()).scene === "town", "ADV-R5-02");
+  const o1 = (await lsJson(g.page, "office-crawler.slots")).owner;
+  check("after the takeover the index owner is this tab with a fresh beat", o1 && typeof o1 === "object" && o1.id !== "tab-that-crashed" && Date.now() - o1.beat < 10000, o1);
+  await toTitle(g);
+  fixed("a new character can be created while the old owner is stale", await (async () => { await g.page.click(T("new-game")); await g.page.fill(T("create-name"), "Fresh"); await g.page.click(T("create-start")); return (await g.state()).scene === "town"; })(), "ADV-R5-02");
+  await g.context.close();
+}
+{ // a LIVE owner (another real tab that keeps playing) blocks with a clear message and offers Take over
+  const g = await lobby();
+  await startNew(g.page, { name: "Live", cls: CL.sr }); await g.app("save.write");
+  const b = await g.context.newPage(); const errB = [];
+  b.on("pageerror", (e) => errB.push(e.message));
+  await b.goto(`${DIST}?test=1&seed=1&start=floor`); await goTitle(b);
+  const bapp = (fn, ...a) => b.evaluate(([f, x]) => f.split(".").reduce((o, k) => o[k], window.__app)(...x), [fn, a]);
+  const owner = (await lsJson(b, "office-crawler.slots")).owner;
+  check("a playing tab publishes { id, beat } as owner", owner && typeof owner.id === "string" && Number.isFinite(owner.beat), owner);
+  check("tab B sees the live owner as 'other' in the status and shows the banner with Take over", (await bapp("slots.view")).status.owner === "other" && (await b.locator(T("take-over-saves")).count()) === 1);
+  await b.click(T("continue")); await b.waitForTimeout(150);
+  check("tab B's Continue is refused while the owner is live, with a visible reason", (await bapp("getState")).scene === "title" && /another tab/i.test(await b.evaluate(() => document.body.innerText)));
+  await g.app("step", 30);
+  await g.page.waitForTimeout(5600); // one heartbeat period: A keeps the lock fresh by itself, without any save
+  const beat2 = (await lsJson(b, "office-crawler.slots")).owner.beat;
+  check("the playing tab refreshes its beat from a timer (about every 5 s)", beat2 > owner.beat, [owner.beat, beat2]);
+  await b.click(T("take-over-saves"));
+  check("Take over asks for confirmation, takes focus and traps Tab", (await b.locator(T("take-over-confirm")).count()) === 1 && (await b.evaluate(() => !!document.activeElement?.closest('[data-testid="take-over-confirm"]'))));
+  const tabs = [];
+  for (let i = 0; i < 5; i++) { await b.keyboard.press("Tab"); tabs.push(await b.evaluate(() => !!document.activeElement?.closest('[data-testid="take-over-confirm"]'))); }
+  check("Tab stays inside the take-over dialog (5 presses)", tabs.every(Boolean), tabs);
+  await b.keyboard.press("Escape");
+  check("Esc closes the take-over dialog and gives focus back to its button", (await b.locator(T("take-over-confirm")).count()) === 0 && (await b.evaluate(() => document.activeElement?.dataset?.testid)) === "take-over-saves");
+  await b.click(T("take-over-saves")); await b.click(T("take-over-yes"));
+  check("after Take over tab B owns the saves and can Continue", (await bapp("slots.view")).status.owner === "self");
+  await b.click(T("continue")); await b.waitForTimeout(150);
+  check("tab B is playing the character", (await bapp("getState")).scene === "town");
+  // tab A, which was taken over, is now refused and must not write over B
+  const textB = await lsRaw(b, "office-crawler.slot.1");
+  await g.app("cheat.giveGold", 777);
+  const wr = await g.app("save.write");
+  check("the displaced tab's save is refused (another-tab) and does not overwrite the new owner's slot", wr.ok === false && (await lsRaw(b, "office-crawler.slot.1")) === textB, wr);
+  check("the displaced tab shows who owns the saves", (await g.app("slots.view")).status.owner === "other");
+  check("no page errors in either tab", g.errors.length === 0 && errB.length === 0, [g.errors, errB]);
   await g.context.close();
 }
 
@@ -169,7 +207,7 @@ const texts = {};
   const s = await page.evaluate(() => window.__app.getState());
   check("with localStorage blocked the game still starts and runs, no page error", s.scene === "town" && errors.length === 0, errors);
   const said = await page.evaluate(() => /not (be )?saved|cannot save|can't save|private|storage|won't be saved/i.test(document.body.innerText) || !!window.__app.getState().ui?.notice);
-  xfail("with localStorage blocked the player is told that progress will not be kept", said, "ADV-R5-06");
+  fixed("with localStorage blocked the player is told that progress will not be kept", said, "ADV-R5-06");
   await context.close();
 }
 
@@ -213,7 +251,7 @@ const texts = {};
   const rn = await bapp("slots.run", { t: "renameSlot", slot: 2, name: "Hijacked" });
   await g.app("save.write");
   const name2 = (await lsJson(g.page, "office-crawler.slot.2")).name;
-  xfail("tab B's rename of the slot tab A is playing is refused (another-tab), not silently lost on A's next save", rn.ok === false && name2 === "TabA2", "ADV-R5-09", { rn, stored: name2 });
+  fixed("tab B's rename of the slot tab A is playing is refused (another-tab), not silently lost on A's next save", rn.ok === false && name2 === "TabA2", "ADV-R5-09", { rn, stored: name2 });
   await g.page.keyboard.press("Escape"); await g.page.click(T("quit"));
   await b.reload(); await goTitle(b);
   await b.click(T("continue")); await b.waitForTimeout(120);
@@ -285,7 +323,7 @@ const texts = {};
   await g.page.click(T("create-start"));
   await g.page.keyboard.press("Escape");
   await g.page.waitForTimeout(1800);
-  xfail("Esc pressed after Start (during the elevator) cancels: nothing is created and the game does not start behind the player's back", (await states(g)) === "empty,empty,empty,empty,empty" && (await g.state()).scene === "title", "ADV-R5-11", { slots: await states(g), scene: (await g.state()).scene });
+  fixed("Esc pressed after Start (during the elevator) cancels: nothing is created and the game does not start behind the player's back", (await states(g)) === "empty,empty,empty,empty,empty" && (await g.state()).scene === "title", "ADV-R5-11", { slots: await states(g), scene: (await g.state()).scene });
   await g.context.close();
 }
 
@@ -324,13 +362,13 @@ const texts = {};
   // delete + cancel + confirm + undo
   await g.page.click(T("slot-delete-1"));
   check("delete asks first and names the character", /Alpha/.test(await g.page.locator(T("slot-confirm-title")).innerText()));
-  xfail("the delete confirmation takes focus (so Enter/Space/Tab work from the keyboard)", (await g.page.evaluate(() => document.activeElement?.closest('[role="alertdialog"]') !== null)), "ADV-R5-07", await focusId(g.page));
+  fixed("the delete confirmation takes focus (so Enter/Space/Tab work from the keyboard)", (await g.page.evaluate(() => document.activeElement?.closest('[role="alertdialog"]') !== null)), "ADV-R5-07", await focusId(g.page));
   const seq = [];
   for (let i = 0; i < 8; i++) { await g.page.keyboard.press("Tab"); seq.push(await g.page.evaluate(() => (document.activeElement === document.body ? "BODY" : document.activeElement?.dataset?.testid))); }
-  xfail("Tab never leaves the dialog for the page body in 8 presses (focus trap, AC-NFR-A07-1)", !seq.includes("BODY"), "ADV-R5-07", seq);
+  fixed("Tab never leaves the dialog for the page body in 8 presses (focus trap, AC-NFR-A07-1)", !seq.includes("BODY"), "ADV-R5-07", seq);
   await g.page.click(T("slot-confirm-no"));
   check("Cancel leaves the character where it was", (await states(g)) === "ok,ok,empty,empty,empty");
-  xfail("focus returns to the Delete button after Cancel", (await focusId(g.page)) === "slot-delete-1", "ADV-R5-07", await focusId(g.page));
+  fixed("focus returns to the Delete button after Cancel", (await focusId(g.page)) === "slot-delete-1", "ADV-R5-07", await focusId(g.page));
   await g.page.click(T("slot-delete-1")); await g.page.click(T("slot-confirm-yes"));
   check("confirming delete empties the slot and shows an Undo", (await states(g)) === "empty,ok,empty,empty,empty" && (await g.page.locator(T("slot-undo-1")).count()) === 1);
   await g.page.click(T("slot-undo-1"));
@@ -385,7 +423,7 @@ const texts = {};
   await g.page.click(T("slot-load-1"));
   const dlg = await g.page.locator(T("slot-confirm-title")).count();
   const s = await g.state();
-  xfail("loading another character from the pause menu warns (names the characters, can be cancelled) before it leaves the running game", dlg > 0 && s.player.name === "Run Two", "ADV-R5-08", { dialogs: dlg, nowPlaying: s.player.name });
+  fixed("loading another character from the pause menu warns (names the characters, can be cancelled) before it leaves the running game", dlg > 0 && s.player.name === "Run Two", "ADV-R5-08", { dialogs: dlg, nowPlaying: s.player.name });
   check("Run Two's progress was saved before the switch (gold 550 in slot 2)", (await lsJson(g.page, "office-crawler.slot.2")).player.gold === 550);
   check("the active slot is now 1 and slot 2's text is not touched by autosaves of slot 1", (await lsJson(g.page, "office-crawler.slots")).active === 1);
   await g.app("step", 30);
@@ -408,7 +446,7 @@ const texts = {};
   const dead = (await g.state()).scene === "dead";
   const rn = await g.app("slots.run", { t: "renameSlot", slot: 1, name: "Dead Name" });
   await g.app("save.write");
-  xfail("a rename accepted while the character is on the death screen is still there after the next autosave", dead && rn.ok && (await lsJson(g.page, "office-crawler.slot.1")).name === "Dead Name", "ADV-R5-09", { dead, rn, stored: (await lsJson(g.page, "office-crawler.slot.1")).name });
+  fixed("a rename accepted while the character is on the death screen is still there after the next autosave", dead && rn.ok && (await lsJson(g.page, "office-crawler.slot.1")).name === "Dead Name", "ADV-R5-09", { dead, rn, stored: (await lsJson(g.page, "office-crawler.slot.1")).name });
   check("no page error", g.errors.length === 0, g.errors);
   await g.context.close();
 }

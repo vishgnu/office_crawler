@@ -343,3 +343,22 @@ test("ADV-R5-05 a new character shows the real level-2 threshold at once", () =>
   assert.equal(mkState().player.xpNext, config.xpTable[1]);
   assert.equal(config.player.xpNext, config.xpTable[1]);
 });
+
+test("undo of a replace: restorePrev with confirm swaps the undo copy back and keeps the replaced text as the new undo copy; newer slots stay guarded", () => {
+  const { adapter, store, session } = rig({ tabId: null });
+  session.createCharacter({ slot: 5, class: "facilities-manager", name: "Old" });
+  const oldText = store.raw(5);
+  session.createCharacter({ slot: 5, class: "it-wizard", name: "New", confirm: true });
+  const newText = store.raw(5);
+  assert.equal(store.restorePrev(5).error, "occupied");
+  assert.equal(store.restorePrev(5, { confirm: true }).ok, true);
+  assert.equal(store.raw(5), oldText);
+  assert.equal(adapter.getItem(`${slotKey(5)}.prev`), newText);
+  assert.equal(store.list().slots[4].name, "Old");
+  assert.equal(store.restorePrev(5, { confirm: true }).ok, true, "and back again");
+  assert.equal(store.raw(5), newText);
+  const newer = JSON.stringify({ format: "office-crawler-save", version: config.saveVersion + 1 });
+  adapter.setItem(slotKey(5), newer); adapter.removeItem(config.slotIndexKey);
+  assert.equal(createSlotStore(adapter).restorePrev(5, { confirm: true }).error, "newer");
+  assert.equal(adapter.getItem(slotKey(5)), newer);
+});
