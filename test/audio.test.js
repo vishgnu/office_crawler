@@ -28,7 +28,7 @@ test("every event type the core emits has a cue or a documented reason to be sil
   // S3 core events (boss, finale, autosave) that the audio package maps in the UI/audio slice (docs/reviews/S3-core-notes.md,
   // render_needs). They are emitted by the core now; delete an entry here when src/audio/cues.js maps it. Anything else must be mapped.
   // R4 core events (classes, skills, statuses; docs/reviews/R4-contract.md and R4-core-notes.md) wait for the R5 audio package in the same way.
-  const PENDING_AUDIO_S3 = new Set(["allyDied", "crit", "absorb", "buffEnd", "buffStart", "renamed", "respec", "aura", "projectileChain", "status", "zoneStart", "zoneEnd", "zoneTrigger", "summon", "dash", "dotTick", "trigger"]);
+  const PENDING_AUDIO_S3 = new Set(["allyDied", "crit", "absorb", "buffEnd", "buffStart", "renamed", "respec", "aura", "projectileChain", "allyHurt", "status", "zoneStart", "zoneEnd", "zoneTrigger", "summon", "dash", "dotTick", "trigger"]);
   for (const t of PENDING_AUDIO_S3) assert.ok(types.has(t), `${t} is listed as pending but the core no longer emits it`);
   const missing = [...types].filter((t) => !(t in EVENT_MAP) && !(t in SILENT_EVENTS) && !PENDING_AUDIO_S3.has(t));
   assert.deepEqual(missing, []);

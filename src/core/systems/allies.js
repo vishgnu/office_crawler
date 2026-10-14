@@ -66,7 +66,7 @@ export function allies(state) {
 /** Hurt an ally (a monster hit it). */
 export function hurtAlly(state, a, amount) {
   a.hp = Math.max(0, a.hp - amount); a.flashTicks = config.flashTicks;
-  emit(state, { type: "hit", source: "monster", target: a.id, value: amount });
+  emit(state, { type: "allyHurt", id: a.id, value: amount });
 }
 
 /** A living ally within melee reach of monster `m` (a decoy wins the choice), or null. */

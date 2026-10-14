@@ -55,7 +55,7 @@ W.render = (focus = null, opts = {}) => {
   const canvas = document.getElementById("game"), g = canvas.getContext("2d"), { w, h } = W.size, core = W.core;
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.fillStyle = "#07080c"; g.fillRect(0, 0, w, h);
-  const p = actorPos(core.player), f = focus ?? { x: p.x, y: p.y };
+  const p = actorPos(core.player), f = focus ?? W.focus ?? { x: p.x, y: p.y };
   const cam = makeCamera(w, h, f.x + 0.5, f.y + 0.5);
   W.light.ensure(cam, false, false);
   const env = { lighting: W.light, style: W.style, lowFx: false, hc: false };
@@ -128,6 +128,26 @@ W.scene = (name, seed = 3) => {
     W.step(1);
   }
   return { depth: s.depth, theme: s.floor.theme, monsters: s.monsters.map((m) => `${m.type}:${m.ai}`), ground: s.groundItems.map((g) => `${g.rarity ?? "gold"}:${g.label}`) };
+};
+
+
+// ---- WORLD-G scenes (graphics detail round): the five review shots at real game scale ----
+// office: depth 1 (open plan), hero in a room, zombie / imp / temp worker around; basement: depth 6; lobby: the town; boardroom: the Executive Suite, boss idle.
+W.gScene = (name, seed = 3) => {
+  if (name === "boardroom") { const r = W.boss("idle"); W.focus = W.focusBoss(); W.focus.y -= 2.5; return r; }
+  W.focus = null;
+  if (name === "lobby") return W.scene("lobby");
+  W.now = 1000; W.fx.reset(); W.rs.facing.clear();
+  const s = (W.core = newGame(seed, { start: "town" }));
+  teleportFloor(s, name === "basement" ? 6 : 1);
+  s.monsters.length = 0; W.core.floor.spawns = [];
+  const hero = s.player.tile;
+  const near = free(s, hero, 8, 2).filter((t) => t.x + t.y <= hero.x + hero.y + 1);
+  const at = (i) => near[i] ?? near[near.length - 1];
+  const types = name === "basement" ? ["temp-worker", "printer-demon", "middle-manager", "vending-machine", "consultant", "auditor"] : ["zombie-intern", "printer-imp", "temp-worker", "zombie-intern", "middle-manager"];
+  types.forEach((t, i) => spawnMonster(s, t, at(2 + i * 3), null, { level: s.depth }));
+  W.step(24);
+  return { depth: s.depth, theme: s.floor.theme, monsters: s.monsters.map((m) => m.type) };
 };
 
 W.castDemo = () => { // cast pose + rune ring + burst + heal + levelup
