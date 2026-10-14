@@ -4,6 +4,7 @@
 import { palette as P } from "./palette.js";
 import { INK, limb, ellipse, fillPoly, line, box, shade } from "../../draw/shapes.js";
 import { DIR_VEC, PLAYER_ANIMS, BOSS_ANIMS } from "../../keys.js";
+import { hero, ally, HERO_IDS, HERO_DIM } from "./heroes.js";
 
 export const FIG_W = 104, FIG_H = 96, FIG_FX = 52, FIG_FY = 76;
 /** Bosses are bigger (the Regional Director stands about 1.5x the middle manager and swings a gavel overhead). */
@@ -26,6 +27,7 @@ export const FIG_DIM = {
   "npc-healer": { head: 56, shadowR: 13 },
   "npc-potions": { head: 54, shadowR: 13 },
   "npc-stash": { head: 56, shadowR: 15 },
+  ...HERO_DIM, // R5 classes and allies (heroes.js)
 };
 
 // Per-character look. `kind` picks the painter. Colours follow C2 (docs/product/variants/art-direction).
@@ -478,6 +480,8 @@ export function drawFigure(g, type, anim, dir, f) {
     g.translate(-s * o.p * 26, 0); g.rotate(s * o.p * 1.5); g.translate(0, o.p * 3);
     o.anim = "idle"; o.bob = 0; o.swing = 0; o.lunge = 0;
   }
-  (L.kind === "imp" ? imp : L.kind === "machine" ? machine : L.kind === "director" ? director : human)(g, L, o);
+  if (HERO_IDS.includes(type)) hero(g, type, o);
+  else if (type.startsWith("ally.")) ally(g, type, o);
+  else (L.kind === "imp" ? imp : L.kind === "machine" ? machine : L.kind === "director" ? director : human)(g, L, o);
   g.restore();
 }

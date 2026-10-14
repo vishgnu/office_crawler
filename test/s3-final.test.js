@@ -213,10 +213,12 @@ test("regression: impacts, pillars and slashes drawn before their birth time (st
   assert.deepEqual(bad, []);
 });
 
-test("wearStartKit: the rapier is worn and Strike is on F1; the default core start stays unarmed (golden hash unchanged)", () => {
+// R4: the kit is per class (ADR-0005): the class weapon is worn and the free signature skill is on F1 (Strike is the primary attack).
+test("wearStartKit: the class weapon is worn and the signature skill is on F1; the default core start stays unarmed", () => {
   const a = newGame(3, { start: "town", wearStartKit: true });
-  assert.equal(a.equipment.weapon?.base, config.startKit.weapon);
-  assert.equal(a.player.skillBar.hotkeys[0], "strike");
+  assert.equal(a.equipment.weapon?.base, content.classes[0].startKit.weapon);
+  assert.equal(a.player.skillBar.hotkeys[0], content.classes[0].signature);
+  assert.equal(a.player.skillBar.primary, "strike");
   assert.ok(a.player.damage.max > newGame(3, { start: "town" }).player.damage.max);
   assert.equal(newGame(3, { start: "town" }).equipment.weapon, null);
   assert.equal(deserialize(serialize(a)).ok, true, "such a game saves and loads");

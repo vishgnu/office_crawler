@@ -5,6 +5,7 @@ import { isAdjacent } from "../grid.js";
 import { hasLineOfSight } from "../los.js";
 import { planPath } from "../nav.js";
 import { allMonsters as registry } from "../content/monsters.js";
+import { allyInReach } from "./allies.js";
 
 function canSee(ctx, m, p) {
   const r = registry[m.type].sightRange, dx = p.tile.x - m.tile.x, dy = p.tile.y - m.tile.y;
@@ -57,6 +58,8 @@ function chase(ctx, m, p) {
 
 export function ai(state) {
   const ctx = getCtx(state), p = state.player;
+  // in position to attack: the hero, or (melee types only) an ally within reach
+  const inPos = (m) => inPosition(ctx, m, p) || (state.allies.length > 0 && registry[m.type].behaviour !== "ranged" && !!allyInReach(state, ctx, m));
   for (const m of state.monsters) {
     if (m.ai === "dead" || m.muteT > 0) continue; // muted monsters do nothing (the Mute skill)
     const still = !m.next;
@@ -72,12 +75,12 @@ export function ai(state) {
         if (++m.aiT >= config.noticeTicks) { m.ai = "chase"; m.path = []; m.goal = null; m.repathT = 0; }
         break;
       case "chase":
-        if (still && inPosition(ctx, m, p)) { m.ai = "attack"; m.attackT = 0; m.path = []; }
+        if (still && inPos(m)) { m.ai = "attack"; m.attackT = 0; m.path = []; }
         else chase(ctx, m, p);
         break;
       case "attack":
         // Between swings, close the distance again if the player has moved away.
-        if (m.attackT === 0 && !(still && inPosition(ctx, m, p))) { m.ai = "chase"; m.path = []; m.goal = null; m.repathT = 0; }
+        if (m.attackT === 0 && !(still && inPos(m))) { m.ai = "chase"; m.path = []; m.goal = null; m.repathT = 0; }
         break;
       case "stagger": // hit recovery: no attack, no move (AC-R-024-1)
         if (--m.staggerT <= 0) { m.ai = "chase"; m.path = []; m.goal = null; m.repathT = 0; }

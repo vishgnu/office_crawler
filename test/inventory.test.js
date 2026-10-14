@@ -101,7 +101,7 @@ test("AC-R-053-2 equipping a weapon changes damage by exactly its damage plus af
   assert.equal(s.equipment.weapon, w);
   assert.equal(s.inventory.items.length, 0);
   // a worn weapon replaces the unarmed range (fists are not a bonus on top of it); grit bonus and affixes still add
-  const u = config.unarmed;
+  const u = content.classes[0].derived.unarmed; // the class's own fists
   assert.deepEqual(s.player.damage, { min: before.min - u.min + w.damage.min + 2, max: before.max - u.max + w.damage.max + 2 });
   assert.ok(types(s).includes("equip"));
 });
@@ -435,5 +435,5 @@ test("derived stats follow equipment through the whole pipeline: pick up, equip,
   run(s, 300);
   const dmg0 = s.player.damage.max;
   assert.equal(cmd(s, { t: "equip", id: e.id }).ok, true);
-  assert.equal(s.player.damage.max, dmg0 - config.unarmed.max + 3); // the rapier replaces the fists
+  assert.equal(s.player.damage.max, dmg0 - content.classes[0].derived.unarmed.max + 3); // the rapier replaces the fists
 });

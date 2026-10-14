@@ -1,18 +1,19 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { config, content, applyInput, step, setLevel, learnSkill, deriveStats } from "../src/core/index.js";
+import { config, content, at, applyInput, step, setLevel, applyDerived } from "../src/core/index.js";
 import { gameOn, run, OPEN } from "./helpers.js";
 
 const cmd = (s, c) => applyInput(s, c);
 const evs = (s, type) => s.events.filter((e) => e.type === type);
-const learn = (s, ...ids) => { setLevel(s, 10); for (const id of ids) learnSkill(s, id); return s; };
+// These tests are about what a skill does, not about who may learn it (test/progression.test.js and test/skilltrees.test.js cover that): the skill is granted at level 1.
+const learn = (s, ...ids) => { setLevel(s, 10); for (const id of ids) s.player.skills[id] = 1; applyDerived(s); return s; };
 
 test("Coffee Break heals the hero (capped at hpMax) for the skill's heal value", () => {
   const s = learn(gameOn(OPEN), "coffee-break"), p = s.player;
   p.hp = 5;
   cmd(s, { t: "cast", skill: "coffee-break" });
-  assert.equal(p.hp, 5 + content.skills["coffee-break"].heal(1));
-  assert.equal(evs(s, "heal")[0].value, content.skills["coffee-break"].heal(1));
+  assert.equal(p.hp, 5 + at(content.skills["coffee-break"].effects[0].amount, 1));
+  assert.equal(evs(s, "heal")[0].value, at(content.skills["coffee-break"].effects[0].amount, 1));
   p.hp = p.hpMax - 1; p.mp = p.mpMax;
   run(s, config.castTicks + 1);
   cmd(s, { t: "cast", skill: "coffee-break" });
@@ -50,7 +51,7 @@ test("Reply-All does not reach through walls", () => {
 test("Mute silences monsters in range: no move, no attack, then they carry on", () => {
   const s = learn(gameOn(OPEN, [["zombie-intern", 10, 4]]), "mute");
   const m = s.monsters[0]; m.ai = "attack"; m.attackT = 0;
-  const hp = s.player.hp, d = content.skills.mute.duration(1);
+  const hp = s.player.hp, d = at(content.skills.mute.effects[0].ticks, 1);
   cmd(s, { t: "cast", skill: "mute" });
   assert.equal(m.muteT, d);
   run(s, d - 1);

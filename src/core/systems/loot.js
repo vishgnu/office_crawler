@@ -4,6 +4,10 @@ import { stream } from "../state.js";
 import { emit } from "../events.js";
 import { getCtx } from "../ctx.js";
 import { rollItem, rollPotion } from "../items/roll.js";
+import { classById } from "../content/classes.js";
+
+/** The class tag of the current character (loot is rolled for the character that plays). */
+export const affixTagOf = (state) => classById(state.player?.class)?.affixTag ?? null;
 import { autoplace } from "../items/inventory.js";
 import { sellValue } from "../items/price.js";
 import { rarities } from "../content/items.js";
@@ -94,7 +98,7 @@ export function dropLoot(state, m) {
   const count = tier === "boss" ? config.boss.guaranteedDrops : (tier !== "normal" || itemRoll < config.dropChance * table.itemMult ? 1 : 0);
   for (let i = 0; i < count; i++) {
     const unique = tier === "boss" && i < config.boss.guaranteedUnique; // the boss's first drop is a unique (rare of its base if all are taken)
-    const item = rollItem(rng, { depth, ilvl, minRarity, ...(unique ? { rarity: "unique" } : {}), slot: pickSlot(rng, table.slotWeights), taken: state.uniquesFound });
+    const item = rollItem(rng, { affixTag: affixTagOf(state), depth, ilvl, minRarity, ...(unique ? { rarity: "unique" } : {}), slot: pickSlot(rng, table.slotWeights), taken: state.uniquesFound });
     if (item.unique) state.uniquesFound.push(item.unique);
     out.push(dropItem(state, item, m.tile));
   }
@@ -108,7 +112,7 @@ export function dropLoot(state, m) {
 /** Cheat/test helper: roll an item with explicit options and drop it near a tile. */
 export function spawnItem(state, opts = {}, tile = state.player.tile) {
   const rng = stream(state, "loot"), depth = opts.depth ?? state.depth;
-  const item = opts.potion ? rollPotion(rng, (opts.ilvl ?? depth * config.ilvlPerDepth), opts.restores) : rollItem(rng, { depth, taken: state.uniquesFound, ...opts });
+  const item = opts.potion ? rollPotion(rng, (opts.ilvl ?? depth * config.ilvlPerDepth), opts.restores) : rollItem(rng, { affixTag: affixTagOf(state), depth, taken: state.uniquesFound, ...opts });
   if (item.unique) state.uniquesFound.push(item.unique);
   return dropItem(state, item, tile);
 }

@@ -12,7 +12,8 @@ import { applyDerived } from "../core/items/derive.js";
 import { enterFloor } from "../core/systems/world.js";
 import { xpNextFor } from "../core/systems/progression.js";
 import { canPlace } from "../core/items/inventory.js";
-import { classes } from "../core/content/classes.js";
+import { classById } from "../core/content/classes.js";
+import { validateName } from "../core/name.js";
 import { slotKeys, rarityOrder, bases } from "../core/content/items.js";
 import { affixes as affixDefs } from "../core/content/affixes.js";
 import { uniques as uniqueDefs } from "../core/content/uniques.js";
@@ -21,9 +22,10 @@ import { migrate } from "./migrate.js";
 
 export const SAVE_FORMAT = "office-crawler-save";
 /** The documented schema: exactly these top-level keys (plus `checksum`) and no others (AC-R-090-2). */
-export const SAVE_KEYS = ["format", "version", "savedAtTick", "seed", "class", "resume", "deepestDepth", "bossDefeated", "bossUnlocked", "townVisit",
+export const SAVE_KEYS = ["format", "version", "savedAtTick", "seed", "class", "name", "resume", "deepestDepth", "bossDefeated", "bossUnlocked", "townVisit",
   "player", "inventory", "equipment", "belt", "stash", "cursorItem", "uniquesFound", "nextItemId", "rng", "stats", "explored", "options"];
-export const PLAYER_KEYS = ["level", "xp", "attrs", "attrPoints", "skillPoints", "skills", "skillBar", "gold"];
+export const PLAYER_KEYS = ["level", "xp", "attrs", "attrPoints", "skillPoints", "skills", "skillBar", "gold", "respecsUsed"];
+const STATS_KEYS = ["kills", "deaths", "bossAttempts", "playTicks"];
 const ATTRS = ["grit", "agility", "stamina", "focus"];
 
 const fail = (reason, message) => ({ ok: false, reason, message });
@@ -56,9 +58,9 @@ export function toSave(state) {
     explored[depth] = { size: f.explored.length, runs: rleEncode(f.explored) };
   }
   return {
-    format: SAVE_FORMAT, version: config.saveVersion, savedAtTick: state.tick, seed: state.seed, class: p.class,
+    format: SAVE_FORMAT, version: config.saveVersion, savedAtTick: state.tick, seed: state.seed, class: p.class, name: p.name,
     resume: { depth: resumeDepth }, deepestDepth: state.deepestDepth, bossDefeated: !!state.bossDefeated, bossUnlocked: !!state.bossUnlocked, townVisit: state.townVisit ?? 0,
-    player: { level: p.level, xp: p.xp, attrs: { ...p.attrs }, attrPoints: p.attrPoints, skillPoints: p.skillPoints, skills: { ...p.skills }, skillBar: clone(p.skillBar), gold: p.gold },
+    player: { level: p.level, xp: p.xp, attrs: { ...p.attrs }, attrPoints: p.attrPoints, skillPoints: p.skillPoints, skills: { ...p.skills }, skillBar: clone(p.skillBar), gold: p.gold, respecsUsed: p.respecsUsed ?? 0 },
     inventory: clone(state.inventory), equipment: clone(state.equipment), belt: clone(state.belt), stash: clone(state.stash), cursorItem: clone(state.cursorItem ?? null),
     uniquesFound: [...state.uniquesFound], nextItemId: state.nextItemId, rng: clone(state.rng), stats: { ...state.stats }, explored, options: clone(state.options ?? {}),
   };
@@ -82,14 +84,14 @@ const own = (o, k) => Object.hasOwn(o, k); // never trust inherited names such a
 const STAT_IDS = new Set([...affixDefs.map((a) => a.stat), ...uniqueDefs.flatMap((u) => u.affixes.map((a) => a.stat))]);
 export const ITEM_KEYS = ["id", "base", "baseName", "name", "kind", "rarity", "ilvl", "slot", "w", "h", "x", "y", "reqs", "affixes", "damage", "defense", "twoHanded",
   "restores", "restore", "effect", "unique", "flavour"];
-const AFFIX_KEYS = ["id", "group", "kind", "stat", "name", "tier", "value", "range"];
+const AFFIX_KEYS = ["id", "group", "kind", "stat", "name", "tier", "value", "range", "class"];
 const MAX_TEXT = 64, MAX_NUM = 1e6;
 const str = (v, max = MAX_TEXT) => typeof v === "string" && v.length <= max;
 const num = (v, lo = -MAX_NUM, hi = MAX_NUM) => typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi;
 
 function affixOk(a) {
   if (!hasOnly(a, AFFIX_KEYS) || !str(a.stat) || !STAT_IDS.has(a.stat) || !num(a.value)) return false;
-  for (const k of ["id", "group", "kind", "name"]) if (a[k] !== undefined && !str(a[k])) return false;
+  for (const k of ["id", "group", "kind", "name", "class"]) if (a[k] !== undefined && !str(a[k])) return false;
   if (a.tier !== undefined && !isInt(a.tier, 0, 99)) return false;
   if (a.range !== undefined && !(Array.isArray(a.range) && a.range.length === 2 && a.range.every((n) => num(n)))) return false;
   return true;
@@ -134,14 +136,17 @@ export function schemaProblem(d) {
   if (!hasOnly(d, [...SAVE_KEYS, "checksum"])) return "unknown keys";
   for (const k of SAVE_KEYS) if (!(k in d)) return `missing ${k}`;
   if (d.format !== SAVE_FORMAT) return "wrong format tag";
-  if (!isInt(d.savedAtTick, 0) || !isInt(d.seed, 0, 0xffffffff) || !classes.some((c) => c.id === d.class)) return "bad header";
+  if (!isInt(d.savedAtTick, 0) || !isInt(d.seed, 0, 0xffffffff) || !classById(d.class)) return "bad header";
+  if (!validateName(d.name).ok || validateName(d.name).name !== d.name) return "bad name";
   if (!hasOnly(d.resume, ["depth"]) || !isInt(d.resume.depth, 0, config.bossDepth)) return "bad resume";
   if (!isInt(d.deepestDepth, 1, config.bossDepth) || typeof d.bossDefeated !== "boolean" || typeof d.bossUnlocked !== "boolean" || !isInt(d.townVisit, 0)) return "bad progress";
   const p = d.player;
   if (!hasOnly(p, PLAYER_KEYS) || PLAYER_KEYS.some((k) => !(k in p))) return "bad player";
-  if (!isInt(p.level, 1, config.levelCap) || !isInt(p.xp, 0, config.xpPastCap) || !isInt(p.attrPoints, 0, 1000) || !isInt(p.skillPoints, 0, 1000) || !isInt(p.gold, 0, 1e9)) return "bad player numbers";
+  if (!isInt(p.level, 1, config.levelCap) || !isInt(p.xp, 0, config.xpPastCap) || !isInt(p.attrPoints, 0, 1000) || !isInt(p.skillPoints, 0, 1000) || !isInt(p.gold, 0, 1e9) || !isInt(p.respecsUsed, 0, 1e6)) return "bad player numbers";
   if (!hasOnly(p.attrs, ATTRS) || ATTRS.some((a) => !isInt(p.attrs[a], 0, 1000))) return "bad attributes";
-  if (!isObj(p.skills) || Object.entries(p.skills).some(([id, l]) => !own(skillDefs, id) || !isInt(l, 0, config.skillMaxLevel))) return "bad skills";
+  const cls = classById(d.class);
+  if (!isObj(p.skills) || Object.entries(p.skills).some(([id, l]) => !own(skillDefs, id) || skillDefs[id].class !== d.class || skillDefs[id].kind === "basic" || !isInt(l, 0, Math.min(skillDefs[id].maxLevel, config.skillMaxLevel)))) return "bad skills";
+  if (!(p.skills[cls.signature] >= 1)) return "bad skills";
   const bar = p.skillBar;
   if (!hasOnly(bar, ["primary", "secondary", "hotkeys", "selected"]) || !Array.isArray(bar.hotkeys) || bar.hotkeys.length !== 4 || !isInt(bar.selected, 0, 3)) return "bad skill bar";
   for (const id of [bar.primary, bar.secondary, ...bar.hotkeys]) if (id !== null && !(typeof id === "string" && own(skillDefs, id))) return "bad skill bar";
@@ -156,7 +161,7 @@ export function schemaProblem(d) {
   if (!Array.isArray(d.uniquesFound) || d.uniquesFound.length > 100 || d.uniquesFound.some((u) => !str(u))) return "bad uniques";
   if (!isInt(d.nextItemId, 1)) return "bad item counter";
   if (!isObj(d.rng) || ["world", "combat", "ai", "loot"].some((n) => !isObj(d.rng[n]) || !isInt(d.rng[n].s, 0, 0xffffffff)) || Object.keys(d.rng).length !== 4) return "bad random streams";
-  if (!hasOnly(d.stats, ["kills", "deaths", "bossAttempts"]) || Object.values(d.stats).length !== 3 || Object.values(d.stats).some((n) => !isInt(n, 0))) return "bad stats";
+  if (!hasOnly(d.stats, STATS_KEYS) || Object.values(d.stats).length !== STATS_KEYS.length || Object.values(d.stats).some((n) => !isInt(n, 0))) return "bad stats";
   if (!isObj(d.explored)) return "bad explored";
   for (const [k, e] of Object.entries(d.explored)) {
     if (!isInt(Number(k), 1, config.bossDepth) || !hasOnly(e, ["size", "runs"]) || !isInt(e.size, 1, 10000) || !Array.isArray(e.runs) || e.runs.length > e.size + 1) return "bad explored map";
@@ -176,22 +181,22 @@ export function check(raw) {
   if (raw.version >= 1) {
     if (typeof raw.checksum !== "string" || raw.checksum !== checksumOf(raw)) return fail("checksum", "The save is damaged (checksum mismatch).");
   }
-  let data = raw;
+  let data = raw, notes = [];
   if (raw.version < config.saveVersion) {
     const m = migrate(raw, config.saveVersion);
     if (!m.ok) return fail("no-migration", `No way to upgrade a version ${m.from} save.`);
-    data = m.data;
+    data = m.data; notes = m.notes ?? [];
   }
   const problem = schemaProblem(data);
   if (problem) return fail("schema", `The save is not valid: ${problem}.`);
-  return { ok: true, save: data };
+  return { ok: true, save: data, notes };
 }
 
 /** Build a running game from a checked save. Resumes in the Lobby, or at the entry of the saved floor when config.resumeAt says so. */
 export function loadSave(save) {
-  const state = newGame(save.seed, { class: save.class, start: "town" });
+  const state = newGame(save.seed, { class: save.class, name: save.name, start: "town" });
   const p = state.player, s = save.player;
-  Object.assign(p, { level: s.level, xp: s.xp, xpNext: xpNextFor(s.level), attrs: clone(s.attrs), attrPoints: s.attrPoints, skillPoints: s.skillPoints, skills: clone(s.skills), skillBar: clone(s.skillBar), gold: s.gold });
+  Object.assign(p, { respecsUsed: s.respecsUsed, level: s.level, xp: s.xp, xpNext: xpNextFor(s.level), attrs: clone(s.attrs), attrPoints: s.attrPoints, skillPoints: s.skillPoints, skills: clone(s.skills), skillBar: clone(s.skillBar), gold: s.gold });
   state.inventory = clone(save.inventory); state.stash = clone(save.stash); state.equipment = { ...state.equipment, ...clone(save.equipment) }; state.belt = clone(save.belt);
   state.cursorItem = clone(save.cursorItem); state.uniquesFound = [...save.uniquesFound]; state.nextItemId = save.nextItemId;
   state.rng = clone(save.rng); state.stats = { ...save.stats }; state.options = clone(save.options);
@@ -213,7 +218,7 @@ export function deserialize(text) {
     try { raw = JSON.parse(text); } catch { return fail("parse", "The save is not valid JSON."); }
     const r = check(raw);
     if (!r.ok) return r;
-    return { ok: true, state: loadSave(r.save), save: r.save };
+    return { ok: true, state: loadSave(r.save), save: r.save, notes: r.notes };
   } catch (e) {
     return fail("schema", `The save could not be loaded: ${e?.message ?? e}`);
   }

@@ -21,7 +21,7 @@ export const palette = {
   rarity: { magic: "#56b4e9", rare: "#f0e442", unique: "#e8590c" },
   // Per-actor rim colours (2 px silhouette ring baked into the atlas sprite).
   rims: {
-    clerk: "#e6fbff", "zombie-intern": "#a6e65a", "printer-imp": "#ff5a46",
+    clerk: "#e6fbff", "facilities-manager": "#ffe9a8", "sales-rep": "#ffd0e4", "it-wizard": "#b8f6ff", "ally.intern": "#cfe8ff", "ally.cone": "#ffd0a0", "zombie-intern": "#a6e65a", "printer-imp": "#ff5a46",
     "temp-worker": "#ffb35a", "printer-demon": "#ff3d6e", "middle-manager": "#ffd2a0", "vending-machine": "#58e0ff", consultant: "#d6c8ff", auditor: "#b8f060",
     "regional-director": "#ffd24a", "regional-director-rage": "#ff4a3a",
     "npc-vendor": "#ffe08a", "npc-healer": "#9ff5d8", "npc-potions": "#9fe08a", "npc-stash": "#bcd0ff",

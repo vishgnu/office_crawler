@@ -5,10 +5,12 @@ import { gameOn, OPEN } from "./helpers.js";
 
 const ATTRS = ["grit", "agility", "stamina", "focus"];
 
-test("AC-R-010-1 content.classes holds exactly one melee class with a non-empty name", () => {
-  assert.equal(content.classes.length, 1);
-  assert.equal(content.classes[0].kind, "melee");
-  assert.ok(content.classes[0].name.length > 0);
+// Superseded by ADR-0005 / AC-R-200-1: three classes replace the single Clerk (the Clerk is retired and migrates to the Facilities Manager).
+test("AC-R-200-1 (supersedes AC-R-010-1) content.classes holds three classes with distinct ids and non-empty names", () => {
+  assert.equal(content.classes.length, 3);
+  assert.equal(new Set(content.classes.map((c) => c.id)).size, 3);
+  assert.deepEqual(content.classes.map((c) => c.role).sort(), ["caster", "melee", "ranged"]);
+  for (const c of content.classes) assert.ok(c.name.length > 0 && newGame(1, { class: c.id }).player.class === c.id);
 });
 
 test("AC-R-010-2 a new player of the class starts at level 1 with class attributes, config gold and a positive damage range", () => {
@@ -20,8 +22,9 @@ test("AC-R-010-2 a new player of the class starts at level 1 with class attribut
   assert.ok(p.damage.min > 0 && p.damage.min <= p.damage.max);
 });
 
-test("AC-R-010-3 no class argument uses the only class; an unknown class throws", () => {
-  assert.equal(newGame(1).player.class, content.classes[0].id);
+test("AC-R-010-3 no class argument uses the default class (facilities-manager); an unknown class throws", () => {
+  assert.equal(newGame(1).player.class, "facilities-manager");
+  assert.equal(content.defaultClass, "facilities-manager");
   assert.throws(() => newGame(1, { class: "nope" }));
 });
 
@@ -34,7 +37,7 @@ test("AC-R-011-1 attrs have exactly grit, agility, stamina, focus as integers >=
 test("AC-R-011-2 each attribute point raises exactly the stats its formula names", () => {
   const base = newGame(1).player, d0 = deriveStats(base, {});
   const up = (k) => deriveStats({ ...base, attrs: { ...base.attrs, [k]: base.attrs[k] + 1 } }, {});
-  const g = up("grit");
+  const g = deriveStats({ ...base, attrs: { ...base.attrs, grit: base.attrs.grit + 2 } }, {}); // the Facilities Manager gains half a point of damage per grit
   assert.ok(g.damage.min > d0.damage.min && g.damage.max > d0.damage.max);
   assert.deepEqual([g.hpMax, g.mpMax, g.defense, g.attackRating], [d0.hpMax, d0.mpMax, d0.defense, d0.attackRating]);
   const a = up("agility");
@@ -62,9 +65,14 @@ test("AC-R-012-1 deriveStats follows the config formulas, is pure and rounds as 
   assert.ok(Object.values(s).every((v) => typeof v === "object" || Number.isInteger(v)));
 });
 
-test("a new player's stats (50 hp, 20 mp, unarmed 1-2 plus 2 grit bonus = damage 3-4, defense 10, attack rating 40)", () => {
-  const p = newGame(1).player;
-  assert.deepEqual([p.hpMax, p.mpMax, p.damage, p.defense, p.attackRating], [50, 20, { min: 3, max: 4 }, 10, 40]);
+test("a new player's stats follow the class: config.derived with the class overrides, unarmed range plus the grit bonus (AC-R-201-2)", () => {
+  for (const c of content.classes) {
+    const p = newGame(1, { class: c.id }).player, d = { ...config.derived, ...c.derived }, un = c.derived.unarmed ?? config.unarmed, a = c.attrs;
+    const gb = Math.max(0, a.grit - d.gritFree);
+    assert.deepEqual([p.hpMax, p.mpMax], [d.hpBase + d.hpPerLevel + a.stamina * d.hpPerStamina, d.mpBase + d.mpPerLevel + a.focus * d.mpPerFocus], c.id);
+    assert.deepEqual(p.damage, { min: un.min + Math.floor(gb * d.damagePerGrit.min), max: un.max + Math.floor(gb * d.damagePerGrit.max) }, c.id);
+    assert.deepEqual([p.defense, p.attackRating], [d.defenseBase + a.agility * d.defensePerAgility, d.attackRatingBase + a.agility * d.attackRatingPerAgility], c.id);
+  }
 });
 
 test("AC-R-012-2 with empty equipment damage is the unarmed range plus the attribute bonus", () => {
@@ -73,12 +81,12 @@ test("AC-R-012-2 with empty equipment damage is the unarmed range plus the attri
 });
 
 test("AC-R-012-3 hpMax rising does not heal; hp never exceeds hpMax", () => {
-  const s = gameOn(OPEN);
+  const s = gameOn(OPEN), hpBefore = s.player.hpMax;
   s.player.hp = 20;
   s.player.attrs.stamina += 5;
   applyDerived(s);
   assert.equal(s.player.hp, 20);
-  assert.ok(s.player.hpMax > 50);
+  assert.ok(s.player.hpMax > hpBefore);
   s.player.attrs.stamina -= 5;
   s.player.hp = s.player.hpMax; // full at the larger value ...
   applyDerived(s); // ... clamped when the maximum falls
@@ -99,9 +107,12 @@ test("attribute affixes on gear raise the totals used by the formulas (own attrs
   ring.affixes = [{ id: "x", group: "stamina", kind: "suffix", stat: "stamina", name: "x", value: 4, range: [1, 9] }];
   autoplace(s.inventory, ring);
   assert.equal(equipItem(s, ring.id).ok, true);
-  assert.equal(s.player.attrs.stamina, 10);
-  assert.equal(s.player.attrsTotal.stamina, 14);
-  assert.equal(s.player.hpMax, 50 + 4 * config.derived.hpPerStamina);
+  const own = content.classes[0].attrs.stamina, hp0 = s.player.hpMax;
+  assert.equal(s.player.attrs.stamina, own);
+  assert.equal(s.player.attrsTotal.stamina, own + 4);
+  assert.equal(s.player.hpMax, hp0); // already counted when equipped ...
+  s.equipment.ring1 = null; applyDerived(s);
+  assert.equal(hp0 - s.player.hpMax, 4 * content.classes[0].derived.hpPerStamina);
 });
 
 test("AC-R-042-5 unseeded newGame calls give different seeds and floors; an injected source makes them reproducible", () => {

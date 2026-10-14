@@ -2,7 +2,7 @@
 // positions, contact shadows, actors lit from the same light model as the darkness mask, and the
 // hero-behind-wall ghost. The per-frame path allocates nothing: scratch objects and arrays are pooled.
 import { config, content } from "../core/index.js";
-import { keys, dirIndex, DIR_VEC, PLAYER_CLASS, FLOOR_VARIANTS, WALL_VARIANTS, ANIMS, PLAYER_ANIMS, DIRS, NPC_FRAMES, bossType } from "./keys.js";
+import { keys, dirIndex, DIR_VEC, PLAYER_CLASS, heroType, ALLY_ANIMS, FLOOR_VARIANTS, WALL_VARIANTS, ANIMS, PLAYER_ANIMS, DIRS, NPC_FRAMES, bossType } from "./keys.js";
 import { project } from "../ui/camera.js";
 import { WALL, STAIRS_UP, STAIRS_DOWN, DOOR } from "../core/tiles.js";
 
@@ -31,11 +31,31 @@ function figureTable(atlas) {
     for (const [anim, n] of Object.entries(anims)) o[anim] = Array.from({ length: DIRS }, (_, d) => Array.from({ length: n }, (_, f) => atlas.get(fn(anim, d, f))));
     return o;
   };
-  t = { plr: build((a, d, f) => keys.plr(PLAYER_CLASS, a, d, f), PLAYER_ANIMS), mon: {}, npc: {} };
+  t = { plr: build((a, d, f) => keys.plr(PLAYER_CLASS, a, d, f), PLAYER_ANIMS), plrBy: {}, ally: {}, mon: {}, npc: {} };
+  t.plrBy[PLAYER_CLASS] = t.plr;
   for (const id of Object.keys(content.npcs)) t.npc[id] = Array.from({ length: NPC_FRAMES }, (_, f) => atlas.get(keys.npc(id, f)));
   for (const type of Object.keys(content.monsters)) t.mon[type] = build((a, d, f) => keys.mon(type, a, d, f));
   figTables.set(atlas, t);
   return t;
+}
+
+/** Hero sprite table of a class (R5): built on first use because the atlas draws class sprites lazily. An unknown class id uses the old hero. */
+export function heroFigs(atlas, cls) {
+  const t = figureTable(atlas), type = heroType(cls);
+  if (t.plrBy[type]) return t.plrBy[type];
+  const o = {};
+  for (const [anim, n] of Object.entries(PLAYER_ANIMS)) o[anim] = Array.from({ length: DIRS }, (_, d) => Array.from({ length: n }, (_, f) => atlas.get(keys.plr(type, anim, d, f))));
+  return (t.plrBy[type] = o);
+}
+/** Draw all frames of a class hero now (the lazy atlas otherwise pays the cost on the first fight frame). The shell can call this on class selection. */
+export const warmHero = (atlas, cls) => { heroFigs(atlas, cls); };
+
+function allyFigs(atlas, id) {
+  const t = figureTable(atlas);
+  if (t.ally[id]) return t.ally[id];
+  const o = {};
+  for (const [anim, n] of Object.entries(ALLY_ANIMS[id] ?? {})) o[anim] = Array.from({ length: id === "cone" ? 1 : DIRS }, (_, d) => Array.from({ length: n }, (_, f) => atlas.get(keys.ally(id, anim, d, f))));
+  return (t.ally[id] = o);
 }
 
 /**
@@ -115,7 +135,7 @@ const grab = (d, e, x, y) => {
   return it;
 };
 const byDepth = (a, b) => a.d - b.d;
-const hp = { x: 0, y: 0 }, F = { g: null, cam: null, atlas: null, prev: null, alpha: 1, fx: null, now: 0, env: null, figs: null, shadowE: null, light: null, items };
+const hp = { x: 0, y: 0 }, F = { g: null, cam: null, atlas: null, prev: null, alpha: 1, fx: null, now: 0, env: null, figs: null, hfigs: null, htype: PLAYER_CLASS, shadowE: null, light: null, items };
 
 function lerpPos(a, o) {
   actorPos(a, posA);
@@ -162,6 +182,37 @@ function addNpc(n, o, margin, yMax) {
   it.actor = true; it.head = dm.head; it.npc = true;
   light.sample(n.tile.x + 0.5, n.tile.y + 0.5, LS);
   it.shade = Math.min(LS.shade, 0.3); if (!env.lowFx) { it.tint = LS.tint; it.tintA = Math.min(LS.tintA, 0.1); }
+  items.push(it);
+}
+
+/** A summoned ally (R5): a small actor with the hero's shadow treatment and a green friend ring (shape, not only colour: dashed). A decoy cone shows a taunt ring. */
+function addAlly(al, core, rs, margin, yMax) {
+  const { g, cam, atlas, now, env, light } = F, z = cam.z, id = (al.unit ?? al.id ?? "intern").replace(/^ally\./, "");
+  const dm = env.style.dims["ally." + id];
+  if (!dm || !ALLY_ANIMS[id]) return;
+  actorPos(al, posA); project(cam, posA.x + 0.5, posA.y + 0.5, pt);
+  if (pt.x < -margin || pt.x > cam.w + margin || pt.y < -margin || pt.y > yMax) return;
+  const figs = allyFigs(atlas, id), cone = id === "cone", key = "ally:" + al.id;
+  let dir = rs.facing.get(key) ?? 0;
+  if (!cone) {
+    if (al.next) dir = dirIndex(al.next.x - al.tile.x, al.next.y - al.tile.y, dir);
+    else { let best = null, bd = 64; for (const m of core.monsters) { if (m.ai === "dead") continue; const d = (m.tile.x - al.tile.x) ** 2 + (m.tile.y - al.tile.y) ** 2; if (d < bd) { bd = d; best = m; } } if (best) dir = dirIndex(best.tile.x - al.tile.x, best.tile.y - al.tile.y, dir); }
+    rs.facing.set(key, dir);
+  }
+  const anim = cone ? "idle" : al.hp <= 0 ? "death" : (al.attackT ?? 0) > 0 ? "attack" : al.next ? "walk" : "idle", frames = figs[anim];
+  const nF = frames[0].length, fr = anim === "attack" ? Math.min(nF - 1, Math.floor((1 - al.attackT / Math.max(1, al.attackTicks ?? 40)) * nF)) : anim === "death" ? nF - 1 : cone ? 0 : Math.floor(now / (anim === "walk" ? 110 : 220)) % nF;
+  const e = frames[cone ? 0 : dir][fr];
+  const rx = dm.shadowR * 1.5 * z, ry = rx * 0.5, pulse = 0.5 + 0.1 * Math.sin(now / 400);
+  g.beginPath(); g.ellipse(pt.x, pt.y, rx, ry, 0, 0, Math.PI * 2);
+  g.fillStyle = cone && al.taunt ? "rgba(255,150,60,0.14)" : "rgba(120,230,150,0.12)"; g.fill();
+  g.setLineDash([4 * z, 3 * z]); g.lineWidth = Math.max(1.4, 1.5 * z); g.strokeStyle = cone ? `rgba(255,170,90,${0.6 + pulse * 0.3})` : `rgba(130,240,160,${0.6 + pulse * 0.3})`; g.stroke(); g.setLineDash([]);
+  const k = (dm.shadowR * 2.25) / 62, sh = F.shadowE;
+  g.globalAlpha = 0.8; g.drawImage(sh.img, Math.round(pt.x - sh.ox * k * z), Math.round(pt.y - sh.oy * k * z), Math.round(sh.w * k * z), Math.round(sh.h * k * z)); g.globalAlpha = 1;
+  const it = grab(posA.x + posA.y + 1.02, e, pt.x, pt.y);
+  it.actor = true; it.head = dm.head; it.npc = true;
+  light.sample(posA.x + 0.5, posA.y + 0.5, LS);
+  it.shade = Math.min(LS.shade, 0.3); if (!env.lowFx) { it.tint = LS.tint; it.tintA = Math.min(LS.tintA, 0.1); }
+  if (anim === "death") it.a = 0.6;
   items.push(it);
 }
 
@@ -214,14 +265,14 @@ function tempRing(g, sx, sy, r, z) {
 function addActor(a, isPlayer, pos, dir, sx, sy) {
   const { g, cam, atlas, fx, now, env, light } = F, z = cam.z;
   const af = animFor(a, isPlayer, now), boss = !isPlayer && a.tier === "boss";
-  const e = boss ? atlas.get(keys.mon(bossType(a.type, a.boss?.phase ?? 1), af.anim, dir, af.frame)) : (isPlayer ? F.figs.plr : F.figs.mon[a.type])[af.anim][dir][af.frame];
+  const e = boss ? atlas.get(keys.mon(bossType(a.type, a.boss?.phase ?? 1), af.anim, dir, af.frame)) : (isPlayer ? F.hfigs : F.figs.mon[a.type])[af.anim][dir][af.frame];
   let alphaV = 1, flash = false;
   const dying = af.anim === "death";
   if (dying) {
     const t = isPlayer ? Math.min(1, (now - (fx.deathAt ?? now)) / 900) : a.deathT / config.deathTicks;
     alphaV = isPlayer ? 1 : Math.max(0, Math.min(1, (1 - t) * 3));
   } else if (a.flashTicks > 0) flash = true; // hit flash is state-backed (flashTicks), not an event timer
-  const dm = env.style.dims[isPlayer ? PLAYER_CLASS : a.type];
+  const dm = env.style.dims[isPlayer ? F.htype : a.type];
   // lit state first: an actor deep in the dark (outside every light) is not drawn at all, so no ghost silhouettes at the screen edge
   let shade = 0, tint = "", tintA = 0;
   const champ = !isPlayer && a.tier === "champion" && !dying;
@@ -388,7 +439,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
 
   // ---- actors: positions first (lights need them), then lit sprites ----
   F.g = g; F.cam = cam; F.atlas = atlas; F.prev = prev; F.alpha = alpha; F.fx = fx; F.now = now; F.env = env; F.light = light;
-  F.figs = figureTable(atlas); F.shadowE = atlas.get(keys.fx("shadow"));
+  F.figs = figureTable(atlas); F.htype = heroType(core.player.class); F.hfigs = heroFigs(atlas, core.player.class); F.shadowE = atlas.get(keys.fx("shadow"));
   lerpPos(hero, hp);
   const mons = core.monsters, nm = mons.length, npcs = core.floor.npcs ?? [], na = nm + npcs.length;
   const slot = (i) => actorOut[i] ?? (actorOut[i] = { id: "", type: "", name: "", sub: "", ai: "", hp: 0, hpMax: 0, dead: false, champ: false, npc: false, boss: false, hid: false, lit: "", x: 0, y: 0, sx: 0, sy: 0, d: 0, pr: 0 });
@@ -421,6 +472,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     if (!addActor(m, false, o, faceFor(m, false, core, rs), o.sx, o.sy)) o.hid = true; // lost in the dark: no sprite, so no plate or pip floating alone
   }
   for (let i = 0; i < npcs.length; i++) addNpc(npcs[i], actorOut[nm + i], margin, yMax);
+  if (core.allies) for (let i = 0; i < core.allies.length; i++) addAlly(core.allies[i], core, rs, margin, yMax);
 
   // enemies standing in front of the hero (and overlapping his sprite) fade, so he never disappears behind a pile
   const hi = out.heroItem;
@@ -456,7 +508,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
 
   // pack readability: when enemies stand in front of the hero he is drawn again above them, half transparent, with his ring's front arc
   if (buried && hi && hero.action !== "dead") {
-    const rx = env.style.dims[PLAYER_CLASS].shadowR * 1.7 * z, ry = rx * 0.5;
+    const rx = env.style.dims[F.htype].shadowR * 1.7 * z, ry = rx * 0.5;
     g.beginPath(); g.ellipse(hi.x, hi.y, rx, ry, 0, 0.15, Math.PI - 0.15);
     g.lineWidth = Math.max(2, 2 * z); g.strokeStyle = "rgba(255,255,255,0.8)"; g.stroke();
     g.globalAlpha = 0.5; blit(g, hi.e, hi.x, hi.y, z); g.globalAlpha = 1;

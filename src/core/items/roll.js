@@ -37,15 +37,15 @@ export function rollRarity(rng, depth = 1, minRarity = "normal", maxRarity = "un
 /** One affix value: an integer within the range, both ends reachable (AC-R-052-2). */
 export const rollAffixValue = (rng, def) => rng.int(def.range[0], def.range[1]);
 
-const affixRecord = (def, value) => ({ id: def.id, group: def.group, kind: def.kind, stat: def.stat, name: def.name, tier: def.tier, value, range: [def.range[0], def.range[1]] });
+const affixRecord = (def, value) => ({ id: def.id, group: def.group, kind: def.kind, stat: def.stat, name: def.name, tier: def.tier, value, range: [def.range[0], def.range[1]], ...(def.class ? { class: def.class } : {}) });
 
 /**
  * Random affixes for an item type and level: unique ids, one per stat group, at most maxPrefixes/maxSuffixes.
  * The group is picked first (every open group equally likely), then its tier: only tiers unlocked at `ilvl` are candidates and
  * the highest unlocked tier weighs 1, each lower one config.affixTierDecay times the next one up (level-weighted, S2 review).
  */
-export function rollAffixes(rng, type, ilvl, count) {
-  const pool = affixes.filter((a) => a.types.includes(type) && a.minIlvl <= ilvl);
+export function rollAffixes(rng, type, ilvl, count, affixTag = null) {
+  const pool = affixes.filter((a) => a.types.includes(type) && a.minIlvl <= ilvl && (!a.class || a.class === affixTag)); // class-tagged groups only for their class
   const out = [], groups = new Set(), kinds = { prefix: 0, suffix: 0 };
   const cap = { prefix: config.maxPrefixes, suffix: config.maxSuffixes };
   for (let i = 0; i < count; i++) {
@@ -95,6 +95,7 @@ const nameWith = (base, affs) => {
 
 /**
  * Roll one gear item. `taken` lists unique ids already found this game (QF-05-2: a taken unique becomes a rare of the same base).
+ * `affixTag`: the class tag of the character the item is for (ADR-0005 section 7); class-tagged affixes roll only for a matching tag.
  */
 export function rollItem(rng, opts = {}) {
   const depth = opts.depth ?? 1, ilvl = opts.ilvl ?? depth * config.ilvlPerDepth;
@@ -118,11 +119,11 @@ export function rollItem(rng, opts = {}) {
   const item = fromBase(base, rarity, ilvl);
   if (rarity === "magic") {
     const [lo, hi] = config.magicAffixes;
-    item.affixes = rollAffixes(rng, base.slot, ilvl, rng.int(lo, hi));
+    item.affixes = rollAffixes(rng, base.slot, ilvl, rng.int(lo, hi), opts.affixTag);
     item.name = nameWith(base.name, item.affixes);
   } else if (rarity === "rare") {
     const [lo, hi] = config.rareAffixes;
-    item.affixes = rollAffixes(rng, base.slot, ilvl, rng.int(lo, hi));
+    item.affixes = rollAffixes(rng, base.slot, ilvl, rng.int(lo, hi), opts.affixTag);
     item.name = `${rng.pick(rareNames.adjectives)} ${rng.pick(rareNames.nouns)}`;
   }
   return item;

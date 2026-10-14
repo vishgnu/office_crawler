@@ -234,7 +234,7 @@ test("at the ground cap gold and the cheapest normal items go first; uniques, th
 
 // ---- nits ----
 test("a cast while the hero is still casting is rejected and spends no mana", () => {
-  const s = gameOn(OPEN); setLevel(s, 3); learnSkill(s, "coffee-break");
+  const s = gameOn(OPEN); setLevel(s, 9); s.player.skills["coffee-break"] = 1; // granted: the tree rules are covered in progression.test.js
   s.player.hp = 1;
   assert.equal(cmd(s, { t: "cast", skill: "coffee-break" }).ok, true);
   const mp = s.player.mp;

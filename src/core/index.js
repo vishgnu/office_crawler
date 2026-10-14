@@ -2,13 +2,13 @@
 import { hashState } from "./hash.js";
 import { config } from "./config.js";
 import { monsters, bosses, monsterStats, championMods } from "./content/monsters.js";
-import { skills } from "./content/skills.js";
+import { skills, skillTrees, at, manaCost } from "./content/skills.js";
 import { npcs } from "./content/npcs.js";
 import { themes } from "./content/themes.js";
 import { props } from "./content/props.js";
 import { strings } from "./content/strings.js";
 import { story } from "./content/story.js";
-import { classById, defaultClass } from "./content/classes.js";
+import { classes, defaultClass, classById, retiredClasses } from "./content/classes.js";
 import { bases, slotKeys, rarities, rarityOrder } from "./content/items.js";
 import { affixes, affixGroups } from "./content/affixes.js";
 import { uniques } from "./content/uniques.js";
@@ -31,8 +31,12 @@ export { step } from "./step.js";
 export { applyInput } from "./systems/intent.js";
 export { hitChance } from "./systems/combat.js";
 export { monsterStats };
-export { gainXp, allocate, learnSkill, assignSkill, selectSkill, xpNextFor } from "./systems/progression.js";
-export { castSkill, skillLevel } from "./systems/skills.js";
+export { gainXp, allocate, learnSkill, assignSkill, selectSkill, xpNextFor, respec, respecCheck, toggleAura } from "./systems/progression.js";
+export { classes, classById, defaultClass, retiredClasses, skillTrees, at, manaCost };
+export { skillView, treeView, classCards, effectRows } from "./treeview.js";
+export { validateName, suggestName, DEFAULT_NAME, NAME_MAX } from "./name.js";
+export { allyUnits } from "./content/allies.js";
+export { castSkill, skillLevel, effLevel, castCost } from "./systems/skills.js";
 export { fireProjectile } from "./systems/projectiles.js";
 export { enterFloor, useStairs, interact, respawn, townTarget, stairsTile, stairsAt, npcAt, openPortal, usePortal, portalAt, closeDialog, heal } from "./systems/world.js";
 export { vendorInReach } from "./systems/vendors.js";
@@ -48,7 +52,7 @@ export { findPath } from "./pathfind.js";
 export { advance } from "./clock.js";
 export { hashState };
 
-export const content = { monsters, bosses, championMods, skills, npcs, themes, props, strings, story, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops };
+export const content = { monsters, bosses, championMods, skills, skillTrees, npcs, themes, props, strings, story, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops };
 
 export const cloneState = (state) => structuredClone(state);
 

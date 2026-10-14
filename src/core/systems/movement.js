@@ -32,7 +32,8 @@ export function movement(state) {
   const ctx = getCtx(state), p = state.player;
   if (p.hp > 0) {
     if (progress(ctx, p) && p.action !== "attack" && !(p.castT > 0)) {
-      const r = begin(ctx, p, config.moveTicksPerTile, 2);
+      const mv = p.mods?.moveSpeedPct ? Math.max(4, Math.round((config.moveTicksPerTile * 100) / Math.max(25, 100 + p.mods.moveSpeedPct))) : config.moveTicksPerTile;
+      const r = begin(ctx, p, mv, 2);
       if (r === "blocked") { if (++p.blockedT >= 10) { p.path = []; p.blockedT = 0; } } // give up if the way stays blocked
       else p.blockedT = 0;
     }
@@ -41,7 +42,7 @@ export function movement(state) {
   for (const m of state.monsters) {
     if (m.ai === "dead" || m.ai === "stagger" || m.muteT > 0) continue; // staggered and muted monsters stand still
     if (progress(ctx, m) && (m.ai === "chase" || m.ai === "flee")) {
-      if (begin(ctx, m, moveTicksFor(m.speed), 1) === "blocked") { m.path = []; m.repathT = 0; }
+      if (begin(ctx, m, moveTicksFor(m.slowT > 0 ? (m.speed * (100 - m.slowMag)) / 100 : m.speed), 1) === "blocked") { m.path = []; m.repathT = 0; }
     }
   }
 }

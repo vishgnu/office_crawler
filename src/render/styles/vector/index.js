@@ -1,7 +1,7 @@
 // The "vector" style (C2): stylised vector, graded dark, bold ink outlines, flat colours with one shade level,
 // rim-lit actors. Everything is drawn procedurally into the atlas at load. Swap this folder to change the art.
 import { createAtlas } from "../../atlas.js";
-import { keys, FLOOR_KINDS, FLOOR_VARIANTS, WALL_VARIANTS, MARKERS, ANIMS, PLAYER_ANIMS, DIRS, DIR_VEC, PLAYER_CLASS, PROJECTILES, NPC_FRAMES, BOSS_ANIMS, BOSS_P2 } from "../../keys.js";
+import { keys, FLOOR_KINDS, FLOOR_VARIANTS, WALL_VARIANTS, MARKERS, ANIMS, PLAYER_ANIMS, DIRS, DIR_VEC, PLAYER_CLASS, HERO_CLASSES, ALLY_IDS, ALLY_ANIMS, PROJECTILES, NPC_FRAMES, BOSS_ANIMS, BOSS_P2 } from "../../keys.js";
 import { content } from "../../../core/index.js";
 import { palette } from "./palette.js";
 import { drawFloor, drawMarker, drawWall, WALL_W, WALL_CANVAS_H, WALL_CY } from "./tiles.js";
@@ -69,6 +69,15 @@ export const vector = {
       }
     });
     figure(PLAYER_CLASS, (a, d, f) => keys.plr(PLAYER_CLASS, a, d, f), PLAYER_ANIMS);
+    // R5 class heroes and allies: big sets (176 frames a class), so they are drawn on first use (only the class in play, or a figure on the selection screen)
+    steps.push(() => {
+      for (const cls of HERO_CLASSES) for (const [anim, n] of Object.entries(PLAYER_ANIMS)) for (let d = 0; d < DIRS; d++) for (let f = 0; f < n; f++) {
+        atlas.addLazy(keys.plr(cls, anim, d, f), FIG_W, FIG_H, FIG_FX, FIG_FY, (g, sc) => figureWithRim(g, sc, FIG_W, FIG_H, rim, palette.rims[cls], (tg) => { tg.translate(FIG_FX, FIG_FY); drawFigure(tg, cls, anim, d, f); }));
+      }
+      for (const id of ALLY_IDS) for (const [anim, n] of Object.entries(ALLY_ANIMS[id])) for (let d = 0; d < (id === "cone" ? 1 : DIRS); d++) for (let f = 0; f < n; f++) {
+        atlas.addLazy(keys.ally(id, anim, d, f), FIG_W, FIG_H, FIG_FX, FIG_FY, (g, sc) => figureWithRim(g, sc, FIG_W, FIG_H, rim, palette.rims["ally." + id], (tg) => { tg.translate(FIG_FX, FIG_FY); drawFigure(tg, "ally." + id, anim, d, f); }));
+      }
+    });
     // Lobby NPCs: an idle loop facing the viewer (direction 0)
     steps.push(() => {
       for (const id of Object.keys(content.npcs)) {

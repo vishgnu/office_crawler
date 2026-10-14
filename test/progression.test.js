@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { config, content, applyInput, step, deriveStats, monsterStats, gainXp, setLevel, learnSkill } from "../src/core/index.js";
+import { config, content, at, applyInput, step, deriveStats, monsterStats, gainXp, setLevel, learnSkill } from "../src/core/index.js";
 import { gameOn, run, OPEN } from "./helpers.js";
 
 const cmd = (s, c) => applyInput(s, c);
@@ -83,15 +83,15 @@ test("AC-R-016-1/-2 allocating an attribute point recomputes derived stats; with
   const s = gameOn(OPEN);
   assert.equal(cmd(s, { t: "allocate", attr: "stamina" }).ok, false);
   setLevel(s, 2);
-  const p = s.player, hp = p.hpMax, pts = p.attrPoints;
+  const p = s.player, hp = p.hpMax, pts = p.attrPoints, st = p.attrs.stamina;
   assert.equal(cmd(s, { t: "allocate", attr: "stamina" }).ok, true);
   assert.equal(p.attrPoints, pts - 1);
-  assert.equal(p.attrs.stamina, 11);
+  assert.equal(p.attrs.stamina, st + 1);
   assert.ok(p.hpMax > hp);
   const dm = p.mpMax; cmd(s, { t: "allocate", attr: "focus" });
   assert.ok(p.mpMax > dm);
   assert.equal(cmd(s, { t: "allocate", attr: "luck" }).ok, false);
-  const g = p.damage.max; cmd(s, { t: "allocate", attr: "grit" });
+  const g = p.damage.max; cmd(s, { t: "allocate", attr: "grit" }); cmd(s, { t: "allocate", attr: "grit" }); // half a point of damage per grit (Facilities Manager)
   assert.equal(p.damage.max, g + 1);
 });
 
@@ -102,61 +102,64 @@ test("AC-R-012-3 hp is not refilled by an attribute point", () => {
   assert.equal(s.player.hp, 5);
 });
 
-test("AC-R-014-1 the skill list: one basic attack, four actives, two passives, original names", () => {
+// Superseded by ADR-0005 (R4): one flat Clerk list becomes three class trees of ten skills each plus a class basic attack.
+test("AC-R-014-1 (supersedes the flat list) the skill table: three basics, 30 tree skills, original names, max level 1..5", () => {
   const list = Object.values(content.skills);
-  assert.equal(list.filter((k) => k.kind === "basic").length, 1);
-  assert.equal(list.filter((k) => k.kind === "active").length, 4);
-  assert.equal(list.filter((k) => k.kind === "passive").length, 2);
+  assert.equal(list.filter((k) => k.kind === "basic").length, 3);
+  assert.equal(list.filter((k) => k.kind !== "basic").length, 30);
   assert.equal(new Set(list.map((k) => k.name)).size, list.length);
-  for (const k of list) { assert.ok(k.name.length > 0); if (k.kind !== "basic") assert.ok(k.maxLevel >= 2 && k.maxLevel <= config.skillMaxLevel); }
+  for (const k of list) { assert.ok(k.name.length > 0); if (k.kind !== "basic") assert.ok(k.maxLevel >= 1 && k.maxLevel <= config.skillMaxLevel); }
 });
 
-test("AC-R-014-2/-3/-4 learning spends a skill point; rejected without points and at max level", () => {
-  const s = gameOn(OPEN), p = s.player;
-  assert.equal(cmd(s, { t: "learnSkill", id: "stapler-throw" }).ok, false);
-  assert.equal(p.skills["stapler-throw"], undefined);
+test("AC-R-014-2/-3/-4 learning spends a skill point; rejected without points and at max level (stable error codes)", () => {
+  const s = gameOn(OPEN, [], 1, { class: "sales-rep" }), p = s.player;
+  assert.equal(cmd(s, { t: "learnSkill", id: "pen-volley" }).error, "level-gate");
+  assert.equal(cmd(s, { t: "learnSkill", id: "stapler-throw" }).error, "no-points");
+  assert.equal(p.skills["stapler-throw"], 1); // the signature is free at level 1
   setLevel(s, 8); // 7 skill points
   assert.equal(cmd(s, { t: "learnSkill", id: "stapler-throw" }).ok, true);
-  assert.equal(p.skills["stapler-throw"], 1); assert.equal(p.skillPoints, 6);
-  assert.equal(cmd(s, { t: "learnSkill", id: "stapler-throw" }).ok, true);
-  assert.equal(p.skills["stapler-throw"], 2);
+  assert.equal(p.skills["stapler-throw"], 2); assert.equal(p.skillPoints, 6);
   const max = content.skills["stapler-throw"].maxLevel;
   while (p.skills["stapler-throw"] < max) learnSkill(s, "stapler-throw");
   const pts = p.skillPoints;
-  assert.equal(cmd(s, { t: "learnSkill", id: "stapler-throw" }).ok, false);
+  assert.deepEqual(cmd(s, { t: "learnSkill", id: "stapler-throw" }), { ok: false, error: "max-level" });
   assert.equal(p.skillPoints, pts);
-  assert.equal(cmd(s, { t: "learnSkill", id: "strike" }).ok, false);
-  assert.equal(cmd(s, { t: "learnSkill", id: "nope" }).ok, false);
+  assert.equal(cmd(s, { t: "learnSkill", id: "toss" }).error, "basic");
+  assert.equal(cmd(s, { t: "learnSkill", id: "nope" }).error, "unknown-skill");
+  assert.equal(cmd(s, { t: "learnSkill", id: "mute" }).error, "wrong-class");
 });
 
 test("AC-R-014-5 an active skill's effect value is non-decreasing with level and higher at max than at 1", () => {
-  for (const k of Object.values(content.skills).filter((x) => x.kind === "active")) {
-    const f = k.heal ?? k.dmgMax ?? k.duration, g = k.mana;
-    for (let l = 1; l < k.maxLevel; l++) { assert.ok(f(l + 1) >= f(l)); assert.ok(g(l + 1) >= g(l)); }
-    assert.ok(f(k.maxLevel) > f(1));
+    for (const k of Object.values(content.skills).filter((x) => x.kind === "active")) {
+    const eff = k.effects.find((e) => ["damage", "heal", "hot", "absorb", "status", "summon", "dot"].includes(e.op));
+    const f = (l) => { const c = eff.max ?? eff.amount ?? eff.ticks ?? eff.hp ?? eff.perTick; return at(c, l); }, g = k.mana;
+    for (let l = 1; l < k.maxLevel; l++) { assert.ok(f(l + 1) >= f(l), k.id); assert.ok(g(l + 1) >= g(l), k.id); }
+    if (k.maxLevel > 1) assert.ok(f(k.maxLevel) > f(1) || g(k.maxLevel) > g(1), k.id);
   }
 });
 
-test("AC-R-014-6 a passive skill changes the matching derived stat by perLevel * level", () => {
+test("AC-R-014-6 a passive skill changes the matching derived stat by value(level)", () => {
   const s = gameOn(OPEN); setLevel(s, 4);
-  const d0 = s.player.defense, a0 = s.player.attackRating;
+  const d0 = s.player.defense;
   learnSkill(s, "dress-code"); learnSkill(s, "dress-code");
-  assert.equal(s.player.defense, d0 + 2 * content.skills["dress-code"].perLevel);
-  learnSkill(s, "hustle");
-  assert.equal(s.player.attackRating, a0 + content.skills.hustle.perLevel);
+  assert.equal(s.player.defense, d0 + at(content.skills["dress-code"].effects[0].value, 2)); // 4 per level: level 2 = +8
+  const t = gameOn(OPEN, [], 1, { class: "sales-rep" }); setLevel(t, 4);
+  const a0 = t.player.attackRating;
+  learnSkill(t, "hustle");
+  assert.equal(t.player.attackRating, a0 + at(content.skills.hustle.effects[0].value, 1));
 });
 
 test("AC-R-014-7 an unlearned skill does nothing and costs nothing; passives cannot be cast", () => {
-  const s = gameOn(OPEN), mp = s.player.mp;
-  const r = cmd(s, { t: "cast", skill: "stapler-throw", tile: { x: 14, y: 4 } });
+  const s = gameOn(OPEN, [], 1, { class: "sales-rep" }), mp = s.player.mp;
+  const r = cmd(s, { t: "cast", skill: "pen-volley", tile: { x: 14, y: 4 } });
   assert.equal(r.ok, false);
   assert.equal(s.player.mp, mp); assert.equal(s.projectiles.length, 0); assert.equal(ev(s, "cast").length, 0);
-  setLevel(s, 3); learnSkill(s, "dress-code");
-  assert.equal(cmd(s, { t: "cast", skill: "dress-code" }).ok, false);
+  setLevel(s, 3); learnSkill(s, "hustle");
+  assert.equal(cmd(s, { t: "cast", skill: "hustle" }).ok, false);
 });
 
 test("AC-R-014-8 / AC-R-023-5 a cast costs content.skills[X].mana(level) and mp never goes below 0; no cooldown", () => {
-  const s = gameOn(OPEN); setLevel(s, 3); learnSkill(s, "coffee-break");
+  const s = gameOn(OPEN); setLevel(s, 9); learnSkill(s, "dress-code"); learnSkill(s, "coffee-break");
   const p = s.player, cost = content.skills["coffee-break"].mana(1);
   p.hp = 1; p.mp = p.mpMax;
   assert.equal(cmd(s, { t: "cast", skill: "coffee-break" }).ok, true);
@@ -170,24 +173,25 @@ test("AC-R-014-8 / AC-R-023-5 a cast costs content.skills[X].mana(level) and mp 
   assert.ok(ev(s, "noMana").length >= 1);
 });
 
-test("AC-R-015-4 assignment: unlearned skills rejected, the basic attack is the default primary and always assignable", () => {
+test("AC-R-015-4 assignment: unlearned skills rejected, the class basic attack is the default primary and always assignable", () => {
   const s = gameOn(OPEN), bar = s.player.skillBar;
   assert.equal(bar.primary, "strike");
-  assert.equal(cmd(s, { t: "assignSkill", slot: 0, id: "mute" }).ok, false);
+  assert.equal(cmd(s, { t: "assignSkill", slot: 0, id: "floor-buffer" }).ok, false);
   assert.equal(cmd(s, { t: "assignSkill", slot: 1, id: "strike" }).ok, true);
   assert.equal(bar.hotkeys[1], "strike");
   assert.equal(cmd(s, { t: "assignSkill", slot: "primary", id: "strike" }).ok, true);
+  assert.equal(cmd(s, { t: "assignSkill", slot: "primary", id: "toss" }).ok, false); // another class's basic
   assert.equal(cmd(s, { t: "assignSkill", slot: 9, id: "strike" }).ok, false);
 });
 
 test("AC-R-015-2/-3 F1-F4 select the skill that the right mouse button uses (AC-R-005-5)", () => {
-  const s = gameOn(OPEN, [["zombie-intern", 15, 4]]); setLevel(s, 4);
-  learnSkill(s, "stapler-throw"); learnSkill(s, "coffee-break");
+  const s = gameOn(OPEN, [["zombie-intern", 15, 4]], 1, { class: "sales-rep" }); setLevel(s, 9);
+  learnSkill(s, "intern"); learnSkill(s, "intern");
   const bar = s.player.skillBar;
-  assert.deepEqual(bar.hotkeys.slice(0, 2), ["stapler-throw", "coffee-break"]); // learned skills take free hotkeys
+  assert.deepEqual(bar.hotkeys.slice(0, 2), ["stapler-throw", "intern"]); // the signature holds F1, learned actives take the next free hotkey
   assert.equal(bar.secondary, "stapler-throw");
   assert.equal(cmd(s, { t: "key", code: "F2" }).ok, true);
-  assert.equal(bar.selected, 1); assert.equal(bar.secondary, "coffee-break");
+  assert.equal(bar.selected, 1); assert.equal(bar.secondary, "intern");
   cmd(s, { t: "key", code: "F1" });
   const mp = s.player.mp, cost = content.skills["stapler-throw"].mana(1);
   assert.equal(cmd(s, { t: "click", tile: { x: 14, y: 4 }, button: 2 }).ok, true);

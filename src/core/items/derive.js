@@ -1,7 +1,7 @@
 // Derived stats (AC-R-012): a pure function of level, attributes, class, learned skills, active buffs / aura and equipped gear.
 import { config } from "../config.js";
 import { skills, at } from "../content/skills.js";
-import { classById, defaultClass } from "../content/classes.js";
+import { classById } from "../content/classes.js";
 
 const ROUND = { floor: Math.floor, round: Math.round, ceil: Math.ceil };
 const ATTRS = ["grit", "agility", "stamina", "focus"];
@@ -31,7 +31,7 @@ export const skillBonus = (g, def) => (g["skillLevel.all"] ?? 0) + (g[`skillLeve
 
 /** The class's derived constants: config.derived with the class overrides merged key by key. */
 export function derivedFor(classId) {
-  const { unarmed, ...over } = (classById(classId) ?? classById(defaultClass)).derived ?? {};
+  const { unarmed, ...over } = classById(classId)?.derived ?? {}; // no class (a bare player object in a formula test): plain config.derived
   return { d: { ...config.derived, ...over }, unarmed: unarmed ?? config.unarmed };
 }
 

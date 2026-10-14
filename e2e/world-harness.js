@@ -9,7 +9,7 @@ import { createLabels } from "../src/render/labels.js";
 import { makeCamera, worldScale } from "../src/ui/camera.js";
 import { viewConfig } from "../src/ui/layout.js";
 import { posOf } from "../src/core/pos.js";
-import { requiredKeys } from "../src/render/keys.js";
+import { requiredKeys, HERO_CLASSES } from "../src/render/keys.js";
 import { damageMonster } from "../src/core/systems/damage.js";
 
 const W = { atlas: null, fx: null, light: null, labels: null, core: null, rs: { facing: new Map() }, size: { w: 1920, h: 1080 }, now: 1000 };
@@ -148,7 +148,7 @@ W.sheet = (types, specs, k = 2.2, bg = "#2b3647") => {
   g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = bg; g.fillRect(0, 0, w, h);
   const cw = Math.floor(w / specs.length), ch = Math.floor(h / types.length);
   types.forEach((type, r) => specs.forEach(([anim, dir, f], c) => {
-    const key = type === "clerk" ? `plr:clerk:${anim}:${dir}:${f}` : type.startsWith("npc-") ? `npc:${type.slice(4)}:${f}` : `mon:${type}:${anim}:${dir}:${f}`;
+    const key = type === "clerk" || HERO_CLASSES.includes(type) ? `plr:${type}:${anim}:${dir}:${f}` : type.startsWith("ally.") ? `ally:${type.slice(5)}:${anim}:${dir}:${f}` : type.startsWith("npc-") ? `npc:${type.slice(4)}:${f}` : `mon:${type}:${anim}:${dir}:${f}`;
     const e = W.atlas.get(key);
     if (!e) { g.fillStyle = "#f00"; g.fillText("missing " + key, c * cw + 10, r * ch + 20); return; }
     const x = c * cw + cw / 2, y = r * ch + ch * 0.78;

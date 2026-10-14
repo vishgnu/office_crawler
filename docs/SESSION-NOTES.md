@@ -102,3 +102,8 @@ Each round also improves the harness (learnings → agent definitions/rules), as
 - [r4] Proxy spec-questions-02 done; it matches the defaults given to CORE-R4. Escalations were added to STATE.md (names/title, respec, skill-name renames).
 - [r4] Character-select variants done (A Lobby lineup, B Personnel files, C Elevator doors) + figures.js (front-on class figures). The prototypes use placeholder skill names (incl. Firewall/Fire Drill); the implementation uses the ADR-0005 safe names. Visual review running → proxy pick.
 - [r4] Character-select decided (PROXY): A Lobby lineup + borrows (C: stats row, ding pulse, elevator transition; B: SELECTED stamp, ID-badge bust in the Load dialog). Must-fix list in decision.md incl. in-world class sprites carrying class identity. Waiting for CORE-R4, then R5 WORLD (class sprites, skill FX) + R5 UI (char-select, skill-tree panel, slots).
+
+## Round G (user, 2026-10-14, fifth briefing): graphics detail and polish (inserted right after R5 render lands)
+- Keep the C2 idea; add detail: materials/textures (carpet weave, wood grain, brushed metal, glass reflections), a second shade level and ambient occlusion at wall bases, denser props and decals per room kind, secondary motion (cloth, cables, monitor flicker, dust motes), finer character and monster detail (faces, props, outlines), UI chrome polish.
+- Loop: prototyper C3 detail tile → 2 visual reviewers (vs C2 + the current game) → proxy approves → WORLD port across all zones/classes/monsters/boss + UI chrome polish → in-game visual review → fixes. Perf gate fps50 ≥ 40, atlas ≤ 5 s (lazy atlas if needed).
+- Order now: R4 core → R5 (WORLD running, UI next) → **G** → R6 → R7–8 gameplay → R9–10 lighting → R11–12 test & polish.

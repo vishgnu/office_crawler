@@ -8,19 +8,18 @@ const style = { ui: { shapes: { health: "mug", mana: "jug" } } };
 const inside = (r, w, h) => r.x >= 0 && r.y >= 0 && r.x + r.w <= w && r.y + r.h <= h;
 
 test("AC-R-071-1 hudState.skillBar lists primary, secondary and the four hotkey slots as in player.skillBar", () => {
-  const s = newGame(1, { start: "town" });
+  const s = newGame(1, { start: "town", class: "sales-rep" }); // the Sales Rep owns Stapler Throw (free signature, F1) and Summer Intern
   s.player.level = 3; s.player.skillPoints = 2;
-  applyInput(s, { t: "learnSkill", id: "stapler-throw" });
-  applyInput(s, { t: "learnSkill", id: "coffee-break" });
+  applyInput(s, { t: "learnSkill", id: "intern" });
   applyInput(s, { t: "key", code: "F2" });
   const h = hudState(s, 1280, 800, style);
-  assert.equal(h.skillBar.primary, "strike");
+  assert.equal(h.skillBar.primary, "toss");
   assert.equal(h.skillBar.secondary, s.player.skillBar.secondary);
   assert.deepEqual(h.skillBar.hotkeys, s.player.skillBar.hotkeys);
-  assert.deepEqual(h.skillBar.slots.map((x) => x.skill), ["stapler-throw", "coffee-break", null, null]);
+  assert.deepEqual(h.skillBar.slots.map((x) => x.skill), ["stapler-throw", "intern", null, null]);
   assert.deepEqual(h.skillBar.slots.map((x) => x.key), ["F1", "F2", "F3", "F4"]);
   assert.deepEqual(h.skillBar.slots.map((x) => x.selected), [false, true, false, false]);
-  assert.equal(h.skillBar.slots[1].cost, 8);
+  assert.equal(h.skillBar.slots[1].cost, content.skills.intern.mana(1));
   assert.equal(h.skillBar.slots[2].empty, true);
 });
 

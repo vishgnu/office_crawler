@@ -13,6 +13,9 @@ import { scene } from "./systems/scene.js";
 import { projectiles } from "./systems/projectiles.js";
 import { world } from "./systems/world.js";
 import { explore } from "./systems/explore.js";
+import { allies } from "./systems/allies.js";
+import { zones } from "./systems/zones.js";
+import { monsterStatuses, playerStatuses, dash } from "./systems/statuses.js";
 
 export function step(state, inputs = []) {
   state.events.length = 0;
@@ -22,17 +25,23 @@ export function step(state, inputs = []) {
 
   rebuildOccupancy(state, getCtx(state));
   playerIntent(state);
+  dash(state);
   ai(state);
   boss(state);
+  allies(state);
   movement(state);
   pickups(state);
   projectiles(state);
   combat(state);
   status(state);
+  monsterStatuses(state);
+  playerStatuses(state);
+  zones(state);
   cleanup(state);
   scene(state);
   world(state);
   explore(state);
   state.tick++;
+  state.stats.playTicks = (state.stats.playTicks ?? 0) + 1;
   return state;
 }

@@ -61,3 +61,9 @@ generates all assets itself (procedural or code-drawn art, synthesised audio). N
 
 **Status: agreed (real customer).** After rounds 4–6: rounds 7–8 flawless gameplay; rounds 9–10 lighting effects for
 gameplay; rounds 11–12 overall test and polish.
+
+## Fifth briefing (user, 2026-10-14, verbatim)
+
+> Do a round on improving grafics design stile idea is good but more details and polishing
+
+**Status: agreed (real customer).** The style idea (C2) stays; add a round for more detail and polish across the game's graphics.

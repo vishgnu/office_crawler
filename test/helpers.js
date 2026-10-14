@@ -17,9 +17,9 @@ export function floorFromRows(rows) {
   return { depth: 1, seed: 1, theme: "open-plan", w, h, tiles, rooms: [], entry, exit, props: [], spawns: [] };
 }
 
-/** A game on an ASCII floor; monsters = [[type, x, y, packId?], ...]. */
-export function gameOn(rows, monsters = [], seed = 1) {
-  const state = newGame(seed, { floor: floorFromRows(rows) });
+/** A game on an ASCII floor; monsters = [[type, x, y, packId?], ...]. `opts` goes to newGame (for example { class: "sales-rep" }). */
+export function gameOn(rows, monsters = [], seed = 1, opts = {}) {
+  const state = newGame(seed, { ...opts, floor: floorFromRows(rows) });
   for (const [type, x, y, packId] of monsters) {
     if (!spawnMonster(state, type, { x, y }, packId ?? null)) throw new Error(`cannot spawn ${type} at ${x},${y}`);
   }

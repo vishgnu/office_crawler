@@ -3,6 +3,7 @@ import { config } from "../config.js";
 import { createRng } from "../../rng.js";
 import { hash32 } from "../hash.js";
 import { rollItem, makeItem } from "../items/roll.js";
+import { classById } from "../content/classes.js";
 import { potionBases, consumableBases } from "../content/items.js";
 import { buyPrice, sellValue } from "../items/price.js";
 import { autoplace, findById, remove } from "../items/inventory.js";
@@ -17,7 +18,7 @@ const idHash = (id) => hash32(...[...String(id)].map((c) => c.charCodeAt(0)));
  * Stock for one visit: unlimited potions of every strength unlocked at `level` (QF-04-3), plus a few gear items
  * of normal or magic rarity. Entries: { item, price, unlimited }. Items have no id until the vendor window opens.
  */
-export function vendorStock(seed, visit, { vendorId = "supplies", level = 1, ilvl, potionsOnly = false } = {}) {
+export function vendorStock(seed, visit, { vendorId = "supplies", level = 1, ilvl, potionsOnly = false, affixTag = null } = {}) {
   const rng = createRng(hash32(seed, idHash(vendorId), visit));
   const itemLevel = ilvl ?? Math.max(1, level) * config.ilvlPerDepth;
   const stock = [];
@@ -26,7 +27,7 @@ export function vendorStock(seed, visit, { vendorId = "supplies", level = 1, ilv
   }
   for (const b of consumableBases) { const item = makeItem(b.id); stock.push({ item, price: buyPrice(item), unlimited: true }); } // Emergency Exit
   for (let i = 0; i < (potionsOnly ? 0 : config.vendor.gearSlots); i++) {
-    const item = rollItem(rng, { ilvl: itemLevel, maxRarity: "magic" });
+    const item = rollItem(rng, { ilvl: itemLevel, maxRarity: "magic", affixTag });
     stock.push({ item, price: buyPrice(item), unlimited: false });
   }
   return stock;
@@ -48,7 +49,7 @@ export function openVendor(state, vendorId = "supplies") {
   if (!kept) {
     const visit = (state.vendorVisits[vendorId] = (state.vendorVisits[vendorId] ?? 0) + 1);
     const potionsOnly = Object.values(npcs).some((n) => n.vendorId === vendorId && n.potionsOnly);
-    const stock = vendorStock(state.seed, visit, { vendorId, level: state.player.level, ilvl: state.deepestDepth * config.ilvlPerDepth, potionsOnly });
+    const stock = vendorStock(state.seed, visit, { vendorId, level: state.player.level, ilvl: state.deepestDepth * config.ilvlPerDepth, potionsOnly, affixTag: classById(state.player.class)?.affixTag ?? null });
     for (const e of stock) mint(state, e.item);
     kept = state.vendorStocks[vendorId] = { id: vendorId, visit, stock };
   }

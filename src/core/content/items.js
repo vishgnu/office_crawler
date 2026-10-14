@@ -8,7 +8,7 @@ const req = (level, attrs = {}) => ({ level, ...attrs });
 const list = [
   // Weapons (one-handed)
   gear("ruler-rapier", "Ruler Rapier", "weapon", 1, 3, 1, 12, { damage: { min: 1, max: 3 }, reqs: req(1) }),
-  gear("pipe-wrench", "Pipe Wrench", "weapon", 1, 3, 1, 12, { damage: { min: 2, max: 4 }, reqs: req(1) }),
+  gear("pipe-wrench", "Pipe Wrench", "weapon", 1, 3, 1, 12, { damage: { min: 3, max: 6 }, reqs: req(1) }),
   gear("usb-staff", "USB Staff", "weapon", 1, 3, 1, 12, { damage: { min: 1, max: 3 }, reqs: req(1) }),
   gear("letter-opener", "Letter Opener", "weapon", 1, 2, 1, 10, { damage: { min: 1, max: 4 }, reqs: req(1) }),
   gear("stapler-mace", "Stapler Mace", "weapon", 1, 3, 3, 24, { damage: { min: 3, max: 6 }, reqs: req(3, { grit: 12 }) }),

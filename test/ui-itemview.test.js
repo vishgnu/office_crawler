@@ -9,6 +9,7 @@ const wear = (s, item) => { s.equipment[item.slot] = item; };
 
 test("describeItem lists name, rarity word, mark, requirements with have/need and each affix as text", () => {
   const s = game(), it = mint(s, "keyboard-sword", { rarity: "rare", ilvl: 9 });
+  s.player.attrs.grit = 10;
   it.affixes = [{ stat: "grit", value: 4 }, { stat: "hpMax", value: 12 }, { stat: "resist.fire", value: 9 }, { stat: "damage", value: 2 }];
   const d = describeItem(it, s.player);
   assert.equal(d.name, "Keyboard Sword");
@@ -107,7 +108,7 @@ test("allocPreview shows the derived change of one more point and the gear it un
 
 test("unmetGear lists inventory gear the hero cannot use with the missing amounts", () => {
   const s = game(), g = mint(s, "stapler-mace");
-  g.x = 0; g.y = 0; s.inventory.items.push(g);
+  g.x = 0; g.y = 0; s.inventory.items.push(g); s.player.attrs.grit = 10;
   const [u] = unmetGear(s);
   assert.equal(u.item.id, g.id);
   assert.deepEqual(u.missing.map((m) => m.key).sort(), ["grit", "level"]);

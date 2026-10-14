@@ -3,6 +3,7 @@
 // stat: the key deriveStats reads. types: item slot types the affix may roll on.
 const ALL = ["weapon", "offhand", "head", "body", "hands", "feet", "belt", "ring", "amulet"];
 const T = [1, 6, 12, 20]; // tier item levels
+const CLASS_TYPES = ["weapon", "ring", "amulet"];
 
 const groups = [
   // prefixes
@@ -33,12 +34,31 @@ const groups = [
     tiers: [["of the Power Strip", [5, 10]], ["of the Surge Guard", [11, 18]], ["of the Fuse Box", [19, 26]], ["of the Lightning Rod", [27, 35]]] },
   { group: "resist-acid", kind: "suffix", stat: "resist.acid", types: ALL,
     tiers: [["of the Hazmat Drill", [5, 10]], ["of the Spill Kit", [11, 18]], ["of the Fume Hood", [19, 26]], ["of the Clean Room", [27, 35]]] },
+  // class-tagged groups (ADR-0005 section 7): rolled only for a character whose class affixTag matches. They raise skill levels or skill damage.
+  { group: "fac-all", kind: "suffix", class: "facilities", stat: "skillLevel.all", types: CLASS_TYPES,
+    tiers: [["of the Corner Office", [1, 1]], ["of the Facilities Budget", [1, 2]], ["of the Master Key", [2, 3]]] },
+  { group: "fac-branch", kind: "suffix", class: "facilities", stat: "skillLevel.branch.maintenance", types: CLASS_TYPES,
+    tiers: [["of Routine Maintenance", [1, 2]], ["of the Service Contract", [2, 3]], ["of the Boiler Room Key", [3, 4]]] },
+  { group: "fac-area", kind: "prefix", class: "facilities", stat: "skillDamagePct.area", types: CLASS_TYPES,
+    tiers: [["Heavy-Duty", [4, 8]], ["Industrial", [9, 14]], ["Wrecking", [15, 22]]] },
+  { group: "sales-all", kind: "suffix", class: "sales", stat: "skillLevel.all", types: CLASS_TYPES,
+    tiers: [["of the Window Office", [1, 1]], ["of the Expense Account", [1, 2]], ["of the Golden Rolodex", [2, 3]]] },
+  { group: "sales-branch", kind: "suffix", class: "sales", stat: "skillLevel.branch.pitch", types: CLASS_TYPES,
+    tiers: [["of the Cold Call", [1, 2]], ["of the Pitch Deck", [2, 3]], ["of the Elevator Speech", [3, 4]]] },
+  { group: "sales-projectile", kind: "prefix", class: "sales", stat: "skillDamagePct.projectile", types: CLASS_TYPES,
+    tiers: [["Persuasive", [4, 8]], ["Compelling", [9, 14]], ["Irresistible", [15, 22]]] },
+  { group: "it-all", kind: "suffix", class: "it", stat: "skillLevel.all", types: CLASS_TYPES,
+    tiers: [["of the Admin Account", [1, 1]], ["of the Server Room", [1, 2]], ["of Root Access", [2, 3]]] },
+  { group: "it-branch", kind: "suffix", class: "it", stat: "skillLevel.branch.infrastructure", types: CLASS_TYPES,
+    tiers: [["of the Patch Cycle", [1, 2]], ["of the Data Centre", [2, 3]], ["of the Uptime Record", [3, 4]]] },
+  { group: "it-fire", kind: "prefix", class: "it", stat: "skillDamagePct.fire", types: CLASS_TYPES,
+    tiers: [["Overclocked", [4, 8]], ["Overvolted", [9, 14]], ["Thermal", [15, 22]]] },
 ];
 
 /** Flat list of affix definitions: one per group and tier. */
 export const affixes = groups.flatMap((g) => g.tiers.map(([name, range], i) => ({
   id: `${g.group}-t${i + 1}`, group: g.group, kind: g.kind, stat: g.stat, name, tier: i + 1,
-  types: g.types, minIlvl: T[i], range,
+  types: g.types, minIlvl: T[i], range, ...(g.class ? { class: g.class } : {}),
 })));
 export const affixById = Object.fromEntries(affixes.map((a) => [a.id, a]));
 export const affixGroups = groups.map((g) => g.group);

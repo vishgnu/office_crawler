@@ -53,13 +53,14 @@ export function enterFloor(state, depth, { at = "entry", from = state.depth, til
   if (depth === 0 && from > 0) { state.townVisit = (state.townVisit ?? 0) + 1; state.vendorStocks = {}; } // a new Lobby visit: fresh vendor stock
   state.scene = depth === 0 ? "town" : "floor";
   state.deepestDepth = Math.max(state.deepestDepth, depth);
-  state.monsters = []; state.projectiles = []; state.floaters = [];
+  state.monsters = []; state.projectiles = []; state.floaters = []; state.allies = []; state.zones = [];
   state.groundItems = parked?.groundItems ?? [];
   state.vendor = null; state.ui.dialog = null;
   state.input.mouse = { down: false, button: 0, tile: null, mode: null, applied: null };
   const p = state.player, ctx = getCtx(state);
   p.tile = at === "exit" && floor.exit ? tileBeside(floor, ctx.grid, floor.exit)
     : at === "tile" && tile ? (ctx.grid.walkable(tile.x, tile.y) ? { x: tile.x, y: tile.y } : tileBeside(floor, ctx.grid, tile)) : { ...floor.entry };
+  p.dash = null;
   Object.assign(p, { next: null, moveT: 0, moveTotal: 0, path: [], goal: null, target: null, pickup: null, stairs: null, interact: null, toPortal: false, castT: 0, blockedT: 0, attackT: 0, swingTarget: null, repathT: 0, action: "idle" });
   const killed = new Set(parked?.killed ?? []);
   state.blockedSpawns = [];

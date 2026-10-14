@@ -14,7 +14,10 @@ import { useBelt, toBelt, clickBelt, useItem } from "../items/belt.js";
 import { moveStash } from "./stash.js";
 import { openVendor, closeVendor, buy, sell } from "./vendors.js";
 import { castSkill } from "./skills.js";
-import { allocate, learnSkill, assignSkill, selectSkill } from "./progression.js";
+import { skills } from "../content/skills.js";
+import { allocate, learnSkill, assignSkill, selectSkill, respec, toggleAura } from "./progression.js";
+import { inBasicReach } from "./basic.js";
+import { validateName } from "../name.js";
 import { keepPlaying } from "./boss.js";
 import { enterFloor, useStairs, stairsAt, interact, npcAt, closeDialog, heal, respawn, usePortal, portalAt } from "./world.js";
 
@@ -121,6 +124,14 @@ function itemCommand(state, input) {
     case "learnSkill": return done(learnSkill(state, input.id));
     case "assignSkill": return done(assignSkill(state, input.slot, input.id ?? null));
     case "selectSkill": return done(selectSkill(state, input.index));
+    case "respec": return done(respec(state));
+    case "toggleAura": return done(toggleAura(state, input.id));
+    case "setName": {
+      const n = validateName(input.name);
+      if (!n.ok) return fail("bad-name");
+      state.player.name = n.name; emit(state, { type: "renamed", name: n.name });
+      return OK;
+    }
     case "cast": return done(castSkill(state, input.skill ?? state.player.skillBar.secondary, input.tile));
     case "useStairs": return done(useStairs(state, input.dir, issueMove));
     case "interact": return done(interact(state, input.id, issueMove));
@@ -135,7 +146,7 @@ function secondary(state, tile) {
   if (!isTile(tile)) return fail("invalid tile");
   const id = state.player.skillBar.secondary;
   if (!id) return fail("no skill selected");
-  if (id === "strike") { const m = livingMonsterAt(state, tile); return m ? issueAttack(state, m.id) : fail("nothing to strike"); }
+  if (skills[id]?.kind === "basic") { const m = livingMonsterAt(state, tile); return m ? issueAttack(state, m.id) : fail("nothing to strike"); }
   return castSkill(state, id, tile);
 }
 
@@ -233,8 +244,8 @@ export function playerIntent(state) {
   const m = state.monsters.find((o) => o.id === p.target);
   if (!m || m.ai === "dead") { p.target = null; return; }
   if (p.repathT > 0) p.repathT--;
-  if (!p.next && isAdjacent(ctx.grid, p.tile, m.tile)) { p.path = []; return; } // in reach: stand and fight
-  if (p.next && isAdjacent(ctx.grid, p.next, m.tile)) { p.path = []; return; }   // will be in reach after this step
+  if (!p.next && inBasicReach(state, ctx, p.tile, m.tile)) { p.path = []; return; } // in reach: stand and fight (melee: adjacent; toss / zap: in range with a clear line)
+  if (p.next && inBasicReach(state, ctx, p.next, m.tile)) { p.path = []; return; }   // will be in reach after this step
   // S1 hardening (bot run): a monster that is already coming for us and ends up within holdRadius tiles of where we stand is
   // waited for (the step in progress is finished, the rest of the path dropped). Two actors that both path to where the
   // other WAS orbit each other forever, round a ring of corridors or a prop cluster (the faster Printer Imp did this).

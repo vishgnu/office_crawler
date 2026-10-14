@@ -64,7 +64,7 @@ test("AC-R-021-4 the monster loses exactly the damage of each hit, never below 0
   for (let i = 0; i < 600; i++) {
     const before = m.hp;
     step(s);
-    for (const e of s.events) if (e.type === "hit" && e.source === "player") { hits++; assert.equal(before - m.hp, e.value); assert.ok(e.value >= s.player.damage.min && e.value <= s.player.damage.max); }
+    for (const e of s.events) if (e.type === "hit" && e.source === "player") { hits++; assert.equal(before - m.hp, e.value); assert.ok(e.value >= s.player.damage.min && e.value <= Math.ceil(s.player.damage.max * (e.crit ? s.player.mods.critDamage / 100 : 1))); }
   }
   assert.ok(hits > 5);
 });

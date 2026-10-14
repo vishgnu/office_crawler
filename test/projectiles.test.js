@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { config, content, applyInput, step, setLevel, learnSkill, newGame, hashState } from "../src/core/index.js";
+import { config, content, at, applyInput, step, setLevel, newGame, hashState } from "../src/core/index.js";
 import { gameOn, run, OPEN } from "./helpers.js";
 
 const cmd = (s, c) => applyInput(s, c);
@@ -16,7 +16,7 @@ const WALLED = [
   "####################",
 ];
 const withStapler = (rows, monsters) => {
-  const s = gameOn(rows, monsters); setLevel(s, 3); learnSkill(s, "stapler-throw");
+  const s = gameOn(rows, monsters, 1, { class: "sales-rep" }); setLevel(s, 3); // the Sales Rep owns Stapler Throw as its free signature skill
   s.player.attackRating = 100000; // a hit chance at the config ceiling
   return s;
 };
@@ -59,8 +59,8 @@ test("AC-R-022-2 a projectile hits the first monster on its line: one hit or mis
   for (let i = 0; i < 60 && s.projectiles.length; i++) { step(s); hits += evs(s, "hit").length; misses += evs(s, "miss").length; }
   assert.equal(s.projectiles.length, 0);
   assert.equal(hits + misses, 1);
-  const def = content.skills["stapler-throw"];
-  if (hits) { const lost = 500 - m.hp; assert.ok(lost >= def.dmgMin(1) && lost <= def.dmgMax(1) + Math.floor((s.player.damage.min + s.player.damage.max) / 2 * def.weaponShare)); }
+  const dmg = content.skills["stapler-throw"].effects[0];
+  if (hits) { const lost = 500 - m.hp; assert.ok(lost >= at(dmg.min, 1) && lost <= Math.ceil((at(dmg.max, 1) + Math.floor((s.player.damage.min + s.player.damage.max) / 2 * dmg.weaponShare)) * s.player.mods.critDamage / 100)); }
   else assert.equal(m.hp, 500);
 });
 

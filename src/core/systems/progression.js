@@ -105,15 +105,20 @@ export const respecCost = (p) => (config.respec.mode === "gold" ? config.respec.
  * Respec (ADR-0005 section 8): lobby only, hero alive. Every skill but the signature goes back as points; hotkeys of removed actives
  * empty; buffs, aura, allies and zones clear. Errors: respec-off, not-in-town, dead, respec-used, no-gold.
  */
-export function respec(state) {
+export function respecCheck(state) {
   const p = state.player, cfg = config.respec;
-  if (cfg.mode === "off") return fail("respec-off");
-  if (state.scene === "dead" || p.hp <= 0) return fail("dead");
-  if (cfg.townOnly && state.scene !== "town") return fail("not-in-town");
-  if (cfg.mode === "once" && p.respecsUsed >= 1) return fail("respec-used");
-  const cost = respecCost(p);
-  if (p.gold < cost) return fail("no-gold");
-  const sig = classById(p.class)?.signature, refunded = refundable(p);
+  if (cfg.mode === "off") return "respec-off";
+  if (state.scene === "dead" || p.hp <= 0) return "dead";
+  if (cfg.townOnly && state.scene !== "town") return "not-in-town";
+  if (cfg.mode === "once" && p.respecsUsed >= 1) return "respec-used";
+  if (p.gold < respecCost(p)) return "no-gold";
+  return null;
+}
+
+export function respec(state) {
+  const p = state.player, bad = respecCheck(state);
+  if (bad) return fail(bad);
+  const cost = respecCost(p), sig = classById(p.class)?.signature, refunded = refundable(p);
   p.gold -= cost;
   p.skills = sig ? { [sig]: 1 } : {};
   p.skillPoints += refunded;

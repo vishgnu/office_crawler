@@ -22,7 +22,14 @@ export const PROJECTILES = ["stapler", "toner", "slide"];
 export const LOOT_IDS = ["item", "gold-s", "gold-m", "gold-l"];
 export const NPC_FRAMES = 4;
 export const UI_IDS = ["vessel-health", "vessel-mana", "skill-slot", "belt-slot", "skill-icon-strike", "icon-plus"];
-export const PLAYER_CLASS = "clerk";
+export const PLAYER_CLASS = "clerk"; // the S1 hero: still drawn, and the fallback for a class id the style does not know
+/** R5 class heroes (R4 contract: figureKey `hero.<id>`); each has every PLAYER_ANIMS animation in 8 directions. */
+export const HERO_CLASSES = ["facilities-manager", "sales-rep", "it-wizard"];
+/** Sprite type of the hero for a class id (unknown or missing ids use the old hero). */
+export const heroType = (cls) => (HERO_CLASSES.includes(cls) ? cls : PLAYER_CLASS);
+/** Summoned allies (figureKey `ally.<id>`). The cone only has an idle pose and no facing. */
+export const ALLY_IDS = ["intern", "cone"];
+export const ALLY_ANIMS = { intern: { idle: 4, walk: 6, attack: 4, death: 4 }, cone: { idle: 1 } };
 
 // Direction index from a tile delta; 0 = towards the viewer, then clockwise on screen.
 const DIR_BY_DELTA = { "1,1": 0, "0,1": 1, "-1,1": 2, "-1,0": 3, "-1,-1": 4, "0,-1": 5, "1,-1": 6, "1,0": 7 };
@@ -35,6 +42,7 @@ export const keys = {
   wall: (theme, mask, v = 0) => `wall:${theme}:${mask}:${v}`,
   prop: (id) => `prop:${id}`,
   mon: (type, anim, dir, frame) => `mon:${type}:${anim}:${dir}:${frame}`,
+  ally: (id, anim, dir, frame) => `ally:${id}:${anim}:${dir}:${frame}`,
   plr: (cls, anim, dir, frame) => `plr:${cls}:${anim}:${dir}:${frame}`,
   npc: (id, frame) => `npc:${id}:${frame}`,
   proj: (kind) => `proj:${kind}`,
@@ -57,6 +65,8 @@ export function requiredKeys({ themes, props, monsters, npcs = {}, bosses = {} }
   for (const type of Object.keys(monsters)) figure((a, d, f) => keys.mon(type, a, d, f));
   for (const type of Object.keys(bosses)) for (const t of [type, type + BOSS_P2]) for (const [anim, n] of Object.entries(BOSS_ANIMS)) for (let d = 0; d < DIRS; d++) for (let f = 0; f < n; f++) out.push(keys.mon(t, anim, d, f));
   for (const [anim, n] of Object.entries(PLAYER_ANIMS)) for (let d = 0; d < DIRS; d++) for (let f = 0; f < n; f++) out.push(keys.plr(PLAYER_CLASS, anim, d, f));
+  for (const cls of HERO_CLASSES) for (const [anim, n] of Object.entries(PLAYER_ANIMS)) for (let d = 0; d < DIRS; d++) for (let f = 0; f < n; f++) out.push(keys.plr(cls, anim, d, f));
+  for (const id of ALLY_IDS) for (const [anim, n] of Object.entries(ALLY_ANIMS[id])) for (let d = 0; d < (id === "cone" ? 1 : DIRS); d++) for (let f = 0; f < n; f++) out.push(keys.ally(id, anim, d, f));
   for (const id of Object.keys(npcs)) for (let f = 0; f < NPC_FRAMES; f++) out.push(keys.npc(id, f));
   for (const k of PROJECTILES) out.push(keys.proj(k));
   for (const id of LOOT_IDS) out.push(keys.loot(id));
