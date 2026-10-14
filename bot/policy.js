@@ -305,7 +305,7 @@ export function decide(view, mem) {
   if (view.scene === "dead") return mem.profile.respawn ? { t: "respawn" } : null;
   if (view.paused) return null;
   if (view.depth !== mem.depth) { // a new floor: forget the old floor's exploration state
-    Object.assign(mem, { depth: view.depth, rooms: null, goal: null, skip: new Set(), waitSince: -1, shopped: false, sold: false, lootTries: {}, lootSkip: new Set(), lastKey: "", lastMoveTick: view.tick, beltFail: false, dodge: null });
+    Object.assign(mem, { depth: view.depth, prog: null, rooms: null, goal: null, skip: new Set(), waitSince: -1, shopped: false, sold: false, lootTries: {}, lootSkip: new Set(), lastKey: "", lastMoveTick: view.tick, beltFail: false, dodge: null });
   }
   if (view.scene === "town") return decideTown(view, mem);
   if (view.scene !== "floor") return null;

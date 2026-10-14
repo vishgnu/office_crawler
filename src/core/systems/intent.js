@@ -229,6 +229,17 @@ export function applyInput(state, input) {
   }
 }
 
+/** The living monster in basic reach of the hero that is hitting it (or the nearest one in reach), other than `skip`; null when none. */
+function reachableAttacker(state, ctx, p, skip) {
+  let best = null, bestKey = null;
+  for (const o of state.monsters) {
+    if (o === skip || o.ai === "dead" || o.ai === "idle" || !inBasicReach(state, ctx, p.tile, o.tile)) continue;
+    const key = (o.ai === "attack" ? 0 : 1) * 1e6 + cheb(p.tile, o.tile) * 1e3 + o.hp / 1e3; // attackers first, then the nearest, then the weakest; ids break ties by list order
+    if (bestKey === null || key < bestKey) { best = o; bestKey = key; }
+  }
+  return best;
+}
+
 /** Per-tick intent upkeep. */
 export function playerIntent(state) {
   const ctx = getCtx(state), p = state.player;
@@ -247,13 +258,20 @@ export function playerIntent(state) {
   const m = state.monsters.find((o) => o.id === p.target);
   if (!m || m.ai === "dead") { p.target = null; return; }
   if (p.repathT > 0) p.repathT--;
-  if (!p.next && inBasicReach(state, ctx, p.tile, m.tile)) { p.path = []; return; } // in reach: stand and fight (melee: adjacent; toss / zap: in range with a clear line)
+  if (!p.next && inBasicReach(state, ctx, p.tile, m.tile)) { p.path = []; p.standT = 0; return; } // in reach: stand and fight (melee: adjacent; toss / zap: in range with a clear line)
   if (p.next && inBasicReach(state, ctx, p.next, m.tile)) { p.path = []; return; }   // will be in reach after this step
   // S1 hardening (bot run): a monster that is already coming for us and ends up within holdRadius tiles of where we stand is
   // waited for (the step in progress is finished, the rest of the path dropped). Two actors that both path to where the
   // other WAS orbit each other forever, round a ring of corridors or a prop cluster (the faster Printer Imp did this).
   const at = p.next ?? p.tile;
-  if (m.ai === "chase" && (m.next || m.path.length > 0) && Math.max(Math.abs(m.tile.x - at.x), Math.abs(m.tile.y - at.y)) <= config.holdRadius) { p.path = []; return; }
+  // R7-3 (stall seen on floor 1): a hero that stands holding a target it cannot reach (the chaser's approach tiles are taken by others, or it
+  // stays on the far side of a corner) answers an adjacent attacker after retargetTicks, as a player would by clicking it; after holdMaxTicks it stops waiting.
+  if (p.next) p.standT = 0; else p.standT = (p.standT ?? 0) + 1; // a path that stays blocked (movement.js) is still standing
+  if (p.standT >= config.retargetTicks && !p.next) {
+    const a = reachableAttacker(state, ctx, p, m);
+    if (a) { p.target = a.id; p.goal = null; p.path = []; p.repathT = 0; p.standT = 0; return; }
+  }
+  if (p.standT < config.holdMaxTicks && m.ai === "chase" && (m.next || m.path.length > 0) && Math.max(Math.abs(m.tile.x - at.x), Math.abs(m.tile.y - at.y)) <= config.holdRadius) { p.path = []; return; }
   const stale = !p.goal || p.goal.x !== m.tile.x || p.goal.y !== m.tile.y;
   if ((p.path.length === 0 || stale) && p.repathT === 0) {
     const path = planPath(ctx, p.next ?? p.tile, m.tile, { adjacent: true });

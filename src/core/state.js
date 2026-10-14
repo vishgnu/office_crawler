@@ -34,7 +34,7 @@ function newPlayer(entry, cls, name) {
   const p = {
     id: "player", class: cls.id, name, tile: { ...entry }, next: null, moveT: 0, moveTotal: 0,
     level: 1, xp: 0, xpNext: config.xpTable[1], attrs: { ...cls.attrs }, gold: config.startGold, resist: {},
-    action: "idle", target: null, pickup: null, path: [], goal: null, repathT: 0, blockedT: 0, attackT: 0, swingTarget: null,
+    action: "idle", target: null, pickup: null, path: [], goal: null, repathT: 0, blockedT: 0, standT: 0, attackT: 0, swingTarget: null,
     attrPoints: 0, skillPoints: 0, skills: { [cls.signature]: 1 }, // the signature skill is free at level 1 and never refunded (ADR-0005)
     skillBar: { primary: cls.basic, secondary: cls.signature, hotkeys: [cls.signature, null, null, null], selected: 0 },
     respecsUsed: 0, buffs: [], absorb: null, aura: null, dash: null,

@@ -61,7 +61,7 @@ export function enterFloor(state, depth, { at = "entry", from = state.depth, til
   p.tile = at === "exit" && floor.exit ? tileBeside(floor, ctx.grid, floor.exit)
     : at === "tile" && tile ? (ctx.grid.walkable(tile.x, tile.y) ? { x: tile.x, y: tile.y } : tileBeside(floor, ctx.grid, tile)) : { ...floor.entry };
   p.dash = null;
-  Object.assign(p, { next: null, moveT: 0, moveTotal: 0, path: [], goal: null, target: null, pickup: null, stairs: null, interact: null, toPortal: false, castT: 0, blockedT: 0, attackT: 0, swingTarget: null, repathT: 0, action: "idle" });
+  Object.assign(p, { next: null, moveT: 0, moveTotal: 0, path: [], goal: null, target: null, pickup: null, stairs: null, interact: null, toPortal: false, castT: 0, blockedT: 0, standT: 0, attackT: 0, swingTarget: null, repathT: 0, action: "idle" });
   const killed = new Set(parked?.killed ?? []);
   state.blockedSpawns = [];
   floor.spawns.forEach((s, i) => { if (s.tier === "boss" && state.bossDefeated) killed.add(i); }); // a defeated boss stays dead (also after a reload)
