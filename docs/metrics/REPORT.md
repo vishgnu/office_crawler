@@ -18,7 +18,7 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R7 | 17 | 3332.5 | 451.7 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 75 rows, 12041.2 k subagent tokens. **Your messages logged:** 27.
+**Ledger total:** 76 rows, 12041.2 k subagent tokens. **Your messages logged:** 27.
 
 ## Round R3
 
@@ -133,6 +133,7 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | architect | ARCH-R7-4 (3 main + 5 side quests) | 183.6 | 7.0 | done | acs: 15; packages: ["R7-4.1 core ~590","R7-4.2 ui/world ~420","R7-4.3 optional new NPC"] |
 | implementer | FIX-R7-CORE | 209.2 | 39.1 | done | tests: 1007; fixed: ["CR7-01","CR7-02","CR7-03","CR7-05","CR7-06","ADV-R7-01","ADV-R7-03"]; parity: 71/72 all quests, 0 give-ups |
 | orchestrator | run-b pre-quest golden | – | – | done | result: 6c70792233585181 recorded at 03f8882 (worktree); CR7-02 proof test passes: stripped hash of current run-b == pre-quest hash |
+| implementer | FIX-R7-UI | – | – | done | fixed: ["CR7-04","ADV-R7-04","ADV-R7-05","ADV-R7-06","CR7-07","rewardSummary in UI"] |
 
 ## Harness work
 
