@@ -1,1 +1,2 @@
 done: warmAhead in src/render/world.js (next floor's types idle/walk/attack warmed at 0.7 ms/frame after the current floor's set), bench floor-load section rewritten (real frames, ahead/cold + R6 stepped), unit test; next: 5-run bench, pixel proof (none needed: same sprites drawn earlier), npm test x3, e2e
+done: R7-stutter.md written; npm test 3x green (775), build ok, bench 5 runs; next: e2e full run, hand back

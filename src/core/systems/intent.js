@@ -19,6 +19,7 @@ import { allocate, learnSkill, assignSkill, selectSkill, respec, toggleAura } fr
 import { inBasicReach } from "./basic.js";
 import { validateName } from "../name.js";
 import { keepPlaying } from "./boss.js";
+import { questAccept, questPin, storyRead } from "./quests.js";
 import { enterFloor, useStairs, stairsAt, interact, npcAt, closeDialog, heal, respawn, usePortal, portalAt } from "./world.js";
 
 const fail = (error) => ({ ok: false, error });
@@ -131,6 +132,8 @@ function itemCommand(state, input) {
     case "interact": return done(interact(state, input.id, issueMove));
     case "heal": return done(heal(state));
     case "closeDialog": closeDialog(state); return OK;
+    case "questAccept": return done(questAccept(state, input.id));
+    case "questPin": return done(questPin(state, input.id));
     default: return null;
   }
 }
@@ -210,6 +213,8 @@ export function applyInput(state, input) {
   if (input.t === "mouse" && (input.phase === "up" || input.phase === "cancel")) { if (input.button !== 2) state.input.mouse.down = false; return OK; }
   // setName is a whitelisted exception to the paused / not-live gates (the slot manager renames from the pause menu and the death screen).
   if (input.t === "setName") return setName(state, input.name);
+  // storyRead likewise: the memo and the victory screen are not live scenes (ADR-0007 section 5).
+  if (input.t === "storyRead") return storyRead(state, input.id);
   if (!live) return fail("not in a running game");
   if (state.paused) return fail("paused");
   switch (input.t) {

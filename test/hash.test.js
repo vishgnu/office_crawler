@@ -22,3 +22,13 @@ test("hash32 is stable and spreads small inputs", () => {
   assert.notEqual(hash32(1, 2), hash32(2, 1));
   assert.equal(new Set(Array.from({ length: 1000 }, (_, i) => hash32(i, 1))).size, 1000);
 });
+
+test("hashStateWithout leaves out paths and event types by prefix, and plain hashState is unchanged by the option", async () => {
+  const { hashStateWithout, canonical } = await import("../src/core/hash.js");
+  const s = { a: 1, quests: { x: 1 }, player: { pouch: [1], hp: 3 }, events: [{ type: "hit" }, { type: "quest.step" }], eventLog: [{ type: "quest.pinned" }, { type: "kill" }], ui: { hud: 1 } };
+  const bare = { a: 1, player: { hp: 3 }, events: [{ type: "hit" }], eventLog: [{ type: "kill" }], ui: {} };
+  assert.equal(hashStateWithout(s, { paths: ["quests", "player.pouch"], eventPrefixes: ["quest."] }), hashState(bare));
+  assert.equal(hashStateWithout(s), hashState(s));
+  assert.notEqual(hashStateWithout(s, { paths: ["quests"] }), hashState(s));
+  assert.equal(canonical(s), canonical(s, "", null));
+});

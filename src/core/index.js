@@ -1,5 +1,5 @@
 // Public API of the pure simulation core. Nothing here touches the DOM, clocks or Math.random.
-import { hashState } from "./hash.js";
+import { hashState, hashStateWithout } from "./hash.js";
 import { config } from "./config.js";
 import { monsters, bosses, monsterStats, championMods } from "./content/monsters.js";
 import { skills, skillTrees, at, manaCost } from "./content/skills.js";
@@ -13,6 +13,8 @@ import { bases, slotKeys, rarities, rarityOrder } from "./content/items.js";
 import { affixes, affixGroups } from "./content/affixes.js";
 import { uniques } from "./content/uniques.js";
 import { drops } from "./content/monsters.js";
+import { quests, questIds, sideIds } from "./content/quests.js";
+import { questView as questViewOf, npcMarker as npcMarkerOf, mapMarkers as mapMarkersOf } from "./systems/questview.js";
 
 export { createRng } from "../rng.js";
 export { config };
@@ -50,9 +52,10 @@ export { generateTown } from "./gen/town.js";
 export { generateFloor } from "./gen/floor.js";
 export { findPath } from "./pathfind.js";
 export { advance } from "./clock.js";
-export { hashState };
+export { hashState, hashStateWithout };
+export { questView, nextStep, npcMarker, mapMarkers } from "./systems/questview.js";
 
-export const content = { monsters, bosses, championMods, skills, skillTrees, npcs, themes, props, strings, story, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops };
+export const content = { monsters, bosses, championMods, skills, skillTrees, npcs, themes, props, strings, story, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops, quests, questIds, sideIds };
 
 export const cloneState = (state) => structuredClone(state);
 
@@ -66,5 +69,8 @@ export function snapshot(state) {
   s.player.pos = pos(s.player);
   for (const m of s.monsters) m.pos = pos(m);
   s.config = cloneState(config);
+  if (state.quests) s.quests = questViewOf(state);
+  s.npcs = state.depth === 0 ? (state.floor.npcs ?? []).map((n) => ({ id: n.id, tile: { ...n.tile }, marker: npcMarkerOf(state, n.id) })) : [];
+  s.map = { markers: mapMarkersOf(state) };
   return s;
 }

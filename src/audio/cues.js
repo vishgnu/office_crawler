@@ -152,6 +152,12 @@ export const EVENT_MAP = {
   stairsUnlocked: () => [d("ding", "stairsUnlocked", { prio: 7 }), d("stairs", "stairsUnlocked", { gain: 0.7, delay: 0.2 })],
   victory: () => [d("levelUp", "victory", { prio: 10 }), d("ding", "victory", { delay: 0.5, prio: 8 })],
   keepPlaying: click(),
+  // R7 quests (ADR-0007, contract 4.3): existing kit cues only
+  "quest.accepted": () => [d("uiOpen", "questAccepted", { gain: 0.9 }), d("ding", "questAccepted", { gain: 0.7, delay: 0.12 })],
+  "quest.step": () => [d("ding", "questStep", { prio: 6 })],
+  "quest.completed": () => [d("pickupRare", "questCompleted", { prio: 7 }), d("ding", "questCompleted", { gain: 0.8, delay: 0.25 })],
+  "quest.item": () => [d("pickupItem", "questItem")],
+  "quest.handInRefused": () => reject(),
   resisted(ev, s) { return [d("miss", "resisted", { tile: tileOf(monsterOf(s, ev.target)), gain: 0.6 })]; },
   // shell / UI hooks (emitted by main.js / ui; see S3-audio-notes.md)
   "ui:click": click(),
@@ -163,6 +169,8 @@ export const EVENT_MAP = {
 
 /** Events that exist but deliberately make no sound, with the reason. */
 export const SILENT_EVENTS = {
+  "quest.progress": "each kill already has its death cue; progress is shown in the tracker and the journal",
+  "quest.pinned": "the pin button already plays the UI click",
   burst: "covered by the cast cue",
   heal: "covered by the cast cue",
   projectileEnd: "the hit / miss cue already sounded; a wall impact is too quiet to matter",

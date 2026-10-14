@@ -157,6 +157,21 @@ export const config = {
     summon: { windup: 60, types: ["zombie-intern", "consultant"], count: 2, max: 4, cd: 720, radius: 4, level: 6 },
   },
 
+  // Quests (R7, ADR-0007): every number a balance pass may touch. Text and structure live in content/quests.js.
+  quests: {
+    sideCount: 3,
+    kill: { monster: "zombie-intern", count: 8, depths: [1, 2] },
+    item: { floors: [3, 4], pickupRange: 1 },
+    elite: { type: "middle-manager", depth: 4, hpMult: 1.6, level: 4 },
+    gearFloor: 4,
+    sq1: { refDepth: 2, gold: { base: 30, perDepth: 15 }, xp: { base: 40, perDepth: 25 }, potions: 3 },
+    sq2: { refDepth: 4, gold: { base: 30, perDepth: 15 }, xp: { base: 40, perDepth: 25 }, slots: ["body", "head", "hands", "feet"] },
+    sq3: { refDepth: 4, gold: { base: 30, perDepth: 15 }, xp: { base: 40, perDepth: 25 }, slots: ["weapon"], potions: 2 },
+    rewardRerolls: 8,
+    genBudgetFactor: 1.05,
+    toastMs: 4000,
+  },
+
   // Save and load (S3-3, R-090..R-092). One slot; options are stored apart from the save.
   saveVersion: 3,                    // ADR-0006: 2 adds the character name, stats.playTicks and the class trees; 3 refunds attribute points of classes whose power attribute changed (R6)
   saveKey: "office-crawler.save",

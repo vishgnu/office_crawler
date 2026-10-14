@@ -17,14 +17,18 @@ export function hash32(...nums) {
 const EXCLUDED = new Set(["ui.tooltip", "ui.hud", "perf"]);
 
 // Canonical JSON: object keys sorted, undefined dropped, so key order never matters.
-export function canonical(value, path = "") {
+// `opts` (hashStateWithout only): { skip: Set of extra dotted paths, eventPrefixes: drop entries of `events` / `eventLog` whose type starts with one of these }.
+export function canonical(value, path = "", opts = null) {
   if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "null";
-  if (Array.isArray(value)) return "[" + value.map((v) => canonical(v, path + "[]")).join(",") + "]";
+  if (Array.isArray(value)) {
+    const list = opts?.eventPrefixes && (path === "events" || path === "eventLog") ? value.filter((e) => !(typeof e?.type === "string" && opts.eventPrefixes.some((x) => e.type.startsWith(x)))) : value;
+    return "[" + list.map((v) => canonical(v, path + "[]", opts)).join(",") + "]";
+  }
   const parts = [];
   for (const k of Object.keys(value).sort()) {
     const p = path ? path + "." + k : k;
-    if (value[k] === undefined || EXCLUDED.has(p)) continue;
-    parts.push(JSON.stringify(k) + ":" + canonical(value[k], p));
+    if (value[k] === undefined || EXCLUDED.has(p) || opts?.skip.has(p)) continue;
+    parts.push(JSON.stringify(k) + ":" + canonical(value[k], p, opts));
   }
   return "{" + parts.join(",") + "}";
 }
@@ -43,3 +47,6 @@ export function hashString(text) {
 }
 
 export const hashState = (state) => hashString(canonical(state));
+
+/** The state hash with some dotted paths and event types left out: the proof that a change (R7 quests) did not alter gameplay. */
+export const hashStateWithout = (state, { paths = [], eventPrefixes = [] } = {}) => hashString(canonical(state, "", { skip: new Set(paths), eventPrefixes: eventPrefixes.length ? eventPrefixes : null }));

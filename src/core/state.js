@@ -15,6 +15,7 @@ import { deriveStats } from "./items/derive.js";
 import { makeItem } from "./items/roll.js";
 import { equipItem } from "./items/equipment.js";
 import { initFloorMap } from "./systems/explore.js";
+import { newQuestState } from "./content/quests.js";
 
 const STREAMS = ["world", "combat", "ai", "loot"];
 
@@ -39,6 +40,7 @@ function newPlayer(entry, cls, name) {
     skillBar: { primary: cls.basic, secondary: cls.signature, hotkeys: [cls.signature, null, null, null], selected: 0 },
     respecsUsed: 0, buffs: [], absorb: null, aura: null, dash: null,
     castT: 0, flashTicks: 0, facing: { x: 0, y: 1 }, stairs: null, interact: null, toPortal: false,
+    pouch: [], // quest items, apart from the bag (ADR-0007 section 8)
   };
   const s = deriveStats(p, {});
   Object.assign(p, { attrsTotal: s.attrs, hpMax: s.hpMax, mpMax: s.mpMax, hp: s.hpMax, mp: s.mpMax, damage: s.damage, defense: s.defense, attackRating: s.attackRating, resist: s.resist, mods: s.mods, mpReserved: 0 });
@@ -117,6 +119,7 @@ export function newGame(seedOrOpts, opts = {}) {
     bossUnlocked: false, bossDefeated: false, victory: null,
     stats: { kills: 0, deaths: 0, bossAttempts: 0, playTicks: 0 },
     cursorItem: null, stash: newGrid(config.stash.w, config.stash.h), vendor: null, vendorVisits: {}, uniquesFound: [], vendorStocks: {}, townVisit: 0, portal: null,
+    quests: newQuestState(),
     events: [], eventLog: [],
     input: { mouse: { down: false, button: 0, tile: null, mode: null, applied: null } },
     ui: { notice: null, dialog: null }, options: {},
