@@ -1,7 +1,7 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
-_Last updated 2026-10-14T12:36:19Z. Keep this block current after every step; the log below is history._
+_Last updated 2026-10-14T13:13:44Z. Keep this block current after every step; the log below is history._
 
-**Where we are:** R6 built, fixed and VERIFIED GREEN by orchestrator (770 tests x3, e2e 14/14, fps50 median 52.9 of 5 quiet runs, atlas ~0.45 s). play/ + portals rebuilt. **In flight:** R6 visual review (`docs/reviews/R6-visual-progress.md`) and proxy acceptance (`R6-acceptance-progress.md`). Then retro R6 (round-06.json; learnings: looping agents after hand-back → stop; agent ran git checkout; bench needs 5 runs + p99; coverage probe prose-dependence; human-log gap; fixtures invalidated by stricter validation → adversary updates). Then R7: R7-0 quest journal, R7-1 AI never reaches hero, R7-2 floor-entry stutter, flawless gameplay; R8: R8-0 gear visuals; R8-T; R9-10 lighting; R11-12.
+**Where we are:** R6 DONE (verified green, visual 35/34 pass, proxy accepted, retro L-032..L-039, round-06.json). **R7 started** (round start logged for elapsedMin: 2026-10-14T13:13:44Z). In flight: circle-03 quests (facilitator; `docs/reviews/R7-circle-progress.md`) → proxy answers → spec → architect → CORE/UI/WORLD; AI-R7 (R7-1 + R7-3 hero fallback; `R7-ai-progress.md`); STUTTER-R7 (R7-2; `R7-stutter-progress.md`). Later in R7: R7-3 rest (floor 5 step, size test, ASSET-LICENCES, offline e2e, N9-N15). Then R8 (R8-0 gear visuals), R8-T, R9-10 lighting, R11-12.
 
 **In flight (check the files, not memory):**
 - ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
