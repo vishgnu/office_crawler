@@ -15,7 +15,7 @@ const S = content.strings;
 const SLOT_COUNT = 5;
 const CLASS_NAME = Object.fromEntries(content.classes.map((c) => [c.id, c.name]));
 const ERR = { "bad-name": S.errBadName, "bad-slot": S.errBadSlot, "empty-slot": S.errEmptySlot, occupied: S.errOccupied, "confirm-required": S.errConfirm, corrupt: S.errCorrupt, newer: S.errNewer, quota: T.errQuota,
-  "too-large": S.errCorrupt, "stale-owner": T.errAnotherTab, "write-failed": T.errWrite, "another-tab": T.errAnotherTab, playing: T.errPlaying, "no-storage": T.errNoStorage, "bad-class": S.errBadClass };
+  "too-large": S.errCorrupt, "stale-owner": T.errAnotherTab, "save-failed-before-switch": T.errPreSwitch, "write-failed": T.errWrite, "another-tab": T.errAnotherTab, playing: T.errPlaying, "no-storage": T.errNoStorage, "bad-class": S.errBadClass };
 export const errorText = (code) => ERR[code] ?? S.errCorrupt;
 
 function el(tag, cls, text) {
@@ -62,7 +62,8 @@ export function fmtStamp(e) {
   if (!Number.isFinite(ms)) return "";
   try { return new Date(ms).toLocaleString(undefined, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch { return ""; }
 }
-const deepestOf = (e) => (Number.isFinite(e.deepest) ? e.deepest : e.depth ?? 0);
+// `deepest` is always >= 1 (the core cannot tell the Lobby from floor 1): "Lobby only" means standing in the Lobby at deepest 1.
+const deepestOf = (e) => (Number.isFinite(e.deepest) ? (e.deepest <= 1 && !(e.depth > 0) ? 0 : e.deepest) : e.depth ?? 0);
 const where = (e) => (deepestOf(e) > 0 ? `${T.slDeepest} ${T.slFloor.toLowerCase()} ${deepestOf(e)}` : `${T.slDeepest}: ${T.slLobby}`);
 export const slotSummary = (e) => `${CLASS_NAME[e.class] ?? e.class} · ${T.slLevel} ${e.level} · ${where(e)} · ${fmtPlay(e.playSec)} ${T.slPlayed}`;
 
@@ -79,7 +80,8 @@ export function createSlotsView(h, { mode = "dialog", onClose = null } = {}) {
   let status = null;
   let focusKey = null, fallbackSlot = null;
 
-  const idx = () => h.slots()?.index ?? { active: null, last: null, slots: [] };
+  // `list` (contract section 1) is the index with deepest, savedAt and hasPrev added; fall back to the bare index entries
+  const idx = () => { const v = h.slots(), i = v?.index ?? { active: null, last: null, slots: [] }; return Array.isArray(v?.list) && v.list.length ? { ...i, slots: v.list } : i; };
   const playingSlot = () => (h.playing() ? idx().active : null);
   const say = (text, undo = null) => { msg = { text, undo }; };
   const button = (label, testid, fn, cls = "mini", aria) => {

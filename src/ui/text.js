@@ -128,5 +128,6 @@ Object.assign(T, {
     "migration-failed": "Your old save could not be moved into a slot. It is still on this device: export it from Save slots if you need it.",
     generic: "Saving ran into a problem.",
   },
+  errPreSwitch: "The running game could not be saved first, so nothing was changed. Free some space and try again.",
   slLoadTitle: "Load this character?", slLoadText: "The running game is saved first, but unsaved floor progress is lost: you come back at the floor entrance. Cancel keeps the game as it is.", slLoadYes: "Load", slDeepest: "Deepest", slDeepestLobby: "Lobby only",
 });

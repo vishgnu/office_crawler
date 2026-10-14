@@ -45,6 +45,8 @@ test("slot list formatting: play time h:mm, relative last played, error texts fo
   // CR-12: the card shows the DEEPEST floor (contract field `deepest`), not where the character stands, and date plus time of the last save
   assert.match(slotSummary({ class: "it-wizard", level: 9, depth: 0, deepest: 0, playSec: 600 }), /IT Wizard · Level 9 · Deepest: Lobby · 0:10 played/);
   assert.match(slotSummary({ class: "sales-rep", level: 3, depth: 1, deepest: 4, playSec: 0 }), /Deepest floor 4/);
+  assert.match(slotSummary({ class: "sales-rep", level: 1, depth: 0, deepest: 1, playSec: 0 }), /Deepest: Lobby/);
+  assert.match(slotSummary({ class: "sales-rep", level: 1, depth: 1, deepest: 1, playSec: 0 }), /Deepest floor 1/);
   assert.doesNotMatch(slotSummary({ class: "sales-rep", level: 3, depth: 1, deepest: 4, playSec: 0 }), /Floor 1/);
   const iso = "2026-10-14T09:41:00.000Z", st = fmtStamp({ savedAt: iso });
   assert.match(st, /2026/); assert.match(st, /\d{1,2}[:.]\d{2}/, "has a time");

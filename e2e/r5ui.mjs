@@ -112,7 +112,7 @@ const hscroll = (page) => page.evaluate(() => document.documentElement.scrollWid
   check("the HUD skill bar follows the class (F1 is the IT Wizard signature)", (await g.page.locator(T("hud-skill-0")).getAttribute("aria-label")).includes(content.skills[IT.signature].name));
   await g.app("pause"); await g.page.click(T("pause-slots"));
   check("from the pause menu the slot list opens; the playing slot cannot be deleted, replaced or imported over", (await g.state()).ui.menu === "slots" && (await g.page.locator(T("slot-delete-3")).isDisabled()) && (await g.page.locator(T("slot-new-3")).isDisabled()) && (await g.page.locator(T("slot-import-3")).isDisabled()));
-  await g.page.click(T("slot-load-2"));
+  await g.page.click(T("slot-load-2")); await g.page.click(T("slot-load-confirm-yes")); // AC-R-223-2: loading from the pause menu asks first
   s = await g.state();
   check("class switch from the pause menu: loading slot 2 saves slot 3 first and plays the Sales Rep", s.player.class === SR.id && s.player.name === "Slot Two" && s.ui.menu === null && (await g.app("slots.list")).slots[2].level === 6 && (await g.app("slots.list")).active === 2);
   // rename the playing character from the pause menu
@@ -288,6 +288,74 @@ await treeScenario(IT, 20, "tree-it");
   const s = await g.state();
   check("migration: the migrated character plays (class model, a name, skill points to spend)", s.player.class === FM.id && typeof s.player.name === "string" && s.player.name.length > 0 && s.player.skillPoints > 0 && (await g.app("slots.list")).active === 1, { name: s.player.name, sp: s.player.skillPoints });
   check("no page errors (migration)", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+
+// ---------------------------------------------------------------- R5 fix round: save status banner, take over, load confirmation, focus in dialogs
+{
+  const g = await lobby();
+  await startNew(g.page, { name: "Pat Pending" });
+  await g.app("pause");
+  const setStatus = (st) => g.page.evaluate((x) => { window.__app.slots.view().status = x; }, st);
+  await setStatus({ storage: "memory", owner: "self", notice: null });
+  await g.page.click(T("pause-slots"));
+  check("CR/ADV-R5-06 storage memory shows a persistent banner 'Saving is off in this browser'", /Saving is off in this browser/.test(await g.page.locator(T("save-banner-memory")).innerText()));
+  check("the memory banner cannot be dismissed", (await g.page.locator(`${T("save-banner-memory")} button`).count()) === 0);
+  await setStatus({ storage: "ok", owner: "self", notice: "pre-switch-save-failed" });
+  await g.page.click(T("slot-rename-1")); await g.page.click(T("slot-rename-cancel"));
+  const noticeText = await g.page.locator(T("save-notice")).innerText();
+  check("a status notice shows its text with a Dismiss button", /could not be saved before switching/.test(noticeText) && (await g.page.locator(T("save-notice-dismiss")).count()) === 1, noticeText);
+  await setStatus({ storage: "ok", owner: "stale", notice: null });
+  await g.page.click(T("slot-rename-1")); await g.page.click(T("slot-rename-cancel"));
+  check("owner stale offers 'Take over saves'", (await g.page.locator(T("take-over-saves")).count()) === 1);
+  await g.page.click(T("take-over-saves"));
+  check("take over asks first: a dialog takes focus, Esc closes it and focus returns to the action", await g.page.evaluate(() => !!document.activeElement?.closest('[role="alertdialog"]')));
+  const seq = [];
+  for (let i = 0; i < 5; i++) { await g.page.keyboard.press("Tab"); seq.push(await g.page.evaluate(() => (document.activeElement === document.body ? "BODY" : document.activeElement?.dataset?.testid))); }
+  check("Tab stays inside the take-over dialog", seq.every((x) => x === "take-over-yes" || x === "take-over-no"), seq);
+  await g.page.keyboard.press("Escape");
+  check("Esc closes the take-over dialog, focus is back on Take over saves, the slot manager stays open", (await g.page.evaluate(() => document.activeElement?.dataset?.testid)) === "take-over-saves" && (await g.state()).ui.menu === "slots");
+  await g.context.close();
+}
+{
+  // delete confirmation: focus enters, Tab is trapped, Esc closes and returns focus; load from the pause menu asks first
+  const g = await lobby();
+  await startNew(g.page, { name: "Alpha" });
+  await g.app("save.write");
+  await toTitle(g);
+  await startNew(g.page, { name: "Bravo", cls: IT.id });
+  await g.app("pause"); await g.page.click(T("pause-slots"));
+  await g.page.click(T("slot-delete-1"));
+  check("AC-NFR-A07-1 delete confirmation takes focus", await g.page.evaluate(() => !!document.activeElement?.closest('[role="alertdialog"]')));
+  const seq = [];
+  for (let i = 0; i < 6; i++) { await g.page.keyboard.press("Tab"); seq.push(await g.page.evaluate(() => (document.activeElement === document.body ? "BODY" : document.activeElement?.dataset?.testid))); }
+  check("Tab and Shift+Tab never leave the confirmation", seq.every((x) => /^slot-confirm-(yes|no)$/.test(x)), seq);
+  await g.page.keyboard.press("Shift+Tab");
+  check("Shift+Tab stays inside", /^slot-confirm-(yes|no)$/.test(await g.page.evaluate(() => document.activeElement?.dataset?.testid)));
+  await g.page.keyboard.press("Escape");
+  check("Esc closes the confirmation, focus returns to Delete, nothing was deleted", (await g.page.evaluate(() => document.activeElement?.dataset?.testid)) === "slot-delete-1" && (await slotState(g.page, 1)) === "ok" && (await g.state()).ui.menu === "slots");
+  await g.page.click(T("slot-load-1"));
+  check("AC-R-223-2 Load on another slot from the pause menu asks first and names both characters", (await g.page.locator(T("slot-load-confirm-title")).count()) === 1 && /Alpha/.test(await g.page.locator(T("slot-load-confirm-title")).innerText()) && /Bravo/.test(await g.page.locator(T("slot-load-confirm-text")).innerText()));
+  await g.page.click(T("slot-load-confirm-no"));
+  check("Cancel leaves the running game (Bravo) and focus on Load", (await g.state()).player.name === "Bravo" && (await g.page.evaluate(() => document.activeElement?.dataset?.testid)) === "slot-load-1");
+  await g.page.click(T("slot-load-1")); await g.page.click(T("slot-load-confirm-yes"));
+  check("Confirm loads the other character", (await g.state()).player.name === "Alpha");
+  await g.app("pause"); await g.page.click(T("pause-slots"));
+  const card = await g.page.locator(T("slot-1")).innerText();
+  check("CR-12 the card shows the deepest floor and a date with a time", /Deepest/.test(card) && /Last played: .*\d{4}.*\d{1,2}[:.]\d{2}/.test(card), card);
+  check("no page errors (R5 fix UI)", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+{
+  // Esc while the elevator doors close cancels the start (AC-R-214-1, ADV-R5-11)
+  const g = await lobby();
+  await g.page.click(T("new-game")); await g.page.fill(T("create-name"), "Escapee");
+  await g.page.evaluate(() => document.documentElement.classList.remove("noanim"));
+  await g.page.click(T("create-start"));
+  await g.page.keyboard.press("Escape");
+  await g.page.waitForTimeout(1800);
+  const list = await g.app("slots.list");
+  check("Esc during the elevator creates nothing and leaves the title", list.slots.every((e) => e.state === "empty") && (await g.state()).scene === "title" && (await g.page.locator(".elevator").count()) === 0, list.slots.map((e) => e.state));
   await g.context.close();
 }
 

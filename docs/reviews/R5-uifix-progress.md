@@ -4,3 +4,4 @@ decision ADV-R5-11 (AC-R-214-1): Esc during the elevator doors CANCELS the start
 decision ADV-R5-08: Load of another slot while a game is running opens a confirmation (slot-load-confirm-*) naming the loaded and the running character; Cancel keeps the game.
 decision CR-15: the UI no longer reads the adapter. Undo (delete and replace) uses { t: "restoreSlot" } (the one .prev copy); the Undo button shows when the entry says hasPrev !== false. Export uses { t: "exportSlot" } and reads fileName (falls back to filename).
 note: ui/savestatus.js reads game.slots.status and guards every field; screenshots inject status through __app.slots.view().status.
+done: all items; r5ui 105/106 (undo replace needs SAVE-FIX: restoreSlot with confirm swap); ui 150/150, s3ui 111/111; adv-r5 stale check after ADV-R5-02 fix; npm test 649 x3 green
