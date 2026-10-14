@@ -1,7 +1,7 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
-_Last updated 2026-10-14T04:16:20Z. Keep this block current after every step; the log below is history._
+_Last updated 2026-10-14T05:13:00Z. Keep this block current after every step; the log below is history._
 
-**Where we are:** R4 core, R5 WORLD, R5 UI (UI-R5 done, verified by orchestrator: 574 tests, e2e 12/12) and G-FIX done. Now in parallel: ADV-R5 adversarial (`docs/reviews/R5-adversarial-progress.md`), code review R4+R5+G (`docs/reviews/R4-R5-G-code-review-progress.md`), visual G re-review + char select (`docs/reviews/G2-visual-progress.md`). Then one fix round from all three.
+**Where we are:** R5 verification done (ADV-R5 4 major/7 minor, code review 2 blocking/13 should, G2 visual 33/32 + char select 33/30). Orchestrator re-run green: 616 tests (10 todo = ADV defects), e2e 13/13. **Fix round in flight:** SAVE-FIX (`docs/reviews/R5-savefix-progress.md`), UI-FIX (`R5-uifix-progress.md`), WORLD-FIX (`G3-world-progress.md`); contract + ownership `docs/reviews/R5-fix-contract.md`. After: orchestrator full suite + bench, re-run adversarial on fixes, G re-review (target 34), proxy acceptance, harness-retro R5 (round-05.json).
 
 **In flight (check the files, not memory):**
 - ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
@@ -163,3 +163,4 @@ Each round also improves the harness (learnings → agent definitions/rules), as
 - 2026-10-14T04:21:13Z G2 visual review: G 33/32 (was 32/31, target 34) → iterate narrow; char select 33/30. Must-fix F1-F4 (in-game), F9-F12 (UI). Goes into the fix round with ADV-R5 + code review.
 - 2026-10-14T04:23:05Z Code review R4+R5+G: 2 blocking (CR-01 stale tab lock, CR-02 XSS via imported item id in data-tip; orchestrator spot check: panels.js rowItem puts tipKey unescaped, CSP allows unsafe-inline → plausible), 13 should, 13 nit. Waiting for ADV-R5, then fix round.
 - 2026-10-14T05:08:46Z ADV-R5 (first adversarial pass ever, E1 data): 4 major, 7 minor, 10 todo tests + 12 XFAIL e2e. Unique vs code review: ADV-01 migrate hides slots, 06 blocked storage silent, 07 dialog focus, 05 xpNext, 08, 10, 11. Next: fix round SAVE-FIX / UI-FIX / WORLD-FIX.
+- 2026-10-14T05:13:00Z Orchestrator re-run after ADV-R5: npm test 606 pass/10 todo, e2e 13/13 OK. Wrote R5-fix-contract.md (status/deepest/savedAt/hasPrev, takeOverSaves/exportSlot/dismissSaveNotice). Launched SAVE-FIX, UI-FIX, WORLD-FIX in parallel.
