@@ -40,7 +40,7 @@ export const classes = [
     signature: "server-overheat",
     branches: ["infrastructure", "security", "helpdesk"],
     affixTag: "it",
-    bot: { stance: "caster", kite: 0, potionHp: 0.5, manaReserve: 0.1, attrWeights: { focus: 3, stamina: 3, agility: 2, grit: 1 },
+    bot: { stance: "caster", kite: 0, potionHp: 0.5, manaReserve: 0.1, attrWeights: { stamina: 3, grit: 3, agility: 2, focus: 1 },
       priority: ["blue-screen", "turn-it-off", "power-surge", "quarantine", "cold-boot", "server-overheat"],
       buildOrder: [["server-overheat", 2], ["cold-boot", 2], ["mute", 2], ["power-surge", 2], ["restore-backup", 2], ["firewall", 2], ["blue-screen", 1], ["turn-it-off", 1], ["quarantine", 1], ["server-overheat", 5], ["power-surge", 5], ["cold-boot", 5], ["overclock", 5]] },
   },

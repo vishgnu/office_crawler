@@ -34,7 +34,7 @@ export { monsterStats };
 export { gainXp, allocate, learnSkill, assignSkill, selectSkill, xpNextFor, respec, respecCheck, toggleAura } from "./systems/progression.js";
 export { classes, classById, defaultClass, retiredClasses, skillTrees, at, manaCost };
 export { skillView, treeView, classCards, effectRows } from "./treeview.js";
-export { validateName, suggestName, DEFAULT_NAME, NAME_MAX } from "./name.js";
+export { validateName, suggestName, suggestionCount, DEFAULT_NAME, NAME_MAX } from "./name.js";
 export { allyUnits } from "./content/allies.js";
 export { castSkill, skillLevel, effLevel, castCost } from "./systems/skills.js";
 export { fireProjectile } from "./systems/projectiles.js";

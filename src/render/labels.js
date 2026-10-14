@@ -79,7 +79,7 @@ export function createLabels(style) {
         cand.push(a);
       }
       cand.sort(byPriority);
-      heroRect.x = heroS.x - 22 * z; heroRect.w = 44 * z; heroRect.h = 56 * z; heroRect.y = heroS.y - heroRect.h;
+      heroRect.x = heroS.x - 26 * z; heroRect.w = 52 * z; heroRect.h = 64 * z; heroRect.y = heroS.y - heroRect.h;
       const fs = fontPx(s, 9.5, 12);
       let n = 0, others = 0;
       for (const a of cand) {

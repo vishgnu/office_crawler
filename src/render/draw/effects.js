@@ -81,7 +81,7 @@ function bolt(g, x0, y0, x1, y1, seed, z, jag, widths, cols) { // jagged lightni
 export function createSkillFx(fx) {
   const efx = [], lights = [], zoneCache = new Map(), allyCache = new Map(), last = { fx: null, skill: null, at: -1e9, e: null, type: "physical" };
   let nL = 0, absorbMax = 1, absorbRef = null, shieldSkill = "firewall", chain = null, dashDir = { x: 1, y: 1 };
-  const M = () => fx.reducedMotion, FL = () => !fx.reducedFlash;
+  const M = () => fx.reducedMotion, FL = () => !(fx.reducedFlash || fx.reducedMotion); // reduced motion also drops white flashes (there is no separate option yet)
   const light = (x, y, r, colour, intensity) => { const o = lights[nL] ?? (lights[nL] = { x: 0, y: 0, r: 0, colour: "#fff", intensity: 0 }); o.x = x; o.y = y; o.r = r; o.colour = colour; o.intensity = intensity; nL++; };
   const push = (o) => { if (efx.length > 80) efx.shift(); efx.push(o); return o; };
   const monster = (core, id) => (id === "player" ? core.player : core.monsters.find((m) => m.id === id));
@@ -261,12 +261,13 @@ export function createSkillFx(fx) {
           g.beginPath(); g.moveTo(-5, 0); g.lineTo(-1.5, 4); g.lineTo(6, -5); g.lineWidth = 5; g.strokeStyle = INK; g.stroke(); g.lineWidth = 2.6; g.strokeStyle = "#e0363f"; g.stroke();
           if (flash && k0 < 0.22) { g.globalAlpha = 1 - k0 / 0.22; star(g, 0, 0, 24, 8, 8, "#ffffff", null, 0); }
         } else if (e.k === "crit") {
-          const R = (14 + 22 * ease(Math.min(1, k * 2.2))) * z * (flash ? 1 : 0.7), cy = pos.y - e.head * 0.7 * z; g.globalAlpha = fade;
+          const R = (9 + 13 * ease(Math.min(1, k * 2.2))) * z * (flash ? 1 : 0.7), cy = pos.y - e.head * 0.7 * z; g.globalAlpha = fade;
           star(g, pos.x, cy, R, R * 0.36, 8, flash ? "#ffffff" : "rgba(255,246,200,0.5)", "#ffb347", Math.max(2, 2.6 * z * 0.7));
         } else if (e.k === "statusPop") {
           const R = (6 + 12 * ease(k)) * z; g.globalAlpha = fade; ell(g, pos.x, pos.y - 24 * z, R, R * 0.8); g.lineWidth = Math.max(2, 2.4 * z * 0.7); g.strokeStyle = e.kind === "freeze" ? "#bfeaff" : e.kind === "burn" ? "#ffb060" : e.kind === "stun" ? "#ffe45a" : "#d2c4ff"; g.stroke();
         } else if (e.k === "shieldFlash" && e.hit) {
-          const rx = 26 * z, ry = 38 * z; g.globalAlpha = fade * (flash ? 0.6 : 0.3); ell(g, pos.x, pos.y - 24 * z, rx, ry); g.fillStyle = "#ffffff"; g.fill();
+          const rx = 26 * z, ry = 38 * z; g.globalAlpha = fade * 0.6; ell(g, pos.x, pos.y - 24 * z, rx, ry);
+          if (flash) { g.fillStyle = "#ffffff"; g.fill(); } else { g.lineWidth = Math.max(3, 4 * z * 0.7); g.strokeStyle = "#bfe9ff"; g.stroke(); } // reduced flash: an outline pulse instead of a white fill
         } else if (e.k === "shieldFlash") {
           g.globalAlpha = fade * 0.5; ell(g, pos.x, pos.y - 24 * z, 26 * z * (1 + k * 0.2), 38 * z * (1 + k * 0.2)); g.lineWidth = Math.max(2, 3 * z * 0.7); g.strokeStyle = e.skill === "lockout" ? "#ffd24a" : "#7fd8ff"; g.stroke();
         }
@@ -335,11 +336,11 @@ function drawField(g, x, y, zn, z, now, m) { // fx:ground, Server Overheat: heat
 }
 
 function drawTrap(g, x, y, zn, z, now, m) { // fx:trap, Wet Floor: a puddle and the yellow A-frame sign; dashed and faint until armed
-  const armed = !(zn.armT > 0), a = armed ? 1 : 0.55, pulse = armed && !m ? 0.5 + 0.5 * Math.sin(now / 320) : 0.5, rx = zn.radius * RX * z, ry = rx * 0.5;
+  const armed = !(zn.armT > 0), a = armed ? 1 : 0.7, pulse = armed && !m ? 0.5 + 0.5 * Math.sin(now / 320) : 0.5, rx = zn.radius * RX * z, ry = rx * 0.5;
   g.save(); g.lineJoin = "round"; g.globalAlpha = a;
   ell(g, x, y, rx, ry); g.fillStyle = `rgba(120,200,255,${0.14 + 0.08 * pulse})`; g.fill(); g.lineWidth = Math.max(2, 2.2 * z * 0.7); g.strokeStyle = `rgba(160,226,255,${0.55 + 0.3 * pulse})`; if (!armed) g.setLineDash([4 * z, 4 * z]); g.stroke(); g.setLineDash([]);
   ell(g, x + 6 * z, y + 2 * z, 7 * z, 3 * z); g.fillStyle = "rgba(160,226,255,0.55)"; g.fill();
-  const s = z * 1.05; // A-frame sign
+  const s = z * 1.5; // A-frame sign
   g.beginPath(); g.moveTo(x - 7 * s, y + 3 * s); g.lineTo(x - 4.2 * s, y - 15 * s); g.lineTo(x + 4.2 * s, y - 15 * s); g.lineTo(x + 7 * s, y + 3 * s); g.closePath(); g.fillStyle = "#ffd23a"; g.fill(); g.lineWidth = Math.max(1.6, 1.8 * s); g.strokeStyle = INK; g.stroke();
   g.beginPath(); g.moveTo(x - 5.6 * s, y - 3 * s); g.lineTo(x - 4.6 * s, y - 9 * s); g.lineTo(x + 4.6 * s, y - 9 * s); g.lineTo(x + 5.6 * s, y - 3 * s); g.closePath(); g.fillStyle = "#f4a51a"; g.fill();
   g.lineWidth = Math.max(1.6, 2 * s); g.strokeStyle = INK; g.beginPath(); g.moveTo(x - 2 * s, y - 12.6 * s); g.lineTo(x + 0.4 * s, y - 9 * s); g.lineTo(x - 0.6 * s, y - 5.4 * s); g.lineTo(x + 2.2 * s, y - 3 * s); g.stroke(); // a slipping stroke figure

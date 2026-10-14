@@ -9,6 +9,8 @@ import { createLabels } from "../src/render/labels.js";
 import { makeCamera, worldScale } from "../src/ui/camera.js";
 import { viewConfig } from "../src/ui/layout.js";
 import { posOf } from "../src/core/pos.js";
+import { hasLineOfSight } from "../src/core/los.js";
+import { getCtx } from "../src/core/ctx.js";
 import { requiredKeys, HERO_CLASSES } from "../src/render/keys.js";
 import { damageMonster } from "../src/core/systems/damage.js";
 
@@ -223,7 +225,7 @@ W.floor8Stairs = (unlocked) => {
 // W.fight(cls): the hero stands in the basement with a ring of monsters at 3-5 tiles. W.skill(id): grants the skill and casts it at the nearest monster.
 // W.panel(i, cols, rows, [ox, oy]): copies the hero-centred crop of the current frame into cell i of a contact sheet; W.panelsShow() draws the sheet to the canvas.
 W.fight = (cls, o = {}) => {
-  const opt = { seed: 5, depth: 4, n: 5, types: ["temp-worker", "zombie-intern", "printer-imp", "middle-manager", "consultant", "temp-worker", "zombie-intern", "printer-imp"], r: [3, 5], ...o };
+  const opt = { seed: 5, depth: 4, n: 5, types: ["temp-worker", "zombie-intern", "printer-imp", "middle-manager", "consultant", "temp-worker", "zombie-intern", "printer-imp"], r: [2, 4], ...o };
   W.now = 1000; W.fx.reset(); W.rs.facing.clear();
   const s = (W.core = newGame(opt.seed, { class: cls, start: "town" }));
   teleportFloor(s, opt.depth);
@@ -242,20 +244,21 @@ W.fight = (cls, o = {}) => {
     if (best) s.player.tile = best;
   }
   const hero = s.player.tile;
-  const ring = free(s, hero, opt.r[1], opt.r[0]).filter((t) => t.x + t.y <= hero.x + hero.y + 1 || Math.abs(t.x - t.y - (hero.x - hero.y)) >= 3); // nothing right in front of the hero (it would fade him)
-  ring.sort((a, b) => Math.atan2(a.y - hero.y, a.x - hero.x) - Math.atan2(b.y - hero.y, b.x - hero.x));
+  // candidates inside the hero-centred frame (screen offsets of at most 3 tiles across), in line of sight, none right in front of the hero (it would fade him)
+  const ring = free(s, hero, 7, 2).filter((t) => { const dx = t.x - hero.x, dy = t.y - hero.y, sx = dx - dy, sy = dx + dy; return Math.abs(sx) <= 4 && sy >= -6 && sy <= 2 && (sy <= 0 || Math.abs(sx) >= 3) && hasLineOfSight(getCtx(s).grid, hero.x, hero.y, t.x, t.y); });
+  ring.sort((a, b) => Math.atan2((a.y - hero.y) + (a.x - hero.x), (a.x - hero.x) - (a.y - hero.y)) - Math.atan2((b.y - hero.y) + (b.x - hero.x), (b.x - hero.x) - (b.y - hero.y)));
   const step = Math.max(1, Math.floor(ring.length / opt.n));
-  for (let i = 0; i < opt.n; i++) { const t = ring[(i * step + 2) % ring.length]; if (t) spawnMonster(s, opt.types[i % opt.types.length], t, null, { level: opt.depth }); }
+  for (let i = 0; i < opt.n; i++) { const t = ring[(i * step) % ring.length]; if (t) spawnMonster(s, opt.types[i % opt.types.length], t, null, { level: opt.depth }); }
   for (const m of s.monsters) { m.hp = m.hpMax = 1e5; }
   W.live = true; W.step(3);
   return { class: s.player.class, hero: { ...hero }, monsters: s.monsters.length };
 };
 W.nearest = () => { const s = W.core, p = s.player.tile; return s.monsters.filter((m) => m.ai !== "dead").sort((a, b) => Math.hypot(a.tile.x - p.x, a.tile.y - p.y) - Math.hypot(b.tile.x - p.x, b.tile.y - p.y))[0]; };
-W.skill = (id, level = 3, at = null) => {
+W.skill = (id, level = 3, rel = null) => {
   const s = W.core, p = s.player;
   p.skills[id] = level; p.mp = p.mpMax;
-  const m = at ?? W.nearest();
-  const tile = m ? { ...(m.tile ?? m) } : { x: p.tile.x + 3, y: p.tile.y + 2 };
+  const m = W.nearest();
+  const tile = rel ? { x: p.tile.x + rel[0], y: p.tile.y + rel[1] } : m ? { ...m.tile } : { x: p.tile.x + 3, y: p.tile.y + 2 };
   const r = castSkill(s, id, tile);
   dispatch(0);
   return { id, ok: r?.ok ?? r, error: r?.error ?? null, target: tile };
@@ -272,6 +275,7 @@ W.setStatus = (kinds) => { // stage statuses on the monsters, one kind per monst
   });
 };
 W.crit = () => { const s = W.core, m = W.nearest(); if (!m) return; s.events.push({ type: "crit", target: m.id }); s.floaters.push({ value: 48, tile: { ...m.tile }, target: m.id, kind: "crit", dmgType: "physical", life: config.floaterTicks }); dispatch(0); };
+W.unflash = () => { for (const m of W.core.monsters) m.flashTicks = 0; W.core.player.flashTicks = 0; };
 W.hold = () => { for (const m of W.core.monsters) { m.ai = "idle"; } };
 W.panelSheet = null;
 W.panel = (i, cols, rows, o = {}) => {
@@ -285,3 +289,27 @@ W.panel = (i, cols, rows, o = {}) => {
 W.panelsShow = (k = 1) => { const main = document.getElementById("game"), g = main.getContext("2d"); g.fillStyle = "#07080c"; g.fillRect(0, 0, main.width, main.height); g.drawImage(W.panelSheet.c, 0, 0, Math.round(main.width * k), Math.round(main.height * k)); W.panelSheet = null; };
 W.render2 = () => { W.render(); };
 W.dumpEvents = () => W.core.events.map((e) => e.type).join(",");
+
+// Distinguishability at ~60 px (decision.md, character select): downscale each class's sprite to 60 px tall and compare mean colour and silhouette.
+W.distinct = (h = 60) => {
+  const ids = ["facilities-manager", "sales-rep", "it-wizard"], feats = {};
+  for (const id of ids) {
+    const acc = { mask: null, rgb: [0, 0, 0], n: 0 }, size = Math.round(h * 1.1);
+    for (const [anim, dir, f] of [["idle", 0, 0], ["idle", 2, 1], ["walk", 6, 2], ["idle", 4, 0], ["attack", 0, 2]]) {
+      const e = W.atlas.get(`plr:${id}:${anim}:${dir}:${f}`), c = document.createElement("canvas"), k = h / 76; // 76 logical px = feet to the top of the canvas
+      c.width = size; c.height = size; const g = c.getContext("2d");
+      g.drawImage(e.img, 0, 0, e.img.width, e.img.height, size / 2 - e.ox * k, size - 6 - e.oy * k, e.w * k, e.h * k);
+      const d = g.getImageData(0, 0, size, size).data, m = new Uint8Array(size * size);
+      for (let i = 0; i < size * size; i++) if (d[i * 4 + 3] > 120) { m[i] = 1; acc.rgb[0] += d[i * 4]; acc.rgb[1] += d[i * 4 + 1]; acc.rgb[2] += d[i * 4 + 2]; acc.n++; }
+      acc.mask = acc.mask ? acc.mask.map((v, i) => v + m[i]) : Array.from(m);
+    }
+    feats[id] = { mask: acc.mask.map((v) => (v >= 2 ? 1 : 0)), rgb: acc.rgb.map((v) => Math.round(v / acc.n)) };
+  }
+  const out = [];
+  for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+    const a = feats[ids[i]], b = feats[ids[j]]; let inter = 0, uni = 0;
+    for (let k = 0; k < a.mask.length; k++) { inter += a.mask[k] & b.mask[k]; uni += a.mask[k] | b.mask[k]; }
+    out.push({ pair: `${ids[i]} / ${ids[j]}`, iou: +(inter / uni).toFixed(2), colourDist: Math.round(Math.hypot(a.rgb[0] - b.rgb[0], a.rgb[1] - b.rgb[1], a.rgb[2] - b.rgb[2])) });
+  }
+  return { rgb: Object.fromEntries(ids.map((id) => [id, feats[id].rgb])), pairs: out };
+};

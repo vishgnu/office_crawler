@@ -13,6 +13,9 @@ const maxItemId = (data) => {
   return n + 1;
 };
 
+/** The six skills the retired Clerk could learn (version 1 saves hold nothing else). */
+const CLERK_SKILLS = ["stapler-throw", "reply-all", "coffee-break", "mute", "dress-code", "hustle"];
+
 export const MIGRATIONS = {
   0(d) {
     const { hero, gold, ...rest } = d;
@@ -36,8 +39,11 @@ export const MIGRATIONS = {
     const target = retiredClasses[d.class]?.migrateTo ?? d.class, cls = classById(target), p = d.player && typeof d.player === "object" ? d.player : null;
     const out = { ...d, version: 2, class: target, name: DEFAULT_NAME, stats: { ...(d.stats && typeof d.stats === "object" ? d.stats : {}), playTicks: 0 } };
     if (!cls || !p) return out;
-    const spent = p.skills && typeof p.skills === "object" && !Array.isArray(p.skills) ? Object.values(p.skills).reduce((n, l) => n + (Number.isInteger(l) && l > 0 ? l : 0), 0) : 0;
-    out.player = { ...p, skillPoints: (Number.isInteger(p.skillPoints) ? p.skillPoints : 0) + spent, skills: { [cls.signature]: 1 },
+    // Only a well-formed skill table is refunded; anything else is left as it is so the schema check rejects the save.
+    const sk = p.skills, wellFormed = sk && typeof sk === "object" && !Array.isArray(sk) && Object.entries(sk).every(([id, l]) => CLERK_SKILLS.includes(id) && Number.isInteger(l) && l >= 0 && l <= 5);
+    if (!wellFormed || !Number.isInteger(p.skillPoints)) return out;
+    const spent = Object.values(sk).reduce((n, l) => n + l, 0);
+    out.player = { ...p, skillPoints: p.skillPoints + spent, skills: { [cls.signature]: 1 },
       skillBar: { primary: cls.basic, secondary: cls.signature, hotkeys: [cls.signature, null, null, null], selected: 0 }, respecsUsed: 0 };
     return out;
   },

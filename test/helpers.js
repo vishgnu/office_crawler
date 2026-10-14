@@ -45,9 +45,9 @@ export function bfsSteps(rows, a, b) {
   return -1;
 }
 
-/** Replay a recorded input script: { seed, ticks, inputs: [{ tick, input }] }. */
-export function replay(script) {
-  const state = newGame(script.seed);
+/** Replay a recorded input script: { seed, ticks, inputs: [{ tick, input }] }. `opts` goes to newGame (for example { class: "it-wizard" }). */
+export function replay(script, opts = {}) {
+  const state = newGame(script.seed, opts);
   for (let t = 0; t < script.ticks; t++) step(state, script.inputs.filter((i) => i.tick === t).map((i) => i.input));
   return state;
 }

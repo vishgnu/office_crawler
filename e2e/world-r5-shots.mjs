@@ -32,15 +32,16 @@ const save = async (name) => {
 const panel = async (i, cols, rows, cls, moves, o = {}) => {
   await call("fight", cls, o.fight ?? {});
   for (const mv of moves) {
-    if (mv.skill) { const r = await call("skill", mv.skill, mv.level ?? 3); if (!r.ok) console.log("  cast failed", JSON.stringify(r)); }
+    if (mv.skill) { const r = await call("skill", mv.skill, mv.level ?? 3, mv.at ?? null); if (!r.ok) console.log("  cast failed", JSON.stringify(r)); }
     else if (mv.aura) await call("aura", mv.aura);
     else if (mv.status) await call("setStatus", mv.status);
     else if (mv.hold) await call("hold");
     else if (mv.crit) await call("crit");
     if (mv.step) await call("step", mv.step);
   }
+  await call("unflash");
   await call("render");
-  return call("panel", i, cols, rows, o.crop ?? {});
+  return call("panel", i, cols, rows, o.crop ?? { ox: 0, oy: -70 });
 };
 const sheet = async (name, cols, rows, panels) => {
   for (let i = 0; i < panels.length; i++) { const [cls, moves, o] = panels[i]; await panel(i, cols, rows, cls, moves, o); }
@@ -62,7 +63,7 @@ const scenes = {
       [FM, [{ skill: "pallet-slam", step: 3 }]],
       [FM, [{ skill: "floor-buffer", step: 4 }]],
       [FM, [{ aura: "fire-drill", step: 2 }, { skill: "lockout", step: 3 }]],
-      [FM, [{ hold: 1 }, { skill: "wet-floor", step: 24 }], { fight: { r: [4, 5] } }],
+      [FM, [{ hold: 1 }, { skill: "wet-floor", at: [0, 2], step: 24 }], { fight: { r: [4, 5] } }],
       [FM, [{ skill: "traffic-cone", step: 6 }]],
       [FM, [{ skill: "dolly-charge", step: 3 }]],
     ]);
@@ -87,6 +88,10 @@ const scenes = {
       [IT, [{ skill: "turn-it-off", step: 4 }]],
     ]);
   },
+};
+scenes.distinct = async () => { // the three class sprites must be told apart at 60 px: silhouette overlap below 0.8 and mean colour at least 25 apart
+  const r = await call("distinct", 60); console.log("distinct@60px", JSON.stringify(r));
+  for (const p of r.pairs) if (p.iou > 0.8 || p.colourDist < 25) { console.log("FAIL distinguishability", JSON.stringify(p)); process.exitCode = 1; }
 };
 for (const [name, fn] of Object.entries(scenes)) if (!only || only === name) await fn();
 if (errors.length) console.log("ERRORS", errors.slice(0, 5));
