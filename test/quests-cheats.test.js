@@ -59,11 +59,19 @@ test("setQuestStep on a side quest: 0 available, 1 active, 2 ready (the badge en
   for (const bad of [-1, 4, 1.5, "1"]) assert.equal(setQuestStep(s, "sq1", bad).ok, false);
 });
 
-test("setQuestStep(side, 3) goes through the hand-in path and returns its answer (bagFull is not hidden); without the hand-in it says so", () => {
-  const s = hero(); setQuestStep(s, "sq1", 2);
-  const r = setQuestStep(s, "sq1", 3);
-  if (r.ok) { assert.equal(s.quests.sq1.s, "completed"); legal(s); assert.notEqual(s.quests.pinned, "sq1"); }
-  else assert.ok(["hand-in not available", "no dialog", "bagFull"].includes(r.error), r.error);
-  const c = completeQuest(hero(), "sq3"); assert.equal(typeof c.ok, "boolean");
+test("setQuestStep(side, 3) goes through the hand-in path: reward granted, pin moved, save legal; a full bag is returned as bagFull and changes nothing", () => {
+  const s = hero(); s.quests.pinned = "sq1"; setQuestStep(s, "sq1", 2);
+  const gold = s.player.gold, bag = s.inventory.items.length; s.events.length = 0;
+  assert.deepEqual(setQuestStep(s, "sq1", 3), { ok: true });
+  assert.equal(s.quests.sq1.s, "completed"); assert.ok(s.player.gold > gold); assert.equal(s.inventory.items.length, bag + config.quests.sq1.potions);
+  assert.equal(s.quests.pinned, "main"); assert.ok(types(s).includes("quest.completed"));
+  legal(s);
+  const c = hero(); setQuestStep(c, "sq2", 2);
+  assert.deepEqual(completeQuest(c, "sq2"), { ok: true }); assert.deepEqual(c.player.pouch, []); legal(c);
+  assert.equal(completeQuest(c, "sq2").ok, true, "again is a no-op");
   assert.equal(completeQuest(hero(), "nope").ok, false);
+  const full = hero(); setQuestStep(full, "sq3", 2);
+  for (let y = 0; y < full.inventory.h; y++) for (let x = 0; x < full.inventory.w; x++) if (!full.inventory.items.some((o) => o.x <= x && x < o.x + o.w && o.y <= y && y < o.y + o.h)) full.inventory.items.push({ id: `f${x}_${y}`, base: "x", name: "x", kind: "consumable", rarity: "normal", w: 1, h: 1, x, y });
+  const r = setQuestStep(full, "sq3", 3);
+  assert.equal(r.ok, false); assert.equal(r.error, "bagFull"); assert.equal(full.quests.sq3.s, "ready");
 });

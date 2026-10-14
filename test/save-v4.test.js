@@ -60,10 +60,9 @@ test("every legal combination of side states and main steps saves and loads (leg
   for (const a of states) for (const b of states) for (const c of states) for (const ms of [1, 2, 3, 4, 5, 6]) {
     const s = hero(["facilities-manager", "sales-rep", "it-wizard"][(a + b + c + ms) % 3], 20 + n++);
     assert.equal(setQuestStep(s, "main", ms).ok, true);
-    // 3 (completed) goes through the hand-in path of R7-0.2; until that exists the cheat says so and the case is skipped
     for (const [id, st] of [["sq1", a], ["sq2", b], ["sq3", c]]) {
-      const r = setQuestStep(s, id, st);
-      if (!r.ok) { assert.equal(r.error, "hand-in not available"); setQuestStep(s, id, 2); }
+      const r = setQuestStep(s, id, st); // 3 = completed goes through the hand-in path (R7-0.2)
+      assert.equal(r.ok, true, `${id} ${st}: ${r.error}`);
     }
     const p = schemaProblem(toSave(s));
     assert.equal(p, null, `${[a, b, c, ms]}: ${p}`);

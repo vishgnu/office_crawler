@@ -8,7 +8,7 @@ import { giveGold } from "./systems/loot.js";
 import { emit } from "./events.js";
 import { quests } from "./content/quests.js";
 import { mainStep, MAIN_STEPS, goalOf, nextStep } from "./systems/questview.js";
-import * as questSystem from "./systems/quests.js"; // `questHandIn` arrives with R7-0.2: looked up by name so this file works before and after it
+import * as questSystem from "./systems/quests.js"; // `handInQuest` arrives with R7-0.2: looked up by name so this file works before and after it
 
 const fail = (error) => ({ ok: false, error });
 const OK = { ok: true };
@@ -101,10 +101,8 @@ export function setQuestStep(state, id, n) {
     emit(state, { type: "quest.step", id, title: def.title, next: nextStep(state, id) });
   }
   if (n === 2) return OK;
-  if (typeof questSystem.questHandIn !== "function") return fail("hand-in not available");
-  const r = questSystem.questHandIn(state, id, { force: true }); // force: skip the giver's dialog gate (a cheat stands anywhere)
-  if (r?.ok && state.quests.pinned === id) state.quests.pinned = "main";
-  return r ?? fail("hand-in failed");
+  if (typeof questSystem.handInQuest !== "function") return fail("hand-in not available");
+  return questSystem.handInQuest(state, id); // the ungated hand-in the input command also uses: pin, pouch, reward and events as in play
 }
 
 /** Finish a quest: the main quest (all six milestones, one quest.completed) or a side quest (ready, then handed in). */

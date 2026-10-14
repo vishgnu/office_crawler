@@ -18,7 +18,7 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R7 | 7 | 1026.0 | 142.5 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 63 rows, 9734.7 k subagent tokens. **Your messages logged:** 19.
+**Ledger total:** 64 rows, 9734.7 k subagent tokens. **Your messages logged:** 19.
 
 ## Round R3
 
@@ -121,6 +121,7 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | implementer | AI-R7 | 124.0 | 33.2 | done | tests: 775; e2e: 14/14; giveUps: {"before":1,"after":0}; golden: a4a3cd6a1dac3cb2 -> 4a96887c22fea751 (new field standT only; behaviour-off reproduces old) |
 | implementer | CORE-R7Q 0.1 (quest core) | 167.6 | 24.6 | done | tests: 801; e2e: 14/14; golden: 4a96887c22fea751 -> 60a33ace8c544a3c (proof: stripped hash == pre-quest golden, 3 classes) |
 | implementer | STUTTER-R7 | 134.1 | 64.4 | done | floorLoad: {"ahead_floor2_max":"33.4-66.6 (median 33.5)","ahead_floor5_max":"33.4","lazy_draws":"480-600 -> 61 / 0"}; fps50_loaded: [53.3,44.2,39.8,46.8,50]; load: 2.3-7.5 |
+| implementer | CORE-R7Q 0.2 (hooks, pouch, hand-in, rewards) | – | – | done | tests: 854 (1 red = 0.3 version exception); golden_unchanged: true |
 
 ## Harness work
 
