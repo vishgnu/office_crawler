@@ -106,8 +106,9 @@ function castAll(cls, attrValue) {
     applyDerived(s, { fill: true }); p.mp = p.mpMax = 5000;
     const vals = [];
     for (let k = 0; k < 6; k++) {
-      p.mp = p.mpMax; applyInput(s, { t: "cast", skill: def.id, tile: { x: 12, y: 4 } });
-      for (let i = 0; i < 40; i++) { step(s); for (const e of s.events) if (e.type === "hit" && e.target !== "player" && e.skill === def.id) vals.push(e.value); }
+      const take = () => { for (const e of s.events) if (e.type === "hit" && e.target !== "player" && e.skill === def.id) vals.push(e.value); };
+      p.mp = p.mpMax; applyInput(s, { t: "cast", skill: def.id, tile: { x: 12, y: 4 } }); take(); // events of an instant skill exist before the next step clears them
+      for (let i = 0; i < 40; i++) { step(s); take(); }
     }
     out.push({ id: def.id, vals });
   }
@@ -193,6 +194,24 @@ test("R6-compat: skill numbers are read from content, not stored: a save with a 
   const sv = toSave(s);
   assert.equal(JSON.stringify(sv).includes("weaponShare"), false);
   assert.equal(Object.keys(sv.player.skills).length, 1);
+});
+
+test("R6-compat: an R5 save of a caster or ranged hero whose points sit in Grit loads (and its weapon damage is recomputed from the new power attribute)", () => {
+  for (const [cls, power] of [["it-wizard", "focus"], ["sales-rep", "agility"]]) {
+    const s = hero(cls); setLevel(s, 14); s.player.attrs.grit += 65; s.player.attrPoints = 0; applyDerived(s);
+    const r = deserialize(sealed(toSave(s)));
+    assert.ok(r.ok, JSON.stringify(r));
+    assert.ok(r.state.player.damage.max < 20, `${cls}: grit no longer adds damage (${JSON.stringify(r.state.player.damage)}), the power attribute is ${power}`);
+  }
+});
+
+test("ADV-R6-05: an R5 save with 65 attribute points in Grit (the R5 bot weighting and the only damage source of casters then) is not migrated, refunded or announced after the formula change", { todo: "ADV-R6-05" }, () => {
+  for (const cls of ["it-wizard", "sales-rep"]) {
+    const s = hero(cls); setLevel(s, 14); s.player.attrs.grit += 65; s.player.attrPoints = 0; applyDerived(s);
+    const sv = toSave(s), r = deserialize(sealed(sv));
+    const refunded = r.state.player.attrPoints >= 65, told = (r.notes ?? []).length > 0, bumped = sv.version > 2;
+    assert.ok(refunded || told || bumped, `${cls}: loaded as-is, attrPoints ${r.state.player.attrPoints}, notes ${JSON.stringify(r.notes)}, save version ${sv.version}, damage ${JSON.stringify(r.state.player.damage)}`);
+  }
 });
 
 // ---------------------------------------------------------------- hostile input made more valuable by R6 (attribute totals feed damage now)

@@ -6,9 +6,11 @@ import { mkdirSync, statSync, readFileSync, writeFileSync, mkdtempSync } from "n
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { build } from "esbuild";
-import { launch, check, finish, startNew } from "./helpers.mjs";
+import { launch, check, finish, startNew, freeTilesNear, tileScreen } from "./helpers.mjs";
 import { toSave, checksumOf } from "../src/save/index.js";
 import { newGame } from "../src/core/state.js";
+import { runOne } from "../bot/run-headless.mjs";
+import { resolve } from "node:path";
 import { canonical } from "../src/core/hash.js";
 
 const browser = await launch();
@@ -16,6 +18,7 @@ const T = (id) => `[data-testid="${id}"]`;
 const SHOTS = "docs/shots";
 mkdirSync(SHOTS, { recursive: true });
 const CL = { fm: "facilities-manager", sr: "sales-rep", it: "it-wizard" };
+const CLASSES_ALL = Object.values(CL);
 const xres = [];
 function xfail(name, ok, id, detail) {
   xres.push({ name, ok: !!ok, id });
@@ -73,6 +76,21 @@ const overflow = (page) => page.evaluate(() => document.documentElement.scrollWi
 const openSkills = async (g) => { await g.page.keyboard.press("KeyS"); await g.page.waitForTimeout(80); };
 
 // ================================================================ 1. respec confirmation
+/** Reads every node and connector of the open skills panel: geometry in CSS px, pseudo-element widths from the computed style. */
+const readTree = (page) => page.evaluate(() => {
+  const out = [];
+  for (const br of document.querySelectorAll('[data-testid^="branch-"]')) {
+    const nodes = [...br.querySelectorAll(".tnode")].map((li) => {
+      const r = li.getBoundingClientRect(), lk = li.querySelector(":scope > i.lk"), kd = li.querySelector(":scope > i.kd");
+      const pse = (el, w) => el ? parseFloat(getComputedStyle(el, w).width) : null;
+      return { id: li.dataset.testid.replace("skill-", ""), state: li.dataset.state, tier: Number(li.dataset.tier), x: r.left, y: r.top, w: r.width, h: r.height, cx: r.left + r.width / 2,
+        lk: lk ? { cls: lk.className, span: lk.style.getPropertyValue("--span"), after: pse(lk, "::after"), disp: getComputedStyle(lk).display } : null, kd: kd ? { cls: kd.className, disp: getComputedStyle(kd).display } : null,
+        need: li.querySelector(".tn-req")?.textContent ?? null, needVisible: li.querySelector(".tn-req") ? getComputedStyle(li.querySelector(".tn-req")).display !== "none" : false };
+    });
+    out.push({ branch: br.dataset.testid, nodes });
+  }
+  return out;
+});
 if (sec("respec")) {
 {
   const g = await hero(); await g.app("cheat.setLevel", 16); await learnSome(g, PLAN[CL.fm]);
@@ -193,24 +211,22 @@ if (sec("respec")) {
   await g.context.close();
 }
 
+// respec, save, reload: the returned points survive and the confirmation is not remembered
+{
+  const g = await hero(); await g.app("cheat.setLevel", 16); await learnSome(g, PLAN[CL.fm]);
+  await openSkills(g); await g.page.click(T("respec")); await g.page.click(T("respec-yes"));
+  await g.app("save.write");
+  await g.page.reload(); await g.page.waitForFunction(() => window.__app?.getState().scene === "title");
+  await g.page.click(T("continue")); await g.page.waitForTimeout(150);
+  const p = (await g.state()).player;
+  check("[R6-respec] after respec, save and reload: only the signature is learned, 15 points are free, the respec count is 1", p.skillPoints === 15 && Object.keys(p.skills).join() === "pallet-slam" && p.respecsUsed === 1, [p.skillPoints, p.skills, p.respecsUsed]);
+  await openSkills(g);
+  check("[R6-respec] after the reload the panel opens without a confirmation", (await g.page.locator(T("respec-confirm")).count()) === 0);
+  await g.context.close();
+}
 } // sec respec
 // ================================================================ 2. tree connectors: every class, every state, three widths
 if (sec("tree")) {
-/** Reads every node and connector of the open skills panel: geometry in CSS px, pseudo-element widths from the computed style. */
-const readTree = (page) => page.evaluate(() => {
-  const out = [];
-  for (const br of document.querySelectorAll('[data-testid^="branch-"]')) {
-    const nodes = [...br.querySelectorAll(".tnode")].map((li) => {
-      const r = li.getBoundingClientRect(), lk = li.querySelector(":scope > i.lk"), kd = li.querySelector(":scope > i.kd");
-      const pse = (el, w) => el ? parseFloat(getComputedStyle(el, w).width) : null;
-      return { id: li.dataset.testid.replace("skill-", ""), state: li.dataset.state, tier: Number(li.dataset.tier), x: r.left, y: r.top, w: r.width, h: r.height, cx: r.left + r.width / 2,
-        lk: lk ? { cls: lk.className, span: lk.style.getPropertyValue("--span"), after: pse(lk, "::after"), disp: getComputedStyle(lk).display } : null, kd: kd ? { cls: kd.className, disp: getComputedStyle(kd).display } : null,
-        need: li.querySelector(".tn-req")?.textContent ?? null, needVisible: li.querySelector(".tn-req") ? getComputedStyle(li.querySelector(".tn-req")).display !== "none" : false };
-    });
-    out.push({ branch: br.dataset.testid, nodes });
-  }
-  return out;
-});
 for (const [clsKey, cls] of Object.entries(CL)) {
   for (const stage of ["fresh", "lvl8", "partial", "maxed"]) {
     const g = await hero({ viewport: { width: 1280, height: 720 } }, cls, "Tree");
@@ -449,6 +465,201 @@ if (sec("slots")) {
     await g.context.close();
   }
 } // sec slots
+
+// ================================================================ 6. lazy atlas: first sight of every monster type, the hero in each class and facing, all floors
+if (sec("atlas")) {
+  const MON = ["zombie-intern", "printer-imp", "temp-worker", "printer-demon", "middle-manager", "vending-machine", "consultant", "auditor"];
+  /** Count of pixels of the game canvas that differ between two captures inside a box (CSS px). */
+  const grab = (page, box) => page.evaluate((b) => { const c = document.getElementById("game"), k = c.width / innerWidth, g = c.getContext("2d"); const d = g.getImageData(Math.max(0, Math.round(b.x * k)), Math.max(0, Math.round(b.y * k)), Math.round(b.w * k), Math.round(b.h * k)); return Array.from(d.data); }, box);
+  const diff = (a, b) => { let n = 0; for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 30) n++; return n; };
+  const lazyCount = (page) => page.evaluate(() => globalThis.__atlasStats?.lazy ?? -1);
+  {
+    const g = await boot({ viewport: { width: 1280, height: 720 }, query: "test=1&seed=2" });
+    await startNew(g.page, { cls: CL.sr, name: "Lazy" });
+    await g.app("cheat.setLevel", 10); await g.app("cheat.teleportFloor", 3); await g.app("step", 10);
+    check("[R6-atlas] the build says nothing is missing after the load (all keys known, lazy ones included)", (await g.app("perf")).atlasMissing.length === 0, (await g.app("perf")).atlasMissing.slice(0, 3));
+    let st = await g.state(), tiles = freeTilesNear(st, st.player.tile, 9, 3);
+    const seenNew = [];
+    for (const [i, type] of MON.entries()) {
+      st = await g.state(); const hp = st.player.tile; tiles = freeTilesNear(st, hp, 7, 3).filter((t) => !st.monsters.some((m) => Math.abs(m.tile.x - t.x) + Math.abs(m.tile.y - t.y) < 2));
+      const t = tiles[i % tiles.length];
+      const cam = st.ui.camera, sc = tileScreen(cam, t.x, t.y), box = { x: sc.x - 44 * cam.z, y: sc.y - 80 * cam.z, w: 88 * cam.z, h: 100 * cam.z };
+      await g.app("step", 2); const A = await grab(g.page, box), l0 = await lazyCount(g.page);
+      const r = await g.app("cheat.spawnMonster", type, t);
+      await g.app("step", 4); // first frames of a type never seen before
+      const B = await grab(g.page, box), l1 = await lazyCount(g.page);
+      const m = (await g.state()).monsters.find((x) => x.tile.x === t.x && x.tile.y === t.y && x.type === type);
+      check(`[R6-atlas] ${type} spawned in the middle of the game appears on screen at once (${diff(A, B)} pixels changed) and draws its first sprites lazily`, !!m && diff(A, B) > 120 && l1 >= l0, [r, diff(A, B), l0, l1]);
+      seenNew.push(l1 - l0);
+      if (m) { await g.app("cmd.attack", m.id); await g.app("step", 90); }
+    }
+    check("[R6-atlas] no page error while eight new monster types appear one after another and are fought", g.errors.length === 0, g.errors);
+    check("[R6-atlas] the lazy path was really taken: first sight of the monster types drew sprites on demand (counter of the atlas rose)", (await lazyCount(g.page)) > 0 && seenNew.some((n) => n > 0), [await lazyCount(g.page), seenNew]);
+    await shot(g.page, "lazy-types");
+    await g.context.close();
+  }
+  { // the same, one type at a time with the hero in each class, each of 8 facings by walking
+    for (const cls of Object.values(CL)) {
+      const g = await boot({ viewport: { width: 1280, height: 720 }, query: "test=1&seed=4" });
+      await startNew(g.page, { cls, name: "Face" });
+      await g.app("cheat.setLevel", 5); await g.app("cheat.teleportFloor", 1); await g.app("step", 5);
+      const dirs = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+      const sig = new Set(); let blanks = 0, errs0 = g.errors.length;
+      for (const [dx, dy] of dirs) {
+        const st = await g.state(), p = st.player.tile;
+        const free = freeTilesNear(st, p, 4, 1).filter((t) => Math.sign(t.x - p.x) === dx && Math.sign(t.y - p.y) === dy)[0];
+        if (!free) continue;
+        await g.app("clickTile", free.x, free.y); await g.app("step", 14);
+        const cam = (await g.state()).ui.camera, pp = (await g.state()).player.tile, sc = tileScreen(cam, pp.x, pp.y);
+        const px = await grab(g.page, { x: sc.x - 24 * cam.z, y: sc.y - 60 * cam.z, w: 48 * cam.z, h: 70 * cam.z });
+        let hash = 0; for (let i = 0; i < px.length; i += 16) hash = (hash * 31 + px[i] + px[i + 1] * 7 + px[i + 2] * 13) | 0;
+        sig.add(hash);
+        let opaque = 0; for (let i = 0; i < px.length; i += 4) if (px[i + 3] > 0) opaque++;
+        if (opaque < 200) blanks++;
+      }
+      check(`[R6-atlas] ${cls}: the hero renders while walking in every direction (no blank frame, no page error)`, blanks === 0 && g.errors.length === errs0 && g.errors.length === 0, { blanks, errors: g.errors });
+      check(`[R6-atlas] ${cls}: the hero looks different in different facings (lazy frames of more than one direction were drawn)`, sig.size >= 3, sig.size);
+      // attack animation and hurt flash in every class: the frames for attack are drawn lazily too
+      const st = await g.state(), t = freeTilesNear(st, st.player.tile, 3, 2)[0];
+      await g.app("cheat.spawnMonster", "zombie-intern", t); const id = (await g.state()).monsters.find((m) => m.tile.x === t.x && m.tile.y === t.y)?.id;
+      if (id) await g.app("cmd.attack", id);
+      await g.app("step", 120);
+      check(`[R6-atlas] ${cls}: fighting (attack, hurt, death frames) raises no page error`, g.errors.length === 0, g.errors);
+      if (cls === CL.it) await shot(g.page, "hero-it-fight");
+      await g.context.close();
+    }
+  }
+  { // every floor, several seeds, every monster type that lives there; the boss with its phases
+    for (const seed of [1, 2, 3]) {
+      const g = await boot({ viewport: { width: 1280, height: 720 }, query: `test=1&seed=${seed}` });
+      await startNew(g.page, { cls: Object.values(CL)[seed % 3], name: "Floors" });
+      await g.app("cheat.setLevel", 20);
+      const seen = new Set();
+      for (let d = 1; d <= 9; d++) {
+        await g.app("cheat.teleportFloor", d); await g.app("step", 30);
+        for (const m of (await g.state()).monsters) seen.add(m.type);
+        await g.app("step", 120);
+      }
+      check(`[R6-atlas] seed ${seed}: all nine floors visited with 150 ticks each, no page error, nothing missing in the atlas`, g.errors.length === 0 && (await g.app("perf")).atlasMissing.length === 0, [g.errors, (await g.app("perf")).atlasMissing.slice(0, 3)]);
+      check(`[R6-atlas] seed ${seed}: the floors held ${seen.size} monster types (${[...seen].join(", ")})`, seen.size >= 5, [...seen]);
+      if (seed === 1) { // boss phases: take its health down in steps so every phase sprite is drawn the first time mid-fight
+        await g.app("cheat.teleportFloor", 9); await g.app("step", 20);
+        const b = (await g.state()).monsters.find((m) => m.type === "regional-director");
+        if (b) {
+          for (const frac of [0.3, 0.3, 0.3, 0.05]) { const cur = (await g.state()).monsters.find((m) => m.id === b.id); if (!cur || cur.hp <= 0) break; await g.app("cheat.damageMonster", b.id, Math.floor(b.hpMax * frac)); await g.app("step", 90); }
+          check("[R6-atlas] the boss goes through its phases (and dies) with lazy sprites and no page error", g.errors.length === 0, g.errors);
+        } else check("[R6-atlas] the boss floor has a boss", false, (await g.state()).monsters.map((m) => m.type));
+        await shot(g.page, "boss-phases");
+      }
+      await g.context.close();
+    }
+  }
+  { // atlas swaps while lazy frames are in use: high contrast, resize across a scale bucket, then a type never seen
+    const g = await boot({ viewport: { width: 1280, height: 720 }, query: "test=1&seed=6" });
+    await startNew(g.page, { cls: CL.fm, name: "Swap" }); await g.app("cheat.teleportFloor", 2);
+    let st = await g.state(), t = freeTilesNear(st, st.player.tile, 6, 3)[0];
+    await g.app("cheat.spawnMonster", "middle-manager", t); await g.app("step", 10);
+    const n0 = (await g.app("perf")).atlasChanges;
+    await g.app("options.setFlag", "highContrast", true);
+    await g.page.waitForFunction((n) => window.__app.perf().atlasChanges > n, n0, { timeout: 30000 }).catch(() => {});
+    await g.app("step", 10);
+    check("[R6-atlas] switching high contrast rebuilds the atlas and the frames on screen are redrawn from the new one (no error)", (await g.app("perf")).atlasChanges > n0 && g.errors.length === 0, [(await g.app("perf")).atlasChanges, n0, g.errors]);
+    st = await g.state(); t = freeTilesNear(st, st.player.tile, 6, 3).find((x) => !st.monsters.some((m) => m.tile.x === x.x && m.tile.y === x.y));
+    await g.app("cheat.spawnMonster", "auditor", t); await g.app("step", 30);
+    const n1 = (await g.app("perf")).atlasChanges;
+    await g.page.setViewportSize({ width: 390, height: 844 }); await g.page.waitForTimeout(1500); await g.app("step", 20);
+    await g.page.setViewportSize({ width: 1600, height: 900 }); await g.page.waitForTimeout(1500); await g.app("step", 20);
+    await g.app("options.setFlag", "highContrast", false); await g.page.waitForTimeout(1500); await g.app("step", 20);
+    st = await g.state(); t = freeTilesNear(st, st.player.tile, 6, 3).find((x) => !st.monsters.some((m) => m.tile.x === x.x && m.tile.y === x.y));
+    if (t) await g.app("cheat.spawnMonster", "vending-machine", t);
+    await g.app("step", 60);
+    check("[R6-atlas] resizing across scale buckets and turning high contrast off again, with a new monster type appearing after each swap: no page error", g.errors.length === 0, g.errors);
+    check("[R6-atlas] after the swaps nothing is missing", (await g.app("perf")).atlasMissing.length === 0, (await g.app("perf")).atlasMissing.slice(0, 3));
+    await g.context.close();
+  }
+} // sec atlas
+
+// ================================================================ 7. the balance gate's bot runs: Node and Chromium must agree to the last tick (determinism across engines)
+if (sec("det")) {
+  const entry = join(tmp, "bot-entry.js");
+  writeFileSync(entry, `import { runOne } from ${JSON.stringify(resolve("bot/run-headless.mjs"))}; globalThis.__runOne = runOne;`);
+  const js = (await build({ entryPoints: [entry], bundle: true, write: false, format: "iife", platform: "browser", target: "es2022", banner: { js: "var process={argv:[],env:{}};" }, logLevel: "silent" })).outputFiles[0].text;
+  const context = await browser.newContext(); const page = await context.newPage(); const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message)); await context.route("https://oc.test/**", (r) => r.fulfill({ body: "<!doctype html><title>x</title>", contentType: "text/html" }));
+  await page.goto("https://oc.test/x.html"); await page.addScriptTag({ content: js });
+  const slim = (r) => JSON.stringify({ result: r.result, ticks: r.ticks, depth: r.depth, level: r.level, deaths: r.deaths, stuck: r.stuck, kills: r.kills, dmg: r.dmg });
+  for (const cls of CLASSES_ALL) for (const seed of [1, 2, 3]) {
+    const prof = { depth: 4, respawn: true, maxDeaths: 3, class: cls }, node = slim(runOne(seed, 45000, prof));
+    const web = await page.evaluate(([sd, pr]) => { const r = globalThis.__runOne(sd, 45000, pr); return { result: r.result, ticks: r.ticks, depth: r.depth, level: r.level, deaths: r.deaths, stuck: r.stuck, kills: r.kills, dmg: r.dmg }; }, [seed, prof]);
+    check(`[R6-det] ${cls} seed ${seed}: the gate run (floor 4, 45 000 ticks) ends on the same tick, level, deaths and damage in Node and in Chromium`, node === JSON.stringify(web), [node.slice(0, 160), JSON.stringify(web).slice(0, 160)]);
+  }
+  for (const cls of CLASSES_ALL) { // one whole run to the boss per class, a seed the balance pass did not tune on
+    const prof = { depth: 9, respawn: true, maxDeaths: 12, class: cls }, node = slim(runOne(101, 150000, prof));
+    const web = await page.evaluate(([sd, pr]) => { const r = globalThis.__runOne(sd, 150000, pr); return { result: r.result, ticks: r.ticks, depth: r.depth, level: r.level, deaths: r.deaths, stuck: r.stuck, kills: r.kills, dmg: r.dmg }; }, [101, prof]);
+    check(`[R6-det] ${cls} seed 101: the whole run to the boss ends identically in Node and Chromium (${JSON.parse(node).result}, ${JSON.parse(node).ticks} ticks, ${JSON.parse(node).deaths} deaths)`, node === JSON.stringify(web), [node.slice(0, 160), JSON.stringify(web).slice(0, 160)]);
+  }
+  check("[R6-det] no page error", errors.length === 0, errors);
+  await context.close();
+} // sec det
+
+// ================================================================ 8. the respec confirmation at every width and text size
+if (sec("rslayout")) {
+  for (const [w, h, ts] of [[1280, 720, 1], [720, 720, 1], [390, 844, 1], [390, 560, 1], [390, 844, 1.5]]) {
+    const g = await hero({ viewport: { width: w, height: h } }, CL.it, "Lay");
+    if (ts !== 1) await g.app("options.setTextScale", ts);
+    await g.app("cheat.setLevel", 30); await g.app("cheat.giveGold", 500); const tv = await g.app("tree.get"); for (const n of tv.branches.flatMap((b) => b.nodes).filter((n) => n.tier === 1)) { await g.app("tree.learn", n.id); await g.app("tree.learn", n.id); }
+    await openSkills(g); await g.page.waitForTimeout(80);
+    await g.page.click(T("respec")); await g.page.waitForTimeout(100);
+    const m = await g.page.evaluate(() => { const c = document.querySelector('[data-testid="respec-confirm"]'); if (!c) return null; const bs = ["respec-yes", "respec-no"].map((id) => document.querySelector(`[data-testid="${id}"]`).getBoundingClientRect()); const cr = c.getBoundingClientRect(); const pr = c.closest(".panel, .drawer, #ui")?.getBoundingClientRect(); return { vw: innerWidth, vh: innerHeight, c: [cr.left, cr.top, cr.right, cr.bottom], yes: [bs[0].left, bs[0].top, bs[0].right, bs[0].bottom], no: [bs[1].left, bs[1].top, bs[1].right, bs[1].bottom], textOver: c.scrollWidth > c.clientWidth + 1, yesH: bs[0].height, noH: bs[1].height }; });
+    const tag = `[R6-rslayout] ${w}x${h} text ${ts}`;
+    check(`${tag}: the confirmation and both buttons are fully on screen`, !!m && m.c[0] >= -1 && m.c[2] <= m.vw + 1 && m.c[1] >= -1 && m.c[3] <= m.vh + 1 && [m.yes, m.no].every((r) => r[0] >= -1 && r[2] <= m.vw + 1 && r[1] >= -1 && r[3] <= m.vh + 1), m);
+    check(`${tag}: both buttons are at least 30 px high, the text does not overflow sideways, the buttons do not overlap`, !!m && m.yesH >= 30 && m.noH >= 30 && !m.textOver && (m.yes[2] <= m.no[0] + 1 || m.no[2] <= m.yes[0] + 1 || m.yes[3] <= m.no[1] + 1 || m.no[3] <= m.yes[1] + 1), m);
+    check(`${tag}: no horizontal scroll`, await overflow(g.page));
+    if (ts === 1 && w === 390 && h === 844) await shot(g.page, "respec-confirm-390");
+    // the confirmation can be answered with the pointer even when the panel was scrolled down first
+    await g.page.evaluate(() => { for (const e of document.querySelectorAll(".panel,.pb,.skills")) e.scrollTop = e.scrollHeight; });
+    await g.page.click(T("respec-no"));
+    check(`${tag}: Cancel is clickable after scrolling the panel`, (await g.page.locator(T("respec-confirm")).count()) === 0);
+    check(`${tag}: no page error`, g.errors.length === 0, g.errors);
+    await g.context.close();
+  }
+} // sec rslayout
+
+// ================================================================ 9. class selection polish: figures, the wrench-slam flourish, fast switching, reduced motion
+if (sec("charsel")) {
+  for (const [w, h, reduced] of [[1280, 720, false], [1024, 600, false], [720, 720, false], [390, 844, false], [390, 560, false], [1280, 720, true]]) {
+    const g = await boot({ viewport: { width: w, height: h } });
+    if (reduced) await g.page.emulateMedia({ reducedMotion: "reduce" });
+    await g.page.evaluate(() => document.documentElement.classList.remove("noanim")); // test mode switches animation off; the flourish and its end are the thing under test
+    await g.page.click(T("new-game")); await g.page.waitForTimeout(300);
+    const ids = Object.values(CL), tag = `[R6-charsel] ${w}x${h}${reduced ? " reduced motion" : ""}`;
+    const sel = () => g.page.evaluate(() => [...document.querySelectorAll('[data-testid^="class-"][data-class]')].filter((b) => b.getAttribute("aria-checked") === "true").map((b) => b.dataset.class));
+    // 60 fast clicks alternating between the classes, then ends on the wizard
+    for (let i = 0; i < 60; i++) await g.page.evaluate((id) => document.querySelector(`[data-testid="class-${id}"]`).click(), ids[i % 3 === 0 ? 0 : i % 3 === 1 ? 1 : 2]);
+    await g.page.evaluate((id) => document.querySelector(`[data-testid="class-${id}"]`).click(), CL.it);
+    await g.page.waitForTimeout(1300); // longer than the slam (0.9 s)
+    const picked = await sel();
+    check(`${tag}: after 60 fast clicks exactly one class is selected (the last) and the info box names it`, picked.length === 1 && picked[0] === CL.it && /wizard/i.test(await g.page.textContent(T("class-name"))), [picked, await g.page.textContent(T("class-name"))]);
+    const running = await g.page.evaluate(() => document.getAnimations().filter((a) => /slam/.test(a.animationName ?? "")).length);
+    check(`${tag}: no slam animation is still running 1.3 s after the last click (it ends, it does not stack)`, running === 0, running);
+    // arrow keys wrap around and select; the FM flourish starts only when FM is chosen and never in reduced motion
+    await g.page.focus(T(`class-${CL.it}`)); await g.page.keyboard.press("ArrowRight");
+    const afterKey = await sel();
+    check(`${tag}: ArrowRight from the last class wraps to the first and selects it`, afterKey.length === 1 && afterKey[0] === ids[0], afterKey);
+    await g.page.waitForTimeout(120);
+    const slamNow = await g.page.evaluate(() => document.getAnimations().some((a) => /slam/.test(a.animationName ?? "")));
+    check(`${tag}: the Facilities Manager flourish ${reduced ? "does not play with reduced motion" : "plays on selection"}`, slamNow === !reduced, slamNow);
+    const m = await g.page.evaluate(() => { const fig = [...document.querySelectorAll(".cs-cls canvas")].map((c) => { const r = c.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }); const go = document.querySelector('[data-testid="create-start"]').getBoundingClientRect(); return { fig, go: [go.left, go.top, go.right, go.bottom], vw: innerWidth, vh: innerHeight }; });
+    check(`${tag}: figures are drawn (at least 40 px) and Start is inside the page width`, m.fig.length >= 3 && m.fig.every(([a, b]) => a >= 40 && b >= 40) && m.go[0] >= 0 && m.go[2] <= m.vw + 1, m);
+    check(`${tag}: no horizontal scroll`, await overflow(g.page));
+    // Start is disabled (aria-disabled, neutral) until a name is typed, a click on it starts nothing and says why
+    await g.page.locator(T("create-start")).click({ force: true }).catch(() => {});
+    check(`${tag}: Start with an empty name starts nothing and shows a reason`, (await g.state()).scene === "title" && (await g.page.textContent(T("create-error")).catch(() => "")).length + (await g.page.textContent(T("create-hint")).catch(() => "")).length > 0);
+    if (!reduced && w === 1280 || w === 390 && h === 844) await shot(g.page, `charsel-${w}x${h}`);
+    check(`${tag}: no page error`, g.errors.length === 0, g.errors);
+    await g.context.close();
+  }
+} // sec charsel
 
 // ---- END
 await browser.close();

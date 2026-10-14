@@ -1,3 +1,5 @@
 09:44 done: e2e fix adv-r5 (respec-yes click); adv-r6 respec section (29 checks, ADV-R6-02 once/gold 0-refund); node probes: attr import 1000 accepted (ADV-R6-01 candidate); next: tree connectors, pause/slot layout, scaling, lazy atlas, no-cheat runs
 09:48 done: tree connectors all classes x4 stages (ADV-R6-03 elbow 2-7px short), keyboard (ADV-R6-04 focus lost to body when Learn maxes), phone/mid layouts; next: pause+slot layout w/ banners, scaling, lazy atlas, saves, no-cheat
 10:08 done: pause (7 banners x 5 viewports) + slot manager layout (5 viewports, mixed slot states) all green; next: node adv-r6 tests (scaling, compat), lazy atlas, determinism Node vs Chromium, no-cheat runs
+10:11 done: slots layout; test/adv-r6-core.test.js (20 cases, 4 todo: ADV-R6-01/01b/02/02b); no-cheat headless 18/18 won seeds 101-106; next: lazy atlas e2e, determinism Node vs Chromium, real-browser run, docs
+10:35 done: lazy atlas (33 checks), Node vs Chromium determinism (9 gate runs + 3 whole runs identical), respec layout, class select; findings ADV-R6-01..05; run-all registered; next: npm test x3, build, npm run e2e, write R6-adversarial.md

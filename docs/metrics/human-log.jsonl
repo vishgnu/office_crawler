@@ -5,8 +5,10 @@
 {"at": "2026-10-14T03:09:10Z", "kind": "instruction", "text": "Make sure you survive context compression"}
 {"at": "2026-10-14T05:10:39Z", "kind": "question", "text": "Where do we stire the metrics for a project?"}
 {"at": "2026-10-14T05:13:17Z", "kind": "question", "text": "Ok so i could start a new experiment project on the same repo with rhe harbess( yes not good git but for experiments simplicity) when we are done wirh rhe orher ?"}
+{"at": "2026-10-14T05:18:00Z", "kind": "question", "text": "So have the harness in one and the project in another and link both to a code session?", "note": "added late on 2026-10-14 during an audit; time approximate (between 05:13 and 05:23)"}
 {"at": "2026-10-14T05:23:05Z", "kind": "decision", "text": "I will clean repos after the first experiment and rezro"}
 {"at": "2026-10-14T08:48:47Z", "kind": "instruction", "text": "hey i missing a place to look at the quest and the next step to solve for them can you put that into the next round after all is done?"}
 {"at": "2026-10-14T08:52:07Z", "kind": "instruction", "text": "and for the round after that please make sure the characters change their visuals based on the invetrory - do a round of e2e testing and polishing afterwards"}
 {"at": "2026-10-14T09:02:19Z", "kind": "instruction", "text": "also please update the docs and make it clearer where to see the harness reasults and project todos and also make sure we see all data in those pages , do this as a harness improvement"}
 {"at": "2026-10-14T10:03:18Z", "kind": "question", "text": "still all good?"}
+{"at": "2026-10-14T10:40:21Z", "kind": "question", "text": "are wir still updateing und commingting all the data needed for statiscitcs , agent usage etc?"}
