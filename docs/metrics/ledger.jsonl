@@ -54,4 +54,4 @@
 {"round": "R6", "role": "customer-proxy", "pkg": "R6 acceptance", "tokensK": 184.1, "minutes": 31.2, "status": "done", "verdict": "accept with follow-ups", "source": "task usage"}
 {"round": "R6", "role": "harness-retro", "pkg": "retro R6", "tokensK": 153.6, "minutes": 5.0, "status": "done", "learnings_new": ["L-032","L-033","L-034","L-035","L-036","L-037","L-038","L-039"], "reopened": ["L-019","L-020","L-022"], "source": "task usage"}
 {"round": "R7", "role": "orchestrator", "pkg": "round start", "status": "started", "source": "orchestrator"}
-{"round": "R7", "role": "requirements-facilitator", "pkg": "circle-03 quests", "tokensK": null, "minutes": null, "status": "done", "questions": 7, "readiness": "11/20", "requirements": "R-240..R-256", "source": "agent report; usage pending"}
+{"round": "R7", "role": "requirements-facilitator", "pkg": "circle-03 quests", "tokensK": 98.7, "minutes": 4.0, "status": "done", "questions": 7, "readiness": "11/20", "requirements": "R-240..R-256", "source": "task usage"}
