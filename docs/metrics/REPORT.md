@@ -15,10 +15,10 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R5 | 12 | 2407.0 | 353.6 | 1873.9 | 668 | charselectAppeal 34, charselectCraft 33, g2 33/30 | adversarial: 14; codeReview: 28; visualReview: 9; customer: 2; escaped: 0; escapedNote: none known at acceptance; the file:// storage race (4/23 file://) is an open caveat for the delivery mode |
 | G | 11 | 1893.6 | 117.6 | 1374.1 | 668 | prototypeC3 31/31, g1 32/31, g2 33/32, g3 34/33, gate 34 target; under 33 = another pass; proxy passed at 34/33 with follow-ups | adversarial: null; adversarialNote: No adversarial pass on render work (visual rounds use visual reviewers); the adversarial pass of R5 covered the save/UI code only; codeReview: 0; visualReview: 12; customer: 0; escaped: 0 |
 | R6 | 15 | 2375.6 | 376.8 | 2222.0 | 770 | inGame 35/34, charselect 35/34, uiTreeSlotsPause 35/34, note [appeal, craft]; target 34; first time craft reached 34; G3 was 34/33 | adversarial: 7; codeReview: 15; visualReview: 7; customer: 8; escaped: 0; escapedNote: none shipped; two things were found late and are open: N11/R7-2 floor-entry stutter (found by the richer bench, no review saw it) and F1 hero stand-off (bot watchdog had masked it, CR6-05) |
-| R7 | 21 | 4374.9 | 709.8 | – | – | – | – |
+| R7 | 22 | 4603.4 | 809.3 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 81 rows, 13083.6 k subagent tokens. **Your messages logged:** 30.
+**Ledger total:** 81 rows, 13312.1 k subagent tokens. **Your messages logged:** 30.
 
 ## Round R3
 
@@ -138,7 +138,7 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | implementer | R7-4.1 (3 arcs, sq4/sq5, save v5, bot) | 341.5 | 61.2 | done (UI reds for R7-4.2) | tests: 1030 pass / 6 fail (ui/render-owned); parity: {"all8":"70/72","medians_min":[32.1,32.5,32.4],"shift_spread_pts":6.1,"giveUps":0}; golden: re-pinned with proof (run-a/class/b) |
 | implementer | R7-4.2 (UI/WORLD arcs, sq4/sq5) | 211.2 | 59.4 | done (reds = core/balance in flight) | e2e: r7journal 70/70, r7quest 62/62 |
 | test-engineer | ADV-R7 update (arcs, sq4/sq5) | 325.2 | 91.8 | done | new: {"high":1,"medium":1,"low":2}; ids: ["ADV-R7-07 pin proto keys","ADV-R7-08","ADV-R7-09","ADV-R7-10 sq5 unwinnable ~1.5% seeds"]; e2e: adv-r7 260/260 (3 XFAIL) |
-| implementer | BAL-R7 (spread difficulty) | – | – | done | parity: {"medians_min":[25.9,26.2,24.8],"wins":"72/72","all8":"72/72","shiftSpread_pts":0.4}; deaths: 73 -> 36 (boss 48 -> 7) |
+| implementer | BAL-R7 (spread difficulty) | 228.5 | 99.5 | done | parity: {"medians_min":[25.9,26.2,24.8],"wins":"72/72","all8":"72/72","shiftSpread_pts":0.4}; deaths: 73 -> 36 (boss 48 -> 7) |
 
 ## Harness work
 
