@@ -3,7 +3,7 @@
 // hero-behind-wall ghost. The per-frame path allocates nothing: scratch objects and arrays are pooled.
 import { config, content } from "../core/index.js";
 import { statusFlags, drawStatus, SF } from "./draw/effects.js";
-import { keys, dirIndex, DIR_VEC, PLAYER_CLASS, heroType, ALLY_ANIMS, FLOOR_VARIANTS, WALL_VARIANTS, ANIMS, PLAYER_ANIMS, DIRS, NPC_FRAMES, bossType } from "./keys.js";
+import { keys, FLOOR_WEIGHTS, dirIndex, DIR_VEC, PLAYER_CLASS, heroType, ALLY_ANIMS, FLOOR_VARIANTS, WALL_VARIANTS, ANIMS, PLAYER_ANIMS, DIRS, NPC_FRAMES, bossType } from "./keys.js";
 import { project } from "../ui/camera.js";
 import { WALL, STAIRS_UP, STAIRS_DOWN, DOOR } from "../core/tiles.js";
 
@@ -16,11 +16,12 @@ export function actorPos(a, out = { x: 0, y: 0 }) {
 }
 
 const vhash = (x, y) => (Math.imul(x, 73856093) ^ Math.imul(y, 19349663)) >>> 0;
-// floor variant weights (percent, cumulative): 0 plain, 1 inset, 2 seam, 3 scuffs, 4 coffee, 5 blood
-const FLOOR_CUM = [26, 46, 66, 80, 90, 100];
+// floor variant weights (keys.js FLOOR_WEIGHTS: 0 plain, 1 inset, 2 seam, 3 scuffs, 4 coffee, 5 blood, 6-11 tone-drifted clean copies), as cumulative percent
+const FLOOR_CUM = FLOOR_WEIGHTS.map((_, i) => FLOOR_WEIGHTS.slice(0, i + 1).reduce((a, b) => a + b, 0));
 const floorVariant = (h) => { const r = (h >>> 3) % 100; for (let i = 0; i < FLOOR_VARIANTS; i++) if (r < FLOOR_CUM[i]) return i; return 0; };
 const execWallVariant = (h) => { const r = (h >>> 5) % 100; return r < 40 ? 0 : r < 82 ? 1 : 2; }; // glass walls dominate the Executive Suite
 const wallVariant = (h) => { const r = (h >>> 5) % 100; return r < 64 ? 0 : r < 90 ? 1 % WALL_VARIANTS : 2 % WALL_VARIANTS; };
+const WINDOW_THEMES = new Set(["open-plan", "executive"]); // wall variant 1 is a window here (tiles.js)
 const caches = new WeakMap(), figTables = new WeakMap();
 const GHOST_DELTAS = [1, 0, 0, 1, 1, 1];
 
@@ -90,7 +91,7 @@ function prepare(floor, atlas) {
   const kindAt = new Array(w * h).fill("corridor");
   for (const r of floor.rooms) for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (x >= 0 && y >= 0 && x < w && y < h) kindAt[y * w + x] = r.kind;
   const isWall = (x, y) => x < 0 || y < 0 || x >= w || y >= h || tiles[y * w + x] === WALL;
-  const ground = new Array(w * h).fill(null), wall = new Array(w * h).fill(null), blocked = new Uint8Array(w * h);
+  const ground = new Array(w * h).fill(null), wall = new Array(w * h).fill(null), blocked = new Uint8Array(w * h), windowAt = new Array(w * h).fill("");
   let bossStairs = null;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const i = y * w + x, code = tiles[i];
@@ -99,7 +100,9 @@ function prepare(floor, atlas) {
       for (let dy = -1; dy <= 1 && !open; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && !isWall(x + dx, y + dy)) { open = true; break; }
       if (!open) continue;
       const mask = (isWall(x, y - 1) ? 1 : 0) | (isWall(x + 1, y) ? 2 : 0) | (isWall(x, y + 1) ? 4 : 0) | (isWall(x - 1, y) ? 8 : 0);
-      wall[i] = atlas.get(keys.wall(theme, mask, theme === "executive" ? execWallVariant(vhash(x, y)) : wallVariant(vhash(x, y))));
+      const wvar = theme === "executive" ? execWallVariant(vhash(x, y)) : wallVariant(vhash(x, y));
+      wall[i] = atlas.get(keys.wall(theme, mask, wvar));
+      if (wvar === 1 && WINDOW_THEMES.has(theme)) windowAt[i] = !(mask & 4) ? "L" : !(mask & 2) ? "R" : ""; // a window faces the room it looks onto: its light shaft falls there
       blocked[i] = 1;
     } else if (code === DOOR) ground[i] = atlas.get(keys.marker(theme, "door"));
     else if (code === STAIRS_UP) ground[i] = atlas.get(keys.marker(theme, "stairs-up"));
@@ -121,9 +124,24 @@ function prepare(floor, atlas) {
     else if (p.lamp) lights.push({ kind: "desklamp", x: p.x + 0.5, y: p.y + 0.5 });
   }
   for (const r of floor.rooms) if (r.kind !== "corridor") lights.push({ kind: r.kind === "breakroom" ? "fluor" : roomLight, x: r.x + r.w / 2, y: r.y + r.h / 2 });
+  // static pools (G round, item 5): a second ceiling fixture in every big room, a green exit-sign pool over the stairs and a window light shaft under every window; constant, never flicker, at most MAX_STATIC of them are drawn
+  const statics = [];
+  for (const r of floor.rooms) if (r.kind !== "corridor" && r.w >= 5 && r.h >= 5) {
+    const k = r.kind === "breakroom" ? "fluor" : roomLight;
+    statics.push({ kind: k, x: r.x + r.w * 0.27, y: r.y + r.h * 0.72 });
+    if (r.w >= 12) statics.push({ kind: k, x: r.x + r.w * 0.76, y: r.y + r.h * 0.3 });
+  }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const code = tiles[y * w + x];
+    if (code === STAIRS_UP || code === STAIRS_DOWN) statics.push({ kind: "exit", x: x + 0.5, y: y + 0.5, dim: 1, rs: 1 });
+  }
+  if (WINDOW_THEMES.has(theme)) for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const e = wall[y * w + x], wv = windowAt[y * w + x];
+    if (e && wv) statics.push({ kind: "shaft", x, y, o: wv });
+  }
   // the floor-8 lift lights its surroundings once it is unlocked: a second candidate list with that light in it (picked per frame, no allocation)
   const lightsOpen = bossStairs ? lights.concat([{ kind: "warm", x: bossStairs.x + 0.5, y: bossStairs.y + 0.5 }]) : lights;
-  c = { atlas, ground, wall, props, blocked, lights, lightsOpen, bossStairs };
+  c = { atlas, ground, wall, props, blocked, lights, lightsOpen, bossStairs, statics };
   caches.set(floor, c);
   return c;
 }
@@ -190,7 +208,7 @@ function addNpc(n, o, margin, yMax) {
   const it = grab(n.tile.x + n.tile.y + 1.02, e, o.sx, o.sy);
   it.actor = true; it.head = dm.head; it.npc = true;
   light.sample(n.tile.x + 0.5, n.tile.y + 0.5, LS);
-  it.shade = Math.min(LS.shade, 0.3); if (!env.lowFx) { it.tint = LS.tint; it.tintA = Math.min(LS.tintA, 0.1); }
+  it.shade = Math.min(LS.shade, 0.3); if (!env.lowFx) { it.tint = LS.mul; it.tintA = Math.min(LS.tintA, 0.2); }
   items.push(it);
 }
 
@@ -220,7 +238,7 @@ function addAlly(al, core, rs, margin, yMax) {
   const it = grab(posA.x + posA.y + 1.02, e, pt.x, pt.y);
   it.actor = true; it.head = dm.head; it.npc = true;
   light.sample(posA.x + 0.5, posA.y + 0.5, LS);
-  it.shade = Math.min(LS.shade, 0.3); if (!env.lowFx) { it.tint = LS.tint; it.tintA = Math.min(LS.tintA, 0.1); }
+  it.shade = Math.min(LS.shade, 0.3); if (!env.lowFx) { it.tint = LS.mul; it.tintA = Math.min(LS.tintA, 0.2); }
   if (anim === "death") it.a = 0.6;
   items.push(it);
 }
@@ -285,18 +303,18 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
   } else if (a.flashTicks > 0) flash = true; // hit flash is state-backed (flashTicks), not an event timer
   const dm = env.style.dims[isPlayer ? F.htype : a.type];
   // lit state first: an actor deep in the dark (outside every light) is not drawn at all, so no ghost silhouettes at the screen edge
-  let shade = 0, tint = "", tintA = 0;
+  let shade = 0, tint = "", tintA = 0, shTint = "", sdx = 0, sdy = 0;
   const champ = !isPlayer && a.tier === "champion" && !dying;
+  light.sample(pos.x + 0.5, pos.y + 0.5, LS);
+  if (!env.lowFx && LS.tint) { tint = LS.mul; tintA = Math.min(LS.tintA, isPlayer ? 0.15 : 0.2); shTint = LS.sh; sdx = LS.dx; sdy = LS.dy; } // G round, item 9: every actor takes the colour of the pool it stands in (15-25 % multiply) and casts a coloured shadow
   if (!isPlayer) {
-    light.sample(pos.x + 0.5, pos.y + 0.5, LS);
     shade = LS.shade;
-    if (!env.lowFx) { tint = LS.tint; tintA = Math.min(LS.tintA, 0.1); } // capped so the imp's red eyes and rim stay saturated
     // Final polish: a monster inside a reasonable radius of the hero, or one that is awake and hunting, is never dimmed or hidden by the dark.
     const hd = Math.hypot(pos.x - light.hero.x, pos.y - light.hero.y), hr = light.radius(), hunting = a.ai === "chase" || a.ai === "attack" || a.ai === "notice" || a.ai === "stagger" || a.ai === "flee" || a.ai === "windup";
     const near = hd <= hr * 0.85 || (hunting && hd <= hr * 1.1); // inside the lit disc (the mask itself fades beyond it, so no black blobs at the edge)
-    if (near) { shade = Math.min(shade, 0.12); tintA = Math.min(tintA, 0.04); }
+    if (near) shade = Math.min(shade, 0.12);
     else if (shade >= 0.6 && !tint && !dying && !champ && !boss) return null;
-    if (boss) { shade = Math.min(shade, 0.12); tint = ""; tintA = 0; } // the boss is never lost in the dark and keeps its own colours (its aura is the light)
+    if (boss) { shade = Math.min(shade, 0.12); tint = ""; tintA = 0; shTint = ""; } // the boss is never lost in the dark and keeps its own colours (its aura is the light)
   }
   // contact shadow on the ground, under everything that stands there
   const k = (dm.shadowR * 2.25) / 62, sh = F.shadowE;
@@ -305,7 +323,13 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
   if (boss && !dying) bossAura(g, sx, sy, dm.shadowR * 1.7, z, now, a.boss?.phase >= 2);
   if (!isPlayer && a.summoned && !dying) tempRing(g, sx, sy, dm.shadowR * 1.5, z);
   g.globalAlpha = 0.85 * alphaV;
-  g.drawImage(sh.img, Math.round(sx - sh.ox * k * z), Math.round(sy - sh.oy * k * z), Math.round(sh.w * k * z), Math.round(sh.h * k * z));
+  let sox = 0, soy = 0;
+  if (shTint) { // soft coloured ground shadow, cast a little away from the pool's light
+    const ax = sdx - sdy, ay = (sdx + sdy) * 0.5, nn = Math.hypot(ax, ay) || 1, off = 3.4 * z * Math.min(1, tintA / 0.15);
+    sox = (ax / nn) * off; soy = (ay / nn) * off * 0.7;
+  }
+  const she = shTint ? atlas.shade(sh, shTint) : sh;
+  g.drawImage(she.img, Math.round(sx + sox - sh.ox * k * z), Math.round(sy + soy - sh.oy * k * z), Math.round(sh.w * k * z), Math.round(sh.h * k * z));
   g.globalAlpha = 1;
   const it = grab(pos.x + pos.y + 1.02, e, sx, sy);
   it.actor = true; it.isPlayer = isPlayer; it.a = alphaV; it.flash = flash; it.head = dm.head;
@@ -473,7 +497,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     project(cam, o.x + 0.5, o.y + 0.5, pt); o.sx = pt.x; o.sy = pt.y;
   }
   actorOut.length = na;
-  light.select(cam, hp, core.bossUnlocked ? c.lightsOpen : c.lights, actorOut, env.lowFx, env.hc, floor.theme);
+  light.select(cam, hp, core.bossUnlocked ? c.lightsOpen : c.lights, actorOut, env.lowFx, env.hc, floor.theme, c.statics);
 
   const heroDir = faceFor(hero, true, core, rs);
   project(cam, hp.x + 0.5, hp.y + 0.5, pt);
@@ -515,7 +539,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     if (it.sf & SF.freeze) { g.globalAlpha = 0.5 * it.a; blit(g, atlas.tint(it.e, "#9fe4ff"), x, y, z); }
     if (it.sf & SF.burn) { g.globalAlpha = (fx.reducedMotion ? 0.2 : 0.14 + 0.1 * Math.sin(now / 90 + x)) * it.a; blit(g, atlas.tint(it.e, "#ff7a1f"), x, y, z); }
     if (it.shade > 0) { g.globalAlpha = it.shade * it.a; blit(g, atlas.shade(it.e, "#070518"), x, y, z); }
-    if (it.tintA > 0) { g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, z); }
+    if (it.tintA > 0) { g.globalCompositeOperation = "multiply"; g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, z); g.globalCompositeOperation = "source-over"; }
     if (it.hurt) { g.globalAlpha = 0.14; blit(g, atlas.tint(it.e, "#ff1f2e"), x, y, z); }
     g.globalAlpha = 1;
     if (it.summoned) blit(g, atlas.get(keys.fx("badge")), x + 5 * z, y - 30 * z, z * 0.9); // temp badge pinned to the chest

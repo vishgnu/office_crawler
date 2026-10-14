@@ -4,6 +4,8 @@ import { createAtlas } from "../../atlas.js";
 import { keys, FLOOR_KINDS, FLOOR_VARIANTS, WALL_VARIANTS, MARKERS, ANIMS, PLAYER_ANIMS, DIRS, DIR_VEC, PLAYER_CLASS, HERO_CLASSES, ALLY_IDS, ALLY_ANIMS, PROJECTILES, NPC_FRAMES, BOSS_ANIMS, BOSS_P2 } from "../../keys.js";
 import { content } from "../../../core/index.js";
 import { palette } from "./palette.js";
+import { setInkScale } from "../../draw/shapes.js";
+import { setTexRes } from "../../draw/textures.js";
 import { drawFloor, drawMarker, drawWall, WALL_W, WALL_CANVAS_H, WALL_CY } from "./tiles.js";
 import { drawProp, drawElevator, drawPortal, PORTAL_W, PORTAL_H, PORTAL_CX, PORTAL_CY, PROP_W, PROP_H, PROP_CX, PROP_CY } from "./props.js";
 import { drawFigure, FIG_W, FIG_H, FIG_FX, FIG_FY, FIG_DIM, BOSS_W, BOSS_H, BOSS_FX, BOSS_FY } from "./characters.js";
@@ -52,13 +54,14 @@ export const vector = {
    * logical px (2 screen px at the game's zoom; wider in high-contrast mode).
    */
   async build(onProgress = () => {}, { scale = 1, rim = 0.8, hc = false } = {}) {
+    setInkScale(Math.min(4, Math.max(0.5, 2 / rim))); setTexRes(scale); // the on-screen zoom follows from the rim width (rim = 2 screen px)
     const atlas = createAtlas(scale, { rim, hc });
     const steps = [];
     for (const theme of Object.keys(content.themes)) {
       steps.push(() => {
-        for (const kind of FLOOR_KINDS) for (let v = 0; v < FLOOR_VARIANTS; v++) atlas.add(keys.floor(theme, kind, v), 66, 34, 33, 17, (g) => drawFloor(g, kind, v, theme));
-        for (const m of MARKERS) atlas.add(keys.marker(theme, m), 66, 34, 33, 17, (g) => drawMarker(g, m, theme));
-        for (let mask = 0; mask < 16; mask++) for (let v = 0; v < WALL_VARIANTS; v++) atlas.add(keys.wall(theme, mask, v), WALL_W, WALL_CANVAS_H, WALL_W / 2, WALL_CY, (g) => drawWall(g, mask, v, theme));
+        for (const kind of FLOOR_KINDS) for (let v = 0; v < FLOOR_VARIANTS; v++) atlas.add(keys.floor(theme, kind, v), 66, 34, 33, 17, (g, sc) => drawFloor(g, kind, v, theme, sc));
+        for (const m of MARKERS) atlas.add(keys.marker(theme, m), 66, 34, 33, 17, (g, sc) => drawMarker(g, m, theme, sc));
+        for (let mask = 0; mask < 16; mask++) for (let v = 0; v < WALL_VARIANTS; v++) atlas.add(keys.wall(theme, mask, v), WALL_W, WALL_CANVAS_H, WALL_W / 2, WALL_CY, (g, sc) => drawWall(g, mask, v, theme, sc));
       });
     }
     steps.push(() => { for (const id of Object.keys(content.props)) atlas.add(keys.prop(id), PROP_W, PROP_H, PROP_CX, PROP_CY, (g) => drawProp(g, id)); });

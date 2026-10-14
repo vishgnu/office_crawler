@@ -1,6 +1,7 @@
 // Ground tiles and wall blocks for the open-plan theme. One self-contained function per sprite key family.
 import { palette as P } from "./palette.js";
-import { poly, fillPoly, shade, line, ellipse } from "../../draw/shapes.js";
+import { poly, fillPoly, shade, line, ellipse, ink } from "../../draw/shapes.js";
+import { fillTex } from "../../draw/textures.js";
 
 const W = 64, H = 32;
 
@@ -12,6 +13,7 @@ const clipDiamond = (g, cx, cy, hw, hh) => { poly(g, [[cx, cy - hh], [cx + hw, c
  * 1px bleed hides seams between tiles.
  */
 const themeOf = (theme) => P.themes[theme] ?? null;
+const rgba = (hex, a) => `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`;
 
 /** Kind-specific floor pattern for the lobby and basement themes (drawn over the base fill). */
 function kindDeco(g, kind, v, theme, b, cx, cy, hw, hh) {
@@ -52,30 +54,44 @@ function kindDeco(g, kind, v, theme, b, cx, cy, hw, hh) {
   }
 }
 
-export function drawFloor(g, kind, v, theme = "open-plan") {
-  const T = themeOf(theme), floors = T ? T.floors : P.floors;
+/**
+ * Floor variants (G round): 0-2 clean (plain, inset panel, seam), 3-5 baked grime, 6-11 clean again with a per-tile tone drift
+ * (warm / cool hue, lighter / darker) and half of them mirrored, so the repeated diamond of one material does not read as wallpaper.
+ */
+export const FLOOR_VARIANT_DEF = [
+  { d: 0 }, { d: 1 }, { d: 2 }, { d: 3, flip: 1 }, { d: 4 }, { d: 5, flip: 1 },
+  { d: 0, hue: "warm", lum: 1, flip: 1 }, { d: 1, hue: "cool", lum: -1, flip: 1 }, { d: 2, hue: "warm", lum: -1 },
+  { d: 0, hue: "cool", lum: 1 }, { d: 1, hue: "warm", lum: 1, flip: 1 }, { d: 2, hue: "cool", lum: -1, flip: 1 },
+];
+const TONE = { warm: "rgba(255,150,90,0.09)", cool: "rgba(90,140,255,0.1)", light: "rgba(150,170,255,0.11)", dark: "rgba(2,0,14,0.2)" };
+
+export function drawFloor(g, kind, v, theme = "open-plan", sc = 1) {
+  const T = themeOf(theme), floors = T ? T.floors : P.floors, def = FLOOR_VARIANT_DEF[v] ?? FLOOR_VARIANT_DEF[0], dv = def.d;
   const [a, b] = floors[kind] ?? floors.corridor, cx = 33, cy = 17, hw = W / 2 + 0.5, hh = H / 2 + 0.5;
   const decoKind = T && (kind in floors) && kind !== "corridor" && kind !== "storage";
+  const scene = P.scenes[theme] ?? P.scenes["open-plan"], tex = scene.floorTex[kind] ?? scene.floorTex.default;
+  g.save();
+  if (def.flip) { g.translate(2 * cx, 0); g.scale(-1, 1); } // mirrored copy: breaks the repeated diamond (the weave runs the other way too)
   fillPoly(g, [[cx, cy - hh], [cx + hw, cy], [cx, cy + hh], [cx - hw, cy]], a);
-  if (decoKind) kindDeco(g, kind, v, theme, b, cx, cy, hw, hh);
-  if (decoKind && v >= 1 && v <= 2 && theme === "lobby") { /* the lobby keeps its inlay pattern clean */ }
-  else if (v === 1) {
+  if (decoKind) kindDeco(g, kind, dv, theme, b, cx, cy, hw, hh);
+  if (decoKind && dv >= 1 && dv <= 2 && theme === "lobby") { /* the lobby keeps its inlay pattern clean */ }
+  else if (dv === 1) {
     const s = 0.62;
     fillPoly(g, [[cx, cy - hh * s], [cx + hw * s, cy], [cx, cy + hh * s], [cx - hw * s, cy]], b);
-  } else if (v === 2) {
+  } else if (dv === 2) {
     fillPoly(g, [[cx - hw * 0.5, cy - hh * 0.5], [cx, cy - hh], [cx + hw * 0.5, cy - hh * 0.5], [cx, cy]], b);
-  } else if (v >= 3) {
+  } else if (dv >= 3) {
     g.save(); clipDiamond(g, cx, cy, hw, hh);
-    if (v === 3) { // scuff marks
+    if (dv === 3) { // scuff marks
       g.strokeStyle = "rgba(6,4,16,0.5)"; g.lineWidth = 1.3; g.lineCap = "round";
       for (const [x0, y0, x1, y1] of [[-14, -2, -3, 3], [-9, 4, 3, 8], [6, -5, 15, -1]]) { g.beginPath(); g.moveTo(cx + x0, cy + y0); g.lineTo(cx + x1, cy + y1); g.stroke(); }
-    } else if (v === 4 && theme === "basement") { // puddle with a highlight and a drip
+    } else if (dv === 4 && theme === "basement") { // puddle with a highlight and a drip
       ellipse(g, cx - 2, cy + 1, 12, 5.4, "rgba(24,64,104,0.7)");
       ellipse(g, cx - 5, cy - 0.5, 5, 1.8, "rgba(160,210,255,0.22)");
       ellipse(g, cx + 12, cy - 4, 1.6, 0.8, "rgba(24,64,104,0.8)");
-    } else if (v === 4 && theme === "executive") { // a cigar-burn and a scuff in the pile
+    } else if (dv === 4 && theme === "executive") { // a cigar-burn and a scuff in the pile
       ellipse(g, cx + 3, cy, 3, 1.4, "rgba(0,0,0,0.5)"); line(g, cx - 12, cy + 2, cx - 2, cy + 6, "rgba(10,2,14,0.4)", 1.4);
-    } else if (v === 4) { // coffee ring + splash
+    } else if (dv === 4) { // coffee ring + splash
       ellipse(g, cx - 3, cy + 1, 11, 5.2, P.decal.coffee);
       ellipse(g, cx - 3, cy + 1, 7, 3.2, "rgba(0,0,0,0.25)");
       ellipse(g, cx + 12, cy - 4, 2.5, 1.2, P.decal.coffee); ellipse(g, cx + 16, cy - 1, 1.6, 0.8, P.decal.coffee);
@@ -94,14 +110,27 @@ export function drawFloor(g, kind, v, theme = "open-plan") {
     }
     g.restore();
   }
-  // soft highlight on the tile centre and an edge line that survives the dark grade (floor value beyond the light)
+  // material texture: the pattern origin is the tile's top vertex, so the weave runs on across the seams of neighbouring tiles
+  g.save(); clipDiamond(g, cx, cy, hw, hh); fillTex(g, tex[0], "T", cx, cy - H / 2, tex[1]); g.restore();
+  g.restore(); // end of the mirrored drawing: the bevel keeps its light direction (up-left)
+  // per-tile tone drift: some tiles a little lighter or darker, some warmer or cooler (hue, not only brightness)
+  if (def.lum || def.hue) {
+    g.save(); clipDiamond(g, cx, cy, hw, hh);
+    if (def.lum) fillPoly(g, [[cx, cy - hh], [cx + hw, cy], [cx, cy + hh], [cx - hw, cy]], def.lum > 0 ? TONE.light : TONE.dark);
+    if (def.hue) fillPoly(g, [[cx, cy - hh], [cx + hw, cy], [cx, cy + hh], [cx - hw, cy]], TONE[def.hue]);
+    g.restore();
+  }
+  // soft highlight on the tile centre, then the bevel: a dark joint all round and a lit up-left edge (survives the dark grade, reads as tiles at 1x)
   fillPoly(g, [[cx, cy - hh * 0.3], [cx + hw * 0.3, cy], [cx, cy + hh * 0.3], [cx - hw * 0.3, cy]], "rgba(255,255,255,0.03)");
-  g.lineWidth = 1; g.strokeStyle = T ? T.floorEdge : P.floorEdge;
+  g.lineJoin = "round";
+  g.lineWidth = 1.2; g.strokeStyle = scene.joint ?? "rgba(8,6,20,0.55)";
   poly(g, [[cx, cy - hh + 0.5], [cx + hw - 1, cy], [cx, cy + hh - 0.5], [cx - hw + 1, cy]]); g.stroke();
+  g.lineWidth = 1; g.strokeStyle = T ? T.floorEdge : P.floorEdge; g.lineCap = "round";
+  g.beginPath(); g.moveTo(cx - hw + 2, cy + 0.2); g.lineTo(cx, cy - hh + 1.4); g.lineTo(cx + hw - 2, cy + 0.2); g.stroke();
 }
 
-export function drawMarker(g, id, theme = "open-plan") {
-  drawFloor(g, "corridor", 0, theme);
+export function drawMarker(g, id, theme = "open-plan", sc = 1) {
+  drawFloor(g, "corridor", 0, theme, sc);
   const cx = 33, cy = 17;
   if (theme === "lobby" && id === "stairs-down") { // the elevator pad: brushed steel, centre seam, a lit call arrow
     fillPoly(g, [[cx, cy - 15], [cx + 30, cy], [cx, cy + 15], [cx - 30, cy]], "#8e9bb4", P.ink, 1.4);
@@ -150,7 +179,7 @@ function drawBossStairs(g, open, cx, cy) {
   g.restore();
   fillPoly(g, [[cx, cy - 15], [cx + 30, cy], [cx, cy + 15], [cx - 30, cy]], null, P.ink, 1.6);
   // padlock
-  g.strokeStyle = P.ink; g.lineWidth = 3; g.beginPath(); g.arc(cx, cy - 3, 4, Math.PI, 0); g.stroke();
+  g.strokeStyle = P.ink; g.lineWidth = ink(3); g.beginPath(); g.arc(cx, cy - 3, 4, Math.PI, 0); g.stroke();
   g.strokeStyle = "#d8dce8"; g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy - 3, 4, Math.PI, 0); g.stroke();
   fillPoly(g, [[cx - 5.5, cy - 3], [cx + 5.5, cy - 3], [cx + 5.5, cy + 4.5], [cx - 5.5, cy + 4.5]], "#c9a050", P.ink, 1.2);
   ellipse(g, cx, cy, 1.1, 1.1, P.ink);
@@ -177,10 +206,10 @@ function cityWindow(g, pt, quad, blob, G, seed) {
 
 /** Wall block, drawn per neighbour mask (bit 1 = wall to N, 2 = E, 4 = S, 8 = W). */
 export const WALL_H = 44;
-export const WALL_W = 64, WALL_CANVAS_H = 80, WALL_CY = 62;
+export const WALL_W = 88, WALL_CANVAS_H = 96, WALL_CY = 62; // 12 px of padding either side and 16 below the block: the baked floor AO strips spill past the 64x32 diamond
 
-export function drawWall(g, mask, variant = 0, theme = "open-plan") {
-  const w = themeOf(theme)?.wall ?? P.wall, cx = 32, cy = WALL_CY, hw = 32, hh = 16, h = WALL_H;
+export function drawWall(g, mask, variant = 0, theme = "open-plan", sc = 1) {
+  const w = themeOf(theme)?.wall ?? P.wall, cx = WALL_W / 2, cy = WALL_CY, hw = 32, hh = 16, h = WALL_H, scene = P.scenes[theme] ?? P.scenes["open-plan"];
   const T = [cx, cy - hh], R = [cx + hw, cy], B = [cx, cy + hh], L = [cx - hw, cy];
   const up = (p, z = h) => [p[0], p[1] - z];
   const faceLeft = !(mask & 4), faceRight = !(mask & 2);
@@ -194,10 +223,16 @@ export function drawWall(g, mask, variant = 0, theme = "open-plan") {
     for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2, k = 1 + 0.18 * Math.sin(i * 2.7 + u * 9); pts.push(pt(Math.min(1, Math.max(0, u + Math.cos(a) * ru * k)), Math.min(0.96, Math.max(0.04, v + Math.sin(a) * rv * k)))); }
     fillPoly(g, pts, fill);
   };
-  const face = (pt, base, edgeSide) => {
+  // material overlay on a face quad: texture `tex` = [name, alpha] skewed onto the left ('L') or right ('R') plane, origin at the quad's top-left corner
+  const texQuad = (pt, kind, u0, v0, u1, v1, tex) => { const o = pt(u0, v1); poly(g, [pt(u0, v0), pt(u1, v0), pt(u1, v1), pt(u0, v1)]); fillTex(g, tex[0], kind, o[0], o[1], tex[1]); };
+  const face = (pt, base, edgeSide, kind) => {
     quad(pt, 0, 0, 1, 1, base);
+    texQuad(pt, kind, 0, 0, 1, 1, scene.wallTex);
     quad(pt, 0, 0, 1, 0.13, w.base);                         // skirting
     quad(pt, 0.07, 0.2, 0.93, 0.74, shade(base, 0.1), shade(base, -0.28), 1); // wall panel
+    texQuad(pt, kind, 0.07, 0.2, 0.93, 0.74, scene.panelTex);
+    quad(pt, 0.07, 0.2, 0.93, 0.235, "rgba(255,255,255,0.1)"); // lit top lip of the panel
+    quad(pt, 0.07, 0.715, 0.93, 0.74, "rgba(0,0,0,0.22)");    // shadow under it
     quad(pt, 0, 0.9, 1, 1, w.trim); quad(pt, 0, 0.9, 1, 0.93, w.trimDark); // orange trim
     if (theme === "executive" && variant === 1) cityWindow(g, pt, quad, blob, themeOf("executive").glass, edgeSide ? 1 : 0);
     else if (theme === "executive" && variant === 2) { // award wall: a framed certificate and a gilt shield
@@ -210,12 +245,35 @@ export function drawWall(g, mask, variant = 0, theme = "open-plan") {
       for (const u of [0.2, 0.62]) quad(pt, u, 0.36, u + 0.06, 0.6, "#2b3640", P.ink, 1);
     } else if (theme === "basement" && variant === 2) { // damp streaks
       for (const u of [0.25, 0.5, 0.78]) quad(pt, u, 0.2, u + 0.04, 0.8, "rgba(20,48,80,0.4)");
-    } else if (variant === 1) { blob(pt, 0.36, 0.5, 0.17, 0.13, "rgba(8,6,20,0.3)"); blob(pt, 0.8, 0.3, 0.07, 0.07, "rgba(8,6,20,0.25)"); }
+    } else if (variant === 1) { // office window onto a dusk skyline (the light shaft it casts is a static pool, world.js / light.js)
+      quad(pt, 0.11, 0.26, 0.89, 0.8, "#1a2f3a", P.ink, 1.3);                       // frame
+      quad(pt, 0.14, 0.3, 0.86, 0.76, "#1c2a62");                                    // sky: three dusk bands
+      quad(pt, 0.14, 0.3, 0.86, 0.44, "#4a4e96"); quad(pt, 0.14, 0.44, 0.86, 0.58, "#33407f");
+      for (const [u0, u1, hh2] of [[0.16, 0.3, 0.14], [0.32, 0.46, 0.2], [0.5, 0.62, 0.12], [0.66, 0.84, 0.18]]) { // skyline
+        quad(pt, u0, 0.3, u1, 0.3 + hh2, "#141a3c");
+        for (let k = 0; k < 4; k++) { const u = u0 + 0.025 + (k % 2) * 0.05, v = 0.33 + Math.floor(k / 2) * 0.06; if (u + 0.03 < u1 && v + 0.035 < 0.3 + hh2) quad(pt, u, v, u + 0.03, v + 0.035, (k + u0 * 10 | 0) % 2 ? "#ffd98a" : "#9fe8ff"); }
+      }
+      blob(pt, 0.74, 0.66, 0.045, 0.07, "#f4f0ff");                                  // moon
+      quad(pt, 0.49, 0.28, 0.51, 0.78, "#1a2f3a");                                   // mullion
+      quad(pt, 0.14, 0.3, 0.46, 0.76, "rgba(190,215,255,0.1)");                      // glass sheen
+      quad(pt, 0.08, 0.235, 0.92, 0.27, shade(w.trim, 0.2));                          // sill
+    }
     if (variant === 2 && edgeSide && theme === "open-plan") { blob(pt, 0.55, 0.55, 0.14, 0.17, "rgba(120,24,48,0.85)"); blob(pt, 0.62, 0.22, 0.04, 0.12, "rgba(120,24,48,0.85)"); blob(pt, 0.4, 0.4, 0.05, 0.06, "rgba(120,24,48,0.85)"); }
+    for (const [v0, v1, al] of [[0, 0.11, 0.34], [0.11, 0.22, 0.2], [0.22, 0.34, 0.09]]) quad(pt, 0, v0, 1, v1, rgba(scene.glow, al)); // per-area wall-base glow (teal / amber / rust / burgundy)
     fillPoly(g, [pt(0, 0), pt(1, 0), pt(1, 1), pt(0, 1)], null, P.ink, 1.6);
   };
-  if (faceRight) face(rf, w.right, true);
-  if (faceLeft) face(lf, w.left, false);
+  // floor AO: a dark strip on the floor along the foot of every face that looks onto open floor, baked into the wall sprite (0 per frame)
+  const ao = (a, b, ex, ey) => {
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, gr = g.createLinearGradient(mx, my, mx + ex, my + ey);
+    gr.addColorStop(0, "rgba(4,2,16,0.6)"); gr.addColorStop(0.5, "rgba(4,2,16,0.22)"); gr.addColorStop(1, "rgba(4,2,16,0)");
+    fillPoly(g, [a, b, [b[0] + ex, b[1] + ey], [a[0] + ex, a[1] + ey]], gr);
+    const gl = g.createLinearGradient(mx, my, mx + ex, my + ey); gl.addColorStop(0, rgba(scene.glow, 0.16)); gl.addColorStop(0.6, rgba(scene.glow, 0)); // the glow also washes the floor a little
+    fillPoly(g, [a, b, [b[0] + ex, b[1] + ey], [a[0] + ex, a[1] + ey]], gl);
+  };
+  if (faceLeft) ao(L, B, -hw * 0.42, hh * 0.42);
+  if (faceRight) ao(R, B, hw * 0.42, hh * 0.42);
+  if (faceRight) face(rf, w.right, true, "R");
+  if (faceLeft) face(lf, w.left, false, "L");
   fillPoly(g, [up(T), up(R), up(B), up(L)], w.top);
   // outline + rim only on top edges that border open floor
   const edges = [[mask & 1, up(T), up(R)], [mask & 2, up(R), up(B)], [mask & 4, up(B), up(L)], [mask & 8, up(L), up(T)]];

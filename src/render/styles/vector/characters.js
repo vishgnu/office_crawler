@@ -2,7 +2,7 @@
 // Canvas is 104x96 with the feet at (52, 76) (wide enough for the tallest monster to lie down). The contact shadow and the rim ring are NOT drawn here:
 // the atlas bakes the rim around this drawing, the renderer draws a light-tinted shadow under every actor.
 import { palette as P } from "./palette.js";
-import { INK, limb, ellipse, fillPoly, line, box, shade } from "../../draw/shapes.js";
+import { INK, limb, ellipse, fillPoly, line, box, shade, ink } from "../../draw/shapes.js";
 import { DIR_VEC, PLAYER_ANIMS, BOSS_ANIMS } from "../../keys.js";
 import { hero, ally, HERO_IDS, HERO_DIM } from "./heroes.js";
 
@@ -32,13 +32,13 @@ export const FIG_DIM = {
 
 // Per-character look. `kind` picks the painter. Colours follow C2 (docs/product/variants/art-direction).
 const LOOKS = {
-  clerk: { kind: "human", skin: "#f6c49c", hair: "#2a1a26", shirt: "#fdf6e4", suit: "#3b6cf0", pants: "#232a58", shoe: "#161425", tie: "#ffb81f", sc: 1.1, head: 1.32, arms: "weapon", lanyard: true, headset: true },
-  "zombie-intern": { kind: "human", skin: "#6cae6c", hair: "#34401f", shirt: "#5f7aa3", suit: null, pants: "#403f60", shoe: "#161425", tie: "#8a3a3a", sc: 1, head: 1.32, arms: "reach", torn: true, zombie: true },
+  clerk: { kind: "human", skin: "#f6c49c", hair: "#2a1a26", shirt: "#fdf6e4", suit: "#3b6cf0", pants: "#232a58", shoe: "#eceae4", tie: "#ffb81f", sc: 1.1, head: 1.32, arms: "weapon", lanyard: true, headset: true, breath: 2 },
+  "zombie-intern": { kind: "human", skin: "#6cae6c", skin2: "#4a9150", hair: "#34401f", shirt: "#5f7aa3", suit: null, pants: "#7a7396", shoe: "#161425", tie: "#8a3a3a", sc: 1, head: 1.32, arms: "reach", torn: true, zombie: true },
   "printer-imp": { kind: "imp", body: "#e4dcc8", lid: "#f2ebd8", wing: "#fff0d6", eye: "#ff4c3a", mouth: "#2b1226", cable: "#46467a" },
   // S2 monsters
-  "temp-worker": { kind: "human", skin: "#e8b48a", hair: "#5a3a22", shirt: "#e8e4d6", suit: null, pants: "#7a6a4a", shoe: "#161425", tie: null, sc: 0.95, head: 1.32, arms: "weapon", held: "clipboard", vest: "#ff8c2a", cap: "#ff8c2a" },
+  "temp-worker": { kind: "human", skin: "#e8b48a", hair: "#5a3a22", shirt: "#e8e4d6", suit: null, pants: "#8a7a52", shoe: "#3a2a22", tie: null, sc: 0.95, head: 1.32, arms: "weapon", held: "clipboard", vest: "#ff8c2a", cap: "#ff8c2a" },
   "printer-demon": { kind: "imp", demon: true, size: 0.31, bh: 21, body: "#443a60", lid: "#5a4e7c", wing: "#6a2a58", wingEdge: "#ff3d6e", eye: "#ff3d6e", mouth: "#1a0f1c", cable: "#ff3d6e" },
-  "middle-manager": { kind: "human", skin: "#e8a888", hair: "#8a8a96", shirt: "#f4efe0", suit: "#6a6f86", pants: "#3a3f58", shoe: "#161425", tie: "#d83a3a", sc: 1.22, head: 1.12, wide: 1.32, arms: "weapon", held: "binder", bald: true, brute: true },
+  "middle-manager": { kind: "human", skin: "#e8a888", hair: "#8a8a96", shirt: "#f4efe0", suit: "#6a6f86", lapel: "#9aa0bc", pants: "#3a3f58", shoe: "#161425", tie: "#d83a3a", sc: 1.22, head: 1.12, wide: 1.32, arms: "weapon", held: "binder", bald: true, brute: true, pin: true, breath: 2 },
   "vending-machine": { kind: "machine", style: "vending", body: "#c8403a", trim: "#f0e6d0", glass: "#1a2a4a", eye: "#ffe45a" },
   consultant: { kind: "human", skin: "#f3d2b6", hair: "#1c1626", shirt: "#f4f2f8", suit: "#262a44", pants: "#1c2036", shoe: "#0e0e1c", tie: "#35e0c8", sc: 1.04, head: 1.28, arms: "weapon", held: "slides", glasses: true },
   auditor: { kind: "human", skin: "#e4c0a0", hair: "#6a6a72", shirt: "#e8e4d8", suit: "#6a5a44", pants: "#40382c", shoe: "#161425", tie: "#2f6b3b", sc: 1.16, head: 1.2, wide: 0.92, arms: "weapon", held: "ledger", glasses: true, visor: "#52b86a" },
@@ -89,8 +89,11 @@ function human(g, L, o) {
   if (L.suit) {
     const cx0 = lx + fx * 1.5;
     if (front) {
-      fillPoly(g, [[tl + lx, shY + ly], [cx0 - 2.6, shY + ly], [cx0 - 0.6, hipY + 1], [tl + 1 + lx * 0.5, hipY + 1]], L.suit, INK, 1.2);
-      fillPoly(g, [[cx0 + 2.6, shY + ly], [tr + lx, shY + ly], [tr - 1 + lx * 0.5, hipY + 1], [cx0 + 0.6, hipY + 1]], shade(L.suit, -0.25), INK, 1.2);
+      fillPoly(g, [[tl + lx, shY + ly], [cx0 - 4.2, shY + ly], [cx0 - 1.4, hipY + 1], [tl + 1 + lx * 0.5, hipY + 1]], L.suit, INK, 1.2); // jacket, light side (the shirt panel between the halves is a big colour block)
+      fillPoly(g, [[cx0 + 4.2, shY + ly], [tr + lx, shY + ly], [tr - 1 + lx * 0.5, hipY + 1], [cx0 + 1.4, hipY + 1]], shade(L.suit, -0.28), INK, 1.2); // shadow side
+      if (L.lapel) fillPoly(g, [[cx0 - 4.2, shY + ly], [cx0 - 8, shY + ly], [cx0 - 3.6, shY + ly + torsoH * 0.62], [cx0 - 1.9, shY + ly + torsoH * 0.62]], L.lapel, INK, 1.1); // lighter lapel
+      if (L.pin) { for (let i = 0; i < 4; i++) { const x = tl + 2.4 + i * 3.3 * wide; line(g, x + lx, shY + ly + 3, x + 0.6 + lx * 0.5, hipY - 1, "rgba(200,205,235,0.4)", 0.9); } for (let i = 0; i < 4; i++) { const x = tr - 2.2 - i * 3.3 * wide; line(g, x + lx, shY + ly + 3, x - 0.6 + lx * 0.5, hipY - 1, "rgba(200,205,235,0.28)", 0.9); } } // pinstripes
+      if (L.pin) { for (const yy of [hipY - 4.5, hipY - 9.5]) { ellipse(g, cx0 - 3.2, yy, 1.35, 1.35, "#e8d890", INK, 0.8); } } // buttons
     } else fillPoly(g, [[tl + lx, shY + ly], [tr + lx, shY + ly], [tr - 1 + lx * 0.5, hipY + 1], [tl + 1 + lx * 0.5, hipY + 1]], L.suit, INK, 1.7);
     fillPoly(g, [[lx + 1.5, shY + ly], [tr + lx, shY + ly], [tr - 1 + lx * 0.5, hipY + 1], [lx * 0.7 + 1.5, hipY + 1]], "rgba(20,10,50,0.18)");
   } else fillPoly(g, [[lx + 1.5, shY + ly], [tr + lx, shY + ly], [tr - 1 + lx * 0.5, hipY + 1], [lx * 0.7 + 1.5, hipY + 1]], shade(L.shirt, -0.22));
@@ -108,11 +111,13 @@ function human(g, L, o) {
   if (L.cross && front) { const cx0 = lx + fx * 2 + 3.4, cy0 = shY + ly + 9 * sc; fillPoly(g, [[cx0 - 1.2, cy0 - 3.5], [cx0 + 1.2, cy0 - 3.5], [cx0 + 1.2, cy0 - 1.2], [cx0 + 3.5, cy0 - 1.2], [cx0 + 3.5, cy0 + 1.2], [cx0 + 1.2, cy0 + 1.2], [cx0 + 1.2, cy0 + 3.5], [cx0 - 1.2, cy0 + 3.5], [cx0 - 1.2, cy0 + 1.2], [cx0 - 3.5, cy0 + 1.2], [cx0 - 3.5, cy0 - 1.2], [cx0 - 1.2, cy0 - 1.2]], "#e0363f", INK, 0.9); }
   line(g, tl + lx + 1, shY + ly + 1.2, tr + lx - 1, shY + ly + 1.2, shade(L.suit ?? L.shirt, 0.4), 1.2); // rim on the shoulder line
   if (front && L.tie) {
-    const tx = lx + fx * 2;
-    fillPoly(g, [[tx - 1.7, shY + ly + 1], [tx + 1.7, shY + ly + 1], [tx + 1.3, shY + ly + 10 * sc], [tx, shY + ly + 12.5 * sc], [tx - 1.3, shY + ly + 10 * sc]], L.tie, INK, 1);
+    const tx = lx + fx * 2, tw = Math.sin((o.f / o.n) * Math.PI * 2 + 0.8) * (o.anim === "walk" ? 3.4 : o.anim === "idle" ? 2 : 1) * sc; // tie sway, 2-3x the old (none): baked per frame
+    fillPoly(g, [[tx - 2.2, shY + ly + 1], [tx + 2.2, shY + ly + 1], [tx + 1.7 + tw * 0.6, shY + ly + 10 * sc], [tx + tw, shY + ly + 13 * sc], [tx - 1.7 + tw * 0.6, shY + ly + 10 * sc]], L.tie, INK, 1);
+    line(g, tx - 0.6 + tw * 0.2, shY + ly + 3, tx + 0.4 + tw * 0.5, shY + ly + 9 * sc, shade(L.tie, -0.3), 1.1); // tie stripe
     if (L.lanyard) {
-      line(g, tx - 4.2, shY + ly + 0.5, tx - 3.4, shY + ly + 10 * sc, "#33e0ff", 1.3);
-      fillPoly(g, [[tx - 6, shY + ly + 10 * sc], [tx - 1.6, shY + ly + 10 * sc], [tx - 1.6, shY + ly + 15 * sc], [tx - 6, shY + ly + 15 * sc]], "#ffffff", INK, 1);
+      line(g, tx - 5, shY + ly + 0.5, tx - 4, shY + ly + 10 * sc, "#33e0ff", 2.2);
+      fillPoly(g, [[tx - 7.4, shY + ly + 10 * sc], [tx - 1.6, shY + ly + 10 * sc], [tx - 1.6, shY + ly + 16.5 * sc], [tx - 7.4, shY + ly + 16.5 * sc]], "#ffffff", INK, 1);
+      fillPoly(g, [[tx - 6.4, shY + ly + 11.2 * sc], [tx - 2.6, shY + ly + 11.2 * sc], [tx - 2.6, shY + ly + 14 * sc], [tx - 6.4, shY + ly + 14 * sc]], "#4a90e0"); // photo
     }
   }
   if (front && !L.tie && L.lanyard) { /* no tie */ }
@@ -137,22 +142,25 @@ function human(g, L, o) {
     if (L.zombie) {
       ellipse(g, ex - 3, ey, 2.6, 2.6, "#1f2e24", INK, 1); ellipse(g, ex - 3, ey, 1.2, 1.2, "#f5ff80");
       ellipse(g, ex + 3.4, ey - 0.3, 2.9, 2.9, "#1f2e24", INK, 1); ellipse(g, ex + 3.4, ey - 0.3, 1.4, 1.4, "#f5ff80");
-      ellipse(g, ex + 0.4, ey + 5.2, 3.3, 2, "#4d1b2e", INK, 1);
-    } else {
-      ellipse(g, ex - 2.8, ey, 1.2, 1.7, INK); ellipse(g, ex + 2.8, ey, 1.2, 1.7, INK);
-      line(g, ex - 1.5, ey + 4.6, ex + 1.8, ey + 4.4, INK, 1.1);
+      ellipse(g, ex + 0.4, ey + 5.6, 4.4, 3.2, "#3a0f22", INK, 1.2); // one big mouth, two fangs
+      fillPoly(g, [[ex - 2.4, ey + 3.4], [ex - 0.6, ey + 3.4], [ex - 1.5, ey + 6]], "#f4efe0", INK, 0.8); fillPoly(g, [[ex + 1.8, ey + 3.4], [ex + 3.6, ey + 3.4], [ex + 2.7, ey + 6]], "#f4efe0", INK, 0.8);
+    } else { // faces 1.5x larger and darker: bigger eyes, a longer mouth line
+      ellipse(g, ex - 3.3, ey, 1.8, 2.5, INK); ellipse(g, ex + 3.3, ey, 1.8, 2.5, INK);
+      ellipse(g, ex - 3.7, ey - 1, 0.6, 0.7, "rgba(255,255,255,0.85)"); ellipse(g, ex + 2.9, ey - 1, 0.6, 0.7, "rgba(255,255,255,0.85)"); // eye glints
+      if (L.brute) line(g, ex - 3.6, ey + 5.3, ex + 3.6, ey + 5.3, INK, 1.9); // the manager's flat mouth bar
+      else { g.beginPath(); g.moveTo(ex - 2.6, ey + 4.5); g.quadraticCurveTo(ex, ey + 6.3, ex + 2.8, ey + 4.4); g.lineWidth = 1.5; g.lineCap = "round"; g.strokeStyle = INK; g.stroke(); }
     }
     if (L.glasses) {
-      ellipse(g, ex - 2.8, ey, 2.9, 2.6, "rgba(210,236,255,0.35)", INK, 1.1); ellipse(g, ex + 2.8, ey, 2.9, 2.6, "rgba(210,236,255,0.35)", INK, 1.1);
+      ellipse(g, ex - 3.3, ey, 3.4, 3, "rgba(210,236,255,0.35)", INK, 1.2); ellipse(g, ex + 3.3, ey, 3.4, 3, "rgba(210,236,255,0.35)", INK, 1.2);
       line(g, ex - 0.2, ey - 0.2, ex + 0.2, ey - 0.2, INK, 1);
     }
     if (L.bald) { // side tufts only, a shiny scalp and a frown
       ellipse(g, hx - hr * 0.96, hy - 1, 2, 3, L.hair, INK, 1.2); ellipse(g, hx + hr * 0.96, hy - 1, 2, 3, L.hair, INK, 1.2);
       line(g, hx - 4, hy - hr * 0.78, hx - 1.2, hy - hr * 0.92, "rgba(255,255,255,0.55)", 1.4);
       line(g, ex - 4.4, ey - 3.4, ex - 1, ey - 2, INK, 1.4); line(g, ex + 4.4, ey - 3.4, ex + 1, ey - 2, INK, 1.4); // angry brows
-    } else { g.beginPath(); g.ellipse(hx, hy - 1.5, hr + 0.4, hr * 0.78, 0, Math.PI, 0); g.fillStyle = L.hair; g.fill(); g.lineWidth = 1.6; g.strokeStyle = INK; g.stroke(); }
+    } else { g.beginPath(); g.ellipse(hx, hy - 1.5, hr + 0.4, hr * 0.78, 0, Math.PI, 0); g.fillStyle = L.hair; g.fill(); g.lineWidth = ink(1.6); g.strokeStyle = INK; g.stroke(); }
     if (L.cap) { // hard cap
-      g.beginPath(); g.ellipse(hx, hy - 2, hr + 0.8, hr * 0.8, 0, Math.PI, 0); g.closePath(); g.fillStyle = L.cap; g.fill(); g.lineWidth = 1.6; g.strokeStyle = INK; g.stroke();
+      g.beginPath(); g.ellipse(hx, hy - 2, hr + 0.8, hr * 0.8, 0, Math.PI, 0); g.closePath(); g.fillStyle = L.cap; g.fill(); g.lineWidth = ink(1.6); g.strokeStyle = INK; g.stroke();
       fillPoly(g, [[hx - hr - 1, hy - 2], [hx + hr + 1, hy - 2], [hx + hr * 0.8 + fx * 3, hy + 0.6], [hx - hr * 0.8 + fx * 3, hy + 0.6]], shade(L.cap, -0.25), INK, 1.1);
     }
     if (L.visor) { // accountant's eyeshade
@@ -164,26 +172,31 @@ function human(g, L, o) {
     if (L.headset) { // earcup on the near side and a mic boom to the cheek
       const sx = hx - fx * 1 - hr * 0.98;
       ellipse(g, sx, hy + 0.5, 2.5, 3.4, "#c4ecff", INK, 1.2);
-      g.beginPath(); g.moveTo(sx, hy + 3.5); g.quadraticCurveTo(sx + 1, hy + hr * 0.95, ex - 0.5, hy + hr * 0.78); g.lineWidth = 1.2; g.strokeStyle = INK; g.stroke();
+      g.beginPath(); g.moveTo(sx, hy + 3.5); g.quadraticCurveTo(sx + 1, hy + hr * 0.95, ex - 0.5, hy + hr * 0.78); g.lineWidth = ink(1.2); g.strokeStyle = INK; g.stroke();
       ellipse(g, ex - 0.5, hy + hr * 0.78, 1.3, 1.1, INK);
     }
   } else {
     ellipse(g, hx, hy - 0.5, hr + 0.4, hr * 1.02, L.bald ? L.skin : L.hair, INK, 1.8);
     if (L.bald) { ellipse(g, hx - hr * 0.96, hy - 1, 2, 3, L.hair, INK, 1.2); ellipse(g, hx + hr * 0.96, hy - 1, 2, 3, L.hair, INK, 1.2); }
-    if (L.cap) { g.beginPath(); g.ellipse(hx, hy - 1.5, hr + 0.8, hr * 0.95, 0, Math.PI, 0); g.closePath(); g.fillStyle = L.cap; g.fill(); g.lineWidth = 1.6; g.strokeStyle = INK; g.stroke(); }
+    if (L.cap) { g.beginPath(); g.ellipse(hx, hy - 1.5, hr + 0.8, hr * 0.95, 0, Math.PI, 0); g.closePath(); g.fillStyle = L.cap; g.fill(); g.lineWidth = ink(1.6); g.strokeStyle = INK; g.stroke(); }
     if (L.visor) fillPoly(g, [[hx - hr - 0.6, hy - hr * 0.55], [hx + hr + 0.6, hy - hr * 0.55], [hx + hr + 0.6, hy - hr * 0.12], [hx - hr - 0.6, hy - hr * 0.12]], L.visor, INK, 1.3);
     if (L.headset) { // headband over the crown and both earcups, so the hero still reads as the headset clerk from behind
-      g.beginPath(); g.arc(hx, hy + 0.5, hr + 0.9, Math.PI * 1.04, Math.PI * 1.96); g.lineCap = "round"; g.lineWidth = 3.8; g.strokeStyle = INK; g.stroke(); g.lineWidth = 2; g.strokeStyle = "#c4ecff"; g.stroke();
+      g.beginPath(); g.arc(hx, hy + 0.5, hr + 0.9, Math.PI * 1.04, Math.PI * 1.96); g.lineCap = "round"; g.lineWidth = ink(3.8); g.strokeStyle = INK; g.stroke(); g.lineWidth = 2; g.strokeStyle = "#c4ecff"; g.stroke();
       ellipse(g, hx - hr * 1.0, hy + 1.2, 2.8, 3.6, "#c4ecff", INK, 1.2); ellipse(g, hx + hr * 1.0, hy + 1.2, 2.8, 3.6, "#c4ecff", INK, 1.2);
     }
   }
+  g.save(); g.beginPath(); g.ellipse(hx, hy - 0.5, hr + 0.2, hr * 1.04, 0, 0, Math.PI * 2); g.clip(); // two-tone head: the shadow side (right, away from the light)
+  g.fillStyle = "rgba(34,10,56,0.2)"; g.beginPath(); g.ellipse(hx + hr * 0.95, hy + hr * 0.1, hr * 0.9, hr * 1.3, 0, 0, Math.PI * 2); g.fill(); g.restore();
   g.beginPath(); g.arc(hx, hy, hr - 1, Math.PI * 1.05, Math.PI * 1.55); g.lineWidth = 1.2; g.strokeStyle = shade(L.skin, 0.45); g.stroke(); // rim light
   // near arm (+ weapon or reach)
   const nx = -side * 7.5 * sc * wide + lx, ny = shY + 3 + ly;
   if (L.arms === "reach") {
     const hx2 = fx * 12 + lx + 2, hy2 = shY + 7 + fy * 3 + ly + bob * 0.3 + 2;
-    limb(g, nx, ny, hx2, hy2, L.shirt, 4.2); ellipse(g, hx2, hy2, 2.6, 2.6, L.skin, INK, 1.2);
-    fillPoly(g, [[hx2 + 1, hy2 - 6], [hx2 + 5, hy2 - 6], [hx2 + 5, hy2 - 1], [hx2 + 1, hy2 - 1]], "#fff3d8", INK, 1); // coffee mug
+    limb(g, nx, ny, hx2, hy2, L.shirt, 4.2);
+    if (L.skin2) { const mx = nx + (hx2 - nx) * 0.5, my = ny + (hy2 - ny) * 0.5; limb(g, mx, my, hx2, hy2, L.skin2, 4.2); fillPoly(g, [[mx - 3, my - 2], [mx - 1, my + 2.6], [mx + 0.6, my - 1.2], [mx + 2.6, my + 2.4], [mx + 3.6, my - 2.4]], L.shirt, INK, 1); } // sleeve torn off at the elbow, bare second-green forearm
+    ellipse(g, hx2, hy2, 2.8, 2.8, L.skin2 ?? L.skin, INK, 1.2);
+    fillPoly(g, [[hx2 + 0.5, hy2 - 7], [hx2 + 5.5, hy2 - 7], [hx2 + 5.5, hy2 - 1], [hx2 + 0.5, hy2 - 1]], "#fff3d8", INK, 1); // coffee mug
+    for (const k of [0, 1]) { const ph = (o.f / o.n) * Math.PI * 2 + k * 2.2, x0 = hx2 + 1.8 + k * 2.4; g.beginPath(); g.moveTo(x0, hy2 - 8); g.bezierCurveTo(x0 + Math.sin(ph) * 3, hy2 - 11, x0 - Math.sin(ph) * 3, hy2 - 13, x0 + Math.cos(ph) * 2, hy2 - 16.5); g.lineWidth = 1.7; g.lineCap = "round"; g.strokeStyle = "rgba(235,240,255,0.85)"; g.stroke(); } // mug steam: baked per frame, so the wisps curl as the idle loop plays
   } else {
     // held item. idle: held low (raised for NPCs); attack: raise, strike toward facing, recover; cast: raised overhead
     const hxx = -side * 9 * sc * wide + lx, hyy = hipY - 6 + ly, held = L.held ?? "sword";
@@ -255,7 +268,7 @@ function imp(g, L, o) {
   for (let i = 0; i < 4; i++) {
     const x0 = lx - 7 + i * 4.6, y0 = -2 + ly - hov + 3 + (i & 1) * 2, sw = Math.sin(o.f / o.n * Math.PI * 2 + i * 1.4) * 2.2;
     g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(x0 + sw, y0 + 7 + hov * 0.35, x0 + sw * 1.6, y0 + 10 + hov * 0.7);
-    g.lineCap = "round"; g.strokeStyle = INK; g.lineWidth = 3.4; g.stroke(); g.strokeStyle = L.cable; g.lineWidth = 1.5; g.stroke();
+    g.lineCap = "round"; g.strokeStyle = INK; g.lineWidth = ink(3.4); g.stroke(); g.strokeStyle = L.cable; g.lineWidth = 1.5; g.stroke();
   }
   // body, lid, paper sheet
   const side = fx > 0.3 ? "right" : "left";
@@ -286,6 +299,14 @@ function imp(g, L, o) {
     const open = 0.14 + 0.2 * lunge, m0 = 0.44;
     quad([[0.1, m0], [0.9, m0], [0.9, m0 - open * 1.6], [0.1, m0 - open * 1.6]], L.mouth, INK);
     for (let k = 0; k < 5; k++) { const u0 = 0.1 + k * 0.16, a = fp(u0, m0), c = fp(u0 + 0.16, m0), d = fp(u0 + 0.08, m0 - open * 0.9); fillPoly(g, [a, c, d], L.demon ? "#ff3d6e" : P.paper, null); }
+    if (L.demon) { // the other flank: a CMY stripe and an LCD readout (G round)
+      const ot = side === "right" ? (t, v) => Pt(b.u0 + t * (b.u1 - b.u0), b.v1, hov + v * b.h) : (t, v) => Pt(b.u1, b.v0 + t * (b.v1 - b.v0), hov + v * b.h);
+      const oq = (t0, v0, t1, v1, fill, st, lw = 0.9) => fillPoly(g, [ot(t0, v0), ot(t1, v0), ot(t1, v1), ot(t0, v1)], fill, st, lw);
+      ["#19d3ff", "#ff3da8", "#ffe030"].forEach((c, i) => oq(0.08 + i * 0.28, 0.06, 0.08 + (i + 1) * 0.28, 0.26, c, INK));
+      oq(0.14, 0.42, 0.86, 0.86, "#0a1a24", INK, 1);
+      oq(0.2, 0.62, 0.62, 0.7, "#5af0d4"); oq(0.2, 0.74, 0.46, 0.8, "#5af0d4");
+      const [lx0, ly0] = ot(0.74, 0.58); ellipse(g, lx0, ly0, 1.3, 1.3, o.f % 2 ? "#ff3d6e" : "#5af0d4");
+    }
     if (L.demon && lunge > 0.15) { const [mx, my] = fp(0.5, m0 - open * 0.8); g.save(); g.globalAlpha = Math.min(1, lunge * 1.4); ellipse(g, mx + fx * 5, my + fy * 2, 5 + lunge * 4, 4 + lunge * 3, "#1c1830", L.eye, 1.4); g.restore(); }
   }
 }
@@ -435,9 +456,9 @@ function director(g, L, o) {
     }
     line(g, ex - 6.4, ey - 4.4, ex - 0.6, ey - 2, INK, 1.9); line(g, ex + 6.4, ey - 4.4, ex + 0.6, ey - 2, INK, 1.9); // heavy brows
     // slicked-back hair with a silver streak: a sweeping cap, no fringe
-    g.beginPath(); g.ellipse(hx - fx * 0.5, hy - 2.4, hr + 0.8, hr * 0.82, 0, Math.PI * 1.02, Math.PI * 1.98); g.lineTo(hx + hr * 0.7, hy - hr * 0.25); g.lineTo(hx - hr * 0.7, hy - hr * 0.25); g.closePath(); g.fillStyle = hair; g.fill(); g.lineWidth = 1.7; g.strokeStyle = INK; g.stroke();
+    g.beginPath(); g.ellipse(hx - fx * 0.5, hy - 2.4, hr + 0.8, hr * 0.82, 0, Math.PI * 1.02, Math.PI * 1.98); g.lineTo(hx + hr * 0.7, hy - hr * 0.25); g.lineTo(hx - hr * 0.7, hy - hr * 0.25); g.closePath(); g.fillStyle = hair; g.fill(); g.lineWidth = ink(1.7); g.strokeStyle = INK; g.stroke();
     for (const k of [-3, 0, 3]) { g.beginPath(); g.moveTo(hx + k - 1, hy - hr * 0.5); g.quadraticCurveTo(hx + k + 1.5, hy - hr * 0.95, hx + k + 4.5, hy - hr * 1.1); g.lineWidth = 0.9; g.strokeStyle = streak; g.stroke(); }
-    if (rage) for (const [k, l] of [[-5, 4.4], [0.5, 3.2], [5.5, 4]]) { g.beginPath(); g.moveTo(hx + k - 1.6, hy - hr * 0.72); g.quadraticCurveTo(hx + k + 2.4, hy - hr * 0.3, hx + k + (k < 0 ? -1 : 1), hy - hr * 0.72 + l * 1.5); g.quadraticCurveTo(hx + k - 1, hy - hr * 0.35, hx + k - 3.4, hy - hr * 0.7); g.closePath(); g.fillStyle = hair; g.fill(); g.lineWidth = 1; g.strokeStyle = INK; g.stroke(); } // locks fall forward
+    if (rage) for (const [k, l] of [[-5, 4.4], [0.5, 3.2], [5.5, 4]]) { g.beginPath(); g.moveTo(hx + k - 1.6, hy - hr * 0.72); g.quadraticCurveTo(hx + k + 2.4, hy - hr * 0.3, hx + k + (k < 0 ? -1 : 1), hy - hr * 0.72 + l * 1.5); g.quadraticCurveTo(hx + k - 1, hy - hr * 0.35, hx + k - 3.4, hy - hr * 0.7); g.closePath(); g.fillStyle = hair; g.fill(); g.lineWidth = ink(1); g.strokeStyle = INK; g.stroke(); } // locks fall forward
   } else {
     ellipse(g, hx, hy - 0.6, hr + 0.5, hr * 1.04, hair, INK, 1.8);
     for (const k of [-4, -1, 2, 5]) { g.beginPath(); g.moveTo(hx + k, hy - hr * 0.8); g.quadraticCurveTo(hx + k * 1.3, hy, hx + k * 0.8, hy + hr * 0.7); g.lineWidth = 0.9; g.strokeStyle = streak; g.stroke(); }
@@ -480,6 +501,7 @@ export function drawFigure(g, type, anim, dir, f) {
     g.translate(-s * o.p * 26, 0); g.rotate(s * o.p * 1.5); g.translate(0, o.p * 3);
     o.anim = "idle"; o.bob = 0; o.swing = 0; o.lunge = 0;
   }
+  if (anim === "idle") o.bob = o.S * (L.breath ?? (HERO_IDS.includes(type) ? 2 : 0.9)); // idle breathing: 2 px bob on the hero and the manager (reads at 1x), 0.9 on the rest
   if (HERO_IDS.includes(type)) hero(g, type, o);
   else if (type.startsWith("ally.")) ally(g, type, o);
   else (L.kind === "imp" ? imp : L.kind === "machine" ? machine : L.kind === "director" ? director : human)(g, L, o);

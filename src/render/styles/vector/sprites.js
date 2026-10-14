@@ -1,6 +1,6 @@
 // Small art: projectiles (drawn pointing along +x, rotated by the renderer), ground loot, status icons. Anchors are noted per function.
 import { palette as P } from "./palette.js";
-import { INK, ellipse, fillPoly, line, shade } from "../../draw/shapes.js";
+import { INK, ellipse, fillPoly, line, shade, ink } from "../../draw/shapes.js";
 
 export const PROJ_W = 44, PROJ_H = 28; // anchor: centre (22, 14)
 
@@ -36,7 +36,7 @@ export function drawProjectile(g, kind) {
     line(g, -7, -4.6, 7, -4.6, "rgba(255,255,255,0.9)", 0.9);
   } else if (kind === "paper") { // crumpled sheet
     g.beginPath(); for (let i = 0; i < 11; i++) { const a = (i / 11) * Math.PI * 2, r = i & 1 ? 5.2 : 7.2; g.lineTo(Math.cos(a) * r, Math.sin(a) * r * 0.9); } g.closePath();
-    g.fillStyle = "#f4efe0"; g.fill(); g.lineWidth = 1.3; g.strokeStyle = INK; g.stroke();
+    g.fillStyle = "#f4efe0"; g.fill(); g.lineWidth = ink(1.3); g.strokeStyle = INK; g.stroke();
     line(g, -3, -2, 2, 1, "rgba(13,10,28,0.45)", 0.9); line(g, -1, 3, 4, -2, "rgba(13,10,28,0.35)", 0.9);
   } else if (kind === "sealed") { // envelope stamped shut with a red wax seal
     fillPoly(g, [[-9, -6], [9, -6], [9, 6], [-9, 6]], "#fff3d8", INK, 1.4);

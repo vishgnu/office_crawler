@@ -2,7 +2,7 @@
 // as characters.js (the S1 hero), ported from docs/product/variants/character-select/figures.js (front-on) to the 8 isometric facings.
 // Identity must survive at ~60 px: FM = wide, hard hat, hi-vis vest, a long wrench; SR = slim, pink suit, headset, blonde quiff, white shoes;
 // IT = hunched purple hoodie, cyan glowing laptop, dark spikes, round glasses.
-import { INK, limb, ellipse, fillPoly, line, shade } from "../../draw/shapes.js";
+import { INK, limb, ellipse, fillPoly, line, shade, ink } from "../../draw/shapes.js";
 
 export const HERO_IDS = ["facilities-manager", "sales-rep", "it-wizard"];
 /** Accent colour per class (UI tokens --class-facilities / --class-sales / --class-it). */
@@ -152,43 +152,43 @@ export function hero(g, id, o) {
     if (isFM) {
       ellipse(g, ex - 3.2, ey, 1.3, 1.8, INK); ellipse(g, ex + 3.2, ey, 1.3, 1.8, INK);
       line(g, ex - 5.6, ey - 3.6, ex - 1.2, ey - 2.6, "#2b1d17", 1.7); line(g, ex + 1.2, ey - 2.6, ex + 5.6, ey - 3.6, "#2b1d17", 1.7);
-      g.beginPath(); g.ellipse(hx + fx, hy + 3.4, hr * 0.95, hr * 0.7, 0, 0.1, Math.PI - 0.1); g.fillStyle = "#2b1d17"; g.fill(); g.lineWidth = 1.4; g.strokeStyle = INK; g.stroke(); // beard
+      g.beginPath(); g.ellipse(hx + fx, hy + 3.4, hr * 0.95, hr * 0.7, 0, 0.1, Math.PI - 0.1); g.fillStyle = "#2b1d17"; g.fill(); g.lineWidth = ink(1.4); g.strokeStyle = INK; g.stroke(); // beard
       line(g, ex - 1.8, ey + 4.8, ex + 1.8, ey + 4.8, "#c98a5e", 1.2);
     } else if (isSR) {
       ellipse(g, ex - 2.8, ey, 1.2, 1.7, INK); ellipse(g, ex + 2.8, ey, 1.2, 1.7, INK);
       line(g, ex - 5, ey - 3.4, ex - 1.4, ey - 3.8, "#8a6a28", 1.4); line(g, ex + 1.4, ey - 3.8, ex + 5, ey - 3.4, "#8a6a28", 1.4);
-      g.beginPath(); g.moveTo(ex - 2, ey + 4.6); g.quadraticCurveTo(ex + 0.2, ey + 6.4, ex + 3.2, ey + 4.2); g.lineWidth = 1.3; g.strokeStyle = INK; g.stroke(); // grin
+      g.beginPath(); g.moveTo(ex - 2, ey + 4.6); g.quadraticCurveTo(ex + 0.2, ey + 6.4, ex + 3.2, ey + 4.2); g.lineWidth = ink(1.3); g.strokeStyle = INK; g.stroke(); // grin
     } else {
       ellipse(g, ex - 3.3, ey, 3.6, 3.6, "rgba(196,236,255,0.85)", INK, 1.3); ellipse(g, ex + 3.5, ey, 3.6, 3.6, "rgba(196,236,255,0.85)", INK, 1.3);
       line(g, ex - 0.1, ey - 0.2, ex + 0.2, ey - 0.2, INK, 1.2);
       ellipse(g, ex - 3.3, ey + 0.4, 1.2, 1.4, INK); ellipse(g, ex + 3.5, ey + 0.4, 1.2, 1.4, INK);
-      g.beginPath(); g.moveTo(ex - 2, ey + 5.4); g.quadraticCurveTo(ex + 0.4, ey + 6.6, ex + 2.6, ey + 5); g.lineWidth = 1.2; g.strokeStyle = INK; g.stroke();
+      g.beginPath(); g.moveTo(ex - 2, ey + 5.4); g.quadraticCurveTo(ex + 0.4, ey + 6.6, ex + 2.6, ey + 5); g.lineWidth = ink(1.2); g.strokeStyle = INK; g.stroke();
     }
   }
   // hair / hats
   if (isFM) {
     const top = front ? 0 : 1;
     if (!front) ellipse(g, hx, hy + 1, hr + 0.5, hr * 0.95, "#2b1d17", INK, 1.5);
-    g.beginPath(); g.ellipse(hx, hy - 2.2, hr + 1.4, hr * 0.92, 0, Math.PI, 0); g.closePath(); g.fillStyle = "#ffd23a"; g.fill(); g.lineWidth = 1.8; g.strokeStyle = INK; g.stroke();
+    g.beginPath(); g.ellipse(hx, hy - 2.2, hr + 1.4, hr * 0.92, 0, Math.PI, 0); g.closePath(); g.fillStyle = "#ffd23a"; g.fill(); g.lineWidth = ink(1.8); g.strokeStyle = INK; g.stroke();
     g.beginPath(); g.ellipse(hx - 1.5, hy - 4.2, hr * 0.7, hr * 0.5, 0, Math.PI * 1.05, Math.PI * 1.6); g.lineWidth = 1.5; g.strokeStyle = "#fff3a0"; g.stroke(); // rim light
     fillPoly(g, [[hx - hr - 2.6, hy - 2.2], [hx + hr + 2.6, hy - 2.2], [hx + hr + 1.5 + (front ? fx * 3 : 0), hy + 0.6 + top * 0.4], [hx - hr - 1.5 + (front ? fx * 3 : 0), hy + 0.6 + top * 0.4]], "#e0a81f", INK, 1.4); // brim
     rect(g, hx + fx * 0.6, hy - hr - 1.2, 4, 3.2, "#fff3a0", INK, 1); // lamp / ridge
   } else if (isSR) {
     if (front) {
-      g.beginPath(); g.ellipse(hx, hy - 1.5, hr + 0.4, hr * 0.78, 0, Math.PI, 0); g.fillStyle = "#f2c14e"; g.fill(); g.lineWidth = 1.6; g.strokeStyle = INK; g.stroke();
+      g.beginPath(); g.ellipse(hx, hy - 1.5, hr + 0.4, hr * 0.78, 0, Math.PI, 0); g.fillStyle = "#f2c14e"; g.fill(); g.lineWidth = ink(1.6); g.strokeStyle = INK; g.stroke();
       g.beginPath(); g.moveTo(hx - hr - 0.2, hy - 2); g.quadraticCurveTo(hx - hr * 1.1, hy - hr * 1.3, hx - 1, hy - hr * 1.38); g.quadraticCurveTo(hx + hr * 1.3, hy - hr * 1.7, hx + hr * 1.25, hy - hr * 0.7); g.lineTo(hx + hr + 0.2, hy - 2.5); g.quadraticCurveTo(hx + 2, hy - hr * 1.0, hx - hr * 0.5, hy - hr * 0.7); g.closePath();
-      g.fillStyle = "#f2c14e"; g.fill(); g.lineWidth = 1.5; g.strokeStyle = INK; g.stroke(); // quiff
+      g.fillStyle = "#f2c14e"; g.fill(); g.lineWidth = ink(1.5); g.strokeStyle = INK; g.stroke(); // quiff
       line(g, hx - 1, hy - hr * 1.18, hx + 5, hy - hr * 1.32, "#ffe9a0", 1.3);
     } else {
       ellipse(g, hx, hy - 0.5, hr + 0.4, hr * 1.02, "#f2c14e", INK, 1.8);
-      g.beginPath(); g.moveTo(hx - hr * 0.8, hy - hr * 0.6); g.quadraticCurveTo(hx - hr * 0.5, hy - hr * 1.5, hx + hr * 0.5, hy - hr * 1.45); g.quadraticCurveTo(hx + hr * 1.3, hy - hr * 1.2, hx + hr * 0.9, hy - hr * 0.5); g.closePath(); g.fillStyle = "#f2c14e"; g.fill(); g.lineWidth = 1.4; g.strokeStyle = INK; g.stroke();
-      g.beginPath(); g.arc(hx, hy + 0.5, hr + 0.9, Math.PI * 1.04, Math.PI * 1.96); g.lineCap = "round"; g.lineWidth = 3.8; g.strokeStyle = INK; g.stroke(); g.lineWidth = 2; g.strokeStyle = "#232a58"; g.stroke();
+      g.beginPath(); g.moveTo(hx - hr * 0.8, hy - hr * 0.6); g.quadraticCurveTo(hx - hr * 0.5, hy - hr * 1.5, hx + hr * 0.5, hy - hr * 1.45); g.quadraticCurveTo(hx + hr * 1.3, hy - hr * 1.2, hx + hr * 0.9, hy - hr * 0.5); g.closePath(); g.fillStyle = "#f2c14e"; g.fill(); g.lineWidth = ink(1.4); g.strokeStyle = INK; g.stroke();
+      g.beginPath(); g.arc(hx, hy + 0.5, hr + 0.9, Math.PI * 1.04, Math.PI * 1.96); g.lineCap = "round"; g.lineWidth = ink(3.8); g.strokeStyle = INK; g.stroke(); g.lineWidth = 2; g.strokeStyle = "#232a58"; g.stroke();
     }
     const sx = hx - fx * 1 - hr * 0.98; // headset: earcup, band, orange mic boom
     ellipse(g, sx, hy + 0.5, 2.8, 3.8, "#232a58", INK, 1.2); if (!front) ellipse(g, hx + hr * 1.0, hy + 1.2, 2.8, 3.6, "#232a58", INK, 1.2);
     if (front) {
-      g.beginPath(); g.arc(hx, hy - 1, hr + 0.9, Math.PI * 1.1, Math.PI * 1.55); g.lineWidth = 2.4; g.strokeStyle = INK; g.stroke(); g.lineWidth = 1.2; g.strokeStyle = "#3a4488"; g.stroke();
-      g.beginPath(); g.moveTo(sx, hy + 3.5); g.quadraticCurveTo(sx + 1, hy + hr * 0.95, hx + fx * 3 - 1, hy + hr * 0.78); g.lineWidth = 1.4; g.strokeStyle = INK; g.stroke();
+      g.beginPath(); g.arc(hx, hy - 1, hr + 0.9, Math.PI * 1.1, Math.PI * 1.55); g.lineWidth = ink(2.4); g.strokeStyle = INK; g.stroke(); g.lineWidth = 1.2; g.strokeStyle = "#3a4488"; g.stroke();
+      g.beginPath(); g.moveTo(sx, hy + 3.5); g.quadraticCurveTo(sx + 1, hy + hr * 0.95, hx + fx * 3 - 1, hy + hr * 0.78); g.lineWidth = ink(1.4); g.strokeStyle = INK; g.stroke();
       ellipse(g, hx + fx * 3 - 1, hy + hr * 0.78, 1.7, 1.5, "#ff8a1f", INK, 0.9);
     }
   } else { // IT: dark spikes
@@ -277,8 +277,8 @@ export function ally(g, id, o) {
   }
   const hx = lx + fx * 2, hy = shY - hr + 3 + ly + bob * 0.5;
   ellipse(g, hx, hy, hr, hr * 1.05, "#f3d2b6", INK, 1.6);
-  if (front) { const ex = hx + fx * 3; ellipse(g, ex - 2.6, hy + 0.8, 1.2, 1.6, INK); ellipse(g, ex + 2.6, hy + 0.8, 1.2, 1.6, INK); g.beginPath(); g.arc(ex, hy + 3.4, 2.2, 0.2, Math.PI - 0.2); g.lineWidth = 1.1; g.strokeStyle = INK; g.stroke(); }
-  g.beginPath(); g.ellipse(hx, hy - 1.4, hr + 0.4, hr * 0.78, 0, Math.PI, 0); g.fillStyle = "#6a3a22"; g.fill(); g.lineWidth = 1.5; g.strokeStyle = INK; g.stroke();
+  if (front) { const ex = hx + fx * 3; ellipse(g, ex - 2.6, hy + 0.8, 1.2, 1.6, INK); ellipse(g, ex + 2.6, hy + 0.8, 1.2, 1.6, INK); g.beginPath(); g.arc(ex, hy + 3.4, 2.2, 0.2, Math.PI - 0.2); g.lineWidth = ink(1.1); g.strokeStyle = INK; g.stroke(); }
+  g.beginPath(); g.ellipse(hx, hy - 1.4, hr + 0.4, hr * 0.78, 0, Math.PI, 0); g.fillStyle = "#6a3a22"; g.fill(); g.lineWidth = ink(1.5); g.strokeStyle = INK; g.stroke();
   if (!front) ellipse(g, hx, hy - 0.4, hr + 0.4, hr, "#6a3a22", INK, 1.5);
   // near arm + mug (attack: swing it forward and splash)
   const nx = -side * 5.8 + lx, ny = shY + 3 + ly;

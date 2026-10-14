@@ -51,6 +51,30 @@ export const palette = {
       dark: "rgba(8,4,14,0.8)",
     },
   },
+  // Scene tables (G round, item 6): per theme, which material each floor kind and wall carries, the wall-base glow colour and the tile joint. The four themes share one engine
+  // (tiles.js / props.js / light.js); changing a scene is a change in this table. Texture entries are [name, alpha] (textures.js).
+  scenes: {
+    "open-plan": { // teal fluorescent office
+      glow: "#2ad6c8", joint: "rgba(8,6,20,0.55)",
+      floorTex: { default: ["weaveB", 0.95], cubicle: ["weaveA", 1], conference: ["weaveC", 0.95], copy: ["weaveB", 0.9], storage: ["concrete", 0.9] },
+      wallTex: ["plaster", 0.9], panelTex: ["panel", 0.7],
+    },
+    lobby: { // warm brass and marble
+      glow: "#e0a050", joint: "rgba(10,6,22,0.5)",
+      floorTex: { default: ["weaveC", 0.8], reception: ["marble", 1], breakroom: ["concrete", 0.55] },
+      wallTex: ["plaster", 0.9], panelTex: ["wood", 0.55],
+    },
+    basement: { // cold concrete, rust and steel
+      glow: "#e0703a", joint: "rgba(4,8,20,0.7)",
+      floorTex: { default: ["concrete", 1], boiler: ["metal", 0.9], server: ["metal", 0.8], archive: ["paper", 0.8], storage: ["concrete", 1] },
+      wallTex: ["concrete", 1], panelTex: ["metal", 0.7],
+    },
+    executive: { // burgundy carpet and mahogany
+      glow: "#c0305a", joint: "rgba(10,2,14,0.55)",
+      floorTex: { default: ["weaveB", 1], boardroom: ["weaveA", 1], storage: ["weaveB", 1] },
+      wallTex: ["panel", 1], panelTex: ["wood", 0.8],
+    },
+  },
   proj: { stapler: "#c9d2e4", toner: "#17131f", tonerGlow: "#ff3d6e", slide: "#fffaf0", slideEdge: "#5b8cff" },
   // Light pools: [colour, additive alpha at the centre]
   pools: {
@@ -64,6 +88,8 @@ export const palette = {
     desklamp: ["#ffb347", 0.22], // executive: brass desk lamp
     screen: ["#7fd0ff", 0.17],   // executive: the quarterly results screen
     chandelier: ["#ffcf8a", 0.16], // executive: a dim ceiling light over the middle of the room
+    exit: ["#4dff9a", 0.2],     // the green pool of an exit sign over the stairs (static)
+    shaft: ["#a8c8ff", 0.2],    // window light falling across the floor (static)
     boss: ["#ffeccc", 0.1],     // the Regional Director's aura (phase 1)
     rage: ["#ff3a2a", 0.18],      // phase 2: red
   },

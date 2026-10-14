@@ -11,8 +11,10 @@ export const bossType = (type, phase) => (phase >= 2 ? type + BOSS_P2 : type);
 export const DIRS = 8;
 // Room kinds of every theme (open-plan, lobby, basement). Each theme draws all of them (kinds it does not use fall back to its corridor look).
 export const FLOOR_KINDS = ["corridor", "cubicle", "conference", "copy", "storage", "reception", "breakroom", "server", "archive", "boiler", "boardroom"];
-// Floor variants 0-2 are clean (plain, inset panel, seam); 3-5 carry baked grime (scuffs, coffee stain, blood).
-export const FLOOR_VARIANTS = 6;
+// Floor variants 0-2 are clean (plain, inset panel, seam); 3-5 carry baked grime (scuffs, coffee stain, blood); 6-11 are clean again with a tone drift
+// (warm / cool, lighter / darker) and mirrored copies (G round). FLOOR_WEIGHTS: how often each variant is picked, in percent (sums to 100).
+export const FLOOR_VARIANTS = 12;
+export const FLOOR_WEIGHTS = [14, 8, 8, 14, 10, 10, 10, 4, 4, 10, 4, 4];
 // Wall variants: 0 clean, 1 smear, 2 splatter.
 export const WALL_VARIANTS = 3;
 // stairs-locked / stairs-open: the way down from floor 8 (barrier tape until the floor is cleared, then a lit lift). Other themes never use them.

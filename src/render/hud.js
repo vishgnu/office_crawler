@@ -94,11 +94,33 @@ export function createHud(style) {
     if (stroke) { g.lineWidth = Math.max(3, size * 0.28); g.strokeStyle = stroke; g.strokeText(str, x, y); }
     g.fillStyle = fill; g.fillText(str, x, y);
   };
+  // HUD chrome (G round, item 4): panel sheen, inner shadow, stitched border and rivets, all baked into the centre layer (rebuilt only when the layout, level or XP changes)
+  const rivet = (g, x, y, rad) => {
+    g.beginPath(); g.arc(x, y, rad, 0, Math.PI * 2); g.fillStyle = "#e6ecfa"; g.fill(); g.lineWidth = 1.2; g.strokeStyle = P.ink; g.stroke();
+    g.beginPath(); g.arc(x - rad * 0.3, y - rad * 0.3, rad * 0.35, 0, Math.PI * 2); g.fillStyle = "rgba(255,255,255,0.9)"; g.fill();
+  };
   const panel = (g, r, hc, s) => {
-    g.beginPath(); g.roundRect(r.x, r.y, r.w, r.h, 8 * s);
+    const rad = 8 * s;
+    g.beginPath(); g.roundRect(r.x, r.y, r.w, r.h, rad);
     g.fillStyle = hc ? "#000000" : U.panel; g.fill();
     g.lineWidth = hc ? 3 : 3.4; g.strokeStyle = hc ? "#ffffff" : U.panelEdge; g.stroke();
-    if (!hc) { g.beginPath(); g.roundRect(r.x + 2.2, r.y + 2.2, r.w - 4.4, r.h - 4.4, 6 * s); g.lineWidth = 1.4; g.strokeStyle = U.slotEdge; g.globalAlpha = 0.55; g.stroke(); g.globalAlpha = 1; }
+    if (hc) return;
+    g.save(); g.beginPath(); g.roundRect(r.x, r.y, r.w, r.h, rad); g.clip();
+    const sheen = g.createLinearGradient(0, r.y, 0, r.y + r.h); // panel sheen: lit top, shaded bottom
+    sheen.addColorStop(0, "rgba(255,255,255,0.12)"); sheen.addColorStop(0.5, "rgba(255,255,255,0)"); sheen.addColorStop(1, "rgba(0,0,0,0.3)");
+    g.fillStyle = sheen; g.fillRect(r.x, r.y, r.w, r.h);
+    g.shadowColor = "rgba(0,0,0,0.65)"; g.shadowBlur = 10 * s; g.fillStyle = "#000"; // inner shadow: a blurred frame cut out of the panel, offset downward
+    g.beginPath(); g.rect(r.x - 30, r.y - 30, r.w + 60, r.h + 60); g.roundRect(r.x + 3 * s, r.y + 3 * s, r.w - 6 * s, r.h - 3 * s, rad); g.fill("evenodd");
+    g.shadowBlur = 0; g.shadowColor = "transparent";
+    g.strokeStyle = "rgba(255,255,255,0.3)"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(r.x + rad, r.y + 1.4); g.lineTo(r.x + r.w - rad, r.y + 1.4); g.stroke(); // top bevel
+    const inset = 5.5 * s; // stitched border: a dark dash under a light dash, 5.5 px in
+    g.setLineDash([5 * s, 4 * s]);
+    g.strokeStyle = "rgba(8,4,30,0.7)"; g.lineWidth = 1.6; g.beginPath(); g.roundRect(r.x + inset, r.y + inset + 1, r.w - 2 * inset, r.h - 2 * inset, rad * 0.7); g.stroke();
+    g.strokeStyle = "rgba(190,175,255,0.6)"; g.lineWidth = 1.3; g.beginPath(); g.roundRect(r.x + inset, r.y + inset, r.w - 2 * inset, r.h - 2 * inset, rad * 0.7); g.stroke();
+    g.setLineDash([]);
+    g.restore();
+    const rv = Math.max(2.2, 2.6 * s), o = 3.2 * s + rv; // rivets in the four corners
+    for (const [x, y] of [[r.x + o, r.y + o], [r.x + r.w - o, r.y + o], [r.x + o, r.y + r.h - o], [r.x + r.w - o, r.y + r.h - o]]) rivet(g, x, y, rv);
   };
   const H = {
     /** Draw the whole HUD. */
@@ -194,8 +216,9 @@ export function createHud(style) {
       g.beginPath(); g.roundRect(L.xp.x, L.xp.y, L.xp.w, L.xp.h, L.xp.h / 2); g.fillStyle = hc ? "#2a2a2a" : "#0d0a1c"; g.fill(); g.lineWidth = 2; g.strokeStyle = hc ? "#fff" : U.panelEdge; g.stroke();
       // empty slot wells; the DOM slot layer puts icons, badges and the selection ring on top of them
       const slotE = atlas.get(keys.ui("skill-slot")), beltE = atlas.get(keys.ui("belt-slot"));
-      L.skills.forEach((r) => g.drawImage(slotE.img, r.x, r.y, r.w, r.h));
-      L.belt.forEach((r) => g.drawImage(beltE.img, r.x, r.y, r.w, r.h));
+      const snap = (r) => [Math.round(r.x), Math.round(r.y), Math.round(r.w), Math.round(r.h)]; // snapped to whole pixels: crisp edges, same rects as the DOM slots
+      L.skills.forEach((r) => g.drawImage(slotE.img, ...snap(r)));
+      L.belt.forEach((r) => g.drawImage(beltE.img, ...snap(r)));
     },
   };
   return H;

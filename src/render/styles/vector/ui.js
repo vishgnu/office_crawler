@@ -71,6 +71,7 @@ export function drawVesselFrame(g, kind) {
   g.lineWidth = 5.5; g.strokeStyle = INK; g.stroke();
   g.lineWidth = 2.6; g.strokeStyle = kind === "health" ? "#f3eefc" : "#d6e6f5"; g.stroke();
   if (kind === "health") { g.fillStyle = "#c9c3ec"; g.beginPath(); g.roundRect(8, 14, 68, 7, [12, 12, 0, 0]); g.fill(); g.lineWidth = 1.4; g.strokeStyle = INK; g.stroke(); }
+  vesselFx(g, kind);
   // glass shine
   g.beginPath(); g.moveTo(kind === "health" ? 16 : 15, kind === "health" ? 30 : 60); g.lineTo(kind === "health" ? 16 : 15, kind === "health" ? 70 : 92);
   g.lineWidth = 3.5; g.strokeStyle = "rgba(255,255,255,0.32)"; g.stroke();
@@ -83,6 +84,25 @@ export function drawVesselFrame(g, kind) {
   }
   g.lineWidth = 4; g.strokeStyle = INK; g.stroke(); g.fillStyle = "#ffffff"; g.fill();
   g.restore();
+}
+/** Glaze (mug) and ribbed plastic (jug), shaded inside the outline (G round, item 4): a side gradient, a darker top, then stitched bands or ribs. */
+function vesselFx(g, kind) {
+  g.save(); vesselPath(g, kind); g.clip();
+  let gr = g.createLinearGradient(8, 0, 76, 0);
+  gr.addColorStop(0, "rgba(255,255,255,0.24)"); gr.addColorStop(0.3, "rgba(255,255,255,0.02)"); gr.addColorStop(0.75, "rgba(0,0,20,0.1)"); gr.addColorStop(1, "rgba(0,0,20,0.32)");
+  g.fillStyle = gr; g.fillRect(0, 0, 90, 120);
+  gr = g.createLinearGradient(0, 14, 0, 40); gr.addColorStop(0, "rgba(0,0,20,0.35)"); gr.addColorStop(1, "rgba(0,0,20,0)"); g.fillStyle = gr; g.fillRect(0, 14, 90, 26);
+  if (kind === "health") { // stitched bands round the mug and a speckled glaze
+    g.setLineDash([5, 4]); g.strokeStyle = "rgba(255,255,255,0.55)"; g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(8, 28); g.lineTo(76, 28); g.moveTo(8, 84); g.lineTo(76, 84); g.stroke(); g.setLineDash([]);
+    g.fillStyle = "rgba(255,255,255,0.28)"; let sd = 7; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 26; i++) g.fillRect(14 + rnd() * 54, 34 + rnd() * 44, 1.6, 1.6);
+  } else { // ribbed plastic
+    for (let k = 0; k < 7; k++) { const y = 44 + k * 10; g.fillStyle = "rgba(0,0,30,0.22)"; g.fillRect(8, y, 68, 2); g.fillStyle = "rgba(255,255,255,0.2)"; g.fillRect(8, y + 2, 68, 1.4); }
+  }
+  g.restore();
+  const rv = (x, y) => { g.beginPath(); g.arc(x, y, 2.4, 0, Math.PI * 2); g.fillStyle = "#e6ecfa"; g.fill(); g.lineWidth = 1.2; g.strokeStyle = INK; g.stroke(); };
+  if (kind === "health") { rv(14, 20); rv(70, 20); rv(14, 88); rv(70, 88); } else { rv(15, 62); rv(69, 62); rv(15, 106); rv(69, 106); }
 }
 export const vesselFrameSize = (kind) => ({ w: VESSEL_REF[kind].w + 2 * PAD, h: VESSEL_REF[kind].h + 2 * PAD, ox: PAD, oy: PAD });
 export const VESSEL_PAD = PAD;
@@ -97,6 +117,11 @@ export function drawSlot(g, w, h, active) {
   g.beginPath(); g.roundRect(3.2, 3.2, w - 6.4, h - 6.4, r * 0.8);
   g.lineWidth = active ? 2.4 : 1.8; g.strokeStyle = active ? P.ui.xp : P.ui.slotEdge; g.stroke();
   line(g, 6, 5, w - 6, 5, "rgba(255,255,255,0.14)", 1.4);
+  g.save(); g.beginPath(); g.roundRect(1.5, 1.5, w - 3, h - 3, r); g.clip(); // well shading (G round): dark top inner shadow, lit bottom lip
+  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "rgba(0,0,0,0.45)"); gr.addColorStop(0.35, "rgba(0,0,0,0)"); gr.addColorStop(0.8, "rgba(255,255,255,0)"); gr.addColorStop(1, active ? "rgba(255,230,120,0.3)" : "rgba(190,180,255,0.16)");
+  g.fillStyle = gr; g.fillRect(0, 0, w, h); g.restore();
+  g.fillStyle = active ? "#ffe9a0" : "#a89cf0";
+  for (const [qx, qy] of [[0.17, 0.17], [0.83, 0.17], [0.17, 0.83], [0.83, 0.83]]) { g.beginPath(); g.arc(Math.round(w * qx), Math.round(h * qy), Math.max(1, w * 0.024), 0, Math.PI * 2); g.fill(); } // corner studs
 }
 
 /** Basic attack icon (keyboard strike), 48x48 box. */

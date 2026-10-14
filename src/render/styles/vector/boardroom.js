@@ -1,7 +1,7 @@
 // Props that only the Executive Suite and its fight use: the boardroom table segment, a leather chair, a trophy, the "quarterly results"
 // screen on the north wall, and the temp badge that marks staff the boss summoned. Drawn like every other C2 sprite: ink outlines, one shade level.
 import { palette as P } from "./palette.js";
-import { INK, ellipse, fillPoly, line, box, shade } from "../../draw/shapes.js";
+import { INK, ellipse, fillPoly, line, box, shade, ink } from "../../draw/shapes.js";
 
 export const TABLE_BOX = { w: 90, h: 64, ox: 45, oy: 46 };
 export const SCREEN_BOX = { w: 116, h: 124, ox: 58, oy: 114 };
@@ -40,7 +40,7 @@ export function drawTrophy(g) {
   fillPoly(g, [[5, 30], [19, 30], [18, 27], [6, 27]], "#8a6a28", INK, 1.2);
   fillPoly(g, [[8, 27], [16, 27], [15, 24], [9, 24]], "#c9a050", INK, 1.1);
   fillPoly(g, [[11, 24], [13, 24], [13.6, 18], [10.4, 18]], "#e0b04a", INK, 1);
-  for (const k of [-1, 1]) { g.beginPath(); g.moveTo(12 + k * 7, 8); g.bezierCurveTo(12 + k * 13, 8, 12 + k * 13, 16, 12 + k * 5, 16); g.lineWidth = 3.4; g.strokeStyle = INK; g.stroke(); g.lineWidth = 1.7; g.strokeStyle = "#e0b04a"; g.stroke(); }
+  for (const k of [-1, 1]) { g.beginPath(); g.moveTo(12 + k * 7, 8); g.bezierCurveTo(12 + k * 13, 8, 12 + k * 13, 16, 12 + k * 5, 16); g.lineWidth = ink(3.4); g.strokeStyle = INK; g.stroke(); g.lineWidth = 1.7; g.strokeStyle = "#e0b04a"; g.stroke(); }
   fillPoly(g, [[3.6, 6], [20.4, 6], [18.4, 15], [14, 18.4], [10, 18.4], [5.6, 15]], "#f0c64a", INK, 1.3);
   fillPoly(g, [[5, 7.5], [9, 7.5], [8.4, 14], [6.2, 12.4]], "rgba(255,255,255,0.65)");
   ellipse(g, 12, 6, 8.4, 1.8, "#8a6a28", INK, 1);

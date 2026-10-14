@@ -13,6 +13,7 @@ import { hasLineOfSight } from "../src/core/los.js";
 import { getCtx } from "../src/core/ctx.js";
 import { requiredKeys, HERO_CLASSES } from "../src/render/keys.js";
 import { drawFigure, figureKeys } from "../src/render/figure.js";
+import { drawFigure as rawFigure } from "../src/render/styles/vector/characters.js";
 import { damageMonster } from "../src/core/systems/damage.js";
 
 const W = { atlas: null, fx: null, light: null, labels: null, core: null, rs: { facing: new Map() }, size: { w: 1920, h: 1080 }, now: 1000 };
@@ -343,4 +344,16 @@ W.figures = () => {
   const c = document.createElement("canvas"); c.width = 256; c.height = 256;
   keysList.forEach((k, i) => ["portrait", "card-idle"].forEach((anim, j) => { drawFigure(c, k, { anim, t: 0.6 }); g.drawImage(c, 40 + i * 270, 40 + j * 270); }));
   return keysList;
+};
+
+// Bake cost probe: raw figure drawing vs the full baked sprite (rim ring included), ms per frame.
+W.prof = (type = "middle-manager", sc = 2) => {
+  const c = document.createElement("canvas"); c.width = 104 * sc; c.height = 96 * sc; const g = c.getContext("2d");
+  let t = performance.now(), n = 0;
+  for (let d = 0; d < 8; d++) for (let f = 0; f < 4; f++) { g.setTransform(sc, 0, 0, sc, 0, 0); g.clearRect(0, 0, 104, 96); g.translate(52, 76); rawFigure(g, type, "idle", d, f); n++; }
+  const raw = (performance.now() - t) / n;
+  t = performance.now(); n = 0;
+  for (let d = 0; d < 8; d++) for (let f = 0; f < 4; f++) { W.atlas.get(`plr:${type}:idle:${d}:${f}`); n++; }
+  const full = (performance.now() - t) / n;
+  return { raw: +raw.toFixed(2), full: +full.toFixed(2) };
 };
