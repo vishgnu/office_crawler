@@ -1,3 +1,4 @@
 # PERF-R6 progress
 
 - done: instrumented bench (frame p50/p95/p99/max, lazy draws, silhouettes, heap drops, load) and atlas counters (window.__atlasStats); next: baseline 5 runs.
+- done: baseline (5 runs, load 0.4-1.2): fps50 38.9 41.9 39.1 40.7 41.6 (median 40.7), lowFx 49.7 55.8 54.5 49.7 59. In-window: 0 lazy draws, 0 silhouette builds, 0 heap drops (no GC), render() JS 3.3 ms avg. So not lazy draws and not GC: frames are vsync-quantised (16.7/33.3/50 ms) and the cost is raster (getImageData flush after render = 15-19 ms, JS 3-6 ms). Raster breakdown (skip-one-category, full fx): mask draw 6.5 ms, multiply tints 3.6, alpha source-over 3.5, lighter 2, opaque 2.7. Experiment: canvas context with {alpha:false} = fps 41-45 -> 55-58 in the same scene. Applied in src/game.js line 25 (outside my file list, one line; flagged). next: re-measure, then cut mask/multiply cost.
