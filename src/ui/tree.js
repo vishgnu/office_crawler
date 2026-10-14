@@ -45,7 +45,7 @@ function nodeHtml(n, c, bar) {
     h += `<button class="learn" type="button" data-testid="learn-${n.id}" data-learn="${n.id}" data-fk="l.${n.id}" ${canLearn ? "" : "disabled"} aria-label="${esc(verb)} ${esc(n.name)}${n.state === "maxed" ? ", " + esc(T.maxed) : ""}">${esc(n.state === "maxed" ? T.maxed : verb)}</button>`;
   }
   if (n.kind === "active" && learned) {
-    h += `<div class="sassign" role="group" aria-label="${esc(T.assignTo)} ${esc(n.name)}"><span>${esc(T.assignTo)}</span>`;
+    h += `<div class="sassign" role="group" aria-label="${esc(T.assignTo)} ${esc(n.name)}"><span class="sr">${esc(T.assignTo)}</span>`;
     for (let i = 0; i < bar.hotkeys.length; i++) {
       const on = bar.hotkeys[i] === n.id;
       h += `<button class="mini key${on ? " on" : ""}" type="button" data-testid="assign-${n.id}-${i}" data-assign="${n.id}" data-slot="${i}" data-fk="a.${n.id}.${i}" aria-pressed="${on}" aria-label="${esc(T.assignTo)} F${i + 1}: ${esc(n.name)}${on ? ", " + esc(T.assigned) : ""}">F${i + 1}</button>`;
@@ -67,7 +67,7 @@ export function renderTree(c) {
   h += `<div class="tr-head"><p class="sp"><b>${esc(T.trPoints)}: <span data-testid="skill-points">${v.points}</span></b></p>`;
   h += `<button class="mini respec" type="button" data-testid="respec" data-respec="1" data-fk="rs" ${v.respec.available ? "" : "disabled"} title="${esc(v.respec.available ? T.trResetHint : T.trResetNone)}">${esc(T.trReset)}</button></div>`;
   h += `<p class="sk-note" data-testid="respec-note">${esc(v.respec.available ? T.trResetHint : (v.respec.reason === "not-in-town" ? T.trResetNone : T.trRespecFail[v.respec.reason] ?? T.trResetNone))}</p>`;
-  h += `<p class="sk-note">${esc(T.rightMouse)} ${esc(T.trSelectNote)}</p>`;
+  h += `<p class="sk-note">${esc(T.trSelectNote)}</p>`;
   if (basic) {
     h += `<h3>${esc(T.basicAttack)}</h3><ul class="slist"><li class="srow" data-testid="skill-${basic.id}"><div class="sic">${skillIcon(basic.id)}</div><div class="sbody"><div class="sname"><b>${esc(basic.name)}</b></div><div class="stext">${esc(S[basic.textKey] ?? "")}</div></div><span></span>`;
     h += `<div class="sassign" role="group" aria-label="${esc(T.assignTo)} ${esc(basic.name)}"><span>${esc(T.assignTo)}</span>`;
@@ -75,7 +75,7 @@ export function renderTree(c) {
     h += `</div></li></ul>`;
   }
   for (const b of v.branches) {
-    h += `<section class="branch" data-testid="branch-${b.id}" aria-label="${esc(b.name)}"><h3><span class="bic">${skillIcon(b.iconKey)}</span>${esc(b.name)} <em>${b.spent} ${esc(T.trBranchSpent)}</em></h3>`;
+    h += `<section class="branch" data-testid="branch-${b.id}" aria-label="${esc(b.name)}"><h3><span class="bic">${skillIcon(b.iconKey)}</span>${esc(b.name)} <em>${esc(T.trBranchSpent)}: ${b.spent}</em></h3>`;
     const tiers = [...new Set(b.nodes.map((n) => n.tier))].sort((a, z) => a - z);
     for (const t of tiers) {
       h += `<div class="tier"><span class="tl">${esc(T.trTier)} ${t}</span><ul class="tnodes">${b.nodes.filter((n) => n.tier === t).sort((a, z) => a.col - z.col).map((n) => nodeHtml(n, c, bar)).join("")}</ul></div>`;

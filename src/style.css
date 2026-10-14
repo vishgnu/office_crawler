@@ -408,7 +408,7 @@ html.hc .opt-val, html.hc .screen.options .hint, html.hc .hint, html.hc .seed, h
 .btn.small { min-height: 40px; }
 
 @media (max-width: 760px), (max-height: 520px) and (max-width: 1000px) {
-  .cs-app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 40dvh) minmax(0, 1fr); }
+  .cs-app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 33dvh) minmax(0, 1fr); }
   .cs-side { border-left: 0; border-top: 3px solid #0d0a1c; }
   .cs-info { padding: 12px 16px 8px; }
   .cs-head h2 { font-size: 22px; }
@@ -507,7 +507,7 @@ html.hc .opt-val, html.hc .screen.options .hint, html.hc .hint, html.hc .seed, h
 .tn-ic { grid-area: ic; width: 38px; height: 38px; position: relative; background: var(--panel2); border: 2px solid var(--ol); border-radius: 8px; padding: 2px; box-sizing: border-box; }
 .tn-ic .mk { position: absolute; right: -5px; bottom: -6px; font-style: normal; font-size: 14px; font-weight: 900; background: #4fd1a5; color: #0d0a1c; border-radius: 50%; width: 15px; height: 15px; line-height: 15px; text-align: center; border: 1.5px solid #0d0a1c; }
 .tnode.st-locked-level .tn-ic svg, .tnode.st-locked-prereq .tn-ic svg { opacity: .45; }
-.tn-name { grid-area: name; font-size: 14px; font-weight: 800; line-height: 1.1; overflow-wrap: anywhere; }
+.tn-name { grid-area: name; font-size: 14px; font-weight: 800; line-height: 1.1; overflow-wrap: break-word; min-width: 0; }
 .tn-lv { grid-area: lv; font-size: 14px; color: var(--mut); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .tn-lv .pp { display: inline-flex; gap: 2px; } .tn-lv .pp i { width: 6px; height: 6px; border-radius: 50%; background: #3a3366; border: 1px solid var(--ol); } .tn-lv .pp i.on { background: var(--gold); } .tn-lv .pp i.bo { background: #33e0ff; }
 .tn-st { grid-area: st; font-size: 14px; color: #d4cdf0; margin-top: 3px; line-height: 1.2; }
@@ -522,3 +522,16 @@ html.hc .opt-val, html.hc .screen.options .hint, html.hc .hint, html.hc .seed, h
 .noanim .cs-stamp, .noanim .cs-fig { transition: none; }
 html.hc .cs-side, html.hc .dlg-card { background: #000; border-color: #fff; }
 html.hc .tnode { border-color: #fff; }
+/* the tree needs room for three columns: the Skills drawer is wider than the Employee File (the camera inset still uses the narrow width) */
+#ui:not(.phone) #pleft[data-panel="skills"] { width: 440px; }
+@media (min-width: 1200px) { #ui:not(.phone) #pleft[data-panel="skills"] { width: 480px; } }
+.tree .tnodes { gap: 6px; }
+.tnode .sassign > span { flex: 1 1 100%; }
+.tnode .sassign { margin-top: 2px; }
+.tnode .learn { width: 100%; }
+.tnode .sassign { display: flex; flex-wrap: nowrap; justify-content: space-between; }
+.tnode .sassign .mini { min-width: 26px; padding: 2px 3px; min-height: 30px; flex: 1; }
+#ui.phone .tree .tnodes { grid-template-columns: 1fr; }
+#ui.phone .tnode { grid-column: auto; }
+#ui.phone .tnode .sassign .mini { min-width: 44px; min-height: 44px; }
+@media (max-height: 800px) and (min-width: 761px) { .cs-tags { display: none; } .cs-info { padding-top: 14px; } .cs-quote { margin: 8px 0 8px; } .cs-stats { margin-bottom: 8px; } .cs-foot { padding-top: 10px; padding-bottom: 12px; gap: 6px; } .cs-slotnote { font-size: 14px; } }

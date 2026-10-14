@@ -1,8 +1,8 @@
 // R5 UI through the real browser: character creation (class selection, name, Start), play, quit and Continue in the right slot, five slots
 // (full, replace with confirmation, delete, undo, rename), class per slot, the skill tree (learn, tooltips, respec, aura, bar assignment),
 // phone layouts. Screenshots (JPEG q85) go to docs/shots/r5-ui-{charselect,charselect-390,tree-fm,tree-it,slots-options}.jpg.
-import { mkdirSync, statSync } from "node:fs";
-import { launch, open, check, finish, startNew } from "./helpers.mjs";
+import { mkdirSync, statSync, readFileSync } from "node:fs";
+import { launch, open, check, finish, startNew, DIST } from "./helpers.mjs";
 import { content } from "../src/core/index.js";
 
 const browser = await launch();
@@ -267,6 +267,27 @@ await treeScenario(IT, 20, "tree-it");
     check("and off again", s.player.aura === null);
   } else check("the aura skill could be learned at level 12 (prerequisites met)", false, r);
   check("no page errors (aura, phone tree)", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+
+// ---------------------------------------------------------------- migration: the old single-slot save becomes slot 1, with a notice
+{
+  const v1 = readFileSync("test/fixtures/save-v1.json", "utf8");
+  const context = await browser.newContext({ viewport: { width: 1280, height: 720 } }), page = await context.newPage(), errors = [];
+  page.on("pageerror", (e) => errors.push(e.message)); page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+  await context.addInitScript((text) => { if (!localStorage.getItem("office-crawler.slots") && !localStorage.getItem("office-crawler.save")) localStorage.setItem("office-crawler.save", text); }, v1);
+  await page.goto(`${DIST}?test=1&seed=1&start=town`);
+  await page.waitForFunction(() => window.__app?.getState().scene === "title", null, { timeout: 15000 });
+  const g = { page, errors, context, app: (fn, ...args) => page.evaluate(([f, a]) => f.split(".").reduce((o, k) => o[k], window.__app)(...a), [fn, args]), state: () => page.evaluate(() => window.__app.getState()) };
+  const list = await g.app("slots.list");
+  check("migration: the old single-slot save is slot 1, a Facilities Manager (the Clerk), the old key stays as a backup", list.slots[0].state === "ok" && list.slots[0].class === FM.id && list.last === 1 && (await g.page.evaluate(() => localStorage.getItem("office-crawler.save"))) !== null, list.slots[0]);
+  const notice = await g.page.locator(T("title-notice")).innerText();
+  check("migration: the title shows a notice with the number of refunded skill points", /Facilities Manager/.test(notice) && /\d+ skill points/.test(notice), notice);
+  check("migration: Continue is enabled and opens the migrated character", !(await g.page.locator(T("continue")).isDisabled()));
+  await g.page.click(T("continue"));
+  const s = await g.state();
+  check("migration: the migrated character plays (class model, a name, skill points to spend)", s.player.class === FM.id && typeof s.player.name === "string" && s.player.name.length > 0 && s.player.skillPoints > 0 && (await g.app("slots.list")).active === 1, { name: s.player.name, sp: s.player.skillPoints });
+  check("no page errors (migration)", g.errors.length === 0, g.errors);
   await g.context.close();
 }
 

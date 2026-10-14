@@ -1,10 +1,12 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
-_Last updated 2026-10-14T03:43:36Z. Keep this block current after every step; the log below is history._
+_Last updated 2026-10-14T04:16:20Z. Keep this block current after every step; the log below is history._
 
-**Where we are:** round 4 core done, round 5 WORLD done, round G (graphics detail) ported; round 5 UI and the G gate reviews are running.
+**Where we are:** R4 core, R5 WORLD, R5 UI (UI-R5 done, verified by orchestrator: 574 tests, e2e 12/12) and G-FIX done. Now: adversarial test-engineer pass (ADV-R5), progress `docs/reviews/R5-adversarial-progress.md`.
 
 **In flight (check the files, not memory):**
-- UI-R5: wiring + character select (variant A) + skill-tree panel + 5 slots in Options + audio cues + e2e fixes
+- ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
+  ADR-0006), setName-while-paused workaround, landscape-phone layout condensed only, tree shots show top only.
+- (done) UI-R5: wiring + character select (variant A) + skill-tree panel + 5 slots in Options + audio cues + e2e fixes
   (ui.mjs, s3ui.mjs) + per-script e2e timeout. Progress: `docs/reviews/R5-ui-progress.md`. When done: run
   `npm test` and `npm run e2e` (one command) yourself; test N5 (ui must not import render) must be resolved;
   wire `src/render/hudchrome.js` into hud.js (see `docs/reviews/G-world-progress.md`).
@@ -157,3 +159,4 @@ Each round also improves the harness (learnings → agent definitions/rules), as
 - [G] In-game appeal review: 32/40 (iterate vs gate 34). World reads at 1x; characters don't (faces ~25 px, no pool tint visible). DISCREPANCY: WORLD-G claimed items 9/10 (tint, faces) done, the reviewer doesn't see them → G-FIX must verify at 1x with crops. Overlaps: HP bars on actors in crowds, actors clipped by wall tops. Waiting for the craft review.
 - [G] Craft review 31/40 (16/20 done, 4 partly, 9 label overlaps → L-018 recurring). G-FIX launched (render + core loot.js; not hud/ui). New learning L-024 (visual claims need 1x crop evidence) applied to implementer.md.
 - 2026-10-14T03:43:36Z G-FIX hand-back: faces 1.4x 2-tone, pool tint, far-half hue, label de-collision, loot off props. 569 tests, bench 47.1. Ledger row added. G re-review after UI-R5.
+- 2026-10-14T04:16:20Z UI-R5 hand-back (506.6k tokens, 68.5 min). Orchestrator re-run: npm test 574/0, npm run e2e 12/12 OK. Next ADV-R5.

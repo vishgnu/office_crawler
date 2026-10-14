@@ -106,7 +106,7 @@ Object.assign(T, {
   // skill tree
   trTitle: "Skills", trPoints: "Skill points", trReset: "Respec", trResetHint: "Take back every point (in the Lobby).", trResetNone: "Respec is only possible in the Lobby.",
   trTier: "Tier", trLevelOf: "Level", trNeeds: "Needs", trNow: "Now", trNext: "Next level", trAura: "Aura", trAuraOn: "Aura on", trAuraOff: "Aura off", trSignature: "Signature", trCost: "Mana", trReserve: "reserves", trPassive: "Passive",
-  trAssign: "Assign to bar", trSelectNote: "Hover or focus a skill for details. Assign learned skills to F1 to F4.", trBranchSpent: "points spent", trNothing: "nothing yet",
+  trAssign: "Assign to bar", trSelectNote: "Hover or focus a skill for its numbers. The right mouse button uses the skill selected on the bar (F1 to F4).", trBranchSpent: "Points spent", trNothing: "nothing yet",
   trStateLearned: "Learned", trStateAvailable: "Available", trStateLockedLevel: "Locked", trStateLockedPrereq: "Locked", trStateMaxed: "Max level", trStateNoPoints: "No points",
   trRespecDone: "Skill points returned.", trRespecFail: { "not-in-town": "Respec is only possible in the Lobby.", dead: "You cannot do that now.", "respec-off": "Respec is switched off.", "respec-used": "You already used your respec.", "no-gold": "Not enough gold to respec." },
   trLearnFail: { "level-gate": "Your level is too low.", prereq: "Learn the earlier skill first.", "no-points": "No skill points left.", "max-level": "Already at maximum level.", basic: "Basic attacks are free.", "wrong-class": "Not a skill of your class." },
