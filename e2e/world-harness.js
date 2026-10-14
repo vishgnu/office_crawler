@@ -223,7 +223,7 @@ W.floor8Stairs = (unlocked) => {
 // W.fight(cls): the hero stands in the basement with a ring of monsters at 3-5 tiles. W.skill(id): grants the skill and casts it at the nearest monster.
 // W.panel(i, cols, rows, [ox, oy]): copies the hero-centred crop of the current frame into cell i of a contact sheet; W.panelsShow() draws the sheet to the canvas.
 W.fight = (cls, o = {}) => {
-  const opt = { seed: 5, depth: 4, n: 5, types: ["temp-worker", "zombie-intern", "printer-imp", "middle-manager", "consultant", "temp-worker", "zombie-intern", "printer-imp"], r: [2.5, 4.5], ...o };
+  const opt = { seed: 5, depth: 4, n: 5, types: ["temp-worker", "zombie-intern", "printer-imp", "middle-manager", "consultant", "temp-worker", "zombie-intern", "printer-imp"], r: [3, 5], ...o };
   W.now = 1000; W.fx.reset(); W.rs.facing.clear();
   const s = (W.core = newGame(opt.seed, { class: cls, start: "town" }));
   teleportFloor(s, opt.depth);
