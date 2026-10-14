@@ -1,0 +1,10 @@
+import { launch, open } from "./helpers.mjs";
+const browser = await launch();
+const g = await open(browser, { query: "test=1&seed=1", lobby: true });
+await g.page.click('[data-testid="new-game"]');
+console.log(JSON.stringify(await g.app("cheat.setLevel", 60)));
+let s = await g.state();
+console.log(s.player.level, s.player.attrPoints, s.player.hpMax, JSON.stringify(s.player.attrs));
+console.log(JSON.stringify(await g.app("input", { t: "allocate", attr: "stamina" })));
+s = await g.state(); console.log(s.player.attrPoints, s.player.hpMax);
+await browser.close();

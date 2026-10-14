@@ -32,6 +32,10 @@ export function messageFor(ev, state) {
     case "respawn": return T.msgRespawned;
     case "portalOpen": return T.msgPortalOpen;
     case "portalUse": return T.msgPortalBack;
+    case "bossTelegraph": return ev.kind === "slam" ? S.bossTelegraphSlam : ev.kind === "volley" ? S.bossTelegraphVolley : null; // also the screen-reader warning (live region)
+    case "bossPhase": return S.bossPhase2;
+    case "bossSummon": return S.bossSummon;
+    case "stairsUnlocked": return S.bossStairsUnlocked;
     case "floorEnter": return ev.depth === 0 ? S.lobbyName : `${T.floorWord} ${ev.depth}: ${state.floor.name}`;
     default: return null;
   }

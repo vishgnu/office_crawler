@@ -27,6 +27,12 @@ function kindDeco(g, kind, v, theme, b, cx, cy, hw, hh) {
     line(g, cx - hw * 0.5, cy + hh * 0.5, cx + hw * 0.5, cy - hh * 0.5, "rgba(10,20,26,0.35)", 1);
     quad(0.3, 0, 0, b);
     g.restore();
+  } else if (theme === "executive" && kind === "boardroom") { // plush carpet: a woven diamond lattice with a thin gold inlay
+    g.save(); clipDiamond(g, cx, cy, hw, hh);
+    for (const k of [-1, 0, 1]) { line(g, cx - hw, cy + k * hh * 0.5, cx, cy + k * hh * 0.5 + hh * 0.5 + (k ? 0 : 0), "rgba(10,2,14,0.2)", 1); line(g, cx, cy + k * hh * 0.5 - hh * 0.5, cx + hw, cy + k * hh * 0.5, "rgba(10,2,14,0.2)", 1); }
+    quad(0.56, 0, 0, "rgba(255,200,120,0.07)");
+    if (v === 0 || v === 3 || v === 4 || v === 5) { g.strokeStyle = "rgba(224,176,74,0.28)"; g.lineWidth = 0.9; poly(g, [[cx, cy - hh * 0.62], [cx + hw * 0.62, cy], [cx, cy + hh * 0.62], [cx - hw * 0.62, cy]]); g.stroke(); }
+    g.restore();
   } else if (theme === "basement" && kind === "server") { // raised floor tiles, a cold LED line and a vent
     g.save(); clipDiamond(g, cx, cy, hw, hh);
     line(g, cx - hw * 0.5, cy - hh * 0.5, cx + hw * 0.5, cy + hh * 0.5, "rgba(4,10,20,0.55)", 1.2);
@@ -67,10 +73,15 @@ export function drawFloor(g, kind, v, theme = "open-plan") {
       ellipse(g, cx - 2, cy + 1, 12, 5.4, "rgba(24,64,104,0.7)");
       ellipse(g, cx - 5, cy - 0.5, 5, 1.8, "rgba(160,210,255,0.22)");
       ellipse(g, cx + 12, cy - 4, 1.6, 0.8, "rgba(24,64,104,0.8)");
+    } else if (v === 4 && theme === "executive") { // a cigar-burn and a scuff in the pile
+      ellipse(g, cx + 3, cy, 3, 1.4, "rgba(0,0,0,0.5)"); line(g, cx - 12, cy + 2, cx - 2, cy + 6, "rgba(10,2,14,0.4)", 1.4);
     } else if (v === 4) { // coffee ring + splash
       ellipse(g, cx - 3, cy + 1, 11, 5.2, P.decal.coffee);
       ellipse(g, cx - 3, cy + 1, 7, 3.2, "rgba(0,0,0,0.25)");
       ellipse(g, cx + 12, cy - 4, 2.5, 1.2, P.decal.coffee); ellipse(g, cx + 16, cy - 1, 1.6, 0.8, P.decal.coffee);
+    } else if (theme === "executive") { // spilled red wine and a scatter of dropped paper (the executive floor has no blood: the dread is in the light)
+      ellipse(g, cx - 3, cy + 1, 9, 4.2, "rgba(58,10,34,0.5)"); ellipse(g, cx - 4, cy + 0.4, 4, 1.8, "rgba(110,40,80,0.3)"); ellipse(g, cx + 10, cy - 3, 1.6, 0.8, "rgba(70,6,28,0.8)");
+      fillPoly(g, [[cx + 4, cy + 3], [cx + 12, cy + 1], [cx + 14, cy + 5], [cx + 6, cy + 7]], "rgba(236,228,207,0.5)");
     } else if (theme === "lobby") { // the Lobby is a safe place: a scuffed rug patch instead of blood
       ellipse(g, cx - 2, cy, 13, 5.6, "rgba(10,6,20,0.28)");
       line(g, cx - 10, cy + 1, cx + 8, cy - 1, "rgba(212,166,74,0.25)", 1);
@@ -99,6 +110,7 @@ export function drawMarker(g, id, theme = "open-plan") {
     fillPoly(g, [[cx - 6, cy - 3], [cx + 6, cy - 3], [cx, cy + 5]], "#5af0a0", P.ink, 1);
     return;
   }
+  if (id === "stairs-locked" || id === "stairs-open") { drawBossStairs(g, id === "stairs-open", cx, cy); return; }
   if (id === "door") {
     fillPoly(g, [[cx - 9, cy - 4.5], [cx + 9, cy + 4.5], [cx + 4, cy + 7], [cx - 14, cy - 2]], "#6b4a2f", P.ink, 1.2);
     line(g, cx - 12, cy - 2.5, cx + 6, cy + 6, shade("#6b4a2f", 0.3), 1);
@@ -115,6 +127,52 @@ export function drawMarker(g, id, theme = "open-plan") {
   g.fillStyle = P.ink;
   poly(g, up ? [[cx, cy - 5], [cx + 5, cy + 2], [cx - 5, cy + 2]] : [[cx, cy + 5], [cx + 5, cy - 2], [cx - 5, cy - 2]]);
   g.fill();
+}
+
+/**
+ * The way down from the last floor. Locked: dim steps under hazard tape (diagonal black and yellow bands across the whole tile and a
+ * padlock) so it reads as shut without colour. Open: the steps lit from below with a gold frame and a stack of down chevrons.
+ */
+function drawBossStairs(g, open, cx, cy) {
+  const col = open ? "#f0c24a" : "#6a5a70";
+  for (let i = 0; i < 4; i++) {
+    const t = i / 4, t2 = (i + 1) / 4, x0 = cx - 24 + 48 * t, x1 = cx - 24 + 48 * t2;
+    const top = (x) => 17 - (16 - Math.abs(x - cx) * 0.5) + 4, bot = (x) => 17 + (16 - Math.abs(x - cx) * 0.5) - 4;
+    fillPoly(g, [[x0, top(x0)], [x1, top(x1)], [x1, bot(x1)], [x0, bot(x0)]], i % 2 ? shade(col, -0.25) : col, P.ink, 1.2);
+  }
+  if (open) {
+    fillPoly(g, [[cx, cy - 15], [cx + 30, cy], [cx, cy + 15], [cx - 30, cy]], null, "#ffe9a0", 1.6);
+    for (let k = 0; k < 3; k++) { const y = cy - 5 + k * 5; fillPoly(g, [[cx - 7, y - 3], [cx, y + 3], [cx + 7, y - 3], [cx + 7, y - 0.4], [cx, y + 5.6], [cx - 7, y - 0.4]], k === 1 ? "#ffffff" : "#5af0a0", P.ink, 0.9); }
+    return;
+  }
+  g.save(); poly(g, [[cx, cy - 15], [cx + 30, cy], [cx, cy + 15], [cx - 30, cy]]); g.clip();
+  for (let i = -8; i <= 8; i++) { const x = cx + i * 8; fillPoly(g, [[x, cy - 18], [x + 4.5, cy - 18], [x + 4.5 - 18, cy + 18], [x - 18, cy + 18]], i & 1 ? "#14101c" : "#f0c23a"); } // hazard bands
+  g.restore();
+  fillPoly(g, [[cx, cy - 15], [cx + 30, cy], [cx, cy + 15], [cx - 30, cy]], null, P.ink, 1.6);
+  // padlock
+  g.strokeStyle = P.ink; g.lineWidth = 3; g.beginPath(); g.arc(cx, cy - 3, 4, Math.PI, 0); g.stroke();
+  g.strokeStyle = "#d8dce8"; g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy - 3, 4, Math.PI, 0); g.stroke();
+  fillPoly(g, [[cx - 5.5, cy - 3], [cx + 5.5, cy - 3], [cx + 5.5, cy + 4.5], [cx - 5.5, cy + 4.5]], "#c9a050", P.ink, 1.2);
+  ellipse(g, cx, cy, 1.1, 1.1, P.ink);
+}
+
+/** Executive glass wall: a night skyline (towers with lit windows, a moon) behind a thin brass frame. Face-space helper `quad`. */
+function cityWindow(g, pt, quad, blob, G, seed) {
+  quad(pt, 0.06, 0.2, 0.94, 0.8, G.frame, P.ink, 1.2);
+  quad(pt, 0.09, 0.23, 0.91, 0.77, G.sky);
+  quad(pt, 0.09, 0.5, 0.91, 0.77, G.sky2);
+  // moon and a few stars
+  blob(pt, 0.78, 0.68, 0.035, 0.07, G.moon);
+  for (const [u, v] of [[0.2, 0.7], [0.36, 0.62], [0.55, 0.72], [0.66, 0.6]]) quad(pt, u, v, u + 0.012, v + 0.025, "rgba(255,255,255,0.8)");
+  // towers: [u0, u1, height]
+  const towers = seed ? [[0.1, 0.26, 0.2], [0.26, 0.38, 0.32], [0.4, 0.6, 0.24], [0.6, 0.72, 0.38], [0.74, 0.9, 0.18]] : [[0.1, 0.22, 0.3], [0.24, 0.42, 0.2], [0.42, 0.52, 0.36], [0.54, 0.74, 0.22], [0.76, 0.9, 0.3]];
+  towers.forEach(([u0, u1, h], i) => {
+    quad(pt, u0, 0.23, u1, 0.23 + h, i & 1 ? "#141a3c" : "#10152f");
+    for (let k = 0; k < 6; k++) { const u = u0 + 0.025 + (k % 3) * 0.04, v = 0.26 + Math.floor(k / 3) * 0.08 + ((i + k) % 2) * 0.03; if (u + 0.025 < u1 && v < 0.2 + h) quad(pt, u, v, u + 0.022, v + 0.035, (i + k) % 3 ? G.light : G.light2); }
+  });
+  // glass sheen and mullions
+  quad(pt, 0.09, 0.23, 0.4, 0.77, "rgba(180,210,255,0.07)");
+  quad(pt, 0.34, 0.2, 0.355, 0.8, G.frame); quad(pt, 0.64, 0.2, 0.655, 0.8, G.frame);
 }
 
 /** Wall block, drawn per neighbour mask (bit 1 = wall to N, 2 = E, 4 = S, 8 = W). */
@@ -141,7 +199,11 @@ export function drawWall(g, mask, variant = 0, theme = "open-plan") {
     quad(pt, 0, 0, 1, 0.13, w.base);                         // skirting
     quad(pt, 0.07, 0.2, 0.93, 0.74, shade(base, 0.1), shade(base, -0.28), 1); // wall panel
     quad(pt, 0, 0.9, 1, 1, w.trim); quad(pt, 0, 0.9, 1, 0.93, w.trimDark); // orange trim
-    if (theme === "lobby" && variant === 1) { // framed poster on the wainscot
+    if (theme === "executive" && variant === 1) cityWindow(g, pt, quad, blob, themeOf("executive").glass, edgeSide ? 1 : 0);
+    else if (theme === "executive" && variant === 2) { // award wall: a framed certificate and a gilt shield
+      quad(pt, 0.12, 0.32, 0.5, 0.7, "#e0b04a", P.ink, 1.1); quad(pt, 0.16, 0.37, 0.46, 0.65, "#f4efe0"); quad(pt, 0.2, 0.5, 0.42, 0.52, "rgba(13,10,28,0.5)"); quad(pt, 0.2, 0.56, 0.38, 0.58, "rgba(13,10,28,0.5)");
+      fillPoly(g, [pt(0.6, 0.62), pt(0.86, 0.62), pt(0.86, 0.46), pt(0.73, 0.34), pt(0.6, 0.46)], "#e0b04a", P.ink, 1.1); fillPoly(g, [pt(0.65, 0.58), pt(0.81, 0.58), pt(0.81, 0.48), pt(0.73, 0.4), pt(0.65, 0.48)], "#8a1f34");
+    } else if (theme === "lobby" && variant === 1) { // framed poster on the wainscot
       quad(pt, 0.3, 0.36, 0.7, 0.7, "#1a1436", P.ink, 1); quad(pt, 0.35, 0.42, 0.65, 0.64, "#e8b44a"); quad(pt, 0.35, 0.42, 0.5, 0.53, "#5b8cff");
     } else if (theme === "basement" && variant === 1) { // pipe run with brackets
       quad(pt, 0, 0.42, 1, 0.54, "#7a5a3c", P.ink, 1.1); quad(pt, 0, 0.5, 1, 0.54, "#a9784a");

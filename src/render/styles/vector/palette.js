@@ -23,6 +23,7 @@ export const palette = {
   rims: {
     clerk: "#e6fbff", "zombie-intern": "#a6e65a", "printer-imp": "#ff5a46",
     "temp-worker": "#ffb35a", "printer-demon": "#ff3d6e", "middle-manager": "#ffd2a0", "vending-machine": "#58e0ff", consultant: "#d6c8ff", auditor: "#b8f060",
+    "regional-director": "#ffd24a", "regional-director-rage": "#ff4a3a",
     "npc-vendor": "#ffe08a", "npc-healer": "#9ff5d8", "npc-potions": "#9fe08a", "npc-stash": "#bcd0ff",
   },
   // Champion outline (distinct from every rim, rarity and the hero ring): reddish purple, Okabe-Ito.
@@ -41,6 +42,14 @@ export const palette = {
       wall: { top: "#34414d", left: "#566878", right: "#3f4e5c", band: "#2b3640", base: "#1d252d", trim: "#6a7886", trimDark: "#47525d", rim: "#bfe4ff" },
       dark: "rgba(3,7,18,0.92)",
     },
+    // The Executive Suite (S3): plush wine carpet, mahogany panelling with gold trim, glass walls onto a city at night. Moody, the climactic room.
+    executive: {
+      floors: { corridor: ["#2c1a2e", "#35203a"], boardroom: ["#3a1b30", "#47233b"], storage: ["#2c1a2e", "#35203a"] },
+      floorEdge: "rgba(255,190,120,0.16)",
+      wall: { top: "#2a1612", left: "#6a3426", right: "#4a2219", band: "#351a14", base: "#24110e", trim: "#e0b04a", trimDark: "#9a7428", rim: "#ffd9a0" },
+      glass: { sky: "#0b1230", sky2: "#1c2a5c", frame: "#c9a050", light: "#ffd98a", light2: "#7fe0ff", moon: "#f4f0ff" },
+      dark: "rgba(8,4,14,0.8)",
+    },
   },
   proj: { stapler: "#c9d2e4", toner: "#17131f", tonerGlow: "#ff3d6e", slide: "#fffaf0", slideEdge: "#5b8cff" },
   // Light pools: [colour, additive alpha at the centre]
@@ -52,9 +61,16 @@ export const palette = {
     cold: ["#8fb8ff", 0.22],  // basement: cold flickering tube
     rack: ["#35e0c8", 0.2],   // basement: server rack LEDs
     gen: ["#ff9a3a", 0.2],    // basement: generator work light
+    desklamp: ["#ffb347", 0.22], // executive: brass desk lamp
+    screen: ["#7fd0ff", 0.17],   // executive: the quarterly results screen
+    chandelier: ["#ffcf8a", 0.16], // executive: a dim ceiling light over the middle of the room
+    boss: ["#ffeccc", 0.1],     // the Regional Director's aura (phase 1)
+    rage: ["#ff3a2a", 0.18],      // phase 2: red
   },
-  actorLights: { "printer-imp": "lamp", "printer-demon": "lamp" }, // monsters that carry a coloured light
+  actorLights: { "printer-imp": "lamp", "printer-demon": "lamp", "regional-director": "boss" }, // monsters that carry a coloured light
   dark: "rgba(7,5,24,0.86)",
+  // Boss telegraphs (colour-blind safe: each kind also has its own shape and a fill that grows; the colours are Okabe-Ito vermillion, yellow and sky blue)
+  telegraph: { slam: "#ff6a1f", volley: "#f0e442", summon: "#56b4e9", edge: "#0d0a1c" },
   // Plates: background and text colours; contrast of text on plate is unit-tested (>= 4.5:1).
   plate: { bg: "#1a1436", text: "#f3eefc", edge: "#0d0a1c", hp: "#ff4a52", hpTrack: "#3a1226" },
   plateHc: { bg: "#000000", text: "#ffffff", edge: "#ffffff", hp: "#ff6b73", hpTrack: "#2a2a2a" },

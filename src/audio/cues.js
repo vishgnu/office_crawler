@@ -100,6 +100,22 @@ export const EVENT_MAP = {
   portalOpen: () => [d("ding", "portalOpen")],
   portalUse: () => [d("stairs", "portalUse")],
   stairsLocked: () => reject({ name: "stairsLocked" }),
+  // boss and finale (S3-1). Built from existing kit sounds: no new kit voices. Boss cues are loud and high priority so a busy fight never drops them.
+  bossEngage: (ev, s) => [d("hurtManager", "bossEngage", { tile: tileOf(monsterOf(s, ev.id)), prio: 8 }), d("castMute", "bossEngage", { tile: tileOf(monsterOf(s, ev.id)), gain: 0.6, delay: 0.18, prio: 8 })],
+  bossTelegraph(ev, s) {
+    const tile = ev.tile ? { x: ev.tile.x, y: ev.tile.y } : tileOf(monsterOf(s, ev.id));
+    const cue = ev.kind === "slam" ? "castReplyAll" : ev.kind === "volley" ? "castStapler" : "castCoffee";
+    return [d(cue, "bossTelegraph", { tile, gain: 0.8, prio: 8 })];
+  },
+  bossSlam: (ev) => [d("hitFlesh", "bossSlam", { tile: ev.tile ?? null, prio: 8 }), d("deathZombie", "bossSlam", { tile: ev.tile ?? null, gain: 0.5, delay: 0.03, prio: 7 })],
+  bossVolley: (ev, s) => [d("castReplyAll", "bossVolley", { tile: tileOf(monsterOf(s, ev.id)), gain: 0.9, prio: 7 })],
+  bossSummon: (ev, s) => [d("ding", "bossSummon", { tile: tileOf(monsterOf(s, ev.id)), gain: 0.8, prio: 7 }), d("hurtImp", "bossSummon", { tile: tileOf(monsterOf(s, ev.id)), gain: 0.6, delay: 0.12 })],
+  bossPhase: (ev, s) => [d("deathManager", "bossPhase", { tile: tileOf(monsterOf(s, ev.id)), gain: 0.8, prio: 9 }), d("ding", "bossPhase", { gain: 0.7, delay: 0.3 })],
+  bossDefeated: (ev) => [d("deathManager", "bossDefeated", { tile: ev.tile ?? null, prio: 9 }), d("deathImp", "bossDefeated", { tile: ev.tile ?? null, gain: 0.7, delay: 0.25, prio: 8 })],
+  stairsUnlocked: () => [d("ding", "stairsUnlocked", { prio: 7 }), d("stairs", "stairsUnlocked", { gain: 0.7, delay: 0.2 })],
+  victory: () => [d("levelUp", "victory", { prio: 10 }), d("ding", "victory", { delay: 0.5, prio: 8 })],
+  keepPlaying: click(),
+  resisted(ev, s) { return [d("miss", "resisted", { tile: tileOf(monsterOf(s, ev.target)), gain: 0.6 })]; },
   // shell / UI hooks (emitted by main.js / ui; see S3-audio-notes.md)
   "ui:click": click(),
   "ui:open": () => [d("uiOpen", "uiOpen")],
@@ -116,6 +132,7 @@ export const SILENT_EVENTS = {
   drop: "a ground item appearing is silent; the pickup cue sounds",
   noPath: "pathing failure is a UI toast, not a sound",
   "ui:lowhp": "state change only; ui:heartbeat carries the pulses",
+  autosave: "a background save must not interrupt play; the title and options screens show save problems as text",
 };
 
 /** Descriptors for one event; unknown events and malformed input give []. */

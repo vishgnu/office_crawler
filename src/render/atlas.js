@@ -40,7 +40,7 @@ function outline(e, colour, px) {
 let atlasCounter = 0;
 export function createAtlas(scale = 1, meta = {}) {
   const map = new Map();
-  return {
+  const self = {
     scale, meta: { ...meta, id: ++atlasCounter },
     /** draw(g, scale): g is already scaled to logical units; scale is given for pixel-exact work. */
     add(key, w, h, ox, oy, draw) {
@@ -51,7 +51,13 @@ export function createAtlas(scale = 1, meta = {}) {
       draw(g, scale);
       map.set(key, { key, img, w: img.width / scale, h: img.height / scale, ox, oy, sil: null });
     },
-    get: (key) => map.get(key),
+    /** Like add(), but the sprite is only drawn on its first get() (boss sprites: large canvases, only the frames a fight shows). */
+    addLazy(key, w, h, ox, oy, draw) { map.set(key, { lazy: () => self.add(key, w, h, ox, oy, draw) }); },
+    get(key) {
+      const e = map.get(key);
+      if (e && e.lazy) { e.lazy(); return map.get(key); }
+      return e;
+    },
     has: (key) => map.has(key),
     keys: () => [...map.keys()],
     /** White silhouette of a sprite entry (hit flash). */
@@ -62,4 +68,5 @@ export function createAtlas(scale = 1, meta = {}) {
     /** Same, used for pool-coloured tint (a separate cache slot so shade and tint never collide). */
     tint: (e, colour) => silhouette(e, colour, 1, "source-in"),
   };
+  return self;
 }

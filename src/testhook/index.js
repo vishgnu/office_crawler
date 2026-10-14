@@ -3,7 +3,8 @@
 const isObj = (v) => v !== null && typeof v === "object";
 const fail = (error) => ({ ok: false, error });
 
-export function installTestHook(game, win = window) {
+export function installTestHook(game, extras = {}, win = window) {
+  const { audio = null, save = null, options = null } = extras;
   const tileArg = (t) => (isObj(t) && Number.isInteger(t.x) && Number.isInteger(t.y) ? { x: t.x, y: t.y } : null);
 
   /** Resolve {tile} or {screen} to a tile the way a real mouse event would. */
@@ -72,6 +73,18 @@ export function installTestHook(game, win = window) {
     },
     pick: (x, y) => (game.core && Number.isFinite(x) && Number.isFinite(y) ? game.pickAt(x, y) : fail("pick needs a running game and finite screen coordinates")),
     perf: () => game.perf(),
+    // S3: sound, save slot and options (what the Options screen and the title buttons use underneath)
+    audio: audio && { getState: () => audio.getState(), clearCueLog: () => audio.clearCueLog(), setVolume: (c, v) => audio.setVolume(c, v), setMuted: (b) => audio.setMuted(b), setKit: (k) => audio.setKit(k) },
+    save: save && { ...save },
+    options: options && {
+      get: () => structuredClone(game.options),
+      setKey: (action, code) => options.setKey(action, code),
+      restoreKeys: () => options.restoreKeys(),
+      setFlag: (name, on) => options.setFlag(name, on),
+      setTextScale: (n) => options.setTextScale(n),
+      open: () => game.openOptions(),
+      close: () => game.closeOptions(),
+    },
   };
   const docs = {
     describe: "List every member of this hook.",
@@ -91,10 +104,13 @@ export function installTestHook(game, win = window) {
     cheat: "Debug cheats: spawnMonster(type, tile), setLevel(n), setHp(n), teleportFloor(depth), giveGold(n), spawnItem(opts, tile), giveItem(opts) (spawn + pick up).",
     ui: "Panels: open(name), close(name), toggle(name) with name inventory | character | skills (same as the I, C, S keys).",
     pick: "pick(x, y): what a click at this canvas point means ({ tile, monsterId }), through the camera that is on screen.",
+    audio: "audio.getState() -> {kit, unlocked, ctxState, master, sfx, ambient, muted, effectiveGain, ambientId, cueLog[]}; clearCueLog(), setVolume(channel, v), setMuted(b), setKit(id).",
+    save: "Save slot: has(), write() (forced save of the running game), read() (parsed save or null), raw(), export('current'|'corrupt') -> text, import(text) -> {ok}, remove().",
+    options: "Options: get(), setKey(action, code) -> {ok, reason}, restoreKeys(), setFlag(name, bool), setTextScale(n), open(), close().",
     perf: "Frame and simulation timing, atlas completeness, fx flags, nameplate rects.",
   };
   function describe() {
-    return Object.keys(api).map((name) => ({ name, kind: typeof api[name] === "function" ? "fn" : "obj", doc: docs[name] }));
+    return Object.keys(api).filter((k) => api[k]).map((name) => ({ name, kind: typeof api[name] === "function" ? "fn" : "obj", doc: docs[name] }));
   }
   win.__app = api;
   return api;

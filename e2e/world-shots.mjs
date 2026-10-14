@@ -27,7 +27,43 @@ const shot = async (name) => {
   await page.screenshot({ path, type: "jpeg", quality: 85 });
   console.log(name, Math.round(statSync(path).size / 1024), "KB");
 };
+const bossShot = async (name, stage, at, after = 0, dy = 0) => {
+  const info = await call("boss", stage, at);
+  console.log(name, JSON.stringify(info));
+  if (after) await call("step", after);
+  await call("renderBoss", true, dy);
+  const path = `${outDir}/s3-boss-${name}.jpg`;
+  await page.screenshot({ path, type: "jpeg", quality: 85 });
+  console.log(name, Math.round(statSync(path).size / 1024), "KB");
+};
 const scenes = {
+  async boss() {
+    await bossShot("phase1", "idle", 0, 0, -2.5);
+    await bossShot("room", "idle", 0, 0, -5);
+    await bossShot("telegraph", "slam", 0.62);
+    await bossShot("volley", "volley", 0.62);
+    await bossShot("summon", "summon", 0.7);
+    await bossShot("phase2", "phase2", 0);
+    await bossShot("victory", "victory", 0);
+  },
+  async stairs() {
+    for (const u of [false, true]) {
+      console.log(JSON.stringify(await call("floor8Stairs", u))); await call("step", 4); await call("render");
+      const path = `${outDir}/s3-world-stairs-${u ? "open" : "locked"}.jpg`; await page.screenshot({ path, type: "jpeg", quality: 85 });
+    }
+  },
+  async bossbig() {
+    await call("sheet", ["regional-director", "regional-director-rage"], [["idle", 0, 0], ["windup", 0, 3], ["attack", 2, 2]], 4.2, "#3a1b30");
+    await page.screenshot({ path: `${outDir}/s3-sheet-boss-big.jpg`, type: "jpeg", quality: 90 });
+  },
+  async sheetboss() {
+    const clip = { x: 0, y: 0, width: 1920, height: 1080 };
+    const specs = [["idle", 0, 0], ["idle", 2, 1], ["walk", 6, 2], ["attack", 0, 2], ["windup", 0, 1], ["windup", 0, 3], ["death", 0, 3]];
+    await call("sheet", ["regional-director", "regional-director-rage"], specs, 1.9, "#3a1b30");
+    await page.screenshot({ path: `${outDir}/s3-sheet-boss.jpg`, type: "jpeg", quality: 90, clip });
+    await call("sheet", ["regional-director", "regional-director-rage"], [["idle", 4, 0], ["idle", 5, 1], ["walk", 3, 2], ["attack", 5, 2], ["windup", 4, 3], ["walk", 1, 1], ["attack", 6, 1]], 1.9, "#3a1b30");
+    await page.screenshot({ path: `${outDir}/s3-sheet-boss-b.jpg`, type: "jpeg", quality: 90, clip });
+  },
   async basement() { console.log(JSON.stringify(await call("scene", "basement", 5))); await call("render"); await shot("basement"); },
   async lobby() {
     console.log(JSON.stringify(await call("scene", "lobby", 3)));

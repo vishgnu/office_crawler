@@ -2,7 +2,7 @@
 // positions, contact shadows, actors lit from the same light model as the darkness mask, and the
 // hero-behind-wall ghost. The per-frame path allocates nothing: scratch objects and arrays are pooled.
 import { config, content } from "../core/index.js";
-import { keys, dirIndex, DIR_VEC, PLAYER_CLASS, FLOOR_VARIANTS, WALL_VARIANTS, ANIMS, PLAYER_ANIMS, DIRS, NPC_FRAMES } from "./keys.js";
+import { keys, dirIndex, DIR_VEC, PLAYER_CLASS, FLOOR_VARIANTS, WALL_VARIANTS, ANIMS, PLAYER_ANIMS, DIRS, NPC_FRAMES, bossType } from "./keys.js";
 import { project } from "../ui/camera.js";
 import { WALL, STAIRS_UP, STAIRS_DOWN, DOOR } from "../core/tiles.js";
 
@@ -18,6 +18,7 @@ const vhash = (x, y) => (Math.imul(x, 73856093) ^ Math.imul(y, 19349663)) >>> 0;
 // floor variant weights (percent, cumulative): 0 plain, 1 inset, 2 seam, 3 scuffs, 4 coffee, 5 blood
 const FLOOR_CUM = [26, 46, 66, 80, 90, 100];
 const floorVariant = (h) => { const r = (h >>> 3) % 100; for (let i = 0; i < FLOOR_VARIANTS; i++) if (r < FLOOR_CUM[i]) return i; return 0; };
+const execWallVariant = (h) => { const r = (h >>> 5) % 100; return r < 40 ? 0 : r < 82 ? 1 : 2; }; // glass walls dominate the Executive Suite
 const wallVariant = (h) => { const r = (h >>> 5) % 100; return r < 64 ? 0 : r < 90 ? 1 % WALL_VARIANTS : 2 % WALL_VARIANTS; };
 const caches = new WeakMap(), figTables = new WeakMap();
 const GHOST_DELTAS = [1, 0, 0, 1, 1, 1];
@@ -37,6 +38,21 @@ function figureTable(atlas) {
   return t;
 }
 
+/**
+ * The Executive Suite's dressing (render-only, none of it blocks): a long boardroom table in two wings against the north wall either side of
+ * the dais, leather chairs, trophies and the big results screen behind the desks. Positions follow gen/arena.js (room x 4..29, y 4..21; desks x 15..19, y 5).
+ */
+function addBoardroomDecor(props, atlas) {
+  const table = atlas.get(keys.fx("table")), chair = atlas.get(keys.fx("chair")), trophy = atlas.get(keys.fx("trophy")), screen = atlas.get(keys.fx("screen"));
+  const add = (x, y, e, o = {}) => props.push({ x, y, blocks: false, e, dy: 0, dd: 0, ...o });
+  add(17, 4, screen, { dd: -1.6 });
+  for (const wing of [[7, 13], [21, 27]]) {
+    for (let x = wing[0]; x <= wing[1]; x++) add(x, 5, table, { dd: -0.2, lamp: x === wing[0] || x === wing[1] });
+    for (let x = wing[0] + 1; x <= wing[1]; x += 2) add(x, 6, chair);
+  }
+  for (const x of [9, 12, 23, 26]) add(x, 5, trophy, { dy: 13, dd: 0.12 });
+}
+
 /** Per-floor lookup tables of atlas entries (built once per floor object and atlas). */
 function prepare(floor, atlas) {
   let c = caches.get(floor);
@@ -46,6 +62,7 @@ function prepare(floor, atlas) {
   for (const r of floor.rooms) for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (x >= 0 && y >= 0 && x < w && y < h) kindAt[y * w + x] = r.kind;
   const isWall = (x, y) => x < 0 || y < 0 || x >= w || y >= h || tiles[y * w + x] === WALL;
   const ground = new Array(w * h).fill(null), wall = new Array(w * h).fill(null), blocked = new Uint8Array(w * h);
+  let bossStairs = null;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const i = y * w + x, code = tiles[i];
     if (code === WALL) {
@@ -53,23 +70,31 @@ function prepare(floor, atlas) {
       for (let dy = -1; dy <= 1 && !open; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && !isWall(x + dx, y + dy)) { open = true; break; }
       if (!open) continue;
       const mask = (isWall(x, y - 1) ? 1 : 0) | (isWall(x + 1, y) ? 2 : 0) | (isWall(x, y + 1) ? 4 : 0) | (isWall(x - 1, y) ? 8 : 0);
-      wall[i] = atlas.get(keys.wall(theme, mask, wallVariant(vhash(x, y))));
+      wall[i] = atlas.get(keys.wall(theme, mask, theme === "executive" ? execWallVariant(vhash(x, y)) : wallVariant(vhash(x, y))));
       blocked[i] = 1;
     } else if (code === DOOR) ground[i] = atlas.get(keys.marker(theme, "door"));
     else if (code === STAIRS_UP) ground[i] = atlas.get(keys.marker(theme, "stairs-up"));
+    else if (code === STAIRS_DOWN && floor.bossStairs) { ground[i] = atlas.get(keys.marker(theme, "stairs-locked")); bossStairs = { i, x, y, locked: ground[i], open: atlas.get(keys.marker(theme, "stairs-open")) }; }
     else if (code === STAIRS_DOWN) ground[i] = atlas.get(keys.marker(theme, "stairs-down"));
     else ground[i] = atlas.get(keys.floor(theme, kindAt[i], floorVariant(vhash(x, y))));
   }
-  const props = floor.props.map((p) => { if (p.blocks) blocked[p.y * w + p.x] = 1; return { x: p.x, y: p.y, blocks: p.blocks, e: atlas.get(keys.prop(p.type)) }; });
+  const props = floor.props.map((p) => { if (p.blocks) blocked[p.y * w + p.x] = 1; return { x: p.x, y: p.y, blocks: p.blocks, e: atlas.get(keys.prop(p.type)), dy: 0, dd: 0 }; });
+  if (theme === "executive" && floor.arena) addBoardroomDecor(props, atlas);
   // The Lobby elevator is a tall doorframe standing on the exit tile (no tile can show it alone)
-  if (theme === "lobby" && floor.exit) props.push({ x: floor.exit.x, y: floor.exit.y, blocks: false, e: atlas.get(keys.fx("elevator")), tall: true });
+  if (theme === "lobby" && floor.exit) props.push({ x: floor.exit.x, y: floor.exit.y, blocks: false, e: atlas.get(keys.fx("elevator")), tall: true, dy: 0, dd: 0 });
   // light sources: a cyan pool on every monitor, rack LEDs and generator lamps in the basement, and a ceiling light over the middle of each room (warm in the Lobby, cold in the basement)
   const lights = [];
   const propLight = { desk: "monitor", "server-rack": "rack", generator: "gen" };
   for (const p of floor.props) if (propLight[p.type]) lights.push({ kind: propLight[p.type], x: p.x + 0.5, y: p.y + 0.5 });
-  const roomLight = theme === "lobby" ? "warm" : theme === "basement" ? "cold" : "fluor";
+  const roomLight = theme === "lobby" ? "warm" : theme === "basement" ? "cold" : theme === "executive" ? "chandelier" : "fluor";
+  if (theme === "executive") for (const p of props) { // the brass desk lamps on the dais and the table ends, and the big screen
+    if (p.e === atlas.get(keys.fx("screen"))) lights.push({ kind: "screen", x: p.x + 0.5, y: p.y + 1.4 });
+    else if (p.lamp) lights.push({ kind: "desklamp", x: p.x + 0.5, y: p.y + 0.5 });
+  }
   for (const r of floor.rooms) if (r.kind !== "corridor") lights.push({ kind: r.kind === "breakroom" ? "fluor" : roomLight, x: r.x + r.w / 2, y: r.y + r.h / 2 });
-  c = { atlas, ground, wall, props, blocked, lights };
+  // the floor-8 lift lights its surroundings once it is unlocked: a second candidate list with that light in it (picked per frame, no allocation)
+  const lightsOpen = bossStairs ? lights.concat([{ kind: "warm", x: bossStairs.x + 0.5, y: bossStairs.y + 0.5 }]) : lights;
+  c = { atlas, ground, wall, props, blocked, lights, lightsOpen, bossStairs };
   caches.set(floor, c);
   return c;
 }
@@ -85,8 +110,8 @@ const pool = [], items = [], actorOut = [], posA = { x: 0, y: 0 }, posB = { x: 0
 const out = { heroScreen: { x: 0, y: 0 }, heroDir: 0, actors: actorOut, heroItem: null };
 let nPool = 0;
 const grab = (d, e, x, y) => {
-  const it = pool[nPool++] ?? (pool[nPool - 1] = { d: 0, e: null, x: 0, y: 0, a: 1, actor: false, isPlayer: false, alert: false, shade: 0, tint: "", tintA: 0, flash: false, head: 0, hurt: false, dx: 0, dy: 0, icon: 0, champ: false, mute: false, npc: false });
-  it.d = d; it.e = e; it.x = x; it.y = y; it.a = 1; it.actor = false; it.isPlayer = false; it.alert = false; it.shade = 0; it.tint = ""; it.tintA = 0; it.flash = false; it.dx = 0; it.dy = 0; it.icon = 0; it.champ = false; it.mute = false; it.npc = false; it.hurt = false;
+  const it = pool[nPool++] ?? (pool[nPool - 1] = { d: 0, e: null, x: 0, y: 0, a: 1, actor: false, isPlayer: false, alert: false, shade: 0, tint: "", tintA: 0, flash: false, head: 0, hurt: false, dx: 0, dy: 0, icon: 0, champ: false, mute: false, npc: false, boss: false, summoned: false });
+  it.d = d; it.e = e; it.x = x; it.y = y; it.a = 1; it.actor = false; it.isPlayer = false; it.alert = false; it.shade = 0; it.tint = ""; it.tintA = 0; it.flash = false; it.dx = 0; it.dy = 0; it.icon = 0; it.champ = false; it.mute = false; it.npc = false; it.hurt = false; it.boss = false; it.summoned = false;
   return it;
 };
 const byDepth = (a, b) => a.d - b.d;
@@ -163,10 +188,33 @@ function champRing(g, sx, sy, r, z, now, colour) {
   g.globalAlpha = 1;
 }
 
+/** The Regional Director's aura: a pulsing ground glow, two counter-rotating dashed rings and eight rays. Gold in phase 1, red and faster in phase 2. */
+function bossAura(g, sx, sy, r, z, now, rage) {
+  const col = rage ? "255,74,58" : "255,210,74", rx = r * z, ry = rx * 0.5, sp = rage ? 1.7 : 1, pulse = 0.5 + 0.5 * Math.sin(now / (rage ? 170 : 340));
+  g.save(); g.lineCap = "round";
+  g.beginPath(); g.ellipse(sx, sy, rx * (1.15 + 0.08 * pulse), ry * (1.15 + 0.08 * pulse), 0, 0, Math.PI * 2);
+  g.fillStyle = `rgba(${col},${0.12 + 0.07 * pulse})`; g.fill();
+  g.lineWidth = Math.max(3, 3.2 * z); g.strokeStyle = "rgba(13,10,28,0.7)"; g.stroke();
+  g.lineWidth = Math.max(1.6, 1.8 * z); g.strokeStyle = `rgba(${col},${0.7 + 0.25 * pulse})`; g.stroke();
+  g.setLineDash([7 * z, 5 * z]); g.lineDashOffset = -now * 0.012 * sp * z;
+  g.beginPath(); g.ellipse(sx, sy, rx * 1.38, ry * 1.38, 0, 0, Math.PI * 2); g.lineWidth = Math.max(1.2, 1.3 * z); g.strokeStyle = `rgba(${col},0.55)`; g.stroke();
+  g.lineDashOffset = now * 0.016 * sp * z; g.beginPath(); g.ellipse(sx, sy, rx * 0.8, ry * 0.8, 0, 0, Math.PI * 2); g.stroke();
+  g.setLineDash([]);
+  g.lineWidth = Math.max(1.6, 1.8 * z); g.strokeStyle = `rgba(${col},0.75)`;
+  for (let k = 0; k < 8; k++) { const an = k * Math.PI / 4 + now / 2400 * sp, c = Math.cos(an), n = Math.sin(an); g.beginPath(); g.moveTo(sx + c * rx * 1.5, sy + n * ry * 1.5); g.lineTo(sx + c * rx * (1.72 + 0.12 * pulse), sy + n * ry * (1.72 + 0.12 * pulse)); g.stroke(); }
+  g.restore();
+}
+
+/** Staff the boss called: a thin dashed grey-white ring (the "temp badge" itself is drawn on the body). */
+function tempRing(g, sx, sy, r, z) {
+  g.save(); g.beginPath(); g.ellipse(sx, sy, r * z, r * z * 0.5, 0, 0, Math.PI * 2);
+  g.setLineDash([3 * z, 3 * z]); g.lineWidth = Math.max(1, 1.1 * z); g.strokeStyle = "rgba(235,232,220,0.6)"; g.stroke(); g.restore();
+}
+
 function addActor(a, isPlayer, pos, dir, sx, sy) {
   const { g, cam, atlas, fx, now, env, light } = F, z = cam.z;
-  const af = animFor(a, isPlayer, now), table = isPlayer ? F.figs.plr : F.figs.mon[a.type];
-  const e = table[af.anim][dir][af.frame];
+  const af = animFor(a, isPlayer, now), boss = !isPlayer && a.tier === "boss";
+  const e = boss ? atlas.get(keys.mon(bossType(a.type, a.boss?.phase ?? 1), af.anim, dir, af.frame)) : (isPlayer ? F.figs.plr : F.figs.mon[a.type])[af.anim][dir][af.frame];
   let alphaV = 1, flash = false;
   const dying = af.anim === "death";
   if (dying) {
@@ -181,18 +229,21 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
     light.sample(pos.x + 0.5, pos.y + 0.5, LS);
     shade = LS.shade;
     if (!env.lowFx) { tint = LS.tint; tintA = Math.min(LS.tintA, 0.1); } // capped so the imp's red eyes and rim stay saturated
-    if (shade >= 0.6 && !tint && !dying && !champ) return null;
+    if (shade >= 0.6 && !tint && !dying && !champ && !boss) return null;
+    if (boss) { shade = Math.min(shade, 0.12); tint = ""; tintA = 0; } // the boss is never lost in the dark and keeps its own colours (its aura is the light)
   }
   // contact shadow on the ground, under everything that stands there
   const k = (dm.shadowR * 2.25) / 62, sh = F.shadowE;
   if (isPlayer && !dying) heroRing(g, sx, sy, dm.shadowR * 1.7, z, now);
   if (champ) champRing(g, sx, sy, dm.shadowR * 1.6, z, now, env.style.palette.champion);
+  if (boss && !dying) bossAura(g, sx, sy, dm.shadowR * 1.7, z, now, a.boss?.phase >= 2);
+  if (!isPlayer && a.summoned && !dying) tempRing(g, sx, sy, dm.shadowR * 1.5, z);
   g.globalAlpha = 0.85 * alphaV;
   g.drawImage(sh.img, Math.round(sx - sh.ox * k * z), Math.round(sy - sh.oy * k * z), Math.round(sh.w * k * z), Math.round(sh.h * k * z));
   g.globalAlpha = 1;
   const it = grab(pos.x + pos.y + 1.02, e, sx, sy);
   it.actor = true; it.isPlayer = isPlayer; it.a = alphaV; it.flash = flash; it.head = dm.head;
-  it.shade = shade; it.tint = tint; it.tintA = tintA; it.champ = champ;
+  it.shade = shade; it.tint = tint; it.tintA = tintA; it.champ = champ; it.boss = boss; it.summoned = !isPlayer && !!a.summoned && !dying;
   if (!isPlayer && !dying) {
     it.icon = a.muteT > 0 ? ICON_MUTED : a.ai === "stagger" ? ICON_STAGGER : a.ai === "flee" ? ICON_FLEE : a.ai === "notice" ? ICON_ALERT : 0;
     it.mute = a.muteT > 0;
@@ -227,6 +278,12 @@ function animFor(a, isPlayer, now) {
     else if (a.next) { AF.anim = "walk"; AF.frame = Math.floor(now / 90) % 6; }
     else { AF.anim = "idle"; AF.frame = Math.floor(now / 200) % 4; }
   } else if (a.ai === "dead") { AF.anim = "death"; AF.frame = Math.min(3, Math.floor((a.deathT / config.deathTicks) * 4)); }
+  else if (a.boss?.windup) { // the gavel goes up over the wind-up, a slam strikes on the tick it lands, then the arm stays up (volley, summon) or recovers
+    const w = a.boss.windup;
+    if (w.t < w.total) { AF.anim = "windup"; AF.frame = Math.min(3, Math.floor((w.t / w.total) * 4)); }
+    else if (w.kind === "slam") { AF.anim = "attack"; AF.frame = w.t - w.total < 8 ? 2 : 3; }
+    else { AF.anim = "windup"; AF.frame = 3; }
+  }
   else if (a.ai === "attack" && a.attackT > 0) { AF.anim = "attack"; AF.frame = attackFrame(a.attackT, config.monsterAttackTicks, config.monsterAttackHitTick); }
   else if (a.next) { AF.anim = "walk"; AF.frame = Math.floor(now / (a.ai === "flee" ? 70 : 110)) % 6; }
   else { AF.anim = "idle"; AF.frame = Math.floor(now / 220) % 4; }
@@ -272,12 +329,25 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
   nPool = 0; items.length = 0;
   const margin = 70 * z, yMax = cam.h + margin * 1.4;
   for (let ty = minY; ty <= maxY; ty++) for (let tx = minX; tx <= maxX; tx++) {
-    const i = ty * fw + tx, gE = c.ground[i], wE = c.wall[i];
+    const i = ty * fw + tx, wE = c.wall[i];
+    let gE = c.ground[i];
+    if (c.bossStairs && i === c.bossStairs.i && core.bossUnlocked) gE = c.bossStairs.open; // the lift: barrier tape until floor 8 is cleared, then lit
     if (!gE && !wE) continue;
     project(cam, tx + 0.5, ty + 0.5, pt);
     if (pt.x < -margin || pt.x > cam.w + margin || pt.y < -margin || pt.y > yMax) continue;
     if (gE) blit(g, gE, pt.x, pt.y, z);
     else items.push(grab(tx + ty + 1, wE, pt.x, pt.y));
+  }
+  const bs = c.bossStairs;
+  if (bs && core.bossUnlocked && bs.x >= minX && bs.x <= maxX && bs.y >= minY && bs.y <= maxY) { // pulsing gold rings rising off the unlocked lift
+    project(cam, bs.x + 0.5, bs.y + 0.5, pt);
+    g.save(); g.globalCompositeOperation = "lighter"; g.lineWidth = Math.max(1.5, 2 * z);
+    for (let k = 0; k < 3; k++) {
+      const ph = ((now / 1400) + k / 3) % 1, rx = (14 + ph * 16) * z;
+      g.globalAlpha = (1 - ph) * 0.7; g.strokeStyle = "#ffd36a";
+      g.beginPath(); g.ellipse(pt.x, pt.y - ph * 22 * z, rx, rx * 0.5, 0, 0, Math.PI * 2); g.stroke();
+    }
+    g.restore();
   }
   const props = c.props;
   for (let i = 0; i < props.length; i++) {
@@ -285,7 +355,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) continue;
     project(cam, p.x + 0.5, p.y + 0.5, pt);
     if (pt.x < -margin || pt.x > cam.w + margin || pt.y < -margin || pt.y > yMax) continue;
-    items.push(grab(p.x + p.y + 1 - (p.blocks ? 0 : 0.3), p.e, pt.x, pt.y));
+    items.push(grab(p.x + p.y + 1 - (p.blocks ? 0 : 0.3) + p.dd, p.e, pt.x, pt.y - p.dy * z));
   }
 
   // the Emergency Exit door: a lit prop standing on its tile (the floor it was opened on, and the Lobby spot)
@@ -317,23 +387,24 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
   F.figs = figureTable(atlas); F.shadowE = atlas.get(keys.fx("shadow"));
   lerpPos(hero, hp);
   const mons = core.monsters, nm = mons.length, npcs = core.floor.npcs ?? [], na = nm + npcs.length;
-  const slot = (i) => actorOut[i] ?? (actorOut[i] = { id: "", type: "", name: "", sub: "", ai: "", hp: 0, hpMax: 0, dead: false, champ: false, npc: false, x: 0, y: 0, sx: 0, sy: 0, d: 0, pr: 0 });
+  const slot = (i) => actorOut[i] ?? (actorOut[i] = { id: "", type: "", name: "", sub: "", ai: "", hp: 0, hpMax: 0, dead: false, champ: false, npc: false, boss: false, lit: "", x: 0, y: 0, sx: 0, sy: 0, d: 0, pr: 0 });
   for (let i = 0; i < nm; i++) {
     const m = mons[i], o = slot(i);
     lerpPos(m, posB);
-    o.id = m.id; o.type = m.type; o.name = m.name ?? content.monsters[m.type].name; o.ai = m.ai; o.hp = m.hp; o.hpMax = m.hpMax; o.dead = m.ai === "dead";
+    o.id = m.id; o.type = m.type; o.name = m.name ?? (content.monsters[m.type] ?? content.bosses?.[m.type])?.name ?? m.type; o.ai = m.ai; o.hp = m.hp; o.hpMax = m.hpMax; o.dead = m.ai === "dead";
     o.champ = m.tier === "champion"; o.sub = o.champ ? modLine(m) : ""; o.npc = false;
+    o.boss = m.tier === "boss"; o.lit = o.boss ? (m.boss?.phase >= 2 ? "rage" : "boss") : "";
     o.x = posB.x; o.y = posB.y; o.d = Math.hypot(posB.x - hp.x, posB.y - hp.y);
     project(cam, o.x + 0.5, o.y + 0.5, pt); o.sx = pt.x; o.sy = pt.y;
   }
   for (let i = 0; i < npcs.length; i++) {
     const n = npcs[i], o = slot(nm + i);
-    o.id = `npc:${n.id}`; o.type = `npc-${n.id}`; o.name = S[content.npcs[n.id]?.nameKey] ?? n.id; o.sub = ""; o.ai = "idle"; o.hp = 0; o.hpMax = 0; o.dead = false; o.champ = false; o.npc = true;
+    o.id = `npc:${n.id}`; o.type = `npc-${n.id}`; o.name = S[content.npcs[n.id]?.nameKey] ?? n.id; o.sub = ""; o.ai = "idle"; o.hp = 0; o.hpMax = 0; o.dead = false; o.champ = false; o.npc = true; o.boss = false; o.lit = "";
     o.x = n.tile.x; o.y = n.tile.y; o.d = Math.hypot(o.x - hp.x, o.y - hp.y);
     project(cam, o.x + 0.5, o.y + 0.5, pt); o.sx = pt.x; o.sy = pt.y;
   }
   actorOut.length = na;
-  light.select(cam, hp, c.lights, actorOut, env.lowFx, env.hc, floor.theme);
+  light.select(cam, hp, core.bossUnlocked ? c.lightsOpen : c.lights, actorOut, env.lowFx, env.hc, floor.theme);
 
   const heroDir = faceFor(hero, true, core, rs);
   project(cam, hp.x + 0.5, hp.y + 0.5, pt);
@@ -374,6 +445,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     if (it.tintA > 0) { g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, z); }
     if (it.hurt) { g.globalAlpha = 0.14; blit(g, atlas.tint(it.e, "#ff1f2e"), x, y, z); }
     g.globalAlpha = 1;
+    if (it.summoned) blit(g, atlas.get(keys.fx("badge")), x + 5 * z, y - 30 * z, z * 0.9); // temp badge pinned to the chest
     if (it.icon) drawIcon(g, atlas, it, x, y, z, now);
   }
 

@@ -56,6 +56,23 @@ export const T = {
   // map (R-075) and Emergency Exit (R-046)
   mapTitle: "Floor map", openMap: "Map", closeMap: "Close map (M)", mapLegend: "You, stairs, people, exit door", mapUnexplored: "Nothing explored yet.",
   msgPortalOpen: "Emergency Exit: a door opens. Step through to return here.", msgPortalUse: "You step through the Emergency Exit.", msgPortalBack: "The Emergency Exit leads back to your floor.", msgExitUse: "Emergency Exit used.", useItem: "Use", exitItemHint: "Right-click to use, or press its belt key.", exitEffect: "Door to the Lobby; walk back through it",
+  // S3 title, save, options, victory, boss
+  continueGame: "Continue", options: "Options", back: "Back", exportSave: "Export save", importSave: "Import save", deleteCharacter: "Delete character", exportCorrupt: "Export damaged save",
+  confirmNewTitle: "Start a new game?", confirmNewText: "This replaces your saved character. Export the save first if you want to keep it.", confirmDeleteTitle: "Delete the character?", confirmDeleteText: "The saved character is removed. Your options stay.",
+  confirmYes: "Yes, continue", confirmNo: "Cancel", importTitle: "Import a save", importFile: "Choose a save file", importPaste: "Or paste the save text here", importGo: "Import pasted text", importPasteLabel: "Pasted save text",
+  noSaveYet: "No saved game yet.", saveFound: "A saved game was found.",
+  victoryQuit: "Quit to title", victoryBoss: "Boss defeated", saveExported: "Save exported.",
+  bossBar: "Boss health", bossPhaseMark: "Phase 2 starts here", bossPhaseLabel: "Phase", telegraphLive: "Warning",
+  // options
+  optionsTitle: "Options", optSound: "Sound", optVolumeMaster: "Master volume", optVolumeSfx: "Effects volume", optVolumeAmbient: "Ambient volume", optMute: "Mute all sound", optKit: "Sound set",
+  kitFoley: "Foley (default)", kitGothic: "Gothic", kitChiptune: "Chiptune", kitPreview: "Preview", kitPreviewNote: "Plays a short sample of the selected set.",
+  optKeys: "Keys", optKeysHint: "Select an action, then press the new key. Esc cancels.", optKeysPress: "Press a key", optKeysRestore: "Restore default keys", optKeysConflict: "That key is already used by", optKeysReserved: "That key cannot be used.", optKeysInvalid: "That key cannot be bound.", optKeysSet: "Key set",
+  actInventory: "Desk Drawer", actCharacter: "Employee File", actSkills: "Skills", actMap: "Map", actSkill1: "Skill 1", actSkill2: "Skill 2", actSkill3: "Skill 3", actSkill4: "Skill 4", actBelt1: "Potion 1", actBelt2: "Potion 2", actBelt3: "Potion 3", actBelt4: "Potion 4",
+  optMouse: "Mouse (fixed)", optMouseLeft: "Left button: walk, attack, pick up", optMouseRight: "Right button: use the selected skill", optMouseNote: "Mouse buttons cannot be changed. Esc always pauses or goes back.",
+  optAccess: "Accessibility", optHighContrast: "High contrast", optLowFx: "Reduced effects (cheaper lighting)", optReduceMotion: "Reduce motion and flashing", optShake: "Screen shake", optTextSize: "Text size",
+  sizeNormal: "Normal", sizeLarge: "Large", sizeHuge: "Extra large", optGore: "Blood and gore", optGoreOff: "Always off", on: "On", off: "Off",
+  optRarity: "Item rarity is shown by shape and border as well as colour:", optSaved: "Options are saved on this device.",
+  errorExport: "Export save",
   statAttr: { grit: "Grit", agility: "Agility", stamina: "Stamina", focus: "Focus" },
   attrOrder: ["grit", "agility", "stamina", "focus"],
 };

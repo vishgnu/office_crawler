@@ -10,6 +10,7 @@ import { makeCamera, worldScale } from "../src/ui/camera.js";
 import { viewConfig } from "../src/ui/layout.js";
 import { posOf } from "../src/core/pos.js";
 import { requiredKeys } from "../src/render/keys.js";
+import { damageMonster } from "../src/core/systems/damage.js";
 
 const W = { atlas: null, fx: null, light: null, labels: null, core: null, rs: { facing: new Map() }, size: { w: 1920, h: 1080 }, now: 1000 };
 window.W = W;
@@ -175,4 +176,45 @@ W.perf = (frames = 60, o = {}) => {
   document.getElementById("game").getContext("2d").getImageData(0, 0, 1, 1);
   const ms = (performance.now() - t0) / frames;
   return { ...opt, msPerFrame: +ms.toFixed(1), fps: +(1000 / ms).toFixed(1), monsters: s.monsters.filter((m) => m.ai !== "dead").length, ground: s.groundItems.length, projectiles: s.projectiles.length };
+};
+
+// ---- S3 boss staging (the Executive Suite, depth 9) ----
+// stage: "idle" (phase 1, engaged, nothing winding up), "slam" / "volley" / "summon" (that telegraph at `at` progress 0..1), "phase2" (jacket off, the roar), "victory" (the boss dies, confetti)
+const bossOf = () => W.core.monsters.find((m) => m.tier === "boss");
+W.boss = (stage = "idle", at = 0.6, seed = 3) => {
+  W.now = 1000; W.fx.reset(); W.rs.facing.clear();
+  const s = (W.core = newGame(seed, { start: "town" }));
+  teleportFloor(s, 9);
+  s.player.hpMax = s.player.hp = 1e7;
+  const b = bossOf();
+  s.player.tile = { x: b.tile.x + 1, y: b.tile.y + 6 };
+  W.live = false;
+  const run = (n) => { for (let i = 0; i < n; i++) { step(s); dispatch(0); W.now += 1000 / config.tickHz; } };
+  run(60);
+  if (stage === "idle") { b.boss.cd = 1e6; run(2); }
+  else if (stage === "slam" || stage === "volley" || stage === "summon") {
+    if (stage !== "slam") { b.hp = Math.floor(b.hpMax * 0.4); run(2); }
+    b.boss.cd = 0; b.boss.seq = stage === "volley" ? 1 : 0; b.boss.summonCd = stage === "summon" ? 0 : 1e6;
+    for (let i = 0; i < 300 && !(b.boss.windup?.kind === stage); i++) run(1);
+    const w = b.boss.windup; if (w) run(Math.floor(w.total * at));
+  } else if (stage === "phase2") {
+    b.hp = Math.floor(b.hpMax * 0.45); b.boss.cd = 1e6; b.boss.summonCd = 0; run(1); // the phase event fires; summon winds up next
+    run(80); // the summon lands: temp staff around the boss
+  } else if (stage === "victory") {
+    damageMonster(s, b, b.hp + 1, { source: "player" });
+    dispatch(0); // the kill events (emitted outside step) reach fx
+    run(26);
+  }
+  const w = b.boss.windup;
+  return { stage, phase: b.boss.phase, windup: w ? { kind: w.kind, t: w.t, total: w.total } : null, hero: { ...s.player.tile }, boss: { ...b.tile }, ai: b.ai, summoned: s.monsters.filter((m) => m.summoned).length, scene: s.scene, defeated: s.bossDefeated, events: s.events.map((e) => e.type) };
+};
+W.focusBoss = () => { const b = bossOf(), p = W.core.player.tile; if (b) W.bossTile = { ...b.tile }; const t = W.bossTile; return { x: (t.x * 0.55 + p.x * 0.45), y: (t.y * 0.55 + p.y * 0.45) }; };
+W.renderBoss = (zoomFocus = true, dy = 0) => { const f = W.focusBoss(); W.render(zoomFocus ? { x: f.x, y: f.y + dy } : null); };
+W.floor8Stairs = (unlocked) => {
+  W.now = 1000; W.fx.reset();
+  const s = (W.core = newGame(3, { start: "town" }));
+  teleportFloor(s, 8); s.monsters.length = 0; s.bossUnlocked = !!unlocked;
+  const st = s.floor.exit ?? null;
+  if (st) s.player.tile = { x: st.x, y: st.y + 2 };
+  return { exit: st, bossStairs: s.floor.bossStairs };
 };

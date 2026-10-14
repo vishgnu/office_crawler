@@ -8,6 +8,7 @@ import { T } from "./text.js";
 import { itemIcon, skillIcon, rarityMark, arrow, coinIcon } from "./icons.js";
 import { describeItem, compareToEquipped, unmetGear, allocPreview, dropCheck, rarityName, statLabel, xpRatio, xpProgress } from "./itemview.js";
 import { hudLayout, drawerLayout, placeTip } from "./layout.js";
+import { keyLabel, DEFAULT_KEYS } from "../input/keymap.js";
 import { sellValue, buyPrice } from "../core/index.js";
 
 const S = content.strings;
@@ -71,7 +72,7 @@ export function createPanels(root, game) {
       const d = DOLL[k], it = c.equipment[k], ghost = held && origin?.kind === "slot" && origin.k === k ? held : null;
       h += `<button class="slot${ghost ? " ghosted" : ""}" type="button" data-testid="slot-${k}" data-slot="${k}" data-fk="s.${k}" ${it ? `data-tip="eq:${k}"` : ""} style="grid-column:${d[0]}/span ${d[2]};grid-row:${d[1]}/span ${d[3]}" aria-label="${esc(SLOT_LABEL[k])}: ${it ? esc(itemLabel(it)) : T.empty}">${it ? itemBox(it, { fill: true }) : ghost ? itemBox(ghost, { fill: true, cls: "dim" }) : `<span class="lb">${esc(SLOT_LABEL[k])}</span>`}</button>`;
     }
-    h += `</div><div class="side">${legend()}<div class="beltbox"><h4>${esc(T.belt)} <kbd>1</kbd>–<kbd>4</kbd></h4><div class="bgrid" role="group" aria-label="${esc(T.beltKeys)}">`;
+    h += `</div><div class="side">${legend()}<div class="beltbox"><h4>${esc(T.belt)} <kbd>${esc(keyLabel(c.options?.keys?.belt1 ?? DEFAULT_KEYS.belt1))}</kbd>–<kbd>${esc(keyLabel(c.options?.keys?.belt4 ?? DEFAULT_KEYS.belt4))}</kbd></h4><div class="bgrid" role="group" aria-label="${esc(T.beltKeys)}">`;
     c.belt.forEach((it, i) => {
       const ghost = held && origin?.kind === "belt" && origin.i === i ? held : null;
       h += `<button class="bslot" type="button" data-testid="bslot-${i}" data-belt="${i}" data-fk="b.${i}" ${it ? `data-tip="belt:${i}"` : ""} aria-label="${esc(T.belt)} ${i + 1}: ${it ? esc(it.name) : T.empty}">${it ? itemBox(it, { fill: true }) : ghost ? itemBox(ghost, { fill: true, cls: "dim" }) : `<span class="lb">${i + 1}</span>`}</button>`;
@@ -182,28 +183,29 @@ export function createPanels(root, game) {
   function renderHud(c) {
     const L = hudLayout(game.w, game.h), s = L.scale, p = c.player, bar = p.skillBar, panels = game.panels();
     const fs = Math.max(10, Math.round(8.5 * s)), ctl = (r) => `left:${r.x.toFixed(1)}px;top:${r.y.toFixed(1)}px;width:${r.w.toFixed(1)}px;height:${r.h.toFixed(1)}px;--fs:${fs}px`;
+    const kl = (a) => keyLabel(c.options?.keys?.[a] ?? DEFAULT_KEYS[a]); // the key badges follow the bindings in Options
     let h = `<div class="hgroup" role="group" aria-label="${esc(T.skillBar)}">`;
     for (let i = 0; i < 4; i++) {
       const id = bar.hotkeys[i], def = id ? content.skills[id] : null, lvl = id === "strike" ? 1 : id ? p.skills[id] ?? 0 : 0, cost = def?.mana ? def.mana(Math.max(1, lvl)) : 0;
       const dis = !!def && (lvl < 1 || p.mp < cost), sel = bar.selected === i;
-      const label = def ? `F${i + 1}: ${def.name}${cost ? `, ${T.manaCost} ${cost}` : ""}${sel ? `, ${T.selectedSkill}` : ""}${dis ? `, ${T.notEnoughMana}` : ""}` : `F${i + 1}: ${T.slotEmpty}`;
-      h += `<button class="sk${sel ? " on" : ""}${dis ? " dis" : ""}${def ? "" : " none"}" type="button" data-testid="hud-skill-${i}" data-skill-slot="${i}" data-fk="h.s.${i}" aria-pressed="${sel}" aria-disabled="${dis}" style="${ctl(L.skills[i])}" aria-label="${esc(label)}" title="${esc(def ? def.name : T.slotEmpty)}"><span class="kb">F${i + 1}</span>${def ? skillIcon(id) : ""}${sel ? '<span class="sel" aria-hidden="true"></span>' : ""}</button>`;
+      const label = def ? `${kl(`skill${i + 1}`)}: ${def.name}${cost ? `, ${T.manaCost} ${cost}` : ""}${sel ? `, ${T.selectedSkill}` : ""}${dis ? `, ${T.notEnoughMana}` : ""}` : `${kl(`skill${i + 1}`)}: ${T.slotEmpty}`;
+      h += `<button class="sk${sel ? " on" : ""}${dis ? " dis" : ""}${def ? "" : " none"}" type="button" data-testid="hud-skill-${i}" data-skill-slot="${i}" data-fk="h.s.${i}" aria-pressed="${sel}" aria-disabled="${dis}" style="${ctl(L.skills[i])}" aria-label="${esc(label)}" title="${esc(def ? def.name : T.slotEmpty)}"><span class="kb">${esc(kl(`skill${i + 1}`))}</span>${def ? skillIcon(id) : ""}${sel ? '<span class="sel" aria-hidden="true"></span>' : ""}</button>`;
       if (def && L.showNames) h += `<span class="sn" aria-hidden="true" style="left:${(L.skills[i].x - 3).toFixed(1)}px;top:${(L.skills[i].y + L.skills[i].h).toFixed(1)}px;width:${(L.skills[i].w + 6).toFixed(1)}px;--fs:${fs}px">${esc(def.name)}</span>`;
     }
     h += `</div><div class="hgroup" role="group" aria-label="${esc(T.beltKeys)}">`;
     for (let i = 0; i < 4; i++) {
       const it = c.belt[i];
-      h += `<button class="hb${it ? "" : " none"}" type="button" data-testid="hud-belt-${i}" data-use-belt="${i}" data-fk="h.b.${i}" ${it ? `data-tip="belt:${i}"` : ""} style="${ctl(L.belt[i])}" aria-label="${it ? `${i + 1}: ${esc(T.drink)} ${esc(it.name)}` : `${i + 1}: ${esc(T.beltEmpty)}`}"><span class="kb">${i + 1}</span>${it ? itemIcon(it) : ""}</button>`;
+      h += `<button class="hb${it ? "" : " none"}" type="button" data-testid="hud-belt-${i}" data-use-belt="${i}" data-fk="h.b.${i}" ${it ? `data-tip="belt:${i}"` : ""} style="${ctl(L.belt[i])}" aria-label="${it ? `${esc(kl(`belt${i + 1}`))}: ${esc(T.drink)} ${esc(it.name)}` : `${esc(kl(`belt${i + 1}`))}: ${esc(T.beltEmpty)}`}"><span class="kb">${esc(kl(`belt${i + 1}`))}</span>${it ? itemIcon(it) : ""}</button>`;
     }
     h += `</div>`;
     const xr = L.xp, xt = xpProgress(p);
     h += `<div class="xptip" data-testid="hud-xp" tabindex="-1" title="${esc(T.xpTotal)}: ${num(xt.total)}" aria-label="${esc(T.experience)} ${xt.pct}%, ${esc(T.xpTotal)} ${num(xt.total)}" style="left:${(xr.x - 2).toFixed(1)}px;top:${(xr.y - fs - 8).toFixed(1)}px;width:${(xr.w + 4).toFixed(1)}px;height:${(xr.h + fs + 10).toFixed(1)}px"></div>`;
     const badge = (n, what) => (n > 0 ? `<span class="bdg" aria-label="${n} ${esc(what)}">${n}</span>` : "");
     h += `<div class="dock" role="group" aria-label="${esc(T.toggleLabel)}">`;
-    h += `<button class="hbtn" type="button" data-testid="dock-inventory" data-fk="h.d.i" data-open="inventory" aria-pressed="${panels.inventory}"><span>${esc(T.openInventory)}</span><kbd>I</kbd></button>`;
-    h += `<button class="hbtn" type="button" data-testid="dock-character" data-fk="h.d.c" data-open="character" aria-pressed="${panels.character}"><span>${esc(T.openCharacter)}</span><kbd>C</kbd>${badge(p.attrPoints, T.attrPointsBadge)}</button>`;
-    h += `<button class="hbtn" type="button" data-testid="dock-skills" data-fk="h.d.s" data-open="skills" aria-pressed="${panels.skills}"><span>${esc(T.openSkills)}</span><kbd>S</kbd>${badge(p.skillPoints, T.skillPointsBadge)}</button>`;
-    h += `<button class="hbtn" type="button" data-testid="dock-map" data-fk="h.d.m" data-open="map" aria-pressed="${panels.map}"><span>${esc(T.openMap)}</span><kbd>M</kbd></button></div>`;
+    h += `<button class="hbtn" type="button" data-testid="dock-inventory" data-fk="h.d.i" data-open="inventory" aria-pressed="${panels.inventory}"><span>${esc(T.openInventory)}</span><kbd>${esc(kl("inventory"))}</kbd></button>`;
+    h += `<button class="hbtn" type="button" data-testid="dock-character" data-fk="h.d.c" data-open="character" aria-pressed="${panels.character}"><span>${esc(T.openCharacter)}</span><kbd>${esc(kl("character"))}</kbd>${badge(p.attrPoints, T.attrPointsBadge)}</button>`;
+    h += `<button class="hbtn" type="button" data-testid="dock-skills" data-fk="h.d.s" data-open="skills" aria-pressed="${panels.skills}"><span>${esc(T.openSkills)}</span><kbd>${esc(kl("skills"))}</kbd>${badge(p.skillPoints, T.skillPointsBadge)}</button>`;
+    h += `<button class="hbtn" type="button" data-testid="dock-map" data-fk="h.d.m" data-open="map" aria-pressed="${panels.map}"><span>${esc(T.openMap)}</span><kbd>${esc(kl("map"))}</kbd></button></div>`;
     return h;
   }
 
@@ -244,10 +246,10 @@ export function createPanels(root, game) {
     el.left.dataset.panel = u.left ?? ""; el.right.dataset.panel = "inventory";
     el.left.setAttribute("aria-label", u.left === "skills" ? T.skills : u.left === "npc" ? (S[c.ui.dialog?.nameKey] ?? "") : T.character);
 
-    const hudSig = sigOf(game.w, game.h, p.skillBar.hotkeys, p.skillBar.selected, p.skills, p.mp >= 0 && p.skillBar.hotkeys.map((id) => (id && content.skills[id]?.mana ? p.mp < content.skills[id].mana(Math.max(1, id === "strike" ? 1 : p.skills[id] ?? 0)) : 0)), c.belt.map((b) => b?.id ?? 0), p.attrPoints, p.skillPoints, u.inventory, u.left, u.map, p.xp, p.level);
+    const hudSig = sigOf(game.w, game.h, c.options?.keys, p.skillBar.hotkeys, p.skillBar.selected, p.skills, p.mp >= 0 && p.skillBar.hotkeys.map((id) => (id && content.skills[id]?.mana ? p.mp < content.skills[id].mana(Math.max(1, id === "strike" ? 1 : p.skills[id] ?? 0)) : 0)), c.belt.map((b) => b?.id ?? 0), p.attrPoints, p.skillPoints, u.inventory, u.left, u.map, p.xp, p.level);
     if (hudSig !== view.sigs.hud) { view.sigs.hud = hudSig; renderInto(el.hud, renderHud(c)); }
 
-    const base = [game.w, game.h, u.front, held?.id ?? 0, game.heldOrigin, !!view.drag, p.level, p.xp, p.xpNext, p.attrs, p.attrsTotal, p.attrPoints, p.skillPoints, p.hp, p.hpMax, p.mp, p.mpMax, p.gold, p.damage, p.defense, p.attackRating, p.resist, p.skills, p.skillBar.hotkeys,
+    const base = [game.w, game.h, c.options?.keys, u.front, held?.id ?? 0, game.heldOrigin, !!view.drag, p.level, p.xp, p.xpNext, p.attrs, p.attrsTotal, p.attrPoints, p.skillPoints, p.hp, p.hpMax, p.mp, p.mpMax, p.gold, p.damage, p.defense, p.attackRating, p.resist, p.skills, p.skillBar.hotkeys,
       c.inventory.items.map((i) => [i.id, i.x, i.y]), Object.values(c.equipment).map((i) => i?.id ?? 0), c.belt.map((b) => b?.id ?? 0), c.floor.name];
     if (rightOpen) { const sg = sigOf(base); if (sg !== view.sigs.right) { view.sigs.right = sg; renderInto(el.right, renderInventory(c)); } } else view.sigs.right = "";
     if (leftOpen) {

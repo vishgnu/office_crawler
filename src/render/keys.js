@@ -3,15 +3,21 @@
 export const ANIMS = { idle: 4, walk: 6, attack: 4, death: 4 };
 // The hero also has a cast pose (S2): arms thrust forward while a skill fires. Monsters have no cast frames.
 export const PLAYER_ANIMS = { ...ANIMS, cast: 4 };
+// Bosses (S3): a wind-up pose (the telegraph) on top of the monster set. Their sprites are built lazily (big canvases, only the frames a fight shows).
+export const BOSS_ANIMS = { ...ANIMS, windup: 4 };
+// A boss has one sprite set per phase: phase 1 under its own id, phase 2 (jacket off, red glow) under `${id}-rage`.
+export const BOSS_P2 = "-rage";
+export const bossType = (type, phase) => (phase >= 2 ? type + BOSS_P2 : type);
 export const DIRS = 8;
 // Room kinds of every theme (open-plan, lobby, basement). Each theme draws all of them (kinds it does not use fall back to its corridor look).
-export const FLOOR_KINDS = ["corridor", "cubicle", "conference", "copy", "storage", "reception", "breakroom", "server", "archive", "boiler"];
+export const FLOOR_KINDS = ["corridor", "cubicle", "conference", "copy", "storage", "reception", "breakroom", "server", "archive", "boiler", "boardroom"];
 // Floor variants 0-2 are clean (plain, inset panel, seam); 3-5 carry baked grime (scuffs, coffee stain, blood).
 export const FLOOR_VARIANTS = 6;
 // Wall variants: 0 clean, 1 smear, 2 splatter.
 export const WALL_VARIANTS = 3;
-export const MARKERS = ["door", "stairs-up", "stairs-down"];
-export const FX_IDS = ["alert", "paper", "shadow", "muted", "flee", "spark", "plus", "elevator", "portal"];
+// stairs-locked / stairs-open: the way down from floor 8 (barrier tape until the floor is cleared, then a lit lift). Other themes never use them.
+export const MARKERS = ["door", "stairs-up", "stairs-down", "stairs-locked", "stairs-open"];
+export const FX_IDS = ["alert", "paper", "shadow", "muted", "flee", "spark", "plus", "elevator", "portal", "badge", "table", "chair", "trophy", "screen"];
 export const PROJECTILES = ["stapler", "toner", "slide"];
 export const LOOT_IDS = ["item", "gold-s", "gold-m", "gold-l"];
 export const NPC_FRAMES = 4;
@@ -39,7 +45,7 @@ export const keys = {
 };
 
 /** Every key a style must provide for the given content registries. */
-export function requiredKeys({ themes, props, monsters, npcs = {} }) {
+export function requiredKeys({ themes, props, monsters, npcs = {}, bosses = {} }) {
   const out = [];
   for (const theme of Object.keys(themes)) {
     for (const kind of FLOOR_KINDS) for (let v = 0; v < FLOOR_VARIANTS; v++) out.push(keys.floor(theme, kind, v));
@@ -49,6 +55,7 @@ export function requiredKeys({ themes, props, monsters, npcs = {} }) {
   for (const id of Object.keys(props)) out.push(keys.prop(id));
   const figure = (build) => { for (const [anim, n] of Object.entries(ANIMS)) for (let d = 0; d < DIRS; d++) for (let f = 0; f < n; f++) out.push(build(anim, d, f)); };
   for (const type of Object.keys(monsters)) figure((a, d, f) => keys.mon(type, a, d, f));
+  for (const type of Object.keys(bosses)) for (const t of [type, type + BOSS_P2]) for (const [anim, n] of Object.entries(BOSS_ANIMS)) for (let d = 0; d < DIRS; d++) for (let f = 0; f < n; f++) out.push(keys.mon(t, anim, d, f));
   for (const [anim, n] of Object.entries(PLAYER_ANIMS)) for (let d = 0; d < DIRS; d++) for (let f = 0; f < n; f++) out.push(keys.plr(PLAYER_CLASS, anim, d, f));
   for (const id of Object.keys(npcs)) for (let f = 0; f < NPC_FRAMES; f++) out.push(keys.npc(id, f));
   for (const k of PROJECTILES) out.push(keys.proj(k));

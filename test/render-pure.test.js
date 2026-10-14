@@ -65,7 +65,9 @@ test("NFR-A04: nameplate text meets 4.5:1 on its plate in normal and high-contra
 });
 
 test("every actor type has rim colour, head height and shadow size in the style", () => {
-  for (const type of [PLAYER_CLASS, ...Object.keys(content.monsters)]) {
+  const bossTypes = Object.keys(content.bosses).flatMap((id) => [id, id + "-rage"]); // S3: bosses have a sprite set per phase
+  assert.ok(bossTypes.length >= 2);
+  for (const type of [PLAYER_CLASS, ...Object.keys(content.monsters), ...bossTypes]) {
     assert.match(palette.rims[type], /^#[0-9a-f]{6}$/i, type);
     assert.ok(FIG_DIM[type].head > 30 && FIG_DIM[type].shadowR > 5, type);
   }

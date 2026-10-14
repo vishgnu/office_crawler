@@ -1,14 +1,15 @@
 // The "vector" style (C2): stylised vector, graded dark, bold ink outlines, flat colours with one shade level,
 // rim-lit actors. Everything is drawn procedurally into the atlas at load. Swap this folder to change the art.
 import { createAtlas } from "../../atlas.js";
-import { keys, FLOOR_KINDS, FLOOR_VARIANTS, WALL_VARIANTS, MARKERS, ANIMS, PLAYER_ANIMS, DIRS, DIR_VEC, PLAYER_CLASS, PROJECTILES, NPC_FRAMES } from "../../keys.js";
+import { keys, FLOOR_KINDS, FLOOR_VARIANTS, WALL_VARIANTS, MARKERS, ANIMS, PLAYER_ANIMS, DIRS, DIR_VEC, PLAYER_CLASS, PROJECTILES, NPC_FRAMES, BOSS_ANIMS, BOSS_P2 } from "../../keys.js";
 import { content } from "../../../core/index.js";
 import { palette } from "./palette.js";
 import { drawFloor, drawMarker, drawWall, WALL_W, WALL_CANVAS_H, WALL_CY } from "./tiles.js";
 import { drawProp, drawElevator, drawPortal, PORTAL_W, PORTAL_H, PORTAL_CX, PORTAL_CY, PROP_W, PROP_H, PROP_CX, PROP_CY } from "./props.js";
-import { drawFigure, FIG_W, FIG_H, FIG_FX, FIG_FY, FIG_DIM } from "./characters.js";
+import { drawFigure, FIG_W, FIG_H, FIG_FX, FIG_FY, FIG_DIM, BOSS_W, BOSS_H, BOSS_FX, BOSS_FY } from "./characters.js";
 import { drawProjectile, drawLootItem, drawGold, drawMuted, drawFlee, drawSpark, drawPlus, PROJ_W, PROJ_H } from "./sprites.js";
 import { VESSEL_REF, VESSEL_SHAPES, VESSEL_PAD, drawVesselFrame, drawVesselLive, vesselFrameSize, drawSlot, drawIconStrike, drawIconPlus, drawAlert, drawPaper, drawShadow, drawSlash } from "./ui.js";
+import { drawBadge, drawBoardTable, drawChair, drawTrophy, drawScreen, TABLE_BOX, SCREEN_BOX } from "./boardroom.js";
 
 const yieldFrame = () => new Promise((r) => setTimeout(r, 0));
 
@@ -76,6 +77,22 @@ export const vector = {
       }
     });
     for (const type of Object.keys(content.monsters)) figure(type, (a, d, f) => keys.mon(type, a, d, f));
+    // Bosses: one lazily drawn sprite set per phase (phase 2 under `<id>-rage`)
+    steps.push(() => {
+      for (const id of Object.keys(content.bosses ?? {})) for (const type of [id, id + BOSS_P2]) {
+        const rimColour = palette.rims[type];
+        for (const [anim, n] of Object.entries(BOSS_ANIMS)) for (let d = 0; d < DIRS; d++) for (let f = 0; f < n; f++) {
+          atlas.addLazy(keys.mon(type, anim, d, f), BOSS_W, BOSS_H, BOSS_FX, BOSS_FY, (g, sc) => figureWithRim(g, sc, BOSS_W, BOSS_H, rim * 1.5, rimColour, (tg) => { tg.translate(BOSS_FX, BOSS_FY); drawFigure(tg, type, anim, d, f); }));
+        }
+      }
+    });
+    steps.push(() => {
+      atlas.add(keys.fx("badge"), 14, 16, 7, 8, drawBadge);
+      atlas.add(keys.fx("table"), TABLE_BOX.w, TABLE_BOX.h, TABLE_BOX.ox, TABLE_BOX.oy, drawBoardTable);
+      atlas.add(keys.fx("chair"), 40, 50, 20, 40, drawChair);
+      atlas.add(keys.fx("trophy"), 24, 36, 12, 30, drawTrophy);
+      atlas.add(keys.fx("screen"), SCREEN_BOX.w, SCREEN_BOX.h, SCREEN_BOX.ox, SCREEN_BOX.oy, drawScreen);
+    });
     steps.push(() => {
       for (let d = 0; d < DIRS; d++) atlas.add(keys.slash(d), 48, 48, 24, 24, (g) => drawSlash(g, d, DIR_VEC[d]));
       atlas.add(keys.fx("alert"), 18, 24, 9, 24, drawAlert);

@@ -23,6 +23,8 @@ const fontFor = (px) => (fonts[px] ??= `900 italic ${px}px ${SANS}`);
 const ease = (t) => 1 - (1 - t) * (1 - t) * (1 - t);
 const RUNE = { "stapler-throw": "#c9d2e4", "reply-all": "#ffb35a", "coffee-break": "#6fe08a", mute: "#c9a0ff" };
 const IMPACT_MS = 380;
+const CONFETTI = ["#ffd24a", "#e0363f", "#56b4e9", "#6fe08a", "#ffffff", "#ff9acb", "#f0e442"];
+const hash01 = (n) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
 
 // ---- loot visuals ----
 const MAX_PLATES = 10;
@@ -137,10 +139,10 @@ export function createFx(style) {
     parts: [], slashes: [], rings: [], impacts: [], pillars: [], proj: new Map(), flash: new Map(), // `flash` is unused (flashTicks is state-backed) and kept so older callers do not break
     core: null, alpha: 1, hc: false, showAllLoot: false, hoverLootId: null, // the shell may set these three (high contrast, Alt held, hovered ground entry)
     avoid: [], avoidSegs: [], // plate / pip rectangles and leader lines claimed by the nameplate pass this frame (set by the shell); loot plates and floaters keep clear of them
-    hurtUntil: 0, lowHp: false, beat: -1, shakeUntil: 0, hitStopUntil: 0, deathAt: null, lowFx: false,
+    hurtUntil: 0, lowHp: false, beat: -1, shakeUntil: 0, hitStopUntil: 0, deathAt: null, lowFx: false, victoryAt: -1e9,
     reset() {
       fx.parts.length = 0; fx.slashes.length = 0; fx.rings.length = 0; fx.impacts.length = 0; fx.pillars.length = 0; fx.proj.clear(); fx.flash.clear();
-      fx.hurtUntil = fx.shakeUntil = fx.hitStopUntil = 0; fx.deathAt = null; fx.lowHp = false; fx.beat = -1;
+      fx.hurtUntil = fx.shakeUntil = fx.hitStopUntil = 0; fx.deathAt = null; fx.victoryAt = -1e9; fx.lowHp = false; fx.beat = -1;
     },
     handle(ev, core, now) {
       const find = (id) => (id === "player" ? core.player : core.monsters.find((m) => m.id === id));
@@ -188,7 +190,35 @@ export function createFx(style) {
         const hit = ev.reason === "hit";
         fx.impacts.push({ kind, mode: hit ? "hit" : ev.reason, x: x + 0.5, y: y + 0.5, z: hit ? 22 : 12, born: now, life: IMPACT_MS });
         if (kind === "slide") fx.burst(x + 0.5, y + 0.5, 8, now);
+      } else if (ev.type === "bossSlam") { // the slam lands: a shock ring the size of the circle, paper kicked outward, a short shake
+        const x = ev.tile.x + 0.5, y = ev.tile.y + 0.5;
+        fx.rings.push({ kind: "burst", x, y, r0: ev.radius * 0.5, r1: ev.radius * 1.05, born: now, life: 420, colour: P.telegraph.slam });
+        fx.burst(x, y, ev.hit ? 22 : 14, now, { outward: ev.radius });
+        fx.shakeUntil = Math.max(fx.shakeUntil, now + 170);
+      } else if (ev.type === "bossVolley") {
+        const b = find(ev.id);
+        if (b) { const c = at(b); fx.rings.push({ kind: "burst", x: c.x + 0.5, y: c.y + 0.5, r0: 0.6, r1: 1.8, born: now, life: 300, colour: P.telegraph.volley }); fx.burst(c.x + 0.5, c.y + 0.5, 10, now); }
+      } else if (ev.type === "bossSummon") {
+        for (const id of ev.adds ?? []) { const m = find(id); if (m) { const c = at(m); fx.rings.push({ kind: "burst", x: c.x + 0.5, y: c.y + 0.5, r0: 0.3, r1: 1.4, born: now, life: 520, colour: P.telegraph.summon }); fx.burst(c.x + 0.5, c.y + 0.5, 4, now, { sprite: "spark", rise: true }); } }
+      } else if (ev.type === "bossPhase") { // the roar: two red rings sweep out of the boss and the screen shudders
+        const b = find(ev.id);
+        if (b) {
+          const c = at(b);
+          fx.rings.push({ kind: "levelup", x: c.x + 0.5, y: c.y + 0.5, r0: 0.6, r1: 5.5, born: now, life: 900, colour: "#ff4a3a" });
+          fx.rings.push({ kind: "levelup", x: c.x + 0.5, y: c.y + 0.5, r0: 0.4, r1: 4, born: now + 180, life: 800, colour: "#ffd24a" });
+          fx.burst(c.x + 0.5, c.y + 0.5, 24, now, { outward: 3 });
+          fx.pillars.push({ x: c.x + 0.5, y: c.y + 0.5, born: now, life: 900 });
+        }
+        fx.shakeUntil = Math.max(fx.shakeUntil, now + 280);
+      } else if (ev.type === "bossDefeated") { // the finale: paper rain from the ceiling for a few seconds, a golden ring and a burst where it fell
+        const x = ev.tile.x + 0.5, y = ev.tile.y + 0.5;
+        fx.victoryAt = now;
+        fx.rings.push({ kind: "levelup", x, y, r0: 0.5, r1: 6, born: now, life: 1100, colour: "#ffd24d" });
+        fx.rings.push({ kind: "levelup", x, y, r0: 0.3, r1: 4, born: now + 200, life: 900, colour: "#ffffff" });
+        fx.burst(x, y, 30, now, { outward: 3 });
+        fx.shakeUntil = Math.max(fx.shakeUntil, now + 200);
       } else if (ev.type === "floorEnter") {
+        fx.victoryAt = -1e9;
         fx.parts.length = 0; fx.slashes.length = 0; fx.rings.length = 0; fx.impacts.length = 0; fx.pillars.length = 0; fx.proj.clear();
       }
     },
@@ -298,7 +328,120 @@ export function createFx(style) {
       g.globalAlpha = 1;
       for (let i = 0; i < fx.impacts.length; i++) fx.drawImpact(g, cam, fx.impacts[i], now);
       for (let i = 0; i < fx.pillars.length; i++) fx.drawPillar(g, cam, fx.pillars[i], now);
+      if (core) fx.drawBossTelegraphs(g, cam, core, now);
+      fx.drawConfetti(g, cam, now);
       if (core) { fx.drawLootPlates(g, cam, core, now); fx.drawFloaters(g, cam, core, now); } // ground labels sit above bursts and impacts, floaters above everything
+    },
+
+
+    /**
+     * Boss telegraphs, read from state (m.boss.windup, progress t / total, smoothed with the frame alpha). Drawn in the screen pass, so the darkness mask
+     * never hides them. Three shapes, so they read without colour: slam = a ground circle with diagonal hatching that FILLS from the centre;
+     * volley = a fan of five dashed lanes with arrow heads and a wedge that fills outward from the boss; summon = a ring on the floor with a
+     * shell of rising chevrons (a cylinder that grows upward). The colours are Okabe-Ito vermillion, yellow and sky blue on an ink outline.
+     */
+    drawBossTelegraphs(g, cam, core, now) {
+      const mons = core.monsters, z = cam.z;
+      for (let i = 0; i < mons.length; i++) {
+        const m = mons[i], w = m.boss?.windup;
+        if (!w || m.ai === "dead") continue;
+        const live = w.t < w.total, after = w.t - w.total; // after: ticks since it landed
+        if (!live && (w.kind !== "slam" || after > 8)) continue;
+        const p = live ? Math.min(1, (w.t + fx.alpha) / w.total) : 1, fade = live ? 1 : 1 - after / 8, hot = live && p > 0.8 && Math.floor(now / 90) % 2 === 0;
+        g.save(); g.globalAlpha = fade; g.lineJoin = "round"; g.lineCap = "round";
+        if (w.kind === "slam") fx.telegraphSlam(g, cam, w, p, hot, now, z);
+        else if (w.kind === "volley") fx.telegraphVolley(g, cam, m, w, p, hot, now, z);
+        else fx.telegraphSummon(g, cam, m, w, p, hot, now, z);
+        g.restore();
+      }
+    },
+    telegraphSlam(g, cam, w, p, hot, now, z) {
+      const col = P.telegraph.slam, ink = P.telegraph.edge;
+      project(cam, w.tile.x + 0.5, w.tile.y + 0.5, pos);
+      const cx = pos.x, cy = pos.y, rx = w.radius * 45.25 * z, ry = w.radius * 22.6 * z;
+      // the filled part: grows from the centre to the edge; hatched so it is not only a colour
+      const fr = Math.max(0.04, p);
+      g.beginPath(); g.ellipse(cx, cy, rx * fr, ry * fr, 0, 0, Math.PI * 2);
+      const a0 = g.globalAlpha;
+      g.fillStyle = col; g.globalAlpha = a0 * (0.26 + 0.3 * p); g.fill(); g.globalAlpha = a0;
+      g.save(); g.clip();
+      g.strokeStyle = ink; g.lineWidth = Math.max(1.4, 1.5 * z); g.globalAlpha = a0 * 0.55;
+      const step = 9 * z;
+      for (let x = cx - rx - ry * 2; x < cx + rx + ry * 2; x += step) { g.beginPath(); g.moveTo(x, cy + ry * 1.1); g.lineTo(x + ry * 2.2, cy - ry * 1.1); g.stroke(); }
+      g.restore();
+      // the final extent: ink under colour; solid and white-edged in the last moments, dashed before
+      g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      g.lineWidth = Math.max(4, 4.4 * z); g.strokeStyle = ink; g.setLineDash(p > 0.8 ? [] : [10 * z, 6 * z]); g.stroke();
+      g.lineWidth = Math.max(2.2, 2.4 * z); g.strokeStyle = hot ? "#ffffff" : col; g.stroke(); g.setLineDash([]);
+      // the leading edge of the fill and a crosshair on the point of impact
+      g.beginPath(); g.ellipse(cx, cy, rx * fr, ry * fr, 0, 0, Math.PI * 2); g.lineWidth = Math.max(1.6, 1.8 * z); g.strokeStyle = "#fff6e0"; g.stroke();
+      g.lineWidth = Math.max(3, 3 * z); g.strokeStyle = ink;
+      for (const pass of [0, 1]) { g.strokeStyle = pass ? "#fff6e0" : ink; g.lineWidth = pass ? Math.max(1.4, 1.5 * z) : Math.max(3, 3.2 * z); g.beginPath(); g.moveTo(cx - 9 * z, cy - 4.5 * z); g.lineTo(cx + 9 * z, cy + 4.5 * z); g.moveTo(cx - 9 * z, cy + 4.5 * z); g.lineTo(cx + 9 * z, cy - 4.5 * z); g.stroke(); }
+    },
+    telegraphVolley(g, cam, m, w, p, hot, now, z) {
+      const cfg = config.boss.volley, col = P.telegraph.volley, ink = P.telegraph.edge, n = cfg.shots, half = (n - 1) / 2, R = Math.min(cfg.range, 9);
+      actorPos(m, pos2); project(cam, pos2.x + 0.5, pos2.y + 0.5, pos);
+      const ox = pos.x, oy = pos.y - 18 * z, cs = Math.sqrt(1 - cfg.spread * cfg.spread);
+      const tip = (k, r) => { // the end of lane k at distance r (tiles): rotate the aim by k steps, then project
+        let dx = w.dir.x, dy = w.dir.y;
+        for (let s = 0; s < Math.abs(k); s++) { const sn = cfg.spread * Math.sign(k), nx = dx * cs - dy * sn, ny = dx * sn + dy * cs; dx = nx; dy = ny; }
+        project(cam, pos2.x + 0.5 + dx * r, pos2.y + 0.5 + dy * r, pos); return pos;
+      };
+      const tx0 = tip(-half, R).x, ty0 = tip(-half, R).y, tx1 = tip(half, R).x, ty1 = tip(half, R).y;
+      // wedge: fills outward from the boss to p * R along every lane
+      const ex0 = ox + (tx0 - ox) * p, ey0 = oy + (ty0 - oy) * p, ex1 = ox + (tx1 - ox) * p, ey1 = oy + (ty1 - oy) * p;
+      g.beginPath(); g.moveTo(ox, oy); g.lineTo(ex0, ey0); g.lineTo(ex1, ey1); g.closePath();
+      g.fillStyle = col; const a0 = g.globalAlpha; g.globalAlpha = a0 * (0.16 + 0.22 * p); g.fill(); g.globalAlpha = a0;
+      // outline of the full fan
+      g.beginPath(); g.moveTo(ox, oy); g.lineTo(tx0, ty0); g.lineTo(tx1, ty1); g.closePath(); g.lineWidth = Math.max(1.5, 1.6 * z); g.strokeStyle = ink; g.globalAlpha = a0 * 0.6; g.stroke(); g.globalAlpha = a0;
+      for (let k = -half; k <= half; k++) {
+        const t = tip(k, R), lx = t.x, ly = t.y;
+        g.setLineDash([12 * z, 8 * z]); g.lineDashOffset = -now * 0.05 * z;
+        g.beginPath(); g.moveTo(ox, oy); g.lineTo(lx, ly); g.lineWidth = Math.max(4, 4.4 * z); g.strokeStyle = ink; g.stroke();
+        g.lineWidth = Math.max(2, 2.2 * z); g.strokeStyle = hot ? "#ffffff" : col; g.stroke(); g.setLineDash([]);
+        // arrow head at the lane's end (shape cue)
+        const ang = Math.atan2(ly - oy, lx - ox), ah = 10 * z;
+        g.beginPath(); g.moveTo(lx, ly); g.lineTo(lx - Math.cos(ang - 0.45) * ah, ly - Math.sin(ang - 0.45) * ah); g.lineTo(lx - Math.cos(ang + 0.45) * ah, ly - Math.sin(ang + 0.45) * ah); g.closePath();
+        g.fillStyle = col; g.fill(); g.lineWidth = Math.max(1.4, 1.5 * z); g.strokeStyle = ink; g.stroke();
+      }
+    },
+    telegraphSummon(g, cam, m, w, p, hot, now, z) {
+      const col = P.telegraph.summon, ink = P.telegraph.edge, R = 3;
+      actorPos(m, pos2); project(cam, pos2.x + 0.5, pos2.y + 0.5, pos);
+      const cx = pos.x, cy = pos.y, rx = R * 45.25 * z, ry = R * 22.6 * z, H = 54 * z * p;
+      // floor ring (dotted) and the filled disc under it
+      g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); const a0 = g.globalAlpha; g.fillStyle = col; g.globalAlpha = a0 * (0.1 + 0.14 * p); g.fill(); g.globalAlpha = a0;
+      g.setLineDash([2 * z, 7 * z]); g.lineWidth = Math.max(4, 4.4 * z); g.strokeStyle = ink; g.stroke(); g.lineWidth = Math.max(2.4, 2.6 * z); g.strokeStyle = hot ? "#ffffff" : col; g.stroke(); g.setLineDash([]);
+      // the shell: eight uprights from the floor ring to the rising top ring, and the top ring
+      for (let k = 0; k < 12; k++) { const an = (k / 12) * Math.PI * 2 + now / 3000, x = cx + Math.cos(an) * rx, y = cy + Math.sin(an) * ry; g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - H); g.lineWidth = Math.max(3, 3 * z); g.strokeStyle = ink; g.stroke(); g.lineWidth = Math.max(1.4, 1.4 * z); g.strokeStyle = col; g.stroke(); }
+      g.beginPath(); g.ellipse(cx, cy - H, rx, ry, 0, 0, Math.PI * 2); g.lineWidth = Math.max(3.4, 3.6 * z); g.strokeStyle = ink; g.stroke(); g.lineWidth = Math.max(2, 2.2 * z); g.strokeStyle = col; g.stroke();
+      // up-chevrons stacked in the middle: "something is coming up"
+      for (let k = 0; k < 3; k++) {
+        const ph = ((now / 700) + k / 3) % 1, y = cy - ph * H * 1.1, al = Math.sin(ph * Math.PI);
+        g.globalAlpha = a0 * al; g.beginPath(); g.moveTo(cx - 12 * z, y + 4 * z); g.lineTo(cx, y - 4 * z); g.lineTo(cx + 12 * z, y + 4 * z);
+        g.lineWidth = Math.max(4, 4 * z); g.strokeStyle = ink; g.stroke(); g.lineWidth = Math.max(2, 2.2 * z); g.strokeStyle = "#ffffff"; g.stroke();
+      }
+      g.globalAlpha = a0;
+    },
+
+    /** Paper rain from the ceiling after the boss falls: ~8 s of confetti and loose pages (screen space, above the world, under the labels). */
+    drawConfetti(g, cam, now) {
+      const t0 = now - fx.victoryAt;
+      if (t0 < 0 || t0 > 9200) return;
+      const n = fx.lowFx ? 70 : 230, W = cam.w, H = cam.h, COL = CONFETTI;
+      if (t0 < 420) { g.fillStyle = `rgba(255,226,150,${0.22 * (1 - t0 / 420)})`; g.fillRect(0, 0, W, H); } // a brief golden flash as the boss falls
+      for (let i = 0; i < n; i++) {
+        const h1 = hash01(i * 3 + 1), h2 = hash01(i * 3 + 2), h3 = hash01(i * 3 + 3);
+        const delay = h1 * h1 * 4200, life = 3000 + h2 * 1800, age = t0 - delay;
+        if (age < 0 || age > life) continue;
+        const k = age / life, x = h3 * W + Math.sin(age / 520 + i) * 26 * cam.z, y = -24 + k * (H + 70), spin = age / 180 + i, flat = Math.abs(Math.cos(spin * 0.9));
+        const paper = i % 5 === 0, sz = (paper ? 18 : 11 + h2 * 6) * Math.max(1, cam.z * 0.8);
+        g.save(); g.globalAlpha = Math.min(1, age / 200, (life - age) / 350 + 0.1);
+        g.translate(x, y); g.rotate(spin * 0.6);
+        if (paper) { g.fillStyle = "#f4efe0"; g.fillRect(-sz * 0.5, -sz * 0.65 * flat, sz, sz * 1.3 * flat); g.fillStyle = "rgba(13,10,28,0.45)"; for (let l = 0; l < 3; l++) g.fillRect(-sz * 0.36, (-0.4 + l * 0.32) * sz * flat, sz * 0.72, Math.max(1, sz * 0.06)); }
+        else { g.fillStyle = COL[i % COL.length]; g.fillRect(-sz * 0.5, -sz * 0.28 * flat - 0.5, sz, sz * 0.56 * flat + 1); }
+        g.restore();
+      }
     },
 
     /** Is this rectangle on a claimed label (plates, pips, loot plates) or leader line? Used by the loot-plate and floater placement. */

@@ -5,14 +5,20 @@
 // The mask is re-baked only when the viewport, zoom or mode changes, never per frame.
 export const MAX_LIGHTS = 4;
 export const HERO_RADIUS = 5.6; // tiles
+const THEME_RADIUS = { executive: 1.5 }; // the boss arena is lit more widely: the fight must be readable across the whole boardroom
 const POOL = {
   monitor: { r: 2.1, lift: 22 }, fluor: { r: 3.6, lift: 0 }, lamp: { r: 2.7, lift: 14 },
   warm: { r: 4.2, lift: 0 },   // Lobby ceiling lamp
   cold: { r: 3.6, lift: 0 },   // basement tube (flickers harder)
   rack: { r: 2.3, lift: 24 },  // server rack LEDs
   gen: { r: 2.4, lift: 12 },   // generator work light
+  desklamp: { r: 2.5, lift: 16 },   // Executive Suite: brass desk lamp
+  screen: { r: 4.6, lift: 30 },     // Executive Suite: the quarterly results screen
+  chandelier: { r: 4.4, lift: 0 },  // Executive Suite: a dim ceiling light
+  boss: { r: 3.4, lift: 22 },       // the Regional Director's aura
+  rage: { r: 3.8, lift: 22 },         // ... in phase 2
 };
-const FLICKERING = { fluor: 1, cold: 1.6 };
+const FLICKERING = { fluor: 1, cold: 1.6, screen: 0.5 };
 
 // Band stops from the C2 mock-up: [position, opacity, ...] (toon bands, not a smooth falloff)
 const HERO_BANDS = [0, 1, 0.26, 1, 0.29, 0.78, 0.5, 0.78, 0.53, 0.42, 0.74, 0.42, 0.77, 0.15, 0.98, 0.1, 1, 0];
@@ -77,7 +83,7 @@ export function createLighting(style) {
       const g = c.getContext("2d");
       g.clearRect(0, 0, cw, ch);
       g.fillStyle = hc ? "rgba(7,5,24,0.6)" : lowFx ? "rgba(7,5,24,0.62)" : P.themes[L.theme]?.dark ?? P.dark; g.fillRect(0, 0, cw, ch);
-      const rx = HERO_RADIUS * 45.25 * cam.z * res, ry = HERO_RADIUS * 22.6 * cam.z * res;
+      const hr = HERO_RADIUS * (THEME_RADIUS[L.theme] ?? 1), rx = hr * 45.25 * cam.z * res, ry = hr * 22.6 * cam.z * res;
       g.globalCompositeOperation = "destination-out";
       if (lowFx) { // flat: a smooth, cheap hole
         const grad = g.createRadialGradient(cw / 2, ch / 2, 0, cw / 2, ch / 2, rx);
@@ -97,7 +103,7 @@ export function createLighting(style) {
       if (theme !== L.theme) { L.theme = theme; if (last.cam) L.ensure(last.cam, last.lowFx, last.hc); } // a new floor theme re-bakes the mask once
       L.n = 0; L.hero.x = hero.x; L.hero.y = hero.y; L.lowFx = lowFx; L.hc = hc;
       if (lowFx || hc) return;
-      for (let i = 0; i < monsters.length; i++) { const m = monsters[i]; if (m.ai !== "dead" && P.actorLights[m.type]) consider(L, P, P.actorLights[m.type], m.x, m.y, 30); }
+      for (let i = 0; i < monsters.length; i++) { const m = monsters[i]; if (m.ai !== "dead" && (m.lit || P.actorLights[m.type])) { const k = m.lit || P.actorLights[m.type]; if (k) consider(L, P, k, m.x, m.y, m.lit ? 60 : 30); } }
       for (let i = 0; i < candidates.length; i++) { const c = candidates[i]; consider(L, P, c.kind, c.x, c.y, 0); }
     },
 
@@ -123,7 +129,7 @@ export function createLighting(style) {
      * strongest pool colour (or "") with out.tintA 0..0.3 in steps of 0.05. Same banding as the mask.
      */
     sample(wx, wy, out) {
-      const hd = Math.hypot(wx - L.hero.x, wy - L.hero.y) / HERO_RADIUS;
+      const hd = Math.hypot(wx - L.hero.x, wy - L.hero.y) / (HERO_RADIUS * (THEME_RADIUS[L.theme] ?? 1));
       let dark = L.lowFx ? Math.min(1, Math.max(0, (hd - 0.3) / 0.7)) * 0.7 : 1 - bandAt(HERO_BANDS, hd), best = 0, tint = "";
       for (let i = 0; i < L.n; i++) {
         const l = L.lights[i], s = bandAt(POOL_BANDS, Math.hypot(wx - l.x, wy - l.y) / l.r) * (l.a / 0.3);

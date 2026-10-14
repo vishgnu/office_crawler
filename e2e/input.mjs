@@ -81,7 +81,10 @@ const frames = (page, n) => page.evaluate((k) => new Promise((res) => { let i = 
   const focused = () => g.page.evaluate(() => document.activeElement?.dataset?.testid ?? null);
   check("pause screen focuses Resume", (await focused()) === "resume");
   await g.page.keyboard.press("Tab");
-  check("Tab moves focus between pause buttons", (await focused()) === "quit");
+  check("Tab moves focus between pause buttons (Resume, Options, Quit)", (await focused()) === "options");
+  await g.page.keyboard.press("Tab");
+  check("Tab again reaches Quit", (await focused()) === "quit");
+  await g.page.keyboard.press("Shift+Tab");
   await g.page.keyboard.press("Shift+Tab");
   check("Shift+Tab moves focus back", (await focused()) === "resume");
   await g.page.keyboard.press("Escape");

@@ -9,6 +9,7 @@ import { hudLayout, fontPx, SKILL_SLOTS, BELT_SLOTS } from "../ui/layout.js";
 import { xpRatio, xpProgress } from "../ui/itemview.js";
 import { T } from "../ui/text.js";
 import { keys } from "./keys.js";
+import { keyLabel } from "../input/keymap.js";
 
 const S = content.strings;
 const ratio = (v, max) => (max > 0 ? Math.min(1, Math.max(0, v / max)) : 0);
@@ -24,6 +25,15 @@ function xpLabelParts(p) {
   return { into: v.into, span: v.span, total: v.total, label: v.capped ? T.xpMax : `${num(v.into)} / ${num(v.span)} (${v.pct}%)`, tip: `${T.xpTotal}: ${num(v.total)}` };
 }
 
+/** The engaged boss, if any (shown in the top bar while it fights: AC-R-045). */
+export const engagedBoss = (core) => core.scene === "floor" ? core.monsters.find((o) => o.tier === "boss" && o.boss?.engaged && o.ai !== "dead") ?? null : null;
+const bossInfo = (core) => {
+  const m = engagedBoss(core);
+  return m ? { id: m.id, name: m.name ?? content.bosses?.[m.type]?.name ?? S.bossName, hp: m.hp, hpMax: m.hpMax, ratio: ratio(m.hp, m.hpMax), phase: m.boss.phase, markAt: config.boss.phase2At, windup: m.boss.windup ? m.boss.windup.kind : null } : null;
+};
+/** Badge text of a key bound in options (F1 / 1 / ...), falling back to the default label. */
+const badge = (core, action, fallback) => keyLabel(core.options?.keys?.[action]) || fallback;
+
 /** HUD values + rects for the hook, the DOM slot layer and tests (pure). */
 export function hudState(core, w, h, style, hoverId = null) {
   const L = hudLayout(w, h), p = core.player, bar = p.skillBar;
@@ -35,7 +45,7 @@ export function hudState(core, w, h, style, hoverId = null) {
     const id = bar.hotkeys[i], def = id ? content.skills[id] : null, level = id === "strike" ? 1 : id ? p.skills[id] ?? 0 : 0;
     const cost = def?.mana ? def.mana(Math.max(1, level)) : 0;
     return {
-      index: i, key: `${S.keyF}${i + 1}`, skill: id ?? null, name: def ? def.name : S.skillEmpty, empty: !def, level, cost,
+      index: i, key: badge(core, `skill${i + 1}`, `${S.keyF}${i + 1}`), skill: id ?? null, name: def ? def.name : S.skillEmpty, empty: !def, level, cost,
       disabled: !!def && (level < 1 || p.mp < cost), selected: bar.selected === i, rect: { ...L.skills[i] },
     };
   };
@@ -50,9 +60,10 @@ export function hudState(core, w, h, style, hoverId = null) {
     skills: slots, skillBar: { primary: bar.primary, secondary: bar.secondary, selected: bar.selected, hotkeys: [...bar.hotkeys], slots },
     belt: L.belt.map((r, i) => {
       const it = core.belt[i];
-      return { index: i, key: String(i + 1), empty: !it, item: it ? { id: it.id, name: it.name, restores: it.restores, restore: it.restore, base: it.base, w: 1, h: 1 } : null, rect: { ...r } };
+      return { index: i, key: badge(core, `belt${i + 1}`, String(i + 1)), empty: !it, item: it ? { id: it.id, name: it.name, restores: it.restores, restore: it.restore, base: it.base, w: 1, h: 1 } : null, rect: { ...r } };
     }),
-    target: m ? { id: m.id, name: m.name ?? content.monsters[m.type].name, hp: m.hp, hpMax: m.hpMax, ratio: ratio(m.hp, m.hpMax) } : null,
+    target: m ? { id: m.id, name: m.name ?? (content.monsters[m.type] ?? content.bosses[m.type]).name, hp: m.hp, hpMax: m.hpMax, ratio: ratio(m.hp, m.hpMax) } : null,
+    boss: bossInfo(core),
     floor: { depth: core.depth, name: core.floor.name, label: floorLabel(core) },
   };
 }
@@ -121,9 +132,11 @@ export function createHud(style) {
       // floor name (top left)
       text(g, floorLabel(core), L.floorName.x, L.floorName.y, fontPx(s, 13, 14), U.subtle, "left", 600);
 
-      const m = targetId && core.monsters.find((o) => o.id === targetId && o.ai !== "dead");
+      const boss = engagedBoss(core);
+      if (boss) this.bossBar(g, w, L, s, boss, hc);
+      const m = targetId && targetId !== boss?.id && core.monsters.find((o) => o.id === targetId && o.ai !== "dead");
       if (m) {
-        const t = L.target, def = content.monsters[m.type];
+        const t = L.target, def = content.monsters[m.type] ?? content.bosses[m.type];
         g.beginPath(); g.roundRect(t.x, t.y, t.w, t.h, t.h / 2); g.fillStyle = hc ? "#2a2a2a" : P.plate.hpTrack; g.fill();
         g.save(); g.clip();
         g.fillStyle = hc ? P.plateHc.hp : P.plate.hp; g.fillRect(t.x, t.y, t.w * ratio(m.hp, m.hpMax), t.h);
@@ -132,6 +145,21 @@ export function createHud(style) {
         g.beginPath(); g.roundRect(t.x, t.y, t.w, t.h, t.h / 2); g.lineWidth = 3 * s; g.strokeStyle = hc ? "#fff" : P.ink; g.stroke();
         text(g, m.name ?? def.name, w / 2, t.y + t.h + fontPx(s, 13, 14) + 4, fontPx(s, 13, 14), "#ffffff");
       }
+    },
+
+    /** Boss health bar across the top while the boss fights: name, fill, a marker where phase 2 starts, the phase when it has begun. */
+    bossBar(g, w, L, s, m, hc) {
+      const bw = Math.min(w - 32, 560 * s), bh = Math.max(16, 20 * s), x = (w - bw) / 2, y = w < 900 ? L.target.y : 34 * s, r = ratio(m.hp, m.hpMax), fs = fontPx(s, 14, 14);
+      g.beginPath(); g.roundRect(x, y, bw, bh, bh / 2); g.fillStyle = hc ? "#2a2a2a" : P.plate.hpTrack; g.fill();
+      g.save(); g.clip();
+      g.fillStyle = m.boss.phase >= 2 ? (hc ? "#ffffff" : "#e0523c") : (hc ? P.plateHc.hp : P.plate.hp); g.fillRect(x, y, bw * r, bh);
+      g.fillStyle = "rgba(255,255,255,0.35)"; g.fillRect(x, y, bw * r, bh * 0.38);
+      g.restore();
+      const mx = x + bw * config.boss.phase2At;
+      g.fillStyle = "#ffffff"; g.fillRect(mx - 1.5, y - 2, 3, bh + 4); // phase marker
+      g.beginPath(); g.roundRect(x, y, bw, bh, bh / 2); g.lineWidth = 3 * s; g.strokeStyle = hc ? "#fff" : P.ink; g.stroke();
+      text(g, m.name ?? content.bosses?.[m.type]?.name ?? S.bossName, w / 2, y - 6, fs, "#ffffff");
+      if (m.boss.phase >= 2) text(g, `${T.bossPhaseLabel} 2`, x + bw, y + bh + fs + 2, fontPx(s, 12, 13), "#ffd0c8", "right", 700);
     },
 
     /** A crack across the mug body (drawn only in the low-HP state). */
