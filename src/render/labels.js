@@ -20,6 +20,20 @@ function onSprite(r, actors, self, cam, style) {
   }
   return false;
 }
+/** True when the leader line (x1,y1)-(x2,y2) passes through the body of an actor other than `self` (or the hero rect). Sampled; lines are short. */
+function lineCrossesBody(x1, y1, x2, y2, actors, self, cam, style, heroR) {
+  const z = cam.z;
+  for (let k = 1; k <= 12; k++) {
+    const t = k / 12, x = x1 + (x2 - x1) * t, y = y1 + (y2 - y1) * t;
+    if (x > heroR.x && x < heroR.x + heroR.w && y > heroR.y && y < heroR.y + heroR.h) return true;
+    for (const o of actors) {
+      if (o === self || o.dead || o.hid || Math.abs(o.sx - x) > 20 * z) continue;
+      const head = (style.dims[o.type]?.head ?? 50) * z;
+      if (y > o.sy - head && y < o.sy && Math.abs(o.sx - x) < 15 * z) return true;
+    }
+  }
+  return false;
+}
 const overlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 const BR = { x: 0, y: 0, w: 0, h: 0 };
 const GAP = 4; // minimum gap between stacked plates, px (round G fix: de-collision with a vertical push and a gap)
@@ -27,7 +41,7 @@ const overlapGap = (a, b) => a.x < b.x + b.w + GAP && b.x < a.x + a.w + GAP && a
 
 export function createLabels(style) {
   const P = style.palette, cache = new Map();
-  const placed = Array.from({ length: MAX_PLATES }, () => ({ x: 0, y: 0, w: 0, h: 0, ax: 0, ay: 0, sprite: null, ratio: 0, moved: false, id: "", name: "" }));
+  const placed = Array.from({ length: MAX_PLATES }, () => ({ x: 0, y: 0, w: 0, h: 0, ax: 0, ay: 0, sprite: null, ratio: 0, moved: false, line: true, id: "", name: "" }));
   const cand = [], pips = Array.from({ length: MAX_PIPS }, () => ({ x: 0, y: 0, w: 0, h: 0, ratio: 0, id: "", fade: 1 }));
   let pipN = 0;
   const heroRect = { x: 0, y: 0, w: 0, h: 0 };
@@ -106,6 +120,21 @@ export function createLabels(style) {
           for (let j = 0; j < obstacles.length && ok; j++) if (overlap(r, obstacles[j])) ok = false;
           r.moved = Math.abs(r.x + r.w / 2 - ax) > 6 || ay - r.h - r.y > 4;
         }
+        r.line = true;
+        if (r.moved && (ok || forced) && lineCrossesBody(r.x + r.w / 2, r.y + r.h, ax, ay, actors, a, cam, style, heroRect)) {
+          // F3 (round G3): the leader line would run through a body. Try the plate beside the head (shifted by about a body half width, same height), else drop the line.
+          const x0 = r.x, y0 = r.y, step = Math.round(r.w * 0.5 + 18 * z);
+          let found = false;
+          for (let q = 0; q < 4 && !found; q++) {
+            const dx = (q & 1 ? -1 : 1) * (q < 2 ? step : step * 1.6);
+            r.x = Math.min(cam.w - SAFE - r.w, Math.max(SAFE, ax - Math.round(r.w / 2) + dx)); r.y = Math.max(SAFE, ay - r.h * 0.5 - 10 * z);
+            let fit = !overlap(r, heroRect) && !onSprite(r, actors, a, cam, style);
+            for (let j = 0; j < n && fit; j++) if (overlapGap(r, placed[j])) fit = false;
+            for (let j = 0; j < obstacles.length && fit; j++) if (overlap(r, obstacles[j])) fit = false;
+            if (fit && !lineCrossesBody(r.x + r.w / 2, r.y + r.h * 0.5, ax, ay, actors, a, cam, style, heroRect)) { found = true; r.moved = true; r.line = Math.abs(r.x + r.w / 2 - ax) > 6; }
+          }
+          if (!found) { r.x = x0; r.y = y0; r.line = false; }
+        }
         if (ok || forced) { n++; if (!forced) others++; a.pr = -1; }
       }
       L.count = n;
@@ -143,7 +172,7 @@ export function createLabels(style) {
       for (let i = 0; i < L.count; i++) {
         const r = placed[i];
         rects.push({ x: r.x - 2, y: r.y - 2, w: r.w + 4, h: r.h + 4, plate: true });
-        if (r.moved) segs.push([r.x + r.w / 2, r.y + r.h, r.ax, r.ay]);
+        if (r.moved && r.line) segs.push([r.x + r.w / 2, r.y + r.h, r.ax, r.ay]);
       }
       for (let i = 0; i < pipN; i++) { const p = pips[i]; rects.push({ x: p.x - 2, y: p.y - 2, w: p.w + 4, h: p.h + 4, plate: false }); }
     },
@@ -159,7 +188,7 @@ export function createLabels(style) {
       }
       for (let i = 0; i < L.count; i++) {
         const r = placed[i], sp = r.sprite;
-        if (r.moved) { // leader line from the plate to the head
+        if (r.moved && r.line) { // leader line from the plate to the head
           g.lineCap = "round"; g.strokeStyle = P.ink; g.lineWidth = 3.4; g.beginPath(); g.moveTo(r.x + r.w / 2, r.y + r.h); g.lineTo(r.ax, r.ay); g.stroke();
           g.strokeStyle = "#f3eefc"; g.lineWidth = 1.4; g.stroke();
         }

@@ -106,10 +106,27 @@ Object.assign(T, {
   // skill tree
   trTitle: "Skills", trPoints: "Skill points", trReset: "Respec", trResetHint: "Take back every point (in the Lobby).", trResetNone: "Respec is only possible in the Lobby.",
   trTier: "Tier", trLevelOf: "Level", trNeeds: "Needs", trNow: "Now", trNext: "Next level", trAura: "Aura", trAuraOn: "Aura on", trAuraOff: "Aura off", trSignature: "Signature", trCost: "Mana", trReserve: "reserves", trPassive: "Passive",
-  trAssign: "Assign to bar", trSelectNote: "Hover or focus a skill for its numbers. The right mouse button uses the skill selected on the bar (F1 to F4).", trBranchSpent: "Points spent", trNothing: "nothing yet",
+  trAssign: "Assign to bar", trSelectNote: "Hover a skill for its numbers. Right mouse uses the bar skill (F1 to F4).", trBranchSpent: "Points spent", trNothing: "nothing yet",
   trStateLearned: "Learned", trStateAvailable: "Available", trStateLockedLevel: "Locked", trStateLockedPrereq: "Locked", trStateMaxed: "Max level", trStateNoPoints: "No points",
   trRespecDone: "Skill points returned.", trRespecFail: { "not-in-town": "Respec is only possible in the Lobby.", dead: "You cannot do that now.", "respec-off": "Respec is switched off.", "respec-used": "You already used your respec.", "no-gold": "Not enough gold to respec." },
   trLearnFail: { "level-gate": "Your level is too low.", prereq: "Learn the earlier skill first.", "no-points": "No skill points left.", "max-level": "Already at maximum level.", basic: "Basic attacks are free.", "wrong-class": "Not a skill of your class." },
   trAuraFail: { "no-mana": "Not enough mana to reserve.", "not-learned": "Learn the aura first." },
   clsFacilities: "Facilities Manager",
+});
+
+// ---- R5 fix round: save status banners, load confirmation, slot cards ----
+Object.assign(T, {
+  svMemory: "Saving is off in this browser", svMemoryText: "Your progress is kept only while this tab stays open. Allow site storage for this page (private windows often block it) and reload.",
+  svFull: "Storage is full", svFullText: "New progress cannot be saved. Export a character or delete one you no longer need.",
+  svOther: "This game is open in another tab", svOtherText: "Saves from this tab are paused so the two tabs do not overwrite each other.",
+  svStale: "Another session still holds the saves", svStaleText: "A tab that was open before did not close cleanly. If it is gone, take over the saves here.",
+  svTakeOver: "Take over saves", svTakeTitle: "Take over saves in this tab?", svTakeText: "The other tab will stop saving. Close it first if it is still open, or its newer progress may be lost.", svTakeYes: "Take over here", svTaken: "This tab now saves.",
+  svDismiss: "Dismiss",
+  notices: {
+    "no-active-slot": "Nothing was saved because no character is active. Start or load a character first.",
+    "pre-switch-save-failed": "The running game could not be saved before switching, so nothing was changed. Free some space, then try again.",
+    "migration-failed": "Your old save could not be moved into a slot. It is still on this device: export it from Save slots if you need it.",
+    generic: "Saving ran into a problem.",
+  },
+  slLoadTitle: "Load this character?", slLoadText: "The running game is saved first, but unsaved floor progress is lost: you come back at the floor entrance. Cancel keeps the game as it is.", slLoadYes: "Load", slDeepest: "Deepest", slDeepestLobby: "Lobby only",
 });

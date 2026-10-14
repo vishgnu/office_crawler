@@ -1,0 +1,1 @@
+done: CR-02 escapes in panels.js/tree.js; slots.js focus/trap/return, load confirm, deepest+date/time, no adapter; savestatus.js (banner, notice, take over); elevator Esc cancels the start (pending transition cancelled on screen destroy); next: tests, CSS, visual fixes, e2e updates, screenshots

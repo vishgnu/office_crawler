@@ -18,7 +18,7 @@ const levelTo = (st, lv) => { for (let g = 0; st.player.level < lv && g < 40; g+
 
 // ---- finding -----------------------------------------------------------------------------------------------------------------
 
-test("ADV-R5-10 names: letters with combining marks (decomposed accents, Thai, Devanagari) are valid names", { todo: "ADV-R5-10" }, () => {
+test("ADV-R5-10 names: letters with combining marks (decomposed accents, Thai, Devanagari) are valid names", () => {
   for (const n of ["José", "नमस्ते", "สวัสดี"]) assert.equal(validateName(n).ok, true, JSON.stringify(n));
 });
 
@@ -209,7 +209,7 @@ test("xp edge cases: NaN, negative, zero, Infinity and a huge grant at the cap n
   assert.equal(st.player.hp, st.player.hpMax);
 });
 
-test("ADV-R5-05 (xp bar at level 1): the level-2 threshold shown equals the one that triggers the level-up", { todo: "ADV-R5-05" }, () => {
+test("ADV-R5-05 (xp bar at level 1): the level-2 threshold shown equals the one that triggers the level-up", () => {
   const st = mk("sales-rep");
   gainXp(st, st.player.xpNext); // gain exactly what the bar says is needed
   assert.equal(st.player.level, 2, `xpNext ${config.player.xpNext} shown, but level 2 needs ${config.xpTable[1]}`);

@@ -338,6 +338,25 @@ function tempRing(g, sx, sy, r, z) {
 
 const heroFrame = (atlas, anim, dir, f) => { const row = F.hfigs[anim][dir]; return row[f] ?? (row[f] = atlas.get(keys.plr(F.htype, anim, dir, f))); };
 
+/** Share of an actor's own (shaded, tinted) body that is drawn back over the additive pool light: the wash on actors is clamped to the remaining 1 - this (round G3, F2). */
+const RESTORE_A = 0.72;
+const restore = [];
+/**
+ * Called by the lighting pass right after the additive pools: every actor standing in a pool gets its own sprite drawn again over the wash, so pale
+ * actors stop washing out and dark suits stay darker than the floor around them. The multiply tint (pool colour) is part of the redraw, so the cast stays.
+ */
+function restoreActors(g) {
+  const { cam, atlas } = F, z = cam.z;
+  for (let i = 0; i < restore.length; i++) {
+    const it = restore[i], x = it.x + it.dx, y = it.y + it.dy;
+    g.globalAlpha = RESTORE_A * it.a;
+    blit(g, it.flash ? atlas.flash(it.e) : it.e, x, y, z);
+    if (it.shade > 0) { g.globalAlpha = it.shade * it.a * RESTORE_A; blit(g, atlas.shade(it.e, "#070518"), x, y, z); }
+    g.globalCompositeOperation = "multiply"; g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, z); g.globalCompositeOperation = "source-over";
+  }
+  g.globalAlpha = 1;
+}
+
 function addActor(a, isPlayer, pos, dir, sx, sy) {
   const { g, cam, atlas, fx, now, env, light } = F, z = cam.z;
   const af = animFor(a, isPlayer, now), boss = !isPlayer && a.tier === "boss";
@@ -557,7 +576,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
 
   const heroDir = faceFor(hero, true, core, rs);
   project(cam, hp.x + 0.5, hp.y + 0.5, pt);
-  out.heroScreen.x = pt.x; out.heroScreen.y = pt.y; out.heroDir = heroDir;
+  out.heroScreen.x = pt.x; out.heroScreen.y = pt.y; out.heroDir = heroDir; fx.heroS = out.heroScreen; // the drawn hero position: the loot-plate keep-out follows the sprite, not the logical tile
   out.heroItem = addActor(hero, true, hp, heroDir, pt.x, pt.y);
   for (let i = 0; i < nm; i++) {
     const m = mons[i], o = actorOut[i];
@@ -578,6 +597,8 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     if (dx < 30 * z && dy > -8 * z && dy < 60 * z) { if (it.a > 0.5) it.a = 0.5; buried = true; }
   }
   items.sort(byDepth);
+  restore.length = 0;
+  light.after = restoreActors;
   const champColour = env.style.palette.champion;
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
@@ -601,6 +622,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     }
     if (it.hurt) { g.globalAlpha = 0.14; blit(g, atlas.tint(it.e, "#ff1f2e"), x, y, z); }
     g.globalAlpha = 1;
+    if (it.tintA > 0 && !it.ghost && !it.hurt && it.a > 0.02) restore.push(it); // lit by a pool: its body is drawn again over the additive pass (restoreActors)
     if (it.summoned) blit(g, atlas.get(keys.fx("badge")), x + 5 * z, y - 30 * z, z * 0.9); // temp badge pinned to the chest
     if (it.sf) drawStatus(g, it.sf, x, y, it.head, z, now, fx.reducedMotion);
     if (it.icon) drawIcon(g, atlas, it, x, y, z, now);

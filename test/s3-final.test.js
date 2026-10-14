@@ -3,14 +3,15 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { newGame, step, teleportFloor, setLevel, config, content } from "../src/core/index.js";
-import { serialize, deserialize, checksumOf, createSaveStore, createMemoryAdapter } from "../src/save/index.js";
-import { BACKUPS } from "../src/save/storage.js";
+import { serialize, deserialize, checksumOf, createSlotStore, createMemoryAdapter } from "../src/save/index.js";
 import { canonical } from "../src/core/hash.js";
 import { createBus } from "../src/bus.js";
 import { createAudio } from "../src/audio/index.js";
 import { palette } from "../src/render/styles/vector/palette.js";
 import { createFx, FLASH_HALF_MS, lowHpPeriod } from "../src/render/fx.js";
 
+const slotStore = (a = createMemoryAdapter()) => createSlotStore(a, { now: () => 1_700_000_000_000 });
+const slotKey = (n = 1) => `${config.slotKeyPrefix}${n}`;
 const rich = () => {
   const s = newGame(21, { start: "town" }); setLevel(s, 5);
   for (let i = 0; i < 3; i++) step(s);
@@ -56,59 +57,47 @@ test("S8 hostile saves are rejected by the schema (correct checksum, bad content
   assert.equal(deserialize(forge(() => {})).ok, true, "the unmodified save still loads");
 });
 
-test("S5 a save from a newer build is copied to the backup before the first autosave overwrites it", () => {
+test("S5 a save from a newer build is never overwritten by autosave, create or import", () => {
   const newer = canonical({ format: "office-crawler-save", version: config.saveVersion + 1, note: "from the future" });
-  const a = createMemoryAdapter({ [config.saveKey]: newer });
-  const store = createSaveStore(a);
-  assert.equal(store.load().reason, "newer");
-  assert.equal(a.getItem(config.saveKey), newer, "load leaves it alone");
-  assert.equal(store.save(rich(), { force: true }).ok, true);
-  assert.equal(store.exportText("corrupt"), newer, "the newer save is kept");
-  assert.equal(deserialize(a.getItem(config.saveKey)).ok, true);
-  // when the copy cannot be made, the newer save stays and the save reports failure
-  const b = createMemoryAdapter({ [config.saveKey]: newer }); b.failWrites = true;
-  const s2 = createSaveStore(b);
-  assert.equal(s2.save(rich(), { force: true }).ok, false);
-  assert.equal(b.getItem(config.saveKey), newer);
+  const a = createMemoryAdapter({ [slotKey(1)]: newer });
+  const store = slotStore(a);
+  assert.equal(store.load(1).error, "newer");
+  assert.equal(a.getItem(slotKey(1)), newer, "load leaves it alone");
+  assert.equal(store.write(1, rich()).error, "newer");
+  assert.equal(store.create(1, rich(), { confirm: true }).error, "newer");
+  assert.equal(store.importText(1, serialize(rich()), { confirm: true }).error, "newer");
+  assert.equal(a.getItem(slotKey(1)), newer);
 });
 
-test("S6 damaged saves: quarantine keeps the slot when the backup cannot be written; three rotating backups, newest first", () => {
-  const a = createMemoryAdapter({ [config.saveKey]: "{bad0" });
+test("S6 damaged saves: quarantine keeps the slot text when the .bad copy cannot be written", () => {
+  const a = createMemoryAdapter({ [slotKey(1)]: "{bad0" });
   a.failWrites = true;
-  const store = createSaveStore(a);
-  assert.equal(store.load().corrupt, true);
-  assert.equal(a.getItem(config.saveKey), "{bad0", "quota error: the damaged text is not thrown away");
+  const store = slotStore(a);
+  assert.equal(store.load(1).error, "corrupt");
+  assert.equal(a.getItem(slotKey(1)), "{bad0", "quota error: the damaged text is not thrown away");
   a.failWrites = false;
-  const seen = [];
-  for (let i = 1; i <= 4; i++) {
-    a.setItem(config.saveKey, `{bad${i}`);
-    assert.equal(store.load().corrupt, true);
-    assert.equal(a.getItem(config.saveKey), null);
-    seen.push(`{bad${i}`);
-  }
-  assert.equal(BACKUPS, 3);
-  const keys = [config.saveBackupKey, `${config.saveBackupKey}.1`, `${config.saveBackupKey}.2`];
-  assert.deepEqual(keys.map((k) => a.getItem(k)), ["{bad4", "{bad3", "{bad2"]);
-  assert.equal(a.keys().filter((k) => k.startsWith(config.saveBackupKey)).length, 3);
+  assert.equal(store.load(1).error, "corrupt");
+  assert.equal(a.getItem(slotKey(1)), null);
+  assert.equal(store.exportText(1, "bad").text, "{bad0");
 });
 
-test("S6/S7 a failed save write never clears the slot; import keeps the replaced character as a backup", () => {
-  const a = createMemoryAdapter(), store = createSaveStore(a);
+test("S6/S7 a failed save write never clears the slot; import keeps the replaced character as the undo copy", () => {
+  const a = createMemoryAdapter(), store = slotStore(a);
   const s = rich();
-  assert.equal(store.save(s, { force: true }).ok, true);
-  const before = a.getItem(config.saveKey);
+  assert.equal(store.create(1, s).ok, true);
+  const before = a.getItem(slotKey(1));
   a.failWrites = true;
   s.player.gold += 5;
-  assert.equal(store.save(s, { force: true }).ok, false);
-  assert.equal(a.getItem(config.saveKey), before);
+  assert.equal(store.write(1, s).ok, false);
+  assert.equal(a.getItem(slotKey(1)), before);
   a.failWrites = false;
   const other = serialize(newGame(99, { start: "town" }));
-  assert.equal(store.importText(other).ok, true);
-  assert.equal(store.exportText("corrupt"), before, "the replaced save is the newest backup");
-  assert.equal(a.getItem(config.saveKey), other);
+  assert.equal(store.importText(1, other, { confirm: true }).ok, true);
+  assert.equal(a.getItem(`${slotKey(1)}.prev`), before, "the replaced save is the undo copy");
+  assert.equal(a.getItem(slotKey(1)), other);
   a.failWrites = true;
-  assert.equal(store.importText(serialize(rich())).ok, false);
-  assert.equal(a.getItem(config.saveKey), other, "a failed import leaves the slot alone");
+  assert.equal(store.importText(1, serialize(rich()), { confirm: true }).ok, false);
+  assert.equal(a.getItem(slotKey(1)), other, "a failed import leaves the slot alone");
 });
 
 test("S9 a save taken in the boss arena resumes at the arena entry with the boss at full health; attempts are kept", () => {

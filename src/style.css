@@ -85,11 +85,10 @@ h2 { margin: 0 0 8px; font-size: calc(clamp(26px, 4.5vw, 44px) * var(--ts, 1)); 
 #pright{right:0;width:var(--rw);border-right:none;border-radius:16px 0 0 16px;transform:translateX(104%)}
 .ph{display:flex;align-items:center;gap:10px;padding:6px 10px 6px 14px;border-bottom:3px solid var(--ol);background:var(--panel2);flex:none}
 .ph h2{margin:0;font-size:19px;font-weight:800;letter-spacing:.02em;color:#fff;text-shadow:none}
-.ph::before{content:'';width:34px;height:14px;border:3px solid var(--ol);border-radius:4px;background:#ffd05c;flex:none}
+.ph .phi{display:grid;place-items:center;width:32px;height:32px;flex:none;border:3px solid var(--ol);border-radius:7px;background:#3a3470;padding:2px;box-sizing:border-box}
+.ph .phi svg{width:100%;height:100%;display:block}
 #pright .ph{background:var(--woodD)}
-#pright .ph::before{background:#ffd05c}
 #pleft .ph{background:#5a6482}
-#pleft .ph::before{background:var(--paper)}
 .xbtn{margin-left:auto;width:40px;height:40px;border-radius:8px;border:3px solid var(--ol);background:var(--btn);font:900 20px/1 inherit;color:#fff;padding:0}
 .xbtn:hover{background:var(--btn2)}
 .pb{overflow:auto;flex:1;min-height:0}
@@ -336,7 +335,7 @@ html.hc .opt-val, html.hc .screen.options .hint, html.hc .hint, html.hc .seed, h
 .screen.title .panel .btn { min-width: min(260px, 100%); }
 
 .screen.create { padding: 0; gap: 0; align-items: stretch; justify-content: stretch; text-align: left; background: #14141f; animation: none; font-family: 'Trebuchet MS','Segoe UI',system-ui,'Helvetica Neue','Liberation Sans',Arial,sans-serif; color: #f4ecd8; }
-.cs-app { display: grid; grid-template-columns: minmax(0, 1fr) 410px; width: 100%; height: 100%; min-height: 0; }
+.cs-app { display: grid; grid-template-columns: minmax(0, 1fr) 410px; grid-template-rows: minmax(0, 1fr); width: 100%; height: 100%; min-height: 0; }
 .cs-stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #14102c; }
 .cs-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .cs-ttl { position: absolute; left: 22px; top: 16px; z-index: 3; pointer-events: none; }
@@ -344,7 +343,7 @@ html.hc .opt-val, html.hc .screen.options .hint, html.hc .hint, html.hc .seed, h
 .cs-ttl p { margin: 2px 0 0; font-size: 14px; color: #d6d0ee; text-shadow: 0 1px 0 #0d0a1c; }
 .cs-keys { position: absolute; right: 16px; top: 16px; z-index: 3; font-size: 14px; color: #d6d0ee; pointer-events: none; text-shadow: 0 1px 0 #0d0a1c; }
 .cs-keys kbd, .create kbd { font: inherit; font-weight: 800; border: 1.5px solid #8d80d0; border-radius: 5px; padding: 0 5px; background: #120e29; color: #f4ecd8; }
-.cs-conf { position: absolute; left: 22px; bottom: 10px; z-index: 3; font-size: 14px; letter-spacing: 3px; color: #b4abe0; opacity: .8; pointer-events: none; }
+.cs-conf { position: absolute; left: 22px; top: 62px; z-index: 3; font-size: 14px; letter-spacing: 3px; color: #b4abe0; opacity: .8; pointer-events: none; }
 .cs-lineup { position: absolute; inset: 0; z-index: 2; --chip: 46px; }
 .cs-cls { position: absolute; top: 12%; bottom: 9%; width: 27%; left: calc(var(--x) * 1% - 13.5%); background: none; border: 0; padding: 0; border-radius: 12px; color: inherit; font: inherit; cursor: pointer; --chip: 0px; display: block; }
 .cs-fig { pointer-events: none; position: absolute; inset: auto auto 0 50%; display: block; filter: brightness(.74) saturate(.9) drop-shadow(0 0 1px rgba(255, 236, 190, .6)); transition: transform .3s ease, filter .3s ease; transform-origin: 50% 100%; }
@@ -361,11 +360,12 @@ html.hc .opt-val, html.hc .screen.options .hint, html.hc .hint, html.hc .seed, h
 .cs-info { flex: 1; min-height: 0; overflow: auto; padding: 22px 22px 10px; }
 .cs-info.fade > * { animation: cs-fade .35s ease both; }
 @keyframes cs-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.cs-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.cs-head h2 { margin: 0; font-size: 26px; line-height: 1.1; color: #f4ecd8; text-shadow: none; flex: 1 1 auto; min-width: 0; }
+.cs-head { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "em name" "em role"; column-gap: 12px; row-gap: 2px; align-items: center; }
+.cs-head .cs-emblem { grid-area: em; } .cs-head h2 { grid-area: name; } .cs-head .cs-role { grid-area: role; justify-self: start; }
+.cs-head h2 { margin: 0; font-size: 26px; line-height: 1.1; color: #f4ecd8; text-shadow: none; min-width: 0; }
 .cs-emblem { width: 52px; height: 52px; border-radius: 12px; background: var(--cl); border: 3px solid #0d0a1c; display: grid; place-items: center; padding: 5px; box-sizing: border-box; flex: none; }
 .cs-emblem svg { width: 100%; height: 100%; }
-.cs-role { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; padding: 3px 9px; border: 2px solid var(--cl); border-radius: 99px; color: #f4ecd8; }
+.cs-role { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; padding: 1px 9px; border: 2px solid var(--cl); border-radius: 99px; color: #f4ecd8; }
 .cs-quote { margin: 10px 0 8px; font-size: 15px; font-style: italic; color: #f4ecd8; border-left: 4px solid var(--cl); padding-left: 10px; }
 .cs-tags { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .cs-tags li { font-size: 14px; font-weight: 800; padding: 3px 9px; border-radius: 99px; border: 2px solid #5b4f98; background: rgba(0, 0, 0, .2); }
@@ -383,7 +383,7 @@ html.hc .opt-val, html.hc .screen.options .hint, html.hc .hint, html.hc .seed, h
 .cs-branches .ico { width: 38px; height: 38px; border-radius: 9px; display: grid; place-items: center; background: var(--cl); border: 2px solid #0d0a1c; padding: 3px; box-sizing: border-box; }
 .cs-branches .ico svg { width: 100%; height: 100%; }
 .cs-branches b { display: block; font-size: 14px; }
-.cs-branches small { display: block; color: #c9c2e8; font-size: 14px; line-height: 1.25; }
+.cs-branches small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; color: #c9c2e8; font-size: 14px; line-height: 1.25; }
 .cs-foot { padding: 14px 22px 18px; background: #120e29; border-top: 3px solid #0d0a1c; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .cs-label { display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: #c9c2e8; margin-bottom: 4px; }
 .cs-label .hint { font-weight: 600; text-transform: none; letter-spacing: 0; color: #c9c2e8; font-size: 14px; }
@@ -397,8 +397,9 @@ html.hc .opt-val, html.hc .screen.options .hint, html.hc .hint, html.hc .seed, h
 .cs-actions { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; }
 .cs-actions .cs-go { grid-column: 1 / -1; font-size: 20px; padding: 13px 14px; }
 .cs-actions .btn[hidden], .cs-confirm[hidden] { display: none; }
-.cs-go.off { background: color-mix(in srgb, var(--cl) 40%, #120e29); color: #f4ecd8; box-shadow: none; border-color: #0d0a1c; }
-.cs-go.off:hover { background: color-mix(in srgb, var(--cl) 48%, #241d4e); }
+.cs-go.off { background: color-mix(in srgb, var(--cl) 24%, #1c1640); color: #f4ecd8; box-shadow: none; border-color: color-mix(in srgb, var(--cl) 70%, #0d0a1c); }
+.cs-go.off:hover { background: color-mix(in srgb, var(--cl) 32%, #1c1640); }
+.cs-gohint.invis { visibility: hidden; }
 .cs-gohint { font-size: 14px; font-weight: 800; color: #ffe27a; text-align: center; }
 .cs-slotnote { margin: 0; font-size: 14px; color: #c9c2e8; }
 .cs-confirm { display: grid; gap: 8px; }
@@ -535,3 +536,32 @@ html.hc .tnode { border-color: #fff; }
 #ui.phone .tnode { grid-column: auto; }
 #ui.phone .tnode .sassign .mini { min-width: 44px; min-height: 44px; }
 @media (max-height: 800px) and (min-width: 761px) { .cs-tags { display: none; } .cs-info { padding-top: 14px; } .cs-quote { margin: 8px 0 8px; } .cs-stats { margin-bottom: 8px; } .cs-foot { padding-top: 10px; padding-bottom: 12px; gap: 6px; } .cs-slotnote { font-size: 14px; } }
+
+/* skills panel: the basic attack is one row, the help is one line (G2 finding 14) */
+.tree .srow { grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; padding: 4px 8px; }
+.tree .srow > span:empty, .tree .srow .stext { display: none; }
+.tree .srow .sassign { grid-column: auto; flex-wrap: nowrap; }
+.tree .srow .sic { width: 34px; height: 34px; }
+.tree .srow .sic svg { width: 100%; height: 100%; }
+.sv-status { display: grid; gap: 6px; margin: 0 0 8px; }
+.sv-status[hidden] { display: none; }
+.sv-line { display: flex; align-items: center; gap: 4px 12px; padding: 6px 10px; border: 3px solid var(--ol, #0d0a1c); border-radius: 8px; background: #3a2a52; color: #fff0d0; font-size: 15px; line-height: 1.25; text-align: left; }
+.sv-line.mem { background: #5a2430; border-color: #ff8f80; color: #fff; }
+.sv-line.own { background: #2c3a64; border-color: #8aa0ff; }
+.sv-line.note { background: #4a3a14; border-color: #ffd05c; }
+.sv-body { flex: 1 1 auto; min-width: 0; display: grid; gap: 1px; }
+.sv-line .sv-title { font-weight: 800; }
+.sv-line .sv-text { font-size: 14px; }
+.sv-line .mini { flex: none; }
+@media (max-width: 520px) { .sv-line { flex-wrap: wrap; } .sv-line .mini { margin-left: auto; } }
+.sv-confirm { text-align: left; }
+.sv-msg { margin: 0; font-size: 14px; color: #ffe27a; text-align: left; }
+
+/* slot cards: empty and damaged cards are one row so all five slots fit in a 720 px window (G2 finding 16) */
+@media (min-width: 521px) {
+  .sl-card:not(.ok) { grid-template-columns: 54px minmax(0, 1fr) auto; padding: 6px 8px; }
+  .sl-card:not(.ok) .sl-acts { grid-column: auto; flex-wrap: nowrap; }
+  .sl-card:not(.ok) .sl-empty { width: 54px; height: 54px; }
+  .sl-list { gap: 6px; margin-bottom: 8px; }
+  .sl-head { padding: 2px 0 2px; }
+}

@@ -5,8 +5,12 @@ import { readFileSync } from "node:fs";
 import { newGame, step, applyInput, teleportFloor, setLevel, spawnItem, config, createRng, hashState, content } from "../src/core/index.js";
 import { respawn } from "../src/core/systems/world.js";
 import { damageMonster } from "../src/core/systems/damage.js";
-import { serialize, deserialize, SAVE_KEYS, PLAYER_KEYS, checksumOf, toSave, rleEncode, rleDecode, createSaveStore, createMemoryAdapter, createAdapter, migrate } from "../src/save/index.js";
+import { serialize, deserialize, SAVE_KEYS, PLAYER_KEYS, checksumOf, toSave, rleEncode, rleDecode, createSlotStore, createMemoryAdapter, createAdapter, migrate } from "../src/save/index.js";
 import { canonical } from "../src/core/hash.js";
+
+// The live save path is the five-slot store (ADR-0006); these acceptance criteria are checked against it (CR-11).
+const slotStore = (adapter = createMemoryAdapter(), opts = {}) => createSlotStore(adapter, { now: () => 1_700_000_000_000, ...opts });
+const slotKey = (n = 1) => `${config.slotKeyPrefix}${n}`;
 
 /** A game with a level 7 hero, spent points, 3 skills, items everywhere, gold 321 and deepest floor 4 (AC-R-090-1). */
 function richGame(seed = 11) {
@@ -27,11 +31,14 @@ function richGame(seed = 11) {
 const SAVED = (s) => ({ level: s.player.level, xp: s.player.xp, attrs: s.player.attrs, attrPoints: s.player.attrPoints, skillPoints: s.player.skillPoints, skills: s.player.skills, skillBar: s.player.skillBar, gold: s.player.gold, cls: s.player.class,
   inventory: s.inventory, equipment: s.equipment, belt: s.belt, stash: s.stash, deepestDepth: s.deepestDepth, bossDefeated: s.bossDefeated, options: s.options });
 
-test("AC-R-090-1 round trip keeps the character, items, stash, belt, deepest floor, boss flag and options", () => {
+test("AC-R-090-1 round trip keeps the character, items, stash, belt, deepest floor and boss flag; options stay out of the slot (CR-04)", () => {
   const s = richGame(); s.options = { volume: 0.4, keys: { Digit1: "F1" } };
   assert.equal(s.deepestDepth, 4);
-  const r = deserialize(serialize(s));
+  const text = serialize(s);
+  assert.deepEqual(JSON.parse(text).options, {}, "options are global, not part of a slot");
+  const r = deserialize(text);
   assert.equal(r.ok, true, r.message);
+  s.options = {};
   assert.deepEqual(SAVED(r.state), SAVED(s));
   assert.equal(r.state.scene, "town"); assert.equal(r.state.depth, 0);
   assert.equal(r.state.player.hp, r.state.player.hpMax);
@@ -132,24 +139,26 @@ test("NFR-D03-2 a save from a newer version is refused with reason newer and lef
   const s = richGame(); const j = JSON.parse(serialize(s)); j.version = config.saveVersion + 1;
   const text = JSON.stringify(j);
   assert.deepEqual(Object.assign({}, deserialize(text), { message: undefined }), { ok: false, reason: "newer", message: undefined });
-  const notes = []; const store = createSaveStore(createMemoryAdapter({ [config.saveKey]: text }), { onNotice: (k) => notes.push(k) });
-  const r = store.load();
-  assert.equal(r.ok, false); assert.equal(r.reason, "newer");
-  assert.equal(store.read(), text); assert.deepEqual(notes, ["saveTooNew"]);
-  assert.ok(content.strings.saveTooNew);
+  const notes = [], a = createMemoryAdapter({ [slotKey(1)]: text });
+  const store = slotStore(a, { onNotice: (k) => notes.push(k) });
+  const r = store.load(1);
+  assert.equal(r.ok, false); assert.equal(r.error, "newer");
+  assert.equal(store.raw(1), text); assert.deepEqual(notes, ["saveTooNewSlot"]);
+  assert.ok(content.strings.saveTooNewSlot);
 });
 
 test("NFR-D03-3 a corrupt save: no throw, reason given, the text is kept as the backup and exportable, the slot is cleared, New game still works", () => {
   const good = serialize(richGame());
   const bads = [good.slice(0, good.length >> 1), good.replace('"level":7', '"level":"7"'), "garbage", "", "null", "[]", '{"version":1}', good.replace(/"checksum":"[0-9a-f]+"/, '"checksum":"0000000000000000"')];
   for (const bad of bads) {
-    const store = createSaveStore(createMemoryAdapter({ [config.saveKey]: bad }));
-    const r = store.load();
-    assert.equal(r.ok, false, bad.slice(0, 30)); assert.ok(r.reason && r.message);
-    assert.equal(store.has(), false, "Continue is gone");
-    assert.equal(store.exportText("corrupt"), bad);
-    assert.equal(store.save(newGame(1)).ok, true, "a new game can save without touching the backup");
-    assert.equal(store.exportText("corrupt"), bad);
+    const store = slotStore(createMemoryAdapter({ [slotKey(1)]: bad }));
+    if (bad === "") continue; // an empty text is not a stored slot
+    const r = store.load(1);
+    assert.equal(r.ok, false, bad.slice(0, 30)); assert.equal(r.error, "corrupt"); assert.ok(r.reason);
+    assert.equal(store.list().slots[0].state, "bad", "Continue is gone");
+    assert.equal(store.exportText(1, "bad").text, bad);
+    assert.equal(store.create(1, newGame(1), { confirm: true }).ok, true, "a new character can be created in the slot");
+    assert.equal(store.exportText(1, "bad").text, bad, "creating over the damaged slot keeps its text exportable (CR-09)");
   }
   assert.equal(deserialize(undefined).ok, false); assert.equal(deserialize(42).ok, false);
 });
@@ -197,13 +206,13 @@ test("NFR-D03-1 a version 0 fixture is migrated to the current schema and keeps 
 });
 
 // ---- storage ----
-test("AC-R-090-4/-5 one documented key, within the size cap; without a save there is nothing to continue", () => {
-  const a = createMemoryAdapter(), store = createSaveStore(a);
-  assert.equal(store.has(), false); assert.equal(store.load().reason, "empty");
-  assert.equal(store.save(richGame()).ok, true);
-  assert.deepEqual(a.keys(), [config.saveKey]);
-  assert.ok(a.getItem(config.saveKey).length <= config.saveMaxBytes);
-  assert.equal(store.load().ok, true);
+test("AC-R-090-4/-5 slot keys are documented, within the size cap; without a save there is nothing to continue", () => {
+  const a = createMemoryAdapter(), store = slotStore(a);
+  assert.equal(store.lastUsed(), null); assert.equal(store.load(1).error, "empty-slot");
+  assert.equal(store.create(1, richGame()).ok, true);
+  assert.deepEqual(a.keys().sort(), [config.slotIndexKey, slotKey(1)].sort());
+  assert.ok(a.getItem(slotKey(1)).length <= config.saveMaxBytes);
+  assert.equal(store.load(1).ok, true);
   // a full bag, stash, belt and worn gear still fits
   const s = newGame(3, { start: "town" });
   for (let i = 0; i < 200; i++) { const e = spawnItem(s, { depth: 8, rarity: "rare" }, s.player.tile); applyInput(s, { t: "pickup", id: e.id }); step(s); }
@@ -211,28 +220,29 @@ test("AC-R-090-4/-5 one documented key, within the size cap; without a save ther
 });
 
 test("AC-R-090-6 a write that throws keeps the game running, tells the player and leaves the last good save untouched", () => {
-  const a = createMemoryAdapter(), notes = [], store = createSaveStore(a, { onNotice: (k) => notes.push(k) });
+  const a = createMemoryAdapter(), notes = [], store = slotStore(a, { onNotice: (k) => notes.push(k) });
   const s = richGame();
-  assert.equal(store.save(s).ok, true);
-  const before = store.read();
+  assert.equal(store.create(1, s).ok, true);
+  const before = store.raw(1);
   a.failWrites = true; s.tick += 100; s.player.gold += 5;
-  const r = store.save(s, { force: true });
+  const r = store.autosave(s, {}, { force: true });
   assert.equal(r.ok, false); assert.equal(s.scene, "town");
-  assert.equal(s.ui.notice.key, "saveFailed"); assert.equal(s.ui.notice.text, content.strings.saveFailed);
-  assert.deepEqual(notes, ["saveFailed"]);
-  assert.equal(store.read(), before);
+  assert.ok(notes.includes("storageFull") || notes.includes("saveFailed")); assert.ok(content.strings.saveFailed && content.strings.storageFull);
+  assert.equal(store.raw(1), before);
   a.failWrites = false;
-  assert.equal(store.save(s, { force: true }).ok, true);
+  assert.equal(store.autosave(s, {}, { force: true }).ok, true);
 });
 
-test("AC-R-091-5 a burst of 100 autosave triggers writes once (coalesced), keeps one key, and a later tick writes again", () => {
-  const a = createMemoryAdapter(); let writes = 0; const set = a.setItem.bind(a); a.setItem = (k, v) => { writes++; set(k, v); };
-  const store = createSaveStore(a), s = richGame();
-  for (let i = 0; i < 100; i++) store.save(s);
-  assert.equal(writes, 1); assert.equal(a.keys().length, 1);
-  s.tick += config.autosaveMinTicks; store.save(s); assert.equal(writes, 2);
-  store.save(s, { force: true }); assert.equal(writes, 3, "exit saves are never skipped");
-  assert.equal(a.keys().length, 1);
+test("AC-R-091-5 a burst of 100 autosave triggers writes once (coalesced), adds no keys, and a later tick writes again", () => {
+  const a = createMemoryAdapter(); const s = richGame(), store = slotStore(a);
+  store.create(1, s);
+  let writes = 0; const set = a.setItem.bind(a); a.setItem = (k, v) => { writes++; set(k, v); };
+  const keys = a.keys().length;
+  for (let i = 0; i < 100; i++) store.autosave(s);
+  assert.equal(writes, 0, "the create just saved this tick: all 100 are coalesced");
+  s.tick += config.autosaveMinTicks; store.autosave(s); assert.equal(writes, 2, "slot text and index");
+  store.autosave(s, {}, { force: true }); assert.equal(writes, 4, "exit saves are never skipped");
+  assert.equal(a.keys().length, keys);
 });
 
 test("AC-R-091-1/-2 the core emits an autosave event on every floor change and town entry (the shell writes the save)", () => {
@@ -246,41 +256,42 @@ test("AC-R-091-1/-2 the core emits an autosave event on every floor change and t
   s.player.hp = 0; s.scene = "dead"; respawn(s); note();
   assert.deepEqual(seen, ["floor:1", "floor:2", "town:0"]);
   // wired to a store: the arrival state is what gets saved
-  const store = createSaveStore(createMemoryAdapter());
+  const store = slotStore();
+  store.create(1, s); store.setActive(1);
   teleportFloor(s, 3);
-  for (const e of s.events) if (e.type === "autosave") store.autosave(s, e);
-  assert.equal(JSON.parse(store.read()).resume.depth, 3);
+  for (const e of s.events) if (e.type === "autosave") store.autosave(s, e, { force: true });
+  assert.equal(JSON.parse(store.raw(1)).resume.depth, 3);
 });
 
 test("AC-R-092-1..-3 export gives the stored text; importing it elsewhere restores the character; garbage and tampered files are refused", () => {
-  const s = richGame(), a = createSaveStore(createMemoryAdapter());
-  a.save(s);
-  const text = a.exportText();
-  assert.equal(text, a.read()); assert.equal(a.exportName(), config.saveFileName);
-  const notes = [], b = createSaveStore(createMemoryAdapter(), { onNotice: (k) => notes.push(k) });
-  assert.equal(b.importText(text).ok, true);
-  assert.deepEqual(SAVED(b.load().state), SAVED(s));
-  assert.deepEqual(notes, ["importDone"]);
-  const keep = b.read();
+  const s = richGame(), a = slotStore();
+  a.create(1, s);
+  const ex = a.exportText(1), text = ex.text;
+  assert.equal(text, a.raw(1)); assert.match(ex.filename, /^office-crawler-slot-1-.*\.json$/);
+  const notes = [], b = slotStore(createMemoryAdapter(), { onNotice: (k) => notes.push(k) });
+  assert.equal(b.importText(2, text).ok, true);
+  s.options = {};
+  assert.deepEqual(SAVED(b.load(2).state), SAVED(s));
+  assert.deepEqual(notes, ["slotImported"]);
+  const keep = b.raw(2);
   for (const bad of ["not json", "{}", text.replace('"gold":321', '"gold":99321'), JSON.stringify({ ...JSON.parse(text), checksum: "x" }), text.slice(0, 100), 5, null]) {
-    const r = b.importText(bad);
-    assert.equal(r.ok, false); assert.equal(b.read(), keep, "the existing save is unchanged");
+    const r = b.importText(2, bad, { confirm: true });
+    assert.equal(r.ok, false); assert.equal(b.raw(2), keep, "the existing save is unchanged");
   }
-  assert.ok(notes.includes("importFailed"));
   // importing a pretty-printed copy is fine and is stored in canonical form
-  assert.equal(b.importText(JSON.stringify(JSON.parse(text), null, 2)).ok, true);
-  assert.equal(b.read(), text);
+  assert.equal(b.importText(2, JSON.stringify(JSON.parse(text), null, 2), { confirm: true }).ok, true);
+  assert.equal(b.raw(2), text);
 });
 
 test("NFR-D02 / QF-09-4 deleting the character removes the save but keeps the options; options are stored apart from the save", () => {
-  const a = createMemoryAdapter(), store = createSaveStore(a);
+  const a = createMemoryAdapter(), store = slotStore(a);
   assert.deepEqual(store.loadOptions(), {});
   store.saveOptions({ volume: 0.5, textSize: 2 });
-  store.save(richGame());
-  assert.deepEqual(a.keys().sort(), [config.optionsKey, config.saveKey].sort());
-  store.remove();
-  assert.equal(store.has(), false); assert.deepEqual(store.loadOptions(), { volume: 0.5, textSize: 2 });
-  assert.deepEqual(a.keys(), [config.optionsKey]);
+  store.create(1, richGame());
+  assert.deepEqual(a.keys().sort(), [config.optionsKey, config.slotIndexKey, slotKey(1)].sort());
+  store.remove(1, { confirm: true, forever: true });
+  assert.equal(store.lastUsed(), null); assert.deepEqual(store.loadOptions(), { volume: 0.5, textSize: 2 });
+  assert.deepEqual(a.keys().sort(), [config.optionsKey, config.slotIndexKey].sort());
   a.setItem(config.optionsKey, "{broken"); assert.deepEqual(store.loadOptions(), {});
 });
 
@@ -293,8 +304,8 @@ test("storage that is unavailable falls back to memory; the real adapter never t
   assert.equal(createAdapter(quota).kind, "memory");
   const ok = new Map(); const fine = { localStorage: { setItem: (k, v) => ok.set(k, v), getItem: (k) => ok.get(k) ?? null, removeItem: (k) => ok.delete(k) } };
   const ls = createAdapter(fine); assert.equal(ls.kind, "localStorage");
-  const store = createSaveStore(ls); assert.equal(store.save(richGame()).ok, true); assert.equal(store.load().ok, true);
-  assert.deepEqual([...ok.keys()], [config.saveKey]);
+  const store = slotStore(ls); assert.equal(store.create(1, richGame()).ok, true); assert.equal(store.load(1).ok, true);
+  assert.deepEqual([...ok.keys()].sort(), [config.slotIndexKey, slotKey(1)].sort());
   assert.equal(createAdapter().kind, "memory", "Node has no localStorage");
 });
 

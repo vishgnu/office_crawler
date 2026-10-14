@@ -6,7 +6,6 @@
 // Every call returns plain data ({ ok, ... } / { ok: false, error }) and never throws.
 import { config } from "../core/config.js";
 import { canonical } from "../core/hash.js";
-import { classById } from "../core/content/classes.js";
 import { validateName } from "../core/name.js";
 import { serialize, deserialize, check, checksumOf } from "./format.js";
 import { createAdapter } from "./storage.js";
@@ -18,6 +17,7 @@ const prevKey = (n) => `${slotKey(n)}.prev`;
 const LEGACY_BACKUPS = [config.saveBackupKey, `${config.saveBackupKey}.1`, `${config.saveBackupKey}.2`];
 const validSlot = (n) => Number.isInteger(n) && n >= 1 && n <= config.slotCount;
 const fail = (error, extra = {}) => ({ ok: false, error, ...extra });
+const NOTICES = ["no-active-slot", "pre-switch-save-failed", "migration-failed"]; // status.notice keys (ui/text.js)
 const REASONS = { parse: "parse", checksum: "checksum", schema: "schema", size: "size", format: "schema", "no-migration": "schema" };
 
 /** 32-bit checksum over the slot text (cheap: a 400 KB text hashes in a few ms). Detects that index and slot disagree. */
@@ -28,12 +28,17 @@ export function textSum(text) {
   return h >>> 0;
 }
 
+export const OWNER_STALE_MS = config.ownerStaleMs;
+export const OWNER_BEAT_MS = config.ownerBeatMs;
+
 export const emptyIndex = () => ({ v: 2, active: null, last: null, owner: null, slots: Array.from({ length: config.slotCount }, (_, i) => ({ n: i + 1, state: "empty" })) });
 
 function validIndex(x) {
   if (!x || typeof x !== "object" || x.v !== 2 || !Array.isArray(x.slots) || x.slots.length !== config.slotCount) return false;
   for (let i = 0; i < x.slots.length; i++) { const e = x.slots[i]; if (!e || e.n !== i + 1 || !["empty", "ok", "bad", "newer"].includes(e.state)) return false; }
   for (const k of ["active", "last"]) if (x[k] !== null && !validSlot(x[k])) return false;
+  const o = x.owner; // null | { id, beat } | a bare id string (written before the heartbeat existed; read as a stale owner)
+  if (o !== null && o !== undefined && typeof o !== "string" && !(typeof o === "object" && typeof o.id === "string" && Number.isFinite(o.beat))) return false;
   return true;
 }
 
@@ -61,33 +66,56 @@ const safeName = (name) => (String(name ?? "").toLowerCase().replace(/[^a-z0-9]+
 
 /**
  * createSlotStore(adapter, { now, tabId, onNotice }).
- * `now()` is the shell's clock (epoch ms); `tabId` makes writes refuse when another tab owns the index; `onNotice(key)` gets string-table keys
- * (slotSaved, slotDeleted, slotImported, slotMigrated, slotCorrupt, saveTooNewSlot, saveFailed, storageFull, anotherTab).
+ * `now()` is the shell's clock (epoch ms); `tabId` (a fresh id per page load) makes writes refuse while another live tab owns the index.
+ * The owner is `{ id, beat }`: the playing tab refreshes `beat` on every write and from a timer (`heartbeat()`); an owner whose beat is
+ * older than OWNER_STALE_MS is stale and a tab that started after that beat takes over by itself, any other tab with `takeOver()`.
+ * `onNotice(key)` gets string-table keys (slotSaved, slotDeleted, slotImported, slotMigrated, slotCorrupt, saveTooNewSlot, saveFailed,
+ * storageFull, anotherTab). `status()` is the persistent state the UI shows: { storage, owner, notice }.
  */
 export function createSlotStore(adapter = createAdapter(), { now = () => Date.now(), tabId = null, onNotice = () => {} } = {}) {
   const store = { adapter, lastError: null, lastSaveTick: null };
+  const startedAt = now();
+  let notice = null, full = false;
+  const setNotice = (key) => { if (NOTICES.includes(key)) notice = key; };
+  const clearNotice = (...keys) => { if (notice !== null && keys.includes(notice)) notice = null; };
   const tell = (key, extra) => { try { onNotice(key, extra); } catch { /* a broken listener must not break saving */ } };
   const get = (k) => adapter.getItem(k);
-  const put = (k, v) => { try { adapter.setItem(k, v); return { ok: true }; } catch (e) { return { ok: false, error: String(e?.message ?? e) }; } };
+  // Running total of the characters held by the own keys (CR-13): one full scan the first time, then every put and del adjusts it, so a write
+  // never reads all keys. Another writer is noticed when the number of own keys differs from the tracked one (one cheap key listing, no
+  // getItem); `usage({ exact: true })` and a failed write rescan.
+  let total = null, tracked = 0;
+  const countKeys = () => adapter.keys?.().reduce((n, k) => n + (k.startsWith(PREFIX) ? 1 : 0), 0) ?? 0;
+  const scan = () => { total = 0; tracked = 0; for (const k of adapter.keys?.() ?? []) if (k.startsWith(PREFIX)) { total += k.length + (adapter.getItem(k)?.length ?? 0); tracked++; } return total; };
+  const used = () => (total === null || countKeys() !== tracked ? scan() : total);
+  const put = (k, v) => {
+    const own = k.startsWith(PREFIX), old = own && total !== null ? get(k) : null;
+    try { adapter.setItem(k, v); } catch (e) { total = null; return { ok: false, error: String(e?.message ?? e) }; }
+    if (own && total !== null) { total += k.length + v.length - (old === null ? 0 : k.length + old.length); if (old === null) tracked++; }
+    return { ok: true };
+  };
+  const del = (k) => {
+    if (k.startsWith(PREFIX) && total !== null) { const old = get(k); if (old !== null) { total -= k.length + old.length; tracked--; } }
+    adapter.removeItem(k);
+  };
 
   // ---- space and quota (ADR-0006 section 7) ----------------------------------------------------------------------------------
   const ownKeys = () => adapter.keys?.().filter((k) => k.startsWith(PREFIX)) ?? [];
-  const usageChars = () => ownKeys().reduce((n, k) => n + k.length + (get(k)?.length ?? 0), 0);
+  const usageChars = () => used();
   /** Free space in the fixed order, one step per call; returns false when nothing is left to give up. */
   function recoverStep(idx, stage) {
-    if (stage === 0) { let any = false; for (const k of LEGACY_BACKUPS) if (get(k) !== null) { adapter.removeItem(k); any = true; } return any; }
-    if (stage === 1) { let any = false; for (let n = 1; n <= config.slotCount; n++) if (idx.slots[n - 1].state !== "bad" && get(badKey(n)) !== null) { adapter.removeItem(badKey(n)); any = true; } return any; }
-    if (stage === 2) { let any = false; for (let n = 1; n <= config.slotCount; n++) if (idx.active !== n && get(prevKey(n)) !== null) { adapter.removeItem(prevKey(n)); any = true; } return any; }
-    if (stage === 3) { if (get(config.saveKey) !== null && idx.slots[0].state === "ok") { adapter.removeItem(config.saveKey); return true; } return false; }
+    if (stage === 0) { let any = false; for (const k of LEGACY_BACKUPS) if (get(k) !== null) { del(k); any = true; } return any; }
+    if (stage === 1) { let any = false; for (let n = 1; n <= config.slotCount; n++) if (idx.slots[n - 1].state !== "bad" && get(badKey(n)) !== null) { del(badKey(n)); any = true; } return any; }
+    if (stage === 2) { let any = false; for (let n = 1; n <= config.slotCount; n++) if (idx.active !== n && get(prevKey(n)) !== null) { del(prevKey(n)); any = true; } return any; }
+    if (stage === 3) { if (get(config.saveKey) !== null && idx.slots[0].state === "ok") { del(config.saveKey); return true; } return false; }
     return false;
   }
   /** setItem with the recovery ladder: soft ceiling first, then the real error. */
   function putRoom(key, text, idx) {
-    const grow = () => usageChars() - (get(key)?.length ?? 0) + key.length + text.length > config.storageSoftCeiling;
+    const grow = () => used() - (get(key)?.length ?? 0) + key.length + text.length > config.storageSoftCeiling;
     let stage = 0, r = { ok: false };
     for (;;) {
-      if (!grow()) { r = put(key, text); if (r.ok) return r; }
-      if (stage > 3) return { ok: false, error: r.error ?? "quota", quota: true };
+      if (!grow()) { r = put(key, text); if (r.ok) { full = false; return r; } }
+      if (stage > 3) { full = true; return { ok: false, error: r.error ?? "quota", quota: true }; }
       recoverStep(idx, stage++);
     }
   }
@@ -96,7 +124,12 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
   function readIndex() {
     const t = get(config.slotIndexKey);
     if (t === null) return null;
-    try { const x = JSON.parse(t); return validIndex(x) ? x : null; } catch { return null; }
+    try {
+      const x = JSON.parse(t);
+      if (!validIndex(x)) return null;
+      x.owner = typeof x.owner === "string" ? { id: x.owner, beat: 0 } : x.owner ?? null;
+      return x;
+    } catch { return null; }
   }
   /** Rebuild the index by scanning the five slot keys (repair rule a). */
   function rebuild(prev) {
@@ -109,6 +142,7 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
     idx.active = prev?.active && idx.slots[prev.active - 1].state !== "empty" ? prev.active : null;
     idx.last = prev?.last && idx.slots[prev.last - 1].state !== "empty" ? prev.last : null;
     idx.owner = prev?.owner ?? null;
+    if (prev?.pendingMigration) idx.pendingMigration = true;
     return idx;
   }
   const writeIndex = (idx) => { const r = put(config.slotIndexKey, JSON.stringify(idx)); if (!r.ok) store.lastError = r.error; return r; };
@@ -119,11 +153,35 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
     return idx;
   }
   const mostRecent = (idx) => idx.slots.filter((e) => e.state === "ok").sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0) || a.n - b.n)[0]?.n ?? null;
-  const ownerOk = (idx) => !tabId || !idx.owner || idx.owner === tabId;
+  /** "none" | "self" | "other" (a live owner) | "stale" (its heartbeat is older than OWNER_STALE_MS). */
+  function ownerState(idx) {
+    const o = idx.owner;
+    if (!tabId || !o) return "none";
+    if (o.id === tabId) return "self";
+    return now() - o.beat > OWNER_STALE_MS ? "stale" : "other";
+  }
+  /** May this tab write? Yes when nobody or itself owns the index, or when the owner went stale before this tab started. */
+  const ownerOk = (idx) => { const s = ownerState(idx); return s === "none" || s === "self" || (s === "stale" && startedAt > idx.owner.beat); };
+  const claim = (idx) => { if (tabId) idx.owner = { id: tabId, beat: now() }; };
+  const refuseOwner = () => { tell("anotherTab"); return fail("another-tab"); };
 
   Object.assign(store, {
     /** The index (always five entries). One getItem and one small parse; no slot text is read. */
     list: () => index(),
+    /** The persistent state the UI shows: where saves go, who owns them, and the notice to show until dismissed. */
+    status: () => ({ storage: adapter.fallback ? "memory" : full ? "full" : "ok", owner: ownerState(index()), notice }),
+    setNotice, dismissNotice() { notice = null; return { ok: true }; },
+    /** Refresh this tab's owner beat (called from a timer while a game runs). Never creates an owner. */
+    heartbeat() {
+      const idx = readIndex();
+      if (!idx || !tabId) return { ok: true, skipped: true };
+      if (idx.owner?.id !== tabId) return idx.owner && ownerState(idx) === "other" ? fail("another-tab") : { ok: true, skipped: true };
+      claim(idx);
+      return writeIndex(idx).ok ? { ok: true } : fail("write-failed");
+    },
+    /** This tab becomes the owner (the player confirmed "play here"). */
+    takeOver() { if (!tabId) return { ok: true }; const idx = index(); claim(idx); const w = writeIndex(idx); if (w.ok) clearNotice("no-active-slot"); return w.ok ? { ok: true } : fail("write-failed"); },
+    hasPrev: (n, keys = null) => validSlot(n) && (keys ? keys.has(prevKey(n)) : adapter.keys ? adapter.keys().includes(prevKey(n)) : get(prevKey(n)) !== null),
     /** Raw stored text of a slot, or null. */
     raw: (n) => (validSlot(n) ? get(slotKey(n)) : null),
     keys: () => ownKeys(),
@@ -136,13 +194,13 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
       if (!validSlot(n)) return fail("bad-slot");
       const idx = index();
       if (idx.slots[n - 1].state !== "ok") return fail("empty-slot");
-      if (!ownerOk(idx)) { tell("anotherTab"); return fail("another-tab"); }
-      idx.active = n; idx.last = n; if (tabId) idx.owner = tabId;
+      if (!ownerOk(idx)) return refuseOwner();
+      idx.active = n; idx.last = n; claim(idx);
       store.lastSaveTick = null;
       writeIndex(idx);
       return { ok: true };
     },
-    clearActive() { const idx = index(); if (idx.active !== null && ownerOk(idx)) { idx.active = null; if (tabId && idx.owner === tabId) idx.owner = null; writeIndex(idx); } return { ok: true }; },
+    clearActive() { const idx = index(); if (idx.active !== null && ownerOk(idx)) { idx.active = null; if (tabId && idx.owner?.id === tabId) idx.owner = null; writeIndex(idx); } return { ok: true }; },
 
     /**
      * Write the running game into slot `n` (ADR-0006 section 6: size check, optional undo copy, slot text, then the index).
@@ -151,7 +209,7 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
     write(n, state, opts = {}) {
       if (!validSlot(n)) return fail("bad-slot");
       const idx = index();
-      if (!ownerOk(idx)) { tell("anotherTab"); return fail("another-tab"); }
+      if (!ownerOk(idx)) return refuseOwner();
       if (idx.slots[n - 1].state === "newer") { tell("saveTooNewSlot"); return fail("newer"); } // written by a newer build: never overwritten
       let text;
       try { text = serialize(state); } catch (e) { store.lastError = String(e?.message ?? e); tell("saveFailed"); return fail("save-failed"); }
@@ -161,17 +219,18 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
       const w = putRoom(slotKey(n), text, idx);
       if (!w.ok) { store.lastError = w.error; tell(w.quota ? "storageFull" : "saveFailed"); return fail(w.quota ? "quota" : "write-failed"); }
       idx.slots[n - 1] = entryFromState(n, state, text, now());
-      if (opts.setActive) { idx.active = n; idx.last = n; if (tabId) idx.owner = tabId; }
-      else if (idx.active === n) idx.last = n;
+      if (opts.setActive) { idx.active = n; idx.last = n; claim(idx); }
+      else if (idx.active === n) { idx.last = n; if (ownerState(idx) !== "other") claim(idx); } // every write of the playing tab is a heartbeat
       const wi = writeIndex(idx); // a failure here is repaired on the next read (bytes/sum differ)
-      store.lastError = null;
+      store.lastError = null; full = false;
+      clearNotice("no-active-slot", "pre-switch-save-failed");
       return { ok: true, bytes: text.length, sum: idx.slots[n - 1].sum, indexed: wi.ok };
     },
 
     /** Autosave: the active slot only, writes closer together than config.autosaveMinTicks (game ticks) are coalesced unless `force`. */
     autosave(state, event = {}, { force = false } = {}) {
       const idx = index(), n = idx.active;
-      if (n === null) return fail("no-active-slot");
+      if (n === null) { if (notice !== "no-active-slot") { setNotice("no-active-slot"); tell("saveFailed"); } return fail("no-active-slot"); } // nothing is being saved: say so once, then keep the banner
       force = force || event.reason === "victory";
       if (!force && store.lastSaveTick !== null && state.tick >= store.lastSaveTick && state.tick - store.lastSaveTick < config.autosaveMinTicks) return { ok: true, skipped: true };
       const r = store.write(n, state);
@@ -185,8 +244,12 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
       const e = index().slots[n - 1];
       if (e.state === "newer") return fail("newer");
       if (e.state !== "empty" && !confirm) return fail("occupied", { lost: e.name ?? null });
+      if (e.state === "bad" && get(badKey(n)) === null) { // a damaged text still under the slot key: keep it exportable before it is overwritten (CR-09)
+        const t = get(slotKey(n));
+        if (t !== null && !putRoom(badKey(n), t, index()).ok) return fail("quota");
+      }
       const r = store.write(n, state, { keepPrev: e.state === "ok", setActive: true });
-      if (r.ok) { adapter.removeItem(badKey(n)); store.lastSaveTick = state.tick; }
+      if (r.ok) store.lastSaveTick = state.tick; // an old `.bad` text stays: Export damaged still works, and space recovery drops it first when needed
       return r;
     },
 
@@ -209,7 +272,7 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
       if (r.reason === "newer") { idx.slots[n - 1] = { n, state: "newer" }; writeIndex(idx); tell("saveTooNewSlot"); return fail("newer"); }
       // damaged: keep the text for export, clear the slot, mark it bad
       const kept = putRoom(badKey(n), text, idx);
-      if (kept.ok) adapter.removeItem(slotKey(n));
+      if (kept.ok) del(slotKey(n));
       idx.slots[n - 1] = { n, state: "bad", reason: REASONS[r.reason] ?? "schema", lastPlayed: e.lastPlayed, bytes: text.length };
       if (idx.active === n) idx.active = null;
       if (idx.last === n) idx.last = mostRecent(idx);
@@ -224,13 +287,13 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
       const idx = index(), e = idx.slots[n - 1];
       if (e.state === "empty") return fail("empty-slot");
       if (!confirm) return fail("confirm-required", { lost: e.name ?? null });
-      if (!ownerOk(idx)) { tell("anotherTab"); return fail("another-tab"); }
+      if (!ownerOk(idx)) return refuseOwner();
       const old = get(slotKey(n));
-      if (forever) adapter.removeItem(prevKey(n));
+      if (forever) del(prevKey(n));
       else if (old !== null) putRoom(prevKey(n), old, idx);
-      adapter.removeItem(slotKey(n)); adapter.removeItem(badKey(n));
+      del(slotKey(n)); del(badKey(n));
       idx.slots[n - 1] = { n, state: "empty" };
-      if (idx.active === n) { idx.active = null; if (idx.owner === tabId) idx.owner = null; }
+      if (idx.active === n) { idx.active = null; if (tabId && idx.owner?.id === tabId) idx.owner = null; }
       if (idx.last === n) idx.last = mostRecent(idx);
       writeIndex(idx);
       store.lastSaveTick = null;
@@ -243,7 +306,9 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
       if (!validSlot(n)) return fail("bad-slot");
       const idx = index(), prev = get(prevKey(n));
       if (prev === null) return fail("empty-slot");
-      if (idx.slots[n - 1].state === "ok") return fail("occupied");
+      if (idx.slots[n - 1].state === "newer") return fail("newer"); // a save from a newer build is never overwritten (ADV-R5-03)
+      if (idx.slots[n - 1].state !== "empty") return fail("occupied");
+      if (!ownerOk(idx)) return refuseOwner();
       const w = putRoom(slotKey(n), prev, idx);
       if (!w.ok) return fail("quota");
       idx.slots[n - 1] = entryFromText(n, prev, now(), idx.slots[n - 1]);
@@ -258,6 +323,7 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
       if (!v.ok) return fail("bad-name");
       const idx = index(), text = get(slotKey(n));
       if (text === null || idx.slots[n - 1].state !== "ok") return fail("empty-slot");
+      if (!ownerOk(idx)) return refuseOwner(); // another live tab owns the saves: its next autosave would undo the rename (ADV-R5-09)
       let r;
       try { r = check(JSON.parse(text)); } catch { r = { ok: false }; }
       if (!r.ok) return fail("corrupt");
@@ -282,8 +348,8 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
       if (!validSlot(n)) return fail("bad-slot");
       const text = get(which === "bad" ? badKey(n) : slotKey(n));
       if (text === null) return fail("empty-slot");
-      const e = index().slots[n - 1];
-      return { ok: true, text, filename: `office-crawler-slot-${n}-${safeName(which === "bad" ? "damaged" : e.name)}.json` };
+      const e = index().slots[n - 1], filename = `office-crawler-slot-${n}-${safeName(which === "bad" ? "damaged" : e.name)}.json`;
+      return { ok: true, text, filename, fileName: filename };
     },
 
     /**
@@ -301,12 +367,12 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
       if (e.state !== "empty" && !confirm) return fail("occupied", { lost: e.name ?? null });
       const out = canonical({ ...r.save, checksum: checksumOf(r.save) });
       if (out.length > config.slotMaxBytes) return fail("too-large");
-      if (!ownerOk(idx)) { tell("anotherTab"); return fail("another-tab"); }
+      if (!ownerOk(idx)) return refuseOwner();
       const old = get(slotKey(n));
       if (old !== null && e.state === "ok") { const k = putRoom(prevKey(n), old, idx); if (!k.ok) return fail("quota"); }
       const w = putRoom(slotKey(n), out, idx);
       if (!w.ok) { tell(w.quota ? "storageFull" : "saveFailed"); return fail(w.quota ? "quota" : "write-failed"); }
-      adapter.removeItem(badKey(n));
+      if (e.state === "bad" && get(badKey(n)) === null && old !== null) putRoom(badKey(n), old, idx); // keep the damaged text exportable (CR-09)
       idx.slots[n - 1] = entryFromText(n, out, now(), null);
       writeIndex(idx);
       tell("slotImported");
@@ -314,23 +380,30 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
     },
 
     /**
-     * Boot-time migration of the single-slot save into slot 1 (ADR-0006 section 5). Runs only while the index is absent; the legacy keys stay
-     * in place as the backup; the index is written last, so a crash before it repeats the same result.
+     * Boot-time migration of the single-slot save into slot 1 (ADR-0006 section 5). Runs when the index key is absent or flagged
+     * `pendingMigration` (a write failed last boot). A missing index is first rebuilt from the slot keys, so existing characters stay visible, and
+     * slot 1 is only filled when it is empty: a played character is never replaced by the legacy backup. The legacy keys stay in place. If the
+     * slot write fails, the index is stored with the flag (slots 2 to 5 stay visible), `status.notice` says "migration-failed", and the next
+     * boot tries again.
      */
     migrateLegacy() {
-      if (get(config.slotIndexKey) !== null) return { ok: true, skipped: true };
-      const idx = emptyIndex(), legacy = get(config.saveKey);
-      let migrated = null;
-      if (legacy !== null) {
+      const stored = readIndex();
+      if (get(config.slotIndexKey) !== null && !stored?.pendingMigration) return { ok: true, skipped: true };
+      const idx = stored ?? rebuild(null), legacy = get(config.saveKey);
+      delete idx.pendingMigration;
+      let migrated = null, failed = false;
+      if (legacy !== null && idx.slots[0].state === "empty") {
         let r;
         try { r = legacy.length > config.saveMaxBytes ? { ok: false, reason: "size" } : check(JSON.parse(legacy)); } catch { r = { ok: false, reason: "parse" }; }
         if (r.ok) {
           const out = canonical({ ...r.save, checksum: checksumOf(r.save) });
           const w = putRoom(slotKey(1), out, idx);
-          if (!w.ok) { store.lastError = w.error; return fail(w.quota ? "quota" : "write-failed"); }
-          idx.slots[0] = entryFromText(1, out, now(), null); idx.last = 1;
-          const n = (r.notes ?? []).find((x) => x.from === 1);
-          if (n) { migrated = { from: 1, refundedPoints: n.refundedPoints }; tell("slotMigrated", migrated); }
+          if (!w.ok) { store.lastError = w.error; failed = true; }
+          else {
+            idx.slots[0] = entryFromText(1, out, now(), null); idx.last = idx.last ?? 1;
+            const n = (r.notes ?? []).find((x) => x.from === 1);
+            if (n) { migrated = { from: 1, refundedPoints: n.refundedPoints }; tell("slotMigrated", migrated); }
+          }
         } else if (r.reason === "newer") { idx.slots[0] = { n: 1, state: "newer" }; tell("saveTooNewSlot"); }
         else {
           putRoom(badKey(1), legacy, idx);
@@ -338,12 +411,14 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
           tell("slotCorrupt");
         }
       }
+      if (failed) { idx.pendingMigration = true; setNotice("migration-failed"); tell("saveFailed"); }
       const wi = writeIndex(idx);
-      return { ok: wi.ok, migrated, index: idx };
+
+      return { ok: wi.ok && !failed, migrated, index: idx, ...(failed ? { error: "migration-failed" } : {}) };
     },
 
     /** Characters used by the own keys against the soft ceiling. */
-    usage: () => ({ chars: usageChars(), keys: ownKeys().length, ceiling: config.storageSoftCeiling }),
+    usage: ({ exact = false } = {}) => { if (exact) total = null; return { chars: used(), keys: ownKeys().length, ceiling: config.storageSoftCeiling }; },
 
     /** Options live apart from every slot and are never touched by slot operations. */
     loadOptions() { try { const v = JSON.parse(get(config.optionsKey) ?? "null"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch { return {}; } },

@@ -116,6 +116,10 @@ const SKILL = {
   "class:facilities-manager": () => G.hardhat(40, 40),
   "class:sales-rep": () => G.headset(40, 40),
   "class:it-wizard": () => G.kbd(40, 40),
+  // panel header glyphs (the Desk Drawer, the Employee File, an NPC window)
+  "panel:drawer": () => r(4, 8, 32, 26, "#b06f3c", 3) + r(4, 8, 32, 8, "#d89a5c", 3) + r(14, 21, 12, 5, "#ece4cf", 1.5) + r(17, 22.5, 6, 2, "#14102c", 1, 0),
+  "panel:file": () => r(5, 6, 30, 28, "#ece4cf", 3) + r(10, 11, 9, 9, "#56b4e9", 2) + line("M23 13H31M23 18H31M10 26H31", "#8793ae", 2.5) + r(14, 2, 12, 6, "#8793ae", 2),
+  "panel:talk": () => p("M5 7H35V26H20L11 34V26H5Z", "#ece4cf", 3) + line("M11 14H29M11 19H24", "#8793ae", 2.5),
 };
 export function skillIcon(id) {
   if (id === "strike") return `<svg class="ic" viewBox="0 0 80 80" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false"><g stroke="${OL}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">${G.kbd(80, 80)}</g></svg>`;

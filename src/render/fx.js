@@ -133,7 +133,36 @@ export function stackRows(list, rows = [], tickMs = TICK_MS) {
   return rows;
 }
 
-const gapRect = (r) => ({ x: r.x - LOOT_GAP / 2, y: r.y - LOOT_GAP / 2, w: r.w + LOOT_GAP, h: r.h + LOOT_GAP });
+const SAFE_ = 8; // loot plates keep this far from the screen edge, px
+const byDist = (a, b) => a.d - b.d;
+const byPrio = (a, b) => b.rank - a.rank || a.d - b.d;
+/** Reusable state of the loot layer (CR-14): one record per ground item, the two sort orders, scratch rects. */
+function newLootState() { return { src: [], pool: [], order: [], prio: [], pp: [], hx: NaN, hy: NaN, vis: 0, size: 16, fs: 11, dpr: 1, hc: false, r: { x: 0, y: 0, w: 0, h: 0 }, hero: { x: 0, y: 0, w: 0, h: 0 } }; }
+/** Rebuild the per-item records and both orders (by distance for beams / markers / crowd choice, by value for plates) only when the set or the hero tile changed. */
+function lootSync(lt, P, list, hx, hy) {
+  const n = list.length, src = lt.src;
+  let same = lt.hx === hx && lt.hy === hy && src.length === n;
+  for (let i = 0; same && i < n; i++) if (src[i] !== list[i]) same = false;
+  if (same) return;
+  lt.hx = hx; lt.hy = hy; src.length = n; lt.order.length = n; lt.prio.length = n;
+  for (let i = 0; i < n; i++) {
+    const gi = list[i], e = lt.pool[i] ?? (lt.pool[i] = { gi: null, d: 0, rank: 0, x: 0, my: 0, colour: "", on: false, near: false, sp: null, sfs: 0, shc: false, sdpr: 0 });
+    src[i] = gi; e.gi = gi; e.d = Math.hypot(gi.tile.x - hx, gi.tile.y - hy); e.rank = RARITY_RANK[gi.rarity] ?? 0; e.sp = null;
+    e.colour = gi.gold ? (gi.color ?? "#e6c84a") : P.rarity[gi.rarity] ?? gi.color ?? "#d6d3cb";
+    lt.order[i] = e; lt.prio[i] = e;
+  }
+  lt.order.sort(byDist); lt.prio.sort(byPrio);
+}
+/** rect a with a LOOT_GAP margin touches rect b */
+const hitGap = (a, b) => a.x - LOOT_GAP < b.x + b.w && b.x < a.x + a.w + LOOT_GAP && a.y - LOOT_GAP < b.y + b.h && b.y < a.y + a.h + LOOT_GAP;
+/** 0 = the plate (R.w x R.h at x, y) is free; j + 1 = it touches placed[j] (slidable); -1 = off screen, on a claimed label / leader line or (bodies) an enemy body. */
+function plateFree(fx, placed, R, x, y, bodies, cam) {
+  R.x = x; R.y = y;
+  if (!(y > SAFE_ && y + R.h < cam.h - SAFE_ && x >= SAFE_ && x + R.w <= cam.w - SAFE_)) return -1;
+  for (let j = 0; j < placed.length; j++) if (hitGap(R, placed[j])) return j + 1;
+  if (fx.blocked(R) || (bodies && fx.onBody(R, cam.z))) return -1;
+  return 0;
+}
 const rectHit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 /** Does the segment (x1,y1)-(x2,y2) touch rect r? (sampled; leader lines are short) */
 export function segHitsRect(sg, r, pad = 2) {
@@ -620,87 +649,88 @@ export function createFx(style) {
 
     /**
      * Ground items above the darkness: a beam (magic and up), a marker of at least 16 px with a rarity shape and a plate. Plates are shown for
-     * items near the hero (any rarity) and for rare / unique items in sight, at most MAX_PLATES, never overlapping each other or the screen edge.
+     * items near the hero (any rarity) and for rare / unique items in sight, at most MAX_PLATES, never overlapping each other, the hero, an
+     * enemy body or the screen edge. CR-14: the per-item records, both sort orders and the plate rects are reused between frames; the orders
+     * are rebuilt only when the item set or the hero tile changes, so a steady frame allocates nothing here.
      */
     drawLoot(g, cam, core, now) {
+      const lt = fx.lt ?? (fx.lt = newLootState());
+      const placed = fx.platesPlaced ?? (fx.platesPlaced = []);
+      placed.length = 0; lt.vis = 0;
       const list = core.groundItems, z = cam.z;
-      if (fx.platesPlaced) fx.platesPlaced.length = 0;
       if (!list || list.length === 0) return;
       const hero = core.player, hx = hero.tile.x, hy = hero.tile.y, size = Math.max(16, Math.round(6.5 * z)), dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const hc = !!fx.hc, fs = Math.max(11, Math.min(14, Math.round(z * 3.4))), SAFE = 8;
-      let plates = 0;
-      const placed = fx.platesPlaced ?? (fx.platesPlaced = []);
-      placed.length = 0;
-      project(cam, hx + 0.5, hy + 0.5, pos2); // keep plates off the hero's body (placed first, so every plate shifts around it)
-      const heroRect = { x: pos2.x - 24 * z, y: pos2.y - 58 * z, w: 48 * z, h: 60 * z };
-      placed.push(heroRect);
-      // nearest first so close plates win the space
-      const order = fx.lootOrder ?? (fx.lootOrder = []);
-      order.length = 0;
-      for (let i = 0; i < list.length; i++) order.push(list[i]);
-      order.sort((a, b) => Math.hypot(a.tile.x - hx, a.tile.y - hy) - Math.hypot(b.tile.x - hx, b.tile.y - hy));
-      // pass 1: beams (under everything else of the loot layer), pass 2: markers, pass 3: plates (nearest first, so close plates win the space)
-      for (let i = 0; i < order.length; i++) {
-        const gi = order[i];
+      const fs = Math.max(11, Math.min(14, Math.round(z * 3.4)));
+      lootSync(lt, P, list, hx, hy);
+      // keep plates off the hero's body (placed first, so every plate shifts around it): the drawn (interpolated) hero position, not the logical tile
+      const hs = fx.heroS, hr = lt.hero, hh = ((style.dims[fx.heroType]?.head ?? 54) + 6) * z;
+      if (hs) { hr.x = hs.x; hr.y = hs.y; } else { project(cam, hx + 0.5, hy + 0.5, pos2); hr.x = pos2.x; hr.y = pos2.y; }
+      hr.x -= 27 * z; hr.y -= hh; hr.w = 54 * z; hr.h = hh + 5 * z;
+      placed.push(hr);
+      const order = lt.order, n = order.length;
+      // pass 1: beams (under everything else of the loot layer), pass 2: markers, pass 3 (drawLootPlates): plates
+      for (let i = 0; i < n; i++) {
+        const e = order[i], gi = e.gi;
         project(cam, gi.tile.x + 0.5, gi.tile.y + 0.5, pos);
-        if (pos.x < -60 || pos.x > cam.w + 60 || pos.y < -140 * z || pos.y > cam.h + 60 || !gi.rarity) continue;
-        beam(g, gi.rarity, P.rarity[gi.rarity] ?? gi.color ?? "#d6d3cb", pos.x, pos.y - 4 * z, z, now);
+        e.on = !(pos.x < -60 || pos.x > cam.w + 60 || pos.y < -140 * z || pos.y > cam.h + 60);
+        e.x = pos.x; e.my = pos.y - 14 * z - (gi.rarity === "unique" ? Math.sin(now / 400) * 1.5 * z : 0);
+        if (e.on) { lt.vis++; if (gi.rarity) beam(g, gi.rarity, e.colour, pos.x, pos.y - 4 * z, z, now); }
       }
-      const vis = fx.lootVis ?? (fx.lootVis = []);
-      vis.length = 0;
-      for (let i = 0; i < order.length; i++) {
-        const gi = order[i];
-        project(cam, gi.tile.x + 0.5, gi.tile.y + 0.5, pos);
-        if (pos.x < -60 || pos.x > cam.w + 60 || pos.y < -140 * z || pos.y > cam.h + 60) continue;
-        const colour = gi.gold ? (gi.color ?? "#e6c84a") : P.rarity[gi.rarity] ?? gi.color ?? "#d6d3cb";
-        const my = pos.y - 14 * z - (gi.rarity === "unique" ? Math.sin(now / 400) * 1.5 * z : 0);
-        marker(g, P, gi, pos.x, my, size * (gi.rarity === "unique" ? 1.15 : 1), colour);
-        vis.push({ gi, x: pos.x, my, colour, d: Math.hypot(gi.tile.x - hx, gi.tile.y - hy) });
+      for (let i = 0; i < n; i++) {
+        const e = order[i];
+        if (e.on) marker(g, P, e.gi, e.x, e.my, size * (e.gi.rarity === "unique" ? 1.15 : 1), e.colour);
       }
-      fx.lootHero = heroRect; fx.lootSize = size; fx.lootFs = fs; fx.lootDpr = dpr; fx.lootHc = hc;
+      lt.size = size; lt.fs = fs; lt.dpr = dpr; lt.hc = !!fx.hc;
     },
 
-    /** Ground-item plates (after the burst / impact layer): kept off nameplates, health pips, leader lines, the hero and each other. */
+    /** Ground-item plates (after the burst / impact layer): kept off nameplates, health pips, leader lines, the hero, enemy bodies and each other. */
     drawLootPlates(g, cam, core, now) {
-      const vis = fx.lootVis, heroRect = fx.lootHero;
-      if (!vis || vis.length === 0 || !heroRect || !core.groundItems?.length) return;
-      const placed = fx.platesPlaced, size = fx.lootSize, fs = fx.lootFs, dpr = fx.lootDpr, hc = fx.lootHc, SAFE = 8;
-      let plates = 0;
-      // most valuable first (the hovered entry before all), so the cap never drops a rare for a pile of commons
-      let crowd = 0;
-      for (let i = 0; i < vis.length; i++) if (vis[i].d <= CROWD_R) crowd++;
-      const nearest = fx.lootNear ?? (fx.lootNear = new Set());
-      nearest.clear();
-      if (crowd > CROWD_LOOT && !fx.showAllLoot) { // a pile: tags for the nearest few only (the rest show on hover or Alt)
-        const elig = vis.filter((v) => { const r = RARITY_RANK[v.gi.rarity] ?? 0; return v.gi.id === fx.hoverLootId || (!v.gi.gold && ((r === 2 && v.d <= PLATE_NEAR) || (r >= 3 && v.d <= PLATE_FAR))); }).sort((a, b) => a.d - b.d); // the nearest few of the items that would get a tag
-        for (let i = 0; i < CROWD_CAP && i < elig.length; i++) nearest.add(elig[i].gi.id);
+      const lt = fx.lt;
+      if (!lt || lt.vis === 0 || !core.groundItems?.length) return;
+      const placed = fx.platesPlaced, size = lt.size, fs = lt.fs, dpr = lt.dpr, hc = lt.hc, order = lt.order, prio = lt.prio, R = lt.r, hover = fx.hoverLootId;
+      let plates = 0, crowd = 0, hov = null;
+      for (let i = 0; i < order.length; i++) { const e = order[i]; e.near = false; if (e.on && e.d <= CROWD_R) crowd++; if (e.on && e.gi.id === hover) hov = e; }
+      let nearN = 0;
+      if (crowd > CROWD_LOOT && !fx.showAllLoot) { // a pile: tags for the nearest few only (the rest show on hover or Alt); `order` is sorted by distance, so no sort is needed
+        for (let i = 0; i < order.length && nearN < CROWD_CAP; i++) { const e = order[i]; if (e.on && (e === hov || (!e.gi.gold && ((e.rank === 2 && e.d <= PLATE_NEAR) || (e.rank >= 3 && e.d <= PLATE_FAR))))) { e.near = true; nearN++; } }
       }
-      vis.sort((a, b) => (b.gi.id === fx.hoverLootId) - (a.gi.id === fx.hoverLootId) || (RARITY_RANK[b.gi.rarity] ?? 0) - (RARITY_RANK[a.gi.rarity] ?? 0) || a.d - b.d);
-      for (let i = 0; i < vis.length; i++) {
-        const { gi, x, my, colour, d } = vis[i];
+      const cap = fx.showAllLoot ? 2 * MAX_PLATES : nearN ? CROWD_CAP : MAX_PLATES;
+      // most valuable first (the hovered entry before all), so the cap never drops a rare for a pile of commons
+      for (let i = -1; i < prio.length; i++) {
+        const e = i < 0 ? hov : prio[i];
+        if (!e || !e.on || (i >= 0 && e === hov)) continue;
         // labels: common items (and gold) only on hover or while Alt is held (genre convention); magic near the hero; rare / unique in sight
-        const rank = RARITY_RANK[gi.rarity] ?? 0;
-        const show = fx.showAllLoot || gi.id === fx.hoverLootId || (!gi.gold && ((rank === 2 && d <= PLATE_NEAR) || (rank >= 3 && d <= PLATE_FAR)));
-        if (!show || plates >= (fx.showAllLoot ? 2 * MAX_PLATES : nearest.size ? CROWD_CAP : MAX_PLATES)) continue;
-        if (nearest.size && !nearest.has(gi.id) && gi.id !== fx.hoverLootId) continue;
-        const sp = plateSprite(P, gi.label, gi.rarity ?? "normal", gi.border === "none" ? "plain" : gi.border ?? "plain", colour, fs, hc, dpr);
-        const r = { x: Math.round(Math.min(cam.w - SAFE - sp.w, Math.max(SAFE, x - sp.w / 2))), y: Math.round(my - size / 2 - 4 - sp.h), w: sp.w, h: sp.h };
-        if (r.x < heroRect.x + heroRect.w && heroRect.x < r.x + r.w && r.y < heroRect.y + heroRect.h && heroRect.y < r.y + r.h) r.y = Math.round(heroRect.y - r.h - LOOT_GAP);
-        let ok = false;
-        const y0 = r.y;
-        for (let pass = 0; pass < 2 && !ok; pass++) { // pass 0 also keeps off enemy bodies; pass 1 (no free spot found) only the labels
-          r.y = y0;
+        const show = fx.showAllLoot || e === hov || (!e.gi.gold && ((e.rank === 2 && e.d <= PLATE_NEAR) || (e.rank >= 3 && e.d <= PLATE_FAR)));
+        if (!show || plates >= cap) continue;
+        if (nearN && !e.near && e !== hov) continue;
+        let sp = e.sp;
+        if (!sp || e.sfs !== fs || e.shc !== hc || e.sdpr !== dpr) { const gi = e.gi; sp = e.sp = plateSprite(P, gi.label, gi.rarity ?? "normal", gi.border === "none" ? "plain" : gi.border ?? "plain", e.colour, fs, hc, dpr); e.sfs = fs; e.shc = hc; e.sdpr = dpr; }
+        R.w = sp.w; R.h = sp.h;
+        const bx = Math.round(Math.min(cam.w - SAFE_ - sp.w, Math.max(SAFE_, e.x - sp.w / 2))), by = Math.round(e.my - size / 2 - 4 - sp.h);
+        const relax = e === hov || e.rank >= 3; // pass 1 (no free spot found) may cover an enemy body, but only for a rare, a unique or the hovered item; never the hero or another label
+        let ok = false, py = by;
+        for (let pass = 0; pass < 2 && !ok; pass++) {
+          if (pass === 1 && !relax) break;
+          py = by;
           for (let k = 0; k < 7 && !ok; k++) {
-            ok = r.y > SAFE && r.y + r.h < cam.h - SAFE;
-            for (let j = 0; j < placed.length && ok; j++) if (rectHit(gapRect(r), placed[j])) ok = false;
-            if (ok && (fx.blocked(r) || (pass === 0 && fx.onBody(r, cam.z)))) ok = false;
-            if (!ok) r.y = k === 3 ? Math.round(my + size / 2 + 4) : k > 3 ? r.y + r.h + LOOT_GAP : r.y - (r.h + LOOT_GAP); // up three times, then below the marker, then further down
+            const y = k < 4 ? by - k * (sp.h + LOOT_GAP) : k === 4 ? Math.round(e.my + size / 2 + 4) : py + sp.h + LOOT_GAP;
+            py = y;
+            let x = bx, hit = plateFree(fx, placed, R, x, y, pass === 0, cam);
+            if (hit === 0) { ok = true; }
+            else if (hit > 0) { // blocked by another label (or the hero): slide sideways past it by the smallest step, at most the plate's own width + 6 px
+              const b = placed[hit - 1], xr = Math.round(b.x + b.w + LOOT_GAP + 1), xl = Math.round(b.x - sp.w - LOOT_GAP - 1), first = Math.abs(xr - bx) <= Math.abs(xl - bx) ? xr : xl, second = first === xr ? xl : xr;
+              if (Math.abs(first - bx) <= sp.w + 6 && plateFree(fx, placed, R, first, y, pass === 0, cam) === 0) { ok = true; x = first; }
+              else if (Math.abs(second - bx) <= sp.w + 6 && plateFree(fx, placed, R, second, y, pass === 0, cam) === 0) { ok = true; x = second; }
+            }
+            if (ok) { R.x = x; R.y = y; }
           }
         }
-        if (!ok) { r.y = y0; continue; }
-        placed.push({ x: r.x, y: r.y, w: r.w, h: r.h });
+        if (!ok) continue;
+        const pr = lt.pp[plates] ?? (lt.pp[plates] = { x: 0, y: 0, w: 0, h: 0 });
+        pr.x = R.x; pr.y = R.y; pr.w = R.w; pr.h = R.h;
+        placed.push(pr);
         plates++;
-        g.drawImage(sp.c, r.x, r.y, sp.w, sp.h);
+        g.drawImage(sp.c, R.x, R.y, sp.w, sp.h);
       }
     },
 

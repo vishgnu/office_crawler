@@ -150,10 +150,13 @@ export function hero(g, id, o) {
   if (front) {
     const ex = hx + fx * 3.2, ey = hy + 0.8;
     if (isFM) {
-      ellipse(g, ex - 4.6, ey + 0.3, 2.2, 3.1, INK); ellipse(g, ex + 4.6, ey + 0.3, 2.2, 3.1, INK); ellipse(g, ex - 5.2, ey - 0.9, 1.05, 1.25, "rgba(255,255,255,0.98)"); ellipse(g, ex + 4, ey - 0.9, 1.05, 1.25, "rgba(255,255,255,0.98)");
+      // round G3: white eyes with 2.5 px pupils, set below the (now thin) brim, so the face reads at 1x instead of a dark band
+      ellipse(g, ex - 4.6, ey + 1.7, 3.1, 2.8, "#f6f1e4", INK, 1.1); ellipse(g, ex + 4.6, ey + 1.7, 3.1, 2.8, "#f6f1e4", INK, 1.1);
+      ellipse(g, ex - 4.2 + fx * 0.6, ey + 2, 1.5, 1.95, INK); ellipse(g, ex + 5 + fx * 0.6, ey + 2, 1.5, 1.95, INK);
+      ellipse(g, ex - 4.7 + fx * 0.6, ey + 1.2, 0.55, 0.6, "rgba(255,255,255,0.95)"); ellipse(g, ex + 4.5 + fx * 0.6, ey + 1.2, 0.55, 0.6, "rgba(255,255,255,0.95)");
       line(g, ex - 7, ey - 4.6, ex - 2, ey - 3.8, "#3a2a22", 1.8); line(g, ex + 2, ey - 3.8, ex + 7, ey - 4.6, "#3a2a22", 1.8);
-      g.beginPath(); g.ellipse(hx + fx, hy + 3.4, hr * 0.95, hr * 0.7, 0, 0.1, Math.PI - 0.1); g.fillStyle = "#2b1d17"; g.fill(); g.lineWidth = ink(1.4); g.strokeStyle = INK; g.stroke(); // beard
-      line(g, ex - 1.8, ey + 4.8, ex + 1.8, ey + 4.8, "#c98a5e", 1.2);
+      g.beginPath(); g.ellipse(hx + fx, hy + 4.4, hr * 0.95, hr * 0.7, 0, 0.1, Math.PI - 0.1); g.fillStyle = "#2b1d17"; g.fill(); g.lineWidth = ink(1.4); g.strokeStyle = INK; g.stroke(); // beard
+      line(g, ex - 1.8, ey + 5.8, ex + 1.8, ey + 5.8, "#c98a5e", 1.2);
     } else if (isSR) {
       ellipse(g, ex - 3.9, ey, 2.5, 3.5, INK); ellipse(g, ex + 3.9, ey, 2.5, 3.5, INK); ellipse(g, ex - 4.5, ey - 1.4, 0.95, 1.1, "rgba(255,255,255,0.95)"); ellipse(g, ex + 3.3, ey - 1.4, 0.95, 1.1, "rgba(255,255,255,0.95)");
       line(g, ex - 6.4, ey - 4.6, ex - 1.6, ey - 5, "#6a4a18", 2.1); line(g, ex + 1.6, ey - 5, ex + 6.4, ey - 4.6, "#6a4a18", 2.1);
@@ -173,7 +176,7 @@ export function hero(g, id, o) {
     if (!front) ellipse(g, hx, hy + 1, hr + 0.5, hr * 0.95, "#2b1d17", INK, 1.5);
     g.beginPath(); g.ellipse(hx, hy - 2.2, hr + 1.4, hr * 0.92, 0, Math.PI, 0); g.closePath(); g.fillStyle = "#ffd23a"; g.fill(); g.lineWidth = ink(1.8); g.strokeStyle = INK; g.stroke();
     g.beginPath(); g.ellipse(hx - 1.5, hy - 4.2, hr * 0.7, hr * 0.5, 0, Math.PI * 1.05, Math.PI * 1.6); g.lineWidth = 1.5; g.strokeStyle = "#fff3a0"; g.stroke(); // rim light
-    fillPoly(g, [[hx - hr - 2.6, hy - 2.2], [hx + hr + 2.6, hy - 2.2], [hx + hr + 1.5 + (front ? fx * 3 : 0), hy + 0.6 + top * 0.4], [hx - hr - 1.5 + (front ? fx * 3 : 0), hy + 0.6 + top * 0.4]], "#e0a81f", INK, 1.4); // brim
+    fillPoly(g, [[hx - hr - 2.6, hy - 2.2], [hx + hr + 2.6, hy - 2.2], [hx + hr + 1.5 + (front ? fx * 3 : 0), hy - 0.9 + top * 0.4], [hx - hr - 1.5 + (front ? fx * 3 : 0), hy - 0.9 + top * 0.4]], "#f0bc2a", INK, 1.4); // brim
     rect(g, hx + fx * 0.6, hy - hr - 1.2, 4, 3.2, "#fff3a0", INK, 1); // lamp / ridge
   } else if (isSR) {
     if (front) {

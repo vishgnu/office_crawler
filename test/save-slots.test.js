@@ -319,7 +319,7 @@ test("ADR-0006 section 6 another tab owning the index blocks writes with a notic
   const a = createSlotStore(adapter, { now: clock(), tabId: "tab-a", onNotice: (k) => notices.push(k) });
   const b = createSlotStore(adapter, { now: clock(), tabId: "tab-b", onNotice: (k) => notices.push(k) });
   const g = hero(); a.create(1, g);
-  assert.equal(a.list().owner, "tab-a");
+  assert.equal(a.list().owner.id, "tab-a");
   assert.equal(b.write(1, g).error, "another-tab");
   assert.ok(notices.includes("anotherTab"));
   a.saveOptions({ volume: 0.2 });

@@ -174,6 +174,10 @@ export function createLighting(style) {
 
     /** Draw the mask and the pools (after the world, before plates, floaters and HUD). */
     draw(g, cam, heroScreen, now) {
+      L.drawLights(g, cam, heroScreen, now);
+      if (L.after) L.after(g); // the world's actor pass: bodies drawn back over the additive wash (round G3, F2)
+    },
+    drawLights(g, cam, heroScreen, now) {
       if (!mask.canvas) return;
       const hx = heroScreen.x, hy = heroScreen.y - 18 * cam.z;
       g.drawImage(mask.canvas, hx - cam.w, hy - cam.h, cam.w * 2, cam.h * 2);

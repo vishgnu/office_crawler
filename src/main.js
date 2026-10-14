@@ -1,5 +1,6 @@
 // Boot: build the sprite atlas, create the game shell, wire DOM events, optionally install the test hook.
 import { content } from "./core/index.js";
+import { config } from "./core/config.js";
 import { createBus } from "./bus.js";
 import { getStyle, defaultStyleId } from "./render/style.js";
 import { viewConfig } from "./ui/layout.js";
@@ -41,8 +42,10 @@ async function boot() {
 
   // Saved data and options come first: the options decide the sound kit, the key bindings and the render flags.
   let shellSync = () => {};
-  let tabId = null; // survives a reload of the same tab (sessionStorage), differs between tabs
-  try { tabId = sessionStorage.getItem("oc.tab") ?? (crypto.randomUUID?.() ?? `t${Date.now()}${Math.floor(Math.random() * 1e9)}`); sessionStorage.setItem("oc.tab", tabId); } catch { tabId = `t${Date.now()}`; }
+  // A fresh id per page load, never kept in sessionStorage: a duplicated tab copies sessionStorage and would share the id (CR-01). pagehide releases
+  // the owner, so a reload does not need to keep it; a tab that dies without pagehide goes stale after OWNER_STALE_MS.
+  let tabId;
+  try { tabId = crypto.randomUUID(); } catch { tabId = `t${Date.now()}${Math.floor(Math.random() * 1e9)}`; }
   const store = createSlotStore(createAdapter(), { now: () => Date.now(), tabId, onNotice: (key, extra) => notify(key, extra) });
   const options = normalizeOptions(store.loadOptions());
   if (hc) options.highContrast = true; // ?hc=1 / ?lowfx=1 switch the option on for this session
@@ -135,6 +138,7 @@ async function boot() {
   const session = createSession(store, { seedSource: () => (seedFixed ? game.titleSeed : (Date.now() ^ Math.floor(Math.random() * 1e9)) % 2147483647) });
   game.attachSaves({ store, session });
   const mig = store.migrateLegacy(); // before the title: an old single-slot save becomes slot 1 (the old keys stay as a backup)
+  if (store.status().storage === "memory") game.titleNotice = S.errNoStorage; // blocked storage: nothing will be kept (ADV-R5-06)
   game.refreshSlots();
   const download = (name, text) => {
     const url = URL.createObjectURL(new Blob([text], { type: "application/json" })), a = document.createElement("a");
@@ -155,10 +159,11 @@ async function boot() {
   if (mig.migrated) notify("slotMigrated", mig.migrated);
   let resume = null; // the slot this tab was playing when the page was hidden: restored if the page comes back (bfcache) so autosave keeps working
   const ensureActive = () => { if (game.core && resume !== null && store.activeSlot() === null) store.setActive(resume); };
+  setInterval(() => { if (game.core && !game.error) store.heartbeat(); }, config.ownerBeatMs); // while a game runs this tab keeps the owner lock fresh
   bus.on("autosave", (ev) => { if (game.core) { ensureActive(); const r = store.autosave(game.core, ev); if (r.ok && !r.skipped) game.refreshSlots(); } });
   const flush = () => { if (game.core && !game.error && game.core.scene !== "error") { ensureActive(); store.autosave(game.core, {}, { force: true }); game.refreshSlots(); } };
   addEventListener("pagehide", () => { flush(); resume = store.activeSlot() ?? resume; store.clearActive(); });
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") ensureActive(); if (document.visibilityState === "hidden") flush(); audio.setVisible(document.visibilityState !== "hidden"); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { ensureActive(); if (game.core) store.heartbeat(); } if (document.visibilityState === "hidden") flush(); audio.setVisible(document.visibilityState !== "hidden"); });
   // Leaving a session (Quit to title, game over, victory) saves first: Continue must show what the player just did.
   const saveAndQuit = () => { flush(); resume = null; store.clearActive(); game.toTitle(); };
   const shell = { download, session: (cmd) => game.session(cmd), slots: () => game.slots, active: () => store.activeSlot(), adapter: store.adapter, playing: () => !!game.core };

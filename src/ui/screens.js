@@ -3,7 +3,8 @@
 import { content } from "../core/index.js";
 import { T } from "./text.js";
 import { createOptionsView } from "./options.js";
-import { createSlotsView, slotSummary } from "./slots.js";
+import { createSlotsView, slotSummary, errorText } from "./slots.js";
+import { createSaveStatus } from "./savestatus.js";
 import { createCharSelect, resetDraft } from "./charselect.js";
 
 const S = content.strings;
@@ -67,6 +68,8 @@ export function createScreens(root, h) {
       const s = el("section", "screen title"), box = el("div", "panel");
       const art = el("div", "title-art"); art.innerHTML = titleArt(true) + titleArt(false); s.append(art);
       box.append(el("h1", "", S.gameTitle), el("p", "tagline", S.tagline), el("p", "goal", T.titleGoal));
+      const banner = createSaveStatus({ session: h.session, slots: h.slots, emit: h.emit }, { errorText });
+      box.append(banner);
       if (info.notice) { const n = el("p", "notice-line", info.notice); n.setAttribute("role", "status"); n.dataset.testid = "title-notice"; box.append(n); }
       const slots = info.slots?.index.slots ?? [], lastN = info.slots?.index.last, ok = slots.filter((e) => e.state === "ok");
       const recent = (lastN && slots[lastN - 1]?.state === "ok" ? slots[lastN - 1] : ok.sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0))[0]) ?? null;
@@ -93,7 +96,8 @@ export function createScreens(root, h) {
     create: (info) => createCharSelect({ session: h.session, closeCreate: h.closeCreate, openSlots: () => { returnFocus = "create-load"; h.openSlots(); }, playTransition, emit: h.emit }, info),
     pause: () => {
       const s = el("section", "screen pause");
-      s.append(el("h2", "", S.paused), button(S.resume, "resume", h.resume), button(T.saveSlots, "pause-slots", () => { returnFocus = "pause-slots"; h.openSlots(); }), button(T.options, "options", () => h.openOptions()), button(S.quitToTitle, "quit", h.quit));
+      const banner = createSaveStatus({ session: h.session, slots: h.slots, emit: h.emit }, { errorText });
+      s.append(el("h2", "", S.paused), banner, button(S.resume, "resume", h.resume), button(T.saveSlots, "pause-slots", () => { returnFocus = "pause-slots"; h.openSlots(); }), button(T.options, "options", () => h.openOptions()), button(S.quitToTitle, "quit", h.quit));
       return s;
     },
     options: () => {
@@ -134,19 +138,23 @@ export function createScreens(root, h) {
     },
   };
   /** What the slot manager needs from the shell (see ui/slots.js). */
-  const slotsHost = () => ({ session: h.session, slots: h.slots, playing: h.playing, download: h.download, adapter: h.adapter, emit: h.emit, onNewHere: (n) => h.openCreate({ slot: n }) });
+  const slotsHost = () => ({ session: h.session, slots: h.slots, playing: h.playing, download: h.download, emit: h.emit, onNewHere: (n) => h.openCreate({ slot: n }) });
   let returnFocus = null;
   /** The elevator doors close, the game starts (cb), the doors open (borrowed from variant C). Skipped under reduced motion and in tests. */
   function playTransition(cb) {
-    if (document.documentElement.classList.contains("noanim")) { cb(); return; }
+    if (document.documentElement.classList.contains("noanim")) { cb(); return { cancel() {} }; }
     const wrap = el("div", "elevator close"); wrap.setAttribute("aria-hidden", "true");
     wrap.append(el("div", "door l"), el("div", "door r"));
     document.body.append(wrap);
-    setTimeout(() => {
+    let fired = false;
+    const timer = setTimeout(() => {
+      fired = true;
       if (cb() === false) { wrap.remove(); return; }
       wrap.className = "elevator open";
       setTimeout(() => wrap.remove(), 800);
     }, 1100);
+    // ADV-R5-11 / AC-R-214-1: Esc (or anything else that destroys the class screen) during the doors cancels the start; nothing is created.
+    return { cancel() { if (fired) return; clearTimeout(timer); wrap.remove(); } };
   }
   const screens = {
     /** Show the screen for `menu` (null hides everything). Rebuilds only when something changed. */
@@ -155,7 +163,7 @@ export function createScreens(root, h) {
       sub = null;
       const sm = info.summary ? `${info.summary.kills}/${info.summary.seconds}/${info.summary.depth}` : "", v = info.victory ? `${info.victory.seconds}/${info.victory.kills}` : "";
       const sl = menu === "title" ? JSON.stringify(info.slots?.index ?? null) : menu === "create" ? `${info.create?.slot ?? ""}/${(info.slots?.index.slots ?? []).map((e) => e.state[0]).join("")}` : "";
-      const key = menu ? `${menu}:${sub ?? ""}:${info.seed ?? ""}:${sm}:${v}:${sl}:${menu === "title" ? info.notice ?? "" : ""}:${info.story ?? ""}` : "";
+      const key = menu ? `${menu}:${sub ?? ""}:${info.seed ?? ""}:${sm}:${v}:${sl}:${menu === "title" ? info.notice ?? "" : ""}:${menu === "title" ? JSON.stringify(info.slots?.status ?? null) : ""}:${info.story ?? ""}` : "";
       if (key === current && !force) return;
       current = key;
       active?.destroy?.(); active = null;

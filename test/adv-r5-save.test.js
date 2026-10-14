@@ -25,7 +25,7 @@ const snapshotKeys = (ad) => Object.fromEntries(ad.keys().sort().map((k) => [k, 
 
 // ---- findings (todo) -------------------------------------------------------------------------------------------------------
 
-test("ADV-R5-01a index key missing while slot texts exist: boot must not hide the slots", { todo: "ADV-R5-01" }, () => {
+test("ADV-R5-01a index key missing while slot texts exist: boot must not hide the slots", () => {
   const { adapter, session } = rig();
   session.createCharacter({ slot: 2, class: "sales-rep", name: "Two" });
   session.createCharacter({ slot: 4, class: "it-wizard", name: "Four" });
@@ -35,7 +35,7 @@ test("ADV-R5-01a index key missing while slot texts exist: boot must not hide th
   assert.equal(states(fresh), "empty,ok,empty,ok,empty");
 });
 
-test("ADV-R5-01b index lost + legacy backup still present: migration must not overwrite an existing slot 1", { todo: "ADV-R5-01" }, () => {
+test("ADV-R5-01b index lost + legacy backup still present: migration must not overwrite an existing slot 1", () => {
   const { adapter, store, session } = rig({ adapter: createMemoryAdapter({ [config.saveKey]: V1 }) });
   store.migrateLegacy();
   session.loadSlot({ slot: 1 });
@@ -48,7 +48,7 @@ test("ADV-R5-01b index lost + legacy backup still present: migration must not ov
   assert.equal(again.load(1).state.player.gold, 123456, "the legacy backup replaced the played character");
 });
 
-test("ADV-R5-02 a tab that died without pagehide must not lock every other tab out for ever", { todo: "ADV-R5-02" }, () => {
+test("ADV-R5-02 a tab that died without pagehide must not lock every other tab out for ever", () => {
   const ad = createMemoryAdapter();
   let t = 1_000_000;
   const a = rig({ tabId: "A", adapter: ad, now: () => t });
@@ -59,7 +59,7 @@ test("ADV-R5-02 a tab that died without pagehide must not lock every other tab o
   assert.equal(b.session.continue().ok, true, `Continue refused: ${JSON.stringify(b.session.continue())}`);
 });
 
-test("ADV-R5-03 restorePrev must not overwrite a slot written by a newer build", { todo: "ADV-R5-03" }, () => {
+test("ADV-R5-03 restorePrev must not overwrite a slot written by a newer build", () => {
   const { adapter, store, session } = rig({ tabId: null });
   session.createCharacter({ slot: 1, class: "sales-rep", name: "One" });
   session.deleteSlot({ slot: 1, confirm: true }); // .prev now holds One
@@ -72,13 +72,13 @@ test("ADV-R5-03 restorePrev must not overwrite a slot written by a newer build",
   assert.equal(adapter.getItem("office-crawler.slot.1"), newer, "a newer-build save was overwritten by the undo copy");
 });
 
-test("ADV-R5-04a schema: a level 1 character with every skill at max level is not a valid save", { todo: "ADV-R5-04" }, () => {
+test("ADV-R5-04a schema: a level 1 character with every skill at max level is not a valid save", () => {
   const s = toSave(mkState("sales-rep"));
   for (const id of Object.keys(skillTrees["sales-rep"].skills)) s.player.skills[id] = skills[id].maxLevel;
   assert.equal(deserialize(reseal(s)).ok, false);
 });
 
-test("ADV-R5-04b schema: skill bar entries of another class / a non-basic primary are not valid", { todo: "ADV-R5-04" }, () => {
+test("ADV-R5-04b schema: skill bar entries of another class / a non-basic primary are not valid", () => {
   const s = toSave(mkState("sales-rep"));
   s.player.skillBar.hotkeys = ["pallet-slam", "server-overheat", null, null];
   assert.equal(deserialize(reseal(s)).ok, false, "hotkeys with skills of other classes accepted");
@@ -87,14 +87,14 @@ test("ADV-R5-04b schema: skill bar entries of another class / a non-basic primar
   assert.equal(deserialize(reseal(t)).ok, false, "primary slot with another class's basic attack accepted");
 });
 
-test("ADV-R5-04c schema: secondary must follow hotkeys[selected]", { todo: "ADV-R5-04" }, () => {
+test("ADV-R5-04c schema: secondary must follow hotkeys[selected]", () => {
   const s = toSave(mkState("sales-rep"));
   s.player.skillBar.selected = 3; s.player.skillBar.secondary = "stapler-throw"; // hotkeys[3] is empty
   const r = deserialize(reseal(s));
   assert.ok(!r.ok || r.state.player.skillBar.secondary === null, `secondary ${r.ok ? r.state.player.skillBar.secondary : "-"} does not follow the selected empty hotkey`);
 });
 
-test("ADV-R5-05 a fresh character and the same character after save and load show the same xpNext", { todo: "ADV-R5-05" }, () => {
+test("ADV-R5-05 a fresh character and the same character after save and load show the same xpNext", () => {
   for (const cls of CLASSES) {
     const fresh = mkState(cls);
     const loaded = deserialize(serialize(fresh)).state;

@@ -62,14 +62,14 @@ function nodeHtml(n, c, bar) {
 /** HTML of the whole Skills drawer body for the running game. */
 export function renderTree(c) {
   const p = c.player, v = treeView(c), bar = p.skillBar, cls = classById(p.class), basic = content.skills[cls?.basic];
-  let h = `<div class="ph"><h2>${esc(T.trTitle)}</h2><button class="xbtn" type="button" data-close="skills" data-testid="close-skills" aria-label="${esc(T.closeSkills)}">×</button></div>`;
+  let h = `<div class="ph"><span class="phi">${skillIcon(`class:${v.classId}`)}</span><h2>${esc(T.trTitle)}</h2><button class="xbtn" type="button" data-close="skills" data-testid="close-skills" aria-label="${esc(T.closeSkills)}">×</button></div>`;
   h += `<div class="pb"><div class="skills tree" data-testid="skills-panel" data-class="${esc(v.classId)}">@TABS@`;
   h += `<div class="tr-head"><p class="sp"><b>${esc(T.trPoints)}: <span data-testid="skill-points">${v.points}</span></b></p>`;
   h += `<button class="mini respec" type="button" data-testid="respec" data-respec="1" data-fk="rs" ${v.respec.available ? "" : "disabled"} title="${esc(v.respec.available ? T.trResetHint : T.trResetNone)}">${esc(T.trReset)}</button></div>`;
   h += `<p class="sk-note" data-testid="respec-note">${esc(v.respec.available ? T.trResetHint : (v.respec.reason === "not-in-town" ? T.trResetNone : T.trRespecFail[v.respec.reason] ?? T.trResetNone))}</p>`;
   h += `<p class="sk-note">${esc(T.trSelectNote)}</p>`;
   if (basic) {
-    h += `<h3>${esc(T.basicAttack)}</h3><ul class="slist"><li class="srow" data-testid="skill-${esc(basic.id)}"><div class="sic">${skillIcon(basic.id)}</div><div class="sbody"><div class="sname"><b>${esc(basic.name)}</b></div><div class="stext">${esc(S[basic.textKey] ?? "")}</div></div><span></span>`;
+    h += `<h3>${esc(T.basicAttack)}</h3><ul class="slist"><li class="srow" data-testid="skill-${esc(basic.id)}" title="${esc(S[basic.textKey] ?? "")}"><div class="sic">${skillIcon(basic.id)}</div><div class="sbody"><div class="sname"><b>${esc(basic.name)}</b></div><div class="stext">${esc(S[basic.textKey] ?? "")}</div></div><span></span>`;
     h += `<div class="sassign" role="group" aria-label="${esc(T.assignTo)} ${esc(basic.name)}"><span>${esc(T.assignTo)}</span>`;
     for (let i = 0; i < bar.hotkeys.length; i++) { const on = bar.hotkeys[i] === basic.id; h += `<button class="mini key${on ? " on" : ""}" type="button" data-testid="assign-${esc(basic.id)}-${i}" data-assign="${esc(basic.id)}" data-slot="${i}" data-fk="a.${esc(basic.id)}.${i}" aria-pressed="${on}" aria-label="${esc(T.assignTo)} F${i + 1}: ${esc(basic.name)}${on ? ", " + esc(T.assigned) : ""}">F${i + 1}</button>`; }
     h += `</div></li></ul>`;

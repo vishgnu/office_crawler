@@ -118,11 +118,11 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
 
   // ---- saves: slots, characters (R4 contract section 2; the store and the session come from main.js) ----
   let saves = null, slotsCache = null;
-  const SESSION_CMDS = new Set(["createCharacter", "selectSlot", "loadSlot", "continue", "deleteSlot", "renameSlot", "copySlot", "exportSlot", "importSlot", "restoreSlot"]);
+  const SESSION_CMDS = new Set(["createCharacter", "selectSlot", "loadSlot", "continue", "deleteSlot", "renameSlot", "copySlot", "exportSlot", "importSlot", "restoreSlot", "takeOverSaves", "dismissSaveNotice"]);
   /** main.js hands over the slot store and the session once the game exists. */
   game.attachSaves = (s) => { saves = s; slotsCache = null; };
   game.refreshSlots = () => { slotsCache = null; };
-  /** { index, active, last, highlighted, usage, lastError } (computed on demand, cached until a command or an autosave changes it). */
+  /** { index, list, active, last, highlighted, usage, lastError, status } (computed on demand, cached until a command or an autosave changes it). */
   Object.defineProperty(game, "slots", { enumerable: true, get: () => (saves ? (slotsCache ??= slotsView(saves.store, saves.session.highlighted)) : null) });
   /** Begin play with a state the save package built (new character or loaded slot). */
   game.startState = (state, { fresh = false } = {}) => {
@@ -130,6 +130,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     game.core = state; resetUi(); resetRender();
     if (fresh && game.defaultStart === "floor") teleportFloor(state, 1); // legacy fixtures (?start=floor) land on floor 1
     if (fresh && game.storyOn) game.ui.story = "start";
+    if (saves?.store.status().storage === "memory") { const text = content.strings.errNoStorage; state.ui.notice = { kind: "save", key: "errNoStorage", text }; } // ADV-R5-06: nothing will be kept
     emitChange();
     if (!fresh) pointsHint();
     return state;

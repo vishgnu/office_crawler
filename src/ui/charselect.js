@@ -90,7 +90,7 @@ export function createCharSelect(h, info) {
   const cards = classCards();
   const root = el("section", "screen create"), app = el("main", "cs-app"), ac = new AbortController(), sig = { signal: ac.signal };
   root.dataset.testid = "create-screen";
-  let sel = clamp(draft.cls, 0, cards.length - 1), selT = 0, T0 = 0, busy = false;
+  let sel = clamp(draft.cls, 0, cards.length - 1), selT = 0, T0 = 0, busy = false, pending = null;
   const u = [0, 0, 0]; u[sel] = 1;
   let spot = SX[sel];
   const maxOf = (f) => Math.max(...cards.map(f)), dmgAvg = (c) => (c.derivedPreview.damage.min + c.derivedPreview.damage.max) / 2;
@@ -157,7 +157,8 @@ export function createCharSelect(h, info) {
     draft.name = nameInp.value;
     nCount.textContent = `${[...nameInp.value].length} / 16`;
     const ok = validName();
-    go.setAttribute("aria-disabled", ok ? "false" : "true"); goHint.hidden = ok; go.classList.toggle("off", !ok);
+    go.setAttribute("aria-disabled", ok ? "false" : "true"); goHint.hidden = false; goHint.classList.toggle("invis", ok); // the hint keeps its space so the form does not move when Start turns on (F12)
+    go.classList.toggle("off", !ok);
     if (ok) err.textContent = "";
   }
   function syncSlotNote() {
@@ -276,7 +277,7 @@ export function createCharSelect(h, info) {
   function begin(slot, replacing) {
     busy = true; go.setAttribute("aria-busy", "true"); stamp.classList.add("show"); root.classList.add("starting");
     const c = cards[sel], name = validateName(nameInp.value).name;
-    h.playTransition(() => {
+    pending = h.playTransition(() => {
       const r = h.session({ t: "createCharacter", slot, class: c.id, name, confirm: !!replacing });
       if (r.ok) { if (replacing) markUndo(slot, "replace"); resetDraft(); return true; }
       busy = false; go.removeAttribute("aria-busy"); stamp.classList.remove("show"); root.classList.remove("starting");
@@ -324,6 +325,6 @@ export function createCharSelect(h, info) {
     if (new URLSearchParams(location.search).get("test") === "1") root.dataset.ready = "1";
   };
   root.focusDefault = () => nameInp.focus({ preventScroll: true });
-  root.destroy = () => { cancelAnimationFrame(raf); ac.abort(); };
+  root.destroy = () => { cancelAnimationFrame(raf); pending?.cancel?.(); ac.abort(); }; // Esc during the elevator doors: the pending start is dropped (ADV-R5-11)
   return root;
 }

@@ -69,7 +69,7 @@ export function createPanels(root, game) {
   // ------------------------------------------------------------ Desk Drawer
   function renderInventory(c) {
     const p = c.player, held = c.cursorItem, origin = game.heldOrigin;
-    let h = `<div class="ph"><h2>${esc(T.inventory)}</h2>${closeBtn("inventory", T.closeInventory)}</div><div class="pb"><div class="inv">${tabsHtml("inventory")}`;
+    let h = `<div class="ph"><span class="phi">${skillIcon("panel:drawer")}</span><h2>${esc(T.inventory)}</h2>${closeBtn("inventory", T.closeInventory)}</div><div class="pb"><div class="inv">${tabsHtml("inventory")}`;
     h += `<div class="dollrow"><div class="doll" role="group" aria-label="${esc(T.equipment)}">`;
     for (const k of Object.keys(DOLL)) {
       const d = DOLL[k], it = c.equipment[k], ghost = held && origin?.kind === "slot" && origin.k === k ? held : null;
@@ -99,7 +99,7 @@ export function createPanels(root, game) {
   const statRow = (key, label, value) => `<div class="d"><span>${esc(label)}</span><b data-stat="${key}">${value}</b></div>`;
   function renderCharacter(c) {
     const p = c.player, xpv = xpProgress(p), pct = xpv.pct, pts = p.attrPoints;
-    let h = `<div class="ph"><h2>${esc(T.fileTitle)}</h2>${closeBtn("character", T.closeCharacter)}</div><div class="pb"><div class="sheet" data-testid="employee-file">${tabsHtml("character")}`;
+    let h = `<div class="ph"><span class="phi">${skillIcon("panel:file")}</span><h2>${esc(T.fileTitle)}</h2>${closeBtn("character", T.closeCharacter)}</div><div class="pb"><div class="sheet" data-testid="employee-file">${tabsHtml("character")}`;
     h += `<div class="fh"><div class="photo"><canvas width="112" height="112" data-bust="${esc(p.class)}" aria-hidden="true"></canvas></div>`;
     h += `<div><h2 data-testid="file-name">${esc(p.name ?? "")}</h2><p data-testid="file-class">${esc(classById(p.class)?.name ?? "")} · <span data-stat="level">${esc(T.level)} ${p.level}</span></p><p>${esc(c.floor.name)}</p></div><div class="stamp" aria-hidden="true">${esc(T.probation)}</div></div>`;
     h += `<div class="xpl" title="${esc(T.xpTotal)}: ${num(xpv.total)}"><span>${esc(T.experience)}</span><span data-stat="xp" data-testid="xp-label" data-total="${Number(xpv.total) || 0}">${xpv.capped ? esc(T.xpMax) : `${num(xpv.into)} / ${num(xpv.span)} ${esc(T.xpToLevel)} ${p.level + 1} (${pct}%)`}</span></div><div class="xpb2" role="img" title="${esc(T.xpTotal)}: ${num(xpv.total)}" aria-label="${esc(T.experience)} ${pct}%, ${esc(T.xpTotal)} ${num(xpv.total)}"><i style="width:${pct}%"></i></div>`;
@@ -129,7 +129,7 @@ export function createPanels(root, game) {
   function renderNpc(c) {
     const d = c.ui.dialog;
     if (!d) return "";
-    let h = `<div class="ph"><h2>${esc(S[d.nameKey] ?? "")}</h2>${closeBtn("npc", T.closeWindow)}</div><div class="pb"><div class="npc" data-testid="npc-window" data-kind="${esc(d.kind)}">${tabsHtml("npc")}`;
+    let h = `<div class="ph"><span class="phi">${skillIcon("panel:talk")}</span><h2>${esc(S[d.nameKey] ?? "")}</h2>${closeBtn("npc", T.closeWindow)}</div><div class="pb"><div class="npc" data-testid="npc-window" data-kind="${esc(d.kind)}">${tabsHtml("npc")}`;
     h += `<p class="say">“${esc(d.lines.map((k) => S[k] ?? "").join(" "))}”</p><div class="gold" data-testid="npc-gold">${coinIcon()}<span>${num(c.player.gold)} ${esc(T.gold)}</span></div>`;
     if (d.kind === "vendor" && c.vendor) {
       const tab = game.ui.vendorTab;

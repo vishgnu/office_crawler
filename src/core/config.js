@@ -164,6 +164,8 @@ export const config = {
   autosaveMinTicks: 30,              // writes closer together than this (by game tick) are coalesced, except on exit
   // Five save slots (ADR-0006). Legacy single-slot keys above are read only by the migration.
   slotCount: 5,
+  ownerBeatMs: 5000,                 // a tab that is playing refreshes its owner heartbeat this often (ADR-0006 amendment 2026-10-14)
+  ownerStaleMs: 15000,               // an owner whose last beat is older than this is stale: a tab that started later may take over
   slotKeyPrefix: "office-crawler.slot.",
   slotIndexKey: "office-crawler.slots",
   slotMaxBytes: 400000,              // NFR-D05: characters per slot text

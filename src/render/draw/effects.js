@@ -99,7 +99,7 @@ export function createSkillFx(fx) {
         case "cast": {
           const look = skillLook(ev.skill, ev.level), key = ev.fx ?? look.fx, self = look.def?.delivery?.at === "self" || !ev.tile, to = !self ? { x: ev.tile.x + 0.5, y: ev.tile.y + 0.5 } : { x: hx, y: hy };
           last.fx = key; last.skill = ev.skill; last.at = now; last.type = look.type; last.e = null;
-          if (key === "fx:slam") { last.e = push({ k: "slam", x: to.x, y: to.y, r: look.radius || 1.8, born: now, life: 560, type: look.type, seed: hash01(now) * 6 }); if (!M()) fx.shakeUntil = Math.max(fx.shakeUntil, now + 170); }
+          if (key === "fx:slam") { last.e = push({ k: "slam", x: to.x, y: to.y, r: look.radius || 1.8, born: now, life: 900, type: look.type, seed: hash01(now) * 6 }); if (!M()) fx.shakeUntil = Math.max(fx.shakeUntil, now + 170); }
           else if (key === "fx:ring") last.e = push({ k: "ring", x: to.x, y: to.y, r: look.radius || 2.5, born: now, life: 560, type: look.type });
           else if (key === "fx:burst") last.e = push({ k: "burst", x: to.x, y: to.y, r: look.radius || 3, born: now, life: 640, type: look.type, seed: hash01(now) * 9 });
           else if (key === "fx:glow") { push({ k: "glow", x: hx, y: hy, born: now, life: 800, type: look.type }); fx.burst(hx, hy, 8, now, { sprite: "plus", rise: true }); }
@@ -164,13 +164,20 @@ export function createSkillFx(fx) {
         g.save(); g.lineJoin = "round"; g.lineCap = "round";
         if (e.k === "slam") {
           const rr = e.r * RX * z * (0.45 + 0.55 * ease(k)), ry = rr * 0.5;
-          g.globalAlpha = fade; ell(g, cx, cy, rr * 1.05, ry * 1.05); g.fillStyle = "rgba(190,170,130,0.22)"; g.fill(); g.lineWidth = Math.max(2, 2.4 * z * 0.7); g.strokeStyle = "rgba(235,222,190,0.8)"; g.stroke();
+          // round G3: the slam has to read at 1x: a bright flash on impact, a thick shock ring with an ink edge, and dust clouds thrown up at the rim
+          g.globalAlpha = fade; ell(g, cx, cy, rr * 1.05, ry * 1.05); g.fillStyle = "rgba(214,194,150,0.4)"; g.fill();
+          if (k0 < 0.3) { g.globalAlpha = (1 - k0 / 0.3) * 0.85; ell(g, cx, cy, rr * 0.7, rr * 0.35); g.fillStyle = "#fffbe8"; g.fill(); }
+          g.globalAlpha = fade; ell(g, cx, cy, rr * 1.05, ry * 1.05); g.lineWidth = Math.max(5, 6.5 * z * 0.7); g.strokeStyle = INK; g.stroke(); g.lineWidth = Math.max(3, 3.8 * z * 0.7); g.strokeStyle = "#fff4d6"; g.stroke();
           for (let a = 0; a < 9; a++) { // jagged cracks
             const an = a * 0.698 + e.seed, len = rr * (0.5 + 0.5 * hash01(a + e.seed)), mx = Math.cos(an + 0.18) * len * 0.5, my = Math.sin(an + 0.18) * len * 0.25, ex = Math.cos(an) * len, ey = Math.sin(an) * len * 0.5;
             g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + mx, cy + my); g.lineTo(cx + ex, cy + ey);
             g.lineWidth = Math.max(3, 4.4 * z * 0.7); g.strokeStyle = INK; g.stroke(); g.lineWidth = Math.max(1.4, 1.8 * z * 0.7); g.strokeStyle = col[0]; g.stroke();
           }
           ell(g, cx, cy, rr * 0.28, rr * 0.14); g.fillStyle = "#1a1530"; g.fill();
+          if (!m) for (let d = 0; d < 10; d++) { // dust clouds: round puffs that rise off the rim and grow
+            const an = d * 0.628 + e.seed, rise = Math.min(1, k * 1.5), px = cx + Math.cos(an) * rr * 0.95, py = cy + Math.sin(an) * ry * 0.95 - rise * 22 * z * (0.6 + hash01(d + e.seed)), pr = (4 + 7 * rise) * z * (0.7 + 0.5 * hash01(d + 7));
+            g.globalAlpha = fade * (1 - rise * 0.5) * 0.9; ell(g, px, py, pr, pr * 0.85); g.fillStyle = d & 1 ? "#e9dcc0" : "#cdbb98"; g.fill(); g.lineWidth = Math.max(1.4, 1.8 * z * 0.7); g.strokeStyle = "rgba(26,21,48,0.55)"; g.stroke();
+          }
           if (k0 < 0.4) light(e.x, e.y, e.r * 1.2, "#ffd8a0", 0.5 * (1 - k0 / 0.4));
         } else if (e.k === "ring") {
           const rr = e.r * RX * z * (0.2 + 0.8 * ease(k)), ry = e.r * RY * z * (0.2 + 0.8 * ease(k));

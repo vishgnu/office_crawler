@@ -104,7 +104,7 @@ function affixOk(a) {
 function itemOk(it, { placed }) {
   if (!hasOnly(it, ITEM_KEYS) || !safeId(it.id) || !str(it.name) || !str(it.base) || !own(bases, it.base)) return false;
   if (it.baseName !== undefined && !str(it.baseName)) return false;
-  if (it.slot !== undefined && !(safeId(it.slot) && slotKeys.includes(it.slot))) return false;
+  if (it.slot !== undefined && !safeId(it.slot)) return false;
   if (it.unique !== undefined && !safeId(it.unique)) return false;
   if (it.flavour !== undefined && !str(it.flavour, 200)) return false;
   if (it.effect !== undefined && !safeId(it.effect)) return false;
