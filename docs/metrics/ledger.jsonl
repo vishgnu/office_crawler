@@ -59,3 +59,4 @@
 {"round": "R7", "role": "spec-writer", "pkg": "spec 12 quests", "tokensK": 100.3, "minutes": 2.5, "status": "done", "acs": 39, "source": "task usage"}
 {"round": "R7", "role": "architect", "pkg": "ADR-0007 quests + R7 contract", "tokensK": 320.6, "minutes": 12.9, "status": "done", "packages": ["CORE-R7Q (0.1-0.4)", "UI-R7Q (0.5-0.6)", "WORLD-R7Q (0.7)"], "source": "task usage"}
 {"round": "R7", "role": "implementer", "pkg": "AI-R7", "tokensK": 124.0, "minutes": 33.2, "status": "done", "tests": 775, "e2e": "14/14", "giveUps": {"before": 1, "after": 0}, "golden": "a4a3cd6a1dac3cb2 -> 4a96887c22fea751 (new field standT only; behaviour-off reproduces old)", "source": "task usage"}
+{"round": "R7", "role": "implementer", "pkg": "CORE-R7Q 0.1 (quest core)", "tokensK": 167.6, "minutes": 24.6, "status": "done", "tests": 801, "e2e": "14/14", "golden": "4a96887c22fea751 -> 60a33ace8c544a3c (proof: stripped hash == pre-quest golden, 3 classes)", "source": "task usage"}

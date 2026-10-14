@@ -15,10 +15,10 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R5 | 12 | 2407.0 | 353.6 | 1873.9 | 668 | charselectAppeal 34, charselectCraft 33, g2 33/30 | adversarial: 14; codeReview: 28; visualReview: 9; customer: 2; escaped: 0; escapedNote: none known at acceptance; the file:// storage race (4/23 file://) is an open caveat for the delivery mode |
 | G | 11 | 1893.6 | 117.6 | 1374.1 | 668 | prototypeC3 31/31, g1 32/31, g2 33/32, g3 34/33, gate 34 target; under 33 = another pass; proxy passed at 34/33 with follow-ups | adversarial: null; adversarialNote: No adversarial pass on render work (visual rounds use visual reviewers); the adversarial pass of R5 covered the save/UI code only; codeReview: 0; visualReview: 12; customer: 0; escaped: 0 |
 | R6 | 15 | 2375.6 | 376.8 | 2222.0 | 770 | inGame 35/34, charselect 35/34, uiTreeSlotsPause 35/34, note [appeal, craft]; target 34; first time craft reached 34; G3 was 34/33 | adversarial: 7; codeReview: 15; visualReview: 7; customer: 8; escaped: 0; escapedNote: none shipped; two things were found late and are open: N11/R7-2 floor-entry stutter (found by the richer bench, no review saw it) and F1 hero stand-off (bot watchdog had masked it, CR6-05) |
-| R7 | 5 | 724.3 | 53.5 | – | – | – | – |
+| R7 | 6 | 891.9 | 78.1 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 61 rows, 9433.0 k subagent tokens. **Your messages logged:** 18.
+**Ledger total:** 62 rows, 9600.6 k subagent tokens. **Your messages logged:** 19.
 
 ## Round R3
 
@@ -119,6 +119,7 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | spec-writer | spec 12 quests | 100.3 | 2.5 | done | acs: 39 |
 | architect | ADR-0007 quests + R7 contract | 320.6 | 12.9 | done | packages: ["CORE-R7Q (0.1-0.4)","UI-R7Q (0.5-0.6)","WORLD-R7Q (0.7)"] |
 | implementer | AI-R7 | 124.0 | 33.2 | done | tests: 775; e2e: 14/14; giveUps: {"before":1,"after":0}; golden: a4a3cd6a1dac3cb2 -> 4a96887c22fea751 (new field standT only; behaviour-off reproduces old) |
+| implementer | CORE-R7Q 0.1 (quest core) | 167.6 | 24.6 | done | tests: 801; e2e: 14/14; golden: 4a96887c22fea751 -> 60a33ace8c544a3c (proof: stripped hash == pre-quest golden, 3 classes) |
 
 ## Harness work
 
@@ -148,3 +149,4 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | 2026-10-14T11:51:40Z | question | PublicAccessNotPermitted error (Azure storage hosting) |
 | 2026-10-14T11:55:30Z | question | do i need to secure this somehow ? ... how to check? |
 | 2026-10-14T14:00:38Z | question | whre are athe metrics for the other iteration? |
+| 2026-10-14T14:01:20Z | question | i only see 1 and 2-3 |
