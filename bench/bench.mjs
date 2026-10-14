@@ -2,6 +2,7 @@
 // under load, so unit tests bound the work instead (learning L-06). Run on a quiet machine; exits non-zero
 // when a budget from the specs is exceeded.
 import { generateFloor } from "../src/core/gen/floor.js";
+import os from "node:os";
 import { newGame, step, findPath, config } from "../src/core/index.js";
 
 let failed = 0;
@@ -50,16 +51,31 @@ try {
     s = await g.app("step", 6); // a few ticks so the pack members start to move
     const visible = s.monsters.filter((m) => { const c = s.ui.camera, x = c.ox + (m.pos.x - m.pos.y) * 32 * c.z + 32 * c.z, y = c.oy + (m.pos.x + m.pos.y + 1) * 16 * c.z; return x > 0 && x < c.w && y > 0 && y < c.h; }).length;
     await g.page.waitForTimeout(1500); // warm-up
-    await g.page.evaluate(() => new Promise((r) => { let i = 0; const f = () => (++i >= 150 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }));
+    // the measured window: 150 real frames; every frame's dt, the atlas first-use counters and heap drops (GC) are recorded inside it
+    const win = await g.page.evaluate(() => new Promise((r) => {
+      const st = window.__atlasStats ?? { lazy: 0, lazyMs: 0, sil: 0, silMs: 0 }, s0 = { ...st }, dts = [], mem = () => performance.memory?.usedJSHeapSize ?? 0;
+      let i = 0, drops = 0, last = performance.now(), m0 = mem(), mPrev = m0;
+      const f = (t) => {
+        dts.push(t - last); last = t; const m = mem(); if (m < mPrev - 20000) drops++; mPrev = m;
+        if (++i >= 150) r({ dts: dts.slice(1), heapDrops: drops, lazy: st.lazy - s0.lazy, lazyMs: st.lazyMs - s0.lazyMs, sil: st.sil - s0.sil, silMs: st.silMs - s0.silMs, heapGrowthKB: Math.round((mem() - m0) / 1024) });
+        else requestAnimationFrame(f);
+      };
+      requestAnimationFrame(f);
+    }));
     const perf = await g.app("perf");
     await g.context.close();
-    const f = perf.frameMs.slice(-120), avg = f.reduce((a, b) => a + b, 0) / f.length;
-    return { fps: 1000 / avg, renderAvg: perf.renderMsAvg, renderP95: perf.renderMsP95, visible, spawned: n, fx: perf.fx };
+    const f = win.dts.slice(-120), avg = f.reduce((a, b) => a + b, 0) / f.length;
+    const sorted = [...win.dts].sort((a, b) => a - b), q = (p) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
+    return { fps: 1000 / avg, renderAvg: perf.renderMsAvg, renderP95: perf.renderMsP95, visible, spawned: n, fx: perf.fx,
+      frame: { p50: q(0.5), p95: q(0.95), p99: q(0.99), max: sorted[sorted.length - 1], over25: sorted.filter((d) => d > 25).length }, win };
   };
   for (const [label, extra, key] of [["full fx", "", "fps50"], ["lowFx", "&lowfx=1", "fps50Low"]]) {
     const r = await scene(extra);
     result[key] = Math.round(r.fps * 10) / 10; result.visible = r.visible;
     console.log(`INFO 50 monsters (${r.spawned} spawned, ${r.visible} on screen), ${label}: ${result[key]} fps, render ${r.renderAvg.toFixed(1)} ms avg / ${r.renderP95.toFixed(1)} ms p95`);
+    const fr = r.frame, w = r.win;
+    console.log(`INFO   frame ms p50 ${fr.p50.toFixed(1)} p95 ${fr.p95.toFixed(1)} p99 ${fr.p99.toFixed(1)} max ${fr.max.toFixed(1)}, ${fr.over25} frames > 25 ms; in window: ${w.lazy} lazy draws (${w.lazyMs.toFixed(1)} ms), ${w.sil} silhouettes (${w.silMs.toFixed(1)} ms), ${w.heapDrops} heap drops (GC), heap +${w.heapGrowthKB} KB; load ${os.loadavg().map((x) => x.toFixed(2)).join(" ")}`);
+    result[key + "Frame"] = { p50: +fr.p50.toFixed(1), p95: +fr.p95.toFixed(1), p99: +fr.p99.toFixed(1), max: +fr.max.toFixed(1), lazy: w.lazy, sil: w.sil, gc: w.heapDrops };
   }
   const ok = result.fps50 >= FPS_TARGET;
   if (!ok) failed++;

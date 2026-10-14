@@ -2,10 +2,13 @@
 // Entries are in logical units (the canvas is drawn at `scale` x for sharpness on large screens).
 // Flash / shade / tint silhouettes (hit flash, lighting actors) are built lazily and cached on the entry,
 // so the per-frame lookups allocate nothing.
+// Debug counters for the bench (first-use draws that could land inside a measured window): window.__atlasStats.
+const stats = (globalThis.__atlasStats ??= { lazy: 0, lazyMs: 0, sil: 0, silMs: 0 });
 function silhouette(e, colour, alpha, mode) {
   const cache = (e.sil ??= {}), ck = mode + colour;
   let s = cache[ck];
   if (!s) {
+    const t0 = performance.now(); stats.sil++;
     const img = document.createElement("canvas");
     img.width = e.img.width; img.height = e.img.height;
     const g = img.getContext("2d");
@@ -15,6 +18,7 @@ function silhouette(e, colour, alpha, mode) {
     g.fillRect(0, 0, img.width, img.height);
     s = { ...e, img, sil: null };
     cache[ck] = s;
+    stats.silMs += performance.now() - t0;
   }
   return s;
 }
@@ -52,7 +56,7 @@ export function createAtlas(scale = 1, meta = {}) {
       map.set(key, { key, img, w: img.width / scale, h: img.height / scale, ox, oy, sil: null });
     },
     /** Like add(), but the sprite is only drawn on its first get() (boss sprites: large canvases, only the frames a fight shows). */
-    addLazy(key, w, h, ox, oy, draw) { map.set(key, { lazy: () => self.add(key, w, h, ox, oy, draw) }); },
+    addLazy(key, w, h, ox, oy, draw) { map.set(key, { lazy: () => { const t0 = performance.now(); self.add(key, w, h, ox, oy, draw); stats.lazy++; stats.lazyMs += performance.now() - t0; } }); },
     get(key) {
       const e = map.get(key);
       if (e && e.lazy) { e.lazy(); return map.get(key); }
