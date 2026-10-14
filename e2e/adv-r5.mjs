@@ -488,7 +488,7 @@ const texts = {};
   await g.app("cheat.teleportFloor", 1); await g.page.waitForTimeout(80);
   check("Respec is disabled on a floor and the API refuses with not-in-town", (await g.page.locator(T("respec")).isDisabled()) && (await g.app("tree.respec")).error === "not-in-town");
   await g.app("cheat.teleportFloor", 0); await g.page.waitForTimeout(80);
-  await g.page.click(T("respec"));
+  await g.page.click(T("respec")); await g.page.click(T("respec-yes")); // R6: a respec with points to return asks first
   const p2 = (await g.state()).player;
   check("Respec in the Lobby returns every point (15 at level 16), clears the aura and keeps the signature", p2.aura === null && Object.keys(p2.skills).join() === "pallet-slam" && p2.skillPoints === 15, [p2.skillPoints, p2.skills, p2.aura]);
   check("after respec the bar keeps only the signature and the right mouse has a skill or an empty slot, never a removed one", p2.skillBar.hotkeys.every((h) => h === null || h === "pallet-slam"), p2.skillBar);
