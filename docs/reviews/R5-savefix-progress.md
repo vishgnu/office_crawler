@@ -5,3 +5,5 @@ done: new tests test/save-fix.test.js (23), npm test 3x green except ui-r5 (UI-F
 done: ADR-0006 amendment, pagehide/visibility release fix in main.js, e2e hook/replay green; adv-r5 and r5ui reds are caused by script assumptions / UI-FIX work; next: report
 done: restorePrev confirm swap (+playing guard, tests); owner after reload verified 'none' in browser (live second tab = 'other', correct); next: verify
 done: restore swap, future-beat stale (ADV-R5-13), r5ui 106/106, hook ok
+done: ADV-R5-12/14 (affix range required, value in range, hp floor, price tolerant)
+done: verified; adv-r5 'second boot does not migrate again' is a flaky storage-propagation race on reload (second doc sees empty storage, init script reseeds)
