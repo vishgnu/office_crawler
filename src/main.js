@@ -10,7 +10,7 @@ import { createPanels } from "./ui/panels.js";
 import { preventsDefault } from "./input/keys.js";
 import { installTestHook } from "./testhook/index.js";
 import { createAudio } from "./audio/index.js";
-import { createSaveStore, createAdapter } from "./save/index.js";
+import { createSlotStore, createSession, createAdapter } from "./save/index.js";
 import { normalizeOptions } from "./ui/options.js";
 import { bindKey, defaultKeys } from "./input/keymap.js";
 import { T } from "./ui/text.js";
@@ -25,6 +25,7 @@ let hc = params.get("hc") === "1", lowFx = params.get("lowfx") === "1";
 const zoomParam = Number(params.get("zoom"));
 if (params.get("zoom") && Number.isFinite(zoomParam) && zoomParam >= 0.4 && zoomParam <= 4) viewConfig.zoom = zoomParam;
 const seedParam = Number(params.get("seed"));
+const seedFixed = testMode || (params.get("seed") !== null && params.get("seed") !== "");
 const seed = Number.isFinite(seedParam) && params.get("seed") !== null && params.get("seed") !== "" ? seedParam : testMode ? 1 : Date.now() % 2147483647;
 
 async function boot() {
@@ -35,15 +36,18 @@ async function boot() {
 
   // Saved data and options come first: the options decide the sound kit, the key bindings and the render flags.
   let shellSync = () => {};
-  const store = createSaveStore(createAdapter(), { onNotice: (key) => notify(key) });
+  let tabId = null; // survives a reload of the same tab (sessionStorage), differs between tabs
+  try { tabId = sessionStorage.getItem("oc.tab") ?? (crypto.randomUUID?.() ?? `t${Date.now()}${Math.floor(Math.random() * 1e9)}`); sessionStorage.setItem("oc.tab", tabId); } catch { tabId = `t${Date.now()}`; }
+  const store = createSlotStore(createAdapter(), { now: () => Date.now(), tabId, onNotice: (key, extra) => notify(key, extra) });
   const options = normalizeOptions(store.loadOptions());
   if (hc) options.highContrast = true; // ?hc=1 / ?lowfx=1 switch the option on for this session
   if (lowFx) options.lowFx = true;
   hc = options.highContrast; lowFx = options.lowFx;
   let game = null;
-  function notify(key) { // a save problem or result: toast while playing, a line on the title screen otherwise
-    const text = content.strings[key];
+  function notify(key, extra) { // a save problem or result: toast while playing, a line on the title screen otherwise
+    let text = content.strings[key];
     if (!text) return;
+    if (key === "slotMigrated") text = text.replace("{n}", String(extra?.refundedPoints ?? 0));
     if (game?.core) { game.core.ui.notice = { kind: "save", key, text }; game.toast(text); } else if (game) { game.titleNotice = text; shellSync(); }
   }
   const style = getStyle(testMode ? params.get("style") ?? defaultStyleId : defaultStyleId);
@@ -121,49 +125,39 @@ async function boot() {
     click: () => bus.emit({ type: "ui:click" }),
   };
 
-  // ---- save slot ----
-  let hasSave = store.has(), hasCorrupt = store.exportText("corrupt") !== null;
-  const refreshSave = () => { hasSave = store.has(); hasCorrupt = store.exportText("corrupt") !== null; };
-  // A damaged or too-new save is found (and reported) when the game starts, not only when Continue is pressed.
-  if (hasSave) { store.load(); refreshSave(); }
+  // ---- save slots ----
+  const session = createSession(store, { seedSource: () => (seedFixed ? game.titleSeed : (Date.now() ^ Math.floor(Math.random() * 1e9)) % 2147483647) });
+  game.attachSaves({ store, session });
+  const mig = store.migrateLegacy(); // before the title: an old single-slot save becomes slot 1 (the old keys stay as a backup)
+  game.refreshSlots();
   const download = (name, text) => {
     const url = URL.createObjectURL(new Blob([text], { type: "application/json" })), a = document.createElement("a");
     a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   };
+  const anyOk = () => game.slots?.index.slots.some((e) => e.state === "ok");
   const saveApi = {
-    has: () => store.has(),
-    write: () => { if (!game.core) return { ok: false, error: "no game running" }; const r = store.save(game.core, { force: true }); refreshSave(); shellSync(); return r; },
-    read: () => { const t = store.read(); try { return t === null ? null : JSON.parse(t); } catch { return null; } },
-    raw: () => store.read(),
-    export: (which = "current") => store.exportText(which),
-    import: (text) => { const r = store.importText(text); refreshSave(); shellSync(); return r; },
-    remove: () => { store.remove(); refreshSave(); shellSync(); },
+    has: () => anyOk(),
+    /** Forced save of the running game into its active slot. */
+    write: () => { if (!game.core) return { ok: false, error: "no game running" }; const r = store.autosave(game.core, {}, { force: true }); game.refreshSlots(); shellSync(); return r; },
+    read: (n) => { const t = store.raw(n ?? store.activeSlot() ?? store.lastUsed()); try { return t === null ? null : JSON.parse(t); } catch { return null; } },
+    raw: (n) => store.raw(n ?? store.activeSlot() ?? store.lastUsed()),
+    export: (n, which = "current") => { const r = store.exportText(n, which); return r.ok ? r.text : null; },
+    import: (n, text, confirm = true) => { const r = store.importText(n, text, { confirm }); game.refreshSlots(); shellSync(); return r; },
+    remove: (n) => { const r = store.remove(n ?? store.activeSlot(), { confirm: true }); game.refreshSlots(); shellSync(); return r; },
   };
-  const shell = {
-    newGame: () => { game.titleNotice = null; game.newGame(game.titleSeed); },
-    continueGame: () => {
-      const r = store.load();
-      refreshSave();
-      if (!r.ok) { if (r.reason === "empty") { game.titleNotice = T.noSaveYet; } shellSync(); return; }
-      game.titleNotice = null;
-      game.loadState(r.state);
-    },
-    deleteSave: () => { store.remove(); refreshSave(); game.titleNotice = null; shellSync(); },
-    exportSave: (which) => { const text = store.exportText(which); if (text === null) { game.titleNotice = T.noSaveYet; shellSync(); return; } download(store.exportName(), text); },
-    canImport: (text) => store.canImport(text),
-    importText: (text) => { const r = store.importText(text); refreshSave(); shellSync(); return r.ok; },
-    importFile: async (file) => { let text = ""; try { text = await file.text(); } catch { /* unreadable: reported as a failed import */ } return shell.importText(text); },
-  };
-  bus.on("autosave", (ev) => { if (game.core) { const r = store.autosave(game.core, ev); if (r.ok) hasSave = true; } });
-  const flush = () => { if (game.core && !game.error && game.core.scene !== "error") store.save(game.core, { force: true }); };
-  addEventListener("pagehide", flush);
+  if (mig.migrated) notify("slotMigrated", mig.migrated);
+  bus.on("autosave", (ev) => { if (game.core) { const r = store.autosave(game.core, ev); if (r.ok && !r.skipped) game.refreshSlots(); } });
+  const flush = () => { if (game.core && !game.error && game.core.scene !== "error") { store.autosave(game.core, {}, { force: true }); game.refreshSlots(); } };
+  addEventListener("pagehide", () => { flush(); store.clearActive(); });
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); audio.setVisible(document.visibilityState !== "hidden"); });
   // Leaving a session (Quit to title, game over, victory) saves first: Continue must show what the player just did.
-  const saveAndQuit = () => { flush(); refreshSave(); game.toTitle(); };
+  const saveAndQuit = () => { flush(); store.clearActive(); game.toTitle(); };
+  const shell = { download, session: (cmd) => game.session(cmd), slots: () => game.slots, active: () => store.activeSlot(), adapter: store.adapter, playing: () => !!game.core };
 
   const screens = createScreens(overlay, {
     ...shell,
+    openSlots: () => game.openSlots(), closeSlots: () => game.closeSlots(), openCreate: (o) => game.openCreate(o), closeCreate: () => game.closeCreate(),
     resume: () => game.key("Escape"),
     restart: () => game.input({ t: "restart" }),
     respawn: () => game.input({ t: "respawn" }),
@@ -172,12 +166,12 @@ async function boot() {
     dismissStory: () => game.dismissStory(),
     openOptions: () => game.openOptions(),
     closeOptions: () => game.closeOptions(),
-    optionsCtl,
+    optionsCtl, // the Options panel embeds the slot manager and talks to the shell through h.session / h.slots
     emit: (type) => bus.emit({ type }),
   });
   const sync = () => screens.show(game.menu(), {
     seed: game.titleSeed, error: game.error, summary: game.menu() === "dead" ? game.summary() : null,
-    hasSave, hasCorrupt, story: game.ui.story, notice: game.core ? null : game.titleNotice, victory: game.core?.victory?.stats ?? null,
+    slots: game.slots, create: game.ui.create, playing: !!game.core, story: game.ui.story, notice: game.core ? null : game.titleNotice, victory: game.core?.victory?.stats ?? null,
   });
   shellSync = sync;
   game.onChange(sync);
@@ -197,7 +191,7 @@ async function boot() {
     // F1-F4 select the right-mouse skill (the browser's own function keys must not fire). Tab stays free: panels and buttons are keyboard-reachable.
     if (preventsDefault(e.code) || (e.code === "Tab" && game.menu() === null && !game.anyPanel())) e.preventDefault(); // Tab is reserved for the map while no panel is open
     if (e.code === "AltLeft" || e.code === "AltRight") game.setShowLoot(true); // Alt held: every loot plate on the floor
-    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || (!game.core && !game.ui.options)) return;
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || (!game.core && !game.ui.options && !game.ui.slots && !game.ui.create)) return;
     if (e.code === "Tab" && (game.menu() !== null || game.anyPanel())) return; // Tab is the map key only while playing with no drawer open; elsewhere it moves focus
     if (e.target?.closest?.("textarea,input[type=text]")) return;
     if (e.code === "Escape") e.preventDefault();
@@ -206,7 +200,7 @@ async function boot() {
 
   game.start();
   sync();
-  if (testMode) installTestHook(game, { audio, save: saveApi, options: optionsCtl });
+  if (testMode) installTestHook(game, { audio, save: saveApi, options: optionsCtl, store, session });
 }
 
 boot().catch((err) => {

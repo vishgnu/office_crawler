@@ -79,3 +79,37 @@ export const T = {
   statAttr: { grit: "Grit", agility: "Agility", stamina: "Stamina", focus: "Focus" },
   attrOrder: ["grit", "agility", "stamina", "focus"],
 };
+
+// ---- R5: character selection, save slots, skill tree (UI-R5) ----
+Object.assign(T, {
+  // title
+  newGame: "New game", loadGame: "Load game", saveSlots: "Save slots", continueAs: "Continue", manageSaves: "Manage saves",
+  // character selection (variant A, Lobby lineup)
+  csTitle: "Lobby, 08:57", csSub: "Pick who walks through the elevator doors", csClasses: "Class", csKeys: "choose", csLoadKey: "load game", csConfidential: "CONFIDENTIAL, FLOOR 0",
+  csName: "Character name", csNameHint: "1 to 16 characters", csNamePlaceholder: "Type a name", csSuggest: "Suggest", csStart: "Start", csStartHint: "Type a name to start", csLoad: "Load game", csBack: "Back",
+  csNameError: "Enter a name, 1 to 16 letters, digits, spaces, hyphens or apostrophes.", csSelected: "SELECTED", csPlaystyle: "Playstyle", csBranches: "Skill branches", csStats: "Starting stats",
+  csStatHealth: "Health", csStatMana: "Mana", csStatDamage: "Damage", csStatAgility: "Agility", csOutOf: "out of 5",
+  csSlotNew: "New character saves to slot", csSlotsUsed: "slots used", csSlotFull: "All 5 slots are full. Choose a slot to replace.", csChooseSlot: "Choose a slot",
+  csReplaceTitle: "Replace this character?", csReplaceText: "will be replaced by a new character. A copy is kept for undo until the next delete or overwrite in that slot.", csReplaceYes: "Replace and start",
+  csDoorsOpen: "The elevator doors open.", csError: "Could not start the character.",
+  // slots manager
+  slTitle: "Save slots", slIntro: "Five characters, one per slot. The game saves to the slot you are playing.", slEmpty: "Empty", slEmptyText: "No character saved here yet", slSlot: "Slot", slLevel: "Level", slLobby: "Lobby", slFloor: "Floor",
+  slPlayed: "played", slLast: "Last played", slMostRecent: "Most recent", slPlaying: "Playing now", slLoad: "Load", slContinueHere: "Playing", slRename: "Rename", slExport: "Export", slImport: "Import", slDelete: "Delete", slNew: "New character here", slReplace: "Replace with new character",
+  slUndoDelete: "Undo delete", slUndoReplace: "Undo replace", slDamaged: "Damaged", slDamagedText: "This save could not be read. The text was kept so you can export it.", slNewer: "From a newer version", slNewerText: "Saved by a newer version of the game. It is left untouched.",
+  slExportDamaged: "Export damaged text", slClose: "Close", slSave: "Save", slCancel: "Cancel", slRenameLabel: "New name", slNowPlayingHint: "Quit to title to delete or replace the character you are playing.",
+  slDeleteTitle: "Delete this character?", slDeleteText: "A copy is kept for undo until the next delete or overwrite in that slot.", slDeleteYes: "Delete", slDeleteForever: "Delete forever",
+  slImportTitle: "Import a character into slot", slImportReplaceTitle: "Replace this character?", slImportReplaceText: "will be replaced by the imported character. A copy is kept for undo.", slImportReplaceYes: "Replace",
+  slMigrated: "Your old save was moved to slot 1.", slUsage: "Storage used on this device", slLoaded: "Loaded", slDeleted: "Deleted", slUndone: "Restored", slRenamed: "Renamed", slImported: "Imported", slExported: "Exported",
+  slLoadFirst: "The running game is saved first.", slBack: "Back to the list",
+  errPlaying: "That is the character you are playing. Quit to the title first.", errAnotherTab: "This game is open in another tab. Close it there to play here.", errQuota: "Storage is full. Export a slot or delete a character.",
+  errWrite: "Could not write to storage.", errNoStorage: "Saving is not available here.",
+  // skill tree
+  trTitle: "Skills", trPoints: "Skill points", trReset: "Respec", trResetHint: "Take back every point (in the Lobby).", trResetNone: "Respec is only possible in the Lobby.",
+  trTier: "Tier", trLevelOf: "Level", trNeeds: "Needs", trNow: "Now", trNext: "Next level", trAura: "Aura", trAuraOn: "Aura on", trAuraOff: "Aura off", trSignature: "Signature", trCost: "Mana", trReserve: "reserves", trPassive: "Passive",
+  trAssign: "Assign to bar", trSelectNote: "Hover or focus a skill for details. Assign learned skills to F1 to F4.", trBranchSpent: "points spent", trNothing: "nothing yet",
+  trStateLearned: "Learned", trStateAvailable: "Available", trStateLockedLevel: "Locked", trStateLockedPrereq: "Locked", trStateMaxed: "Max level", trStateNoPoints: "No points",
+  trRespecDone: "Skill points returned.", trRespecFail: { "not-in-town": "Respec is only possible in the Lobby.", dead: "You cannot do that now.", "respec-off": "Respec is switched off.", "respec-used": "You already used your respec.", "no-gold": "Not enough gold to respec." },
+  trLearnFail: { "level-gate": "Your level is too low.", prereq: "Learn the earlier skill first.", "no-points": "No skill points left.", "max-level": "Already at maximum level.", basic: "Basic attacks are free.", "wrong-class": "Not a skill of your class." },
+  trAuraFail: { "no-mana": "Not enough mana to reserve.", "not-learned": "Learn the aura first." },
+  clsFacilities: "Facilities Manager",
+});

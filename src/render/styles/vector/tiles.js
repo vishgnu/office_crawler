@@ -63,7 +63,7 @@ export const FLOOR_VARIANT_DEF = [
   { d: 0, hue: "warm", lum: 1, flip: 1 }, { d: 1, hue: "cool", lum: -1, flip: 1 }, { d: 2, hue: "warm", lum: -1 },
   { d: 0, hue: "cool", lum: 1 }, { d: 1, hue: "warm", lum: 1, flip: 1 }, { d: 2, hue: "cool", lum: -1, flip: 1 },
 ];
-const TONE = { warm: "rgba(255,150,90,0.06)", cool: "rgba(90,140,255,0.05)", light: "rgba(150,170,255,0.07)", dark: "rgba(2,0,14,0.16)" };
+const TONE = { warm: "rgba(255,150,90,0.06)", cool: "rgba(90,140,255,0.05)", light: "rgba(225,215,255,0.06)", dark: "rgba(2,0,14,0.16)" };
 
 export function drawFloor(g, kind, v, theme = "open-plan", sc = 1) {
   const T = themeOf(theme), floors = T ? T.floors : P.floors, def = FLOOR_VARIANT_DEF[v] ?? FLOOR_VARIANT_DEF[0], dv = def.d;

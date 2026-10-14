@@ -136,7 +136,11 @@ W.scene = (name, seed = 3) => {
 // ---- WORLD-G scenes (graphics detail round): the five review shots at real game scale ----
 // office: depth 1 (open plan), hero in a room, zombie / imp / temp worker around; basement: depth 6; lobby: the town; boardroom: the Executive Suite, boss idle.
 W.gScene = (name, seed = 3) => {
-  if (name === "boardroom") { const r = W.boss("idle"); W.focus = W.focusBoss(); W.focus.y -= 2.5; return r; }
+  if (name === "boardroom") { // the hero by the west wall (trophy case, podium), the Director a few tiles off
+    const r = W.boss("idle"), b = bossOf(), p = W.core.player;
+    p.tile = { x: 8, y: 15 }; b.tile = { x: 11, y: 12 }; b.boss.cd = 1e6; W.live = true; W.step(3); W.focus = null;
+    return r;
+  }
   W.focus = null;
   if (name === "lobby") return W.scene("lobby");
   W.now = 1000; W.fx.reset(); W.rs.facing.clear();
@@ -248,6 +252,7 @@ W.floor8Stairs = (unlocked) => {
 // W.fight(cls): the hero stands in the basement with a ring of monsters at 3-5 tiles. W.skill(id): grants the skill and casts it at the nearest monster.
 // W.panel(i, cols, rows, [ox, oy]): copies the hero-centred crop of the current frame into cell i of a contact sheet; W.panelsShow() draws the sheet to the canvas.
 W.fight = (cls, o = {}) => {
+  W.focus = null;
   const opt = { seed: 5, depth: 4, n: 5, types: ["temp-worker", "zombie-intern", "printer-imp", "middle-manager", "consultant", "temp-worker", "zombie-intern", "printer-imp"], r: [2, 4], ...o };
   W.now = 1000; W.fx.reset(); W.rs.facing.clear();
   const s = (W.core = newGame(opt.seed, { class: cls, start: "town" }));

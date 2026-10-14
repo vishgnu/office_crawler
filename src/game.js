@@ -16,6 +16,7 @@ import { createLabels } from "./render/labels.js";
 import { createMap } from "./render/map.js";
 import { pick } from "./input/pick.js";
 import { requiredKeys } from "./render/keys.js";
+import { slotsView } from "./save/session.js";
 
 const MAX_CATCHUP_TICKS = 8;
 
@@ -32,7 +33,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     // persisted options (volume, keys, accessibility; main.js replaces this with the stored object) and a frozen copy the core state points at
     options: defaultOptions(), optSnap: null, titleNotice: null, capturing: false,
     // UI state that is not game state: which drawers are open (left: character | skills | npc), vendor tab, hover tooltip, toast
-    ui: { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null },
+    ui: { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null, slots: false, create: null },
     // the real game (story on) starts armed; test fixtures keep the unarmed core default
     storyOn: !!story, wearStartKit: !!story, inset: 0, defaultStart: "town",
   };
@@ -73,6 +74,8 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   game.menu = () => {
     if (game.error) return "error";
     if (game.ui.options) return "options";
+    if (game.ui.slots) return "slots";
+    if (game.ui.create) return "create";
     if (!game.core) return "title";
     if (game.core.scene === "dead") return "dead";
     if (game.core.scene === "victory") return "victory";
@@ -88,7 +91,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     pointsHintSeen = true; game.toast(T.pointsHint);
   };
   bus.on("levelup", () => pointsHint());
-  const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null }); game.inset = 0; storyBossSeen = false; pointsHintSeen = false; game.heldOrigin = null; };
+  const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null, slots: false, create: null }); game.inset = 0; storyBossSeen = false; pointsHintSeen = false; game.heldOrigin = null; };
   const resetRender = () => { game.run.kills = 0; game.prev.clear(); rs.facing.clear(); fx.reset(); game.acc = 0; game.hover = null; game.focus = null; };
   game.setBackdrop = () => { game.backdrop = newGame(game.titleSeed, { start: "town" }); resetRender(); };
   /** Start a run. opts.start: "town" (default: the Lobby, R-040) or "floor" (fixtures and tests that want floor 1). */
@@ -108,9 +111,52 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   });
   game.openOptions = () => { if (game.ui.options) return { ok: true }; game.ui.options = game.core ? "pause" : "title"; bus.emit({ type: "ui:open" }); emitChange(); return { ok: true }; };
   game.closeOptions = () => { if (!game.ui.options) return { ok: true }; game.ui.options = null; game.capturing = false; bus.emit({ type: "ui:close" }); emitChange(); return { ok: true }; };
-  game.toTitle = () => { game.core = null; game.titleNotice = null; resetUi(); game.setBackdrop(); emitChange(); };
+  game.toTitle = () => { game.core = null; game.titleNotice = null; slotsCache = null; resetUi(); game.setBackdrop(); emitChange(); };
   game.keepPlaying = () => game.input({ t: "keepPlaying" });
   game.setSeed = (s) => { game.titleSeed = Number(s) >>> 0; if (!game.core) game.setBackdrop(); };
+
+  // ---- saves: slots, characters (R4 contract section 2; the store and the session come from main.js) ----
+  let saves = null, slotsCache = null;
+  const SESSION_CMDS = new Set(["createCharacter", "selectSlot", "loadSlot", "continue", "deleteSlot", "renameSlot", "copySlot", "exportSlot", "importSlot", "restoreSlot"]);
+  /** main.js hands over the slot store and the session once the game exists. */
+  game.attachSaves = (s) => { saves = s; slotsCache = null; };
+  game.refreshSlots = () => { slotsCache = null; };
+  /** { index, active, last, highlighted, usage, lastError } (computed on demand, cached until a command or an autosave changes it). */
+  Object.defineProperty(game, "slots", { enumerable: true, get: () => (saves ? (slotsCache ??= slotsView(saves.store, saves.session.highlighted)) : null) });
+  /** Begin play with a state the save package built (new character or loaded slot). */
+  game.startState = (state, { fresh = false } = {}) => {
+    game.titleNotice = null;
+    game.core = state; resetUi(); resetRender();
+    if (fresh && game.defaultStart === "floor") teleportFloor(state, 1); // legacy fixtures (?start=floor) land on floor 1
+    if (fresh && game.storyOn) game.ui.story = "start";
+    emitChange();
+    if (!fresh) pointsHint();
+    return state;
+  };
+  const noticeText = (notes) => {
+    const n = (notes ?? []).find((x) => x.from === 1);
+    return n ? content.strings.slotMigrated.replace("{n}", String(n.refundedPoints ?? 0)) : null;
+  };
+  /** Run a session command (create, load, delete, rename, import, export ...). Always returns { ok, error?, ... }. */
+  game.session = (cmd) => {
+    if (!saves) return { ok: false, error: "no-storage" };
+    const running = game.core && !game.error && game.core.scene !== "error" ? game.core : null, active = saves.store.activeSlot();
+    if (running && active !== null && cmd.slot === active && ["deleteSlot", "importSlot"].includes(cmd.t)) return { ok: false, error: "playing" };
+    if (running && active !== null && cmd.t === "copySlot" && cmd.to === active) return { ok: false, error: "playing" };
+    const r = cmd.t === "restoreSlot" ? saves.store.restorePrev(cmd.slot) : saves.session.run(cmd, running);
+    slotsCache = null;
+    if (cmd.t === "createCharacter" && r.ok) { game.startState(r.state, { fresh: true }); }
+    else if ((cmd.t === "loadSlot" || cmd.t === "continue") && r.ok) { game.startState(r.state); const m = noticeText(r.notes); if (m) game.toast(m); }
+    else if (cmd.t === "renameSlot" && r.ok && running && cmd.slot === active) game.input({ t: "setName", name: r.name });
+    if (r.ok && ["createCharacter", "loadSlot", "continue"].includes(cmd.t)) { game.ui.slots = false; game.ui.create = null; game.ui.options = null; game.capturing = false; }
+    emitChange();
+    return r;
+  };
+  game.openSlots = () => { if (game.ui.slots) return { ok: true }; game.ui.slots = true; bus.emit({ type: "ui:open" }); emitChange(); return { ok: true }; };
+  game.closeSlots = () => { if (!game.ui.slots) return { ok: true }; game.ui.slots = false; bus.emit({ type: "ui:close" }); emitChange(); return { ok: true }; };
+  /** The class selection screen. slot: preset target slot (an empty one, or one to overwrite) or null for "the first free slot". */
+  game.openCreate = ({ slot = null } = {}) => { game.ui.create = { slot }; game.ui.slots = false; bus.emit({ type: "ui:open" }); emitChange(); return { ok: true }; };
+  game.closeCreate = () => { if (!game.ui.create) return { ok: true }; game.ui.create = null; bus.emit({ type: "ui:close" }); emitChange(); return { ok: true }; };
 
   // ---- simulation ----
   const capture = () => { // previous-tick positions, written into reused objects
@@ -140,6 +186,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   };
   /** Apply one input command now (no time passes). */
   game.input = (cmd) => {
+    if (SESSION_CMDS.has(cmd?.t)) return game.session(cmd);
     if (!game.core) return { ok: false, error: "no game running" };
     const from = game.core.events.length;
     if (cmd?.t === "restart") { game.run.kills = 0; fx.reset(); }
@@ -260,6 +307,8 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
       if (raw === "Escape" && !game.capturing) return game.closeOptions();
       return { ok: false, error: "options open" };
     }
+    if (game.ui.slots) return raw === "Escape" ? game.closeSlots() : { ok: false, error: "slots open" };
+    if (game.ui.create) return raw === "Escape" ? game.closeCreate() : { ok: false, error: "create open" };
     if (!game.core) return { ok: false, error: "no game running" };
     if (game.menu() === "victory") return { ok: false, error: "victory screen" };
     if (game.menu() === "story") return raw === "Escape" ? game.dismissStory() : { ok: false, error: "story open" }; // Enter / Space press the focused button

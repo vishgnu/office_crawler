@@ -1,10 +1,11 @@
 // window.__app (ADR-0003, S1 subset). Installed only with ?test=1. A thin adapter: no game logic here.
+import { slotsHook, characterHook, treeHook } from "../save/hook.js";
 
 const isObj = (v) => v !== null && typeof v === "object";
 const fail = (error) => ({ ok: false, error });
 
 export function installTestHook(game, extras = {}, win = window) {
-  const { audio = null, save = null, options = null } = extras;
+  const { audio = null, save = null, options = null, store = null, session = null } = extras;
   const tileArg = (t) => (isObj(t) && Number.isInteger(t.x) && Number.isInteger(t.y) ? { x: t.x, y: t.y } : null);
 
   /** Resolve {tile} or {screen} to a tile the way a real mouse event would. */
@@ -22,6 +23,7 @@ export function installTestHook(game, extras = {}, win = window) {
     return game.input({ t: "click", tile: t.tile, button: opts.button ?? 0, hold: !!opts.hold });
   };
 
+  const tree = treeHook(() => game.core);
   const api = {
     describe: () => describe(),
     getState: () => game.getState(),
@@ -76,6 +78,10 @@ export function installTestHook(game, extras = {}, win = window) {
     // S3: sound, save slot and options (what the Options screen and the title buttons use underneath)
     audio: audio && { getState: () => audio.getState(), clearCueLog: () => audio.clearCueLog(), setVolume: (c, v) => audio.setVolume(c, v), setMuted: (b) => audio.setMuted(b), setKit: (k) => audio.setKit(k) },
     save: save && { ...save },
+    // R4/R5: slots, character creation and the skill tree (thin forwards to src/save/hook.js)
+    slots: store && { ...slotsHook(store), view: () => game.slots, open: () => game.openSlots(), close: () => game.closeSlots(), run: (cmd) => game.session(cmd) },
+    character: session && { ...characterHook({ createCharacter: (a) => game.session({ t: "createCharacter", ...a }) }, { start: () => {} }), openCreate: (o) => game.openCreate(o), closeCreate: () => game.closeCreate() },
+    tree: { get: () => (game.core ? tree.get() : fail("no game running")), learn: (id) => { const r = game.input({ t: "learnSkill", id }); return r; }, respec: () => game.input({ t: "respec" }) },
     options: options && {
       get: () => structuredClone(game.options),
       setKey: (action, code) => options.setKey(action, code),
@@ -105,8 +111,11 @@ export function installTestHook(game, extras = {}, win = window) {
     ui: "Panels: open(name), close(name), toggle(name) with name inventory | character | skills (same as the I, C, S keys).",
     pick: "pick(x, y): what a click at this canvas point means ({ tile, monsterId }), through the camera that is on screen.",
     audio: "audio.getState() -> {kit, unlocked, ctxState, master, sfx, ambient, muted, effectiveGain, ambientId, cueLog[]}; clearCueLog(), setVolume(channel, v), setMuted(b), setKit(id).",
-    save: "Save slot: has(), write() (forced save of the running game), read() (parsed save or null), raw(), export('current'|'corrupt') -> text, import(text) -> {ok}, remove().",
+    save: "Active slot: has(), write() (forced save into the active slot), read(n?) (parsed save or null), raw(n?), export(n, 'current'|'bad') -> text, import(n, text, confirm) -> {ok}, remove(n).",
     options: "Options: get(), setKey(action, code) -> {ok, reason}, restoreKeys(), setFlag(name, bool), setTextScale(n), open(), close().",
+    slots: "Slots: list() index, raw(n), keys(), fail(on), view() = game.slots, open(), close(), run({t:'deleteSlot'|'renameSlot'|'importSlot'|'exportSlot'|'loadSlot'|'continue'|...}).",
+    character: "Character: create({slot, class, name}) starts a new character in a slot, cards() class cards, openCreate({slot}), closeCreate().",
+    tree: "Skill tree: get() treeView of the running game, learn(id), respec().",
     perf: "Frame and simulation timing, atlas completeness, fx flags, nameplate rects.",
   };
   function describe() {
