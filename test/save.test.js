@@ -12,7 +12,7 @@ import { canonical } from "../src/core/hash.js";
 const slotStore = (adapter = createMemoryAdapter(), opts = {}) => createSlotStore(adapter, { now: () => 1_700_000_000_000, ...opts });
 const slotKey = (n = 1) => `${config.slotKeyPrefix}${n}`;
 
-/** A game with a level 7 hero, spent points, 3 skills, items everywhere, gold 321 and deepest floor 4 (AC-R-090-1). */
+/** A game with a level 7 hero, spent points, 3 skills, items everywhere, gold 321 (plus the 50 gold of the first main quest, paid when the descent reaches floor 3, R7-4) and deepest floor 4 (AC-R-090-1). */
 function richGame(seed = 11) {
   const s = newGame(seed, { start: "town" });
   setLevel(s, 7);
@@ -274,7 +274,7 @@ test("AC-R-092-1..-3 export gives the stored text; importing it elsewhere restor
   assert.deepEqual(SAVED(b.load(2).state), SAVED(s));
   assert.deepEqual(notes, ["slotImported"]);
   const keep = b.raw(2);
-  for (const bad of ["not json", "{}", text.replace('"gold":321', '"gold":99321'), JSON.stringify({ ...JSON.parse(text), checksum: "x" }), text.slice(0, 100), 5, null]) {
+  for (const bad of ["not json", "{}", text.replace(`"gold":${s.player.gold}`, `"gold":${s.player.gold + 99000}`), JSON.stringify({ ...JSON.parse(text), checksum: "x" }), text.slice(0, 100), 5, null]) {
     const r = b.importText(2, bad, { confirm: true });
     assert.equal(r.ok, false); assert.equal(b.raw(2), keep, "the existing save is unchanged");
   }

@@ -1,7 +1,7 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
 _Last updated 2026-10-14T16:16:51Z. Keep this block current after every step; the log below is history._
 
-**Where we are:** R7 in progress. Done + verified: AI-R7, STUTTER-R7, quest system R7-0.1..0.7 (900 tests, e2e 16/16, fps50 ~54). Harness 0.5.0 released (user approved); benchmark B1 baseline done. Customer decisions all recorded (STATE.md): quests → 3 main + 5 side (R7-4), spread difficulty (R7-3), circle 2 closed. **In flight:** ADV-R7 (`docs/reviews/R7-adversarial-progress.md`), code review R7 (`R7-code-review-progress.md`). **Next:** fix round + R7-4 content + R7-3 pace (sequence CORE first), verify, visual review, proxy acceptance, retro R7; then R8 (R8-0 gear visuals), R8-T, R9-10 lighting, R11-12, then END-OF-PROJECT TASK.
+**Where we are:** R7 in progress. Done + verified: AI-R7, STUTTER-R7, quest system R7-0.1..0.7 (900 tests, e2e 16/16, fps50 ~54). Harness 0.5.0 released (user approved); benchmark B1 baseline done. Customer decisions all recorded (STATE.md): quests → 3 main + 5 side (R7-4), spread difficulty (R7-3), circle 2 closed. **In flight:** ADV-R7 (`docs/reviews/R7-adversarial-progress.md`), code review R7 (`R7-code-review-progress.md`). **Next:** fix round + R7-4 content + R7-3 pace (sequence CORE first), verify, visual review, proxy acceptance, retro R7; then R8 (R8-0 gear visuals), R8-T, R11 (R9-R10 and R12 DROPPED by the user), then END-OF-PROJECT TASK.
 
 **In flight (check the files, not memory):**
 - ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
@@ -235,3 +235,4 @@ Each round also improves the harness (learnings → agent definitions/rules), as
 - 2026-10-14T18:14:16Z Orchestrator verify of the fix-round state (33f0c77) running in a separate git worktree (scratchpad/wt-verify, removed afterwards) so R7-4.1 can build in the main tree at the same time. Harness idea for the retro: verify in a worktree = no blocking + no interference (but shared CPU load affects bench).
 - 2026-10-14T18:48:21Z User: proceed with the full round plan (no merging of R9-10 / R11-12).
 - 2026-10-14T18:50:04Z VERIFY fix-round state (worktree): 1007 x3, e2e 17/17 all green. Bench 43.6/46.2/39.1/54.5/50.4 at load 5-9 (R7-4.1 parity running in parallel; one run with a 166 ms machine stall) → not a valid gate; quiet 5-run bench at R7 end. Lesson: worktree verify avoids file interference but not CPU interference; bench must run when nothing else runs.
+- 2026-10-14T18:50:42Z User dropped R9-R10 and R12. Plan: R7 rest → R8 → R8-T → R11 → end.

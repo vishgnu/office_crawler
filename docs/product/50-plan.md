@@ -483,3 +483,6 @@ R4-4 -> R6-1 ; R5 -> R6-2
   save/load across all features (quests, gear visuals, slots), keyboard-only and phone layouts, offline/file:// smoke
   (incl. write-then-immediate-reload), size, legal and denylist scans, then one polish fix round from the findings.
 - **Agents:** test-engineer (adversarial, new e2e journeys), reviewer, visual-reviewer, customer-proxy acceptance, retro.
+
+## Scope change 2026-10-14 (customer)
+R9–R10 (lighting) and R12 (second overall test and polish) are dropped. Order now: R7 (rest) → R8 → R8-T → R11 → end-of-project task.

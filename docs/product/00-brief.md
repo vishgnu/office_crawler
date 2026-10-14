@@ -116,3 +116,11 @@ visible slots; rings, amulet and belt are not), as in the original. Today the he
 7. Quest names and texts: keep the working names.
 8. Quests: 3 main quests and 5 side quests (was 1 main quest with 6 steps and 3 side quests). New plan item R7-4.
 9. Harness circle 2: details given in chat.
+
+## Scope change (user, 2026-10-14, verbatim)
+
+> Drop r9-r10 , drop r12
+
+**Status: agreed (real customer).** The lighting rounds R9–R10 and the second overall test-and-polish round R12 are
+dropped. Remaining: rest of R7, R8 (gear visuals + flawless gameplay), R8-T (end-to-end test + polish), R11 (overall test
+and polish), then the end-of-project task (post-mortem, new harness version, all files and pages updated).
