@@ -363,6 +363,9 @@ R4-4 -> R6-1 ; R5 -> R6-2
 
 ## Round R7 (first "flawless gameplay" round): added item from the sixth briefing (2026-10-14)
 
+### R7-2 Floor-entry stutter (from the R6 orchestrator bench)
+- After entering a floor the frame time sits at 33-50 ms (20-30 fps) for about 3 s while 480-740 monster frames are drawn on first use (0.5-0.7 s of drawing spread by the per-floor warm-up). Hide it behind the elevator transition (warm before the floor is shown) or spread it thinner; gate: frame p99 after floor load <= 33 ms.
+
 ### R7-0 Quest journal and next steps (customer request, first item of R7)
 - **Goal:** a journal (own key, plus a button on the HUD and in the pause menu) that lists active and completed quests and,
   for each active quest, the next concrete step ("Take the lift to floor 3", "Talk to the facilities desk"). The main goal
