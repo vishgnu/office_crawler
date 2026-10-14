@@ -1,0 +1,16 @@
+{"round": "R3", "role": "implementer", "pkg": "FINAL-FIX-resume", "tokensK": 76.3, "minutes": 23.4, "status": "done", "source": "agent completion report"}
+{"round": "R4", "role": "implementer", "pkg": "POLISH (iter-3 leftovers)", "tokensK": 171.2, "minutes": 15.7, "status": "done", "source": "agent completion report"}
+{"round": "R4", "role": "requirements-facilitator", "pkg": "circle-02", "tokensK": 100.8, "minutes": 2.8, "status": "done", "source": "agent completion report"}
+{"round": "R4", "role": "customer-proxy", "pkg": "circle-02 answers", "tokensK": 64.7, "minutes": 0.5, "status": "done", "source": "agent completion report"}
+{"round": "R4", "role": "spec-writer", "pkg": "11-classes-trees-slots", "tokensK": 94.9, "minutes": 1.9, "status": "done", "source": "agent completion report"}
+{"round": "R4", "role": "architect", "pkg": "ADR-0005/0006 + contract", "tokensK": 151.5, "minutes": 6.9, "status": "done", "source": "agent completion report"}
+{"round": "R4", "role": "prototyper", "pkg": "character-select A/B/C", "tokensK": 186.4, "minutes": 12.4, "status": "done", "source": "agent completion report"}
+{"round": "R4", "role": "customer-proxy", "pkg": "spec-questions-02", "tokensK": 79.5, "minutes": 0.7, "status": "done", "source": "agent completion report"}
+{"round": "R4", "role": "visual-reviewer", "pkg": "character-select review", "tokensK": 89.0, "minutes": 2.3, "status": "done", "source": "agent completion report"}
+{"round": "R4", "role": "customer-proxy", "pkg": "character-select pick", "tokensK": 70.0, "minutes": 0.5, "status": "done", "source": "agent completion report"}
+{"round": "R4", "role": "harness-retro", "pkg": "baseline R1-R3", "tokensK": 138.5, "minutes": 4.8, "status": "done", "source": "agent completion report"}
+{"round": "G", "role": "prototyper", "pkg": "C3 detail tile", "tokensK": 285.4, "minutes": 20.2, "status": "done", "source": "agent completion report"}
+{"round": "G", "role": "visual-reviewer", "pkg": "C3 appeal", "tokensK": 82.4, "minutes": 1.5, "status": "done", "source": "agent completion report"}
+{"round": "G", "role": "visual-reviewer", "pkg": "C3 craft", "tokensK": 79.2, "minutes": 2.0, "status": "done", "source": "agent completion report"}
+{"round": "G", "role": "customer-proxy", "pkg": "C3 port decision", "tokensK": 72.5, "minutes": 0.6, "status": "done", "source": "agent completion report"}
+{"round": "R5", "role": "implementer", "pkg": "WORLD-R5 class sprites + FX", "tokensK": 390.3, "minutes": 30.8, "status": "done", "source": "agent completion report"}
