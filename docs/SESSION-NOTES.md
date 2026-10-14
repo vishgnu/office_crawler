@@ -97,3 +97,4 @@ Running log for the orchestrator (main Claude session). Update after every step.
 | 11–12 | Overall test and polish | Full playthrough per class (bot + review), cross-cutting visual/audio/UX polish, final code + visual reviews, release checklist (DoD), proxy acceptance, summary |
 Each round also improves the harness (learnings → agent definitions/rules), as before.
 - [r4] Spec 11-classes-trees-slots.md: 70 ACs (R4 43 / R5 21 / R6 6). Its QF-11-2 'denylists missing' is wrong; they exist (L-16 applied to spec-writer). The QF-11 questions go to the proxy together with the architect's questions.
+- [r4] POLISH (iteration 3 leftovers) done: hc + text-size fixes, basement visibility, loot label discipline, title art + goal line; e2e polish 20 checks; bench 59. The orchestrator verified that the crash clamp and first-run fixes from FINAL-FIX survived (the polish agent wrongly said 'not done'; it only lacked context).
