@@ -5,10 +5,11 @@ import { newGame, step, applyInput, spawnMonster, hashState, content, config, ne
 import { teleportFloor } from "../src/core/cheats.js";
 import { killMonster } from "../src/core/systems/damage.js";
 import { emit } from "../src/core/events.js";
+import { mainStep } from "../src/core/systems/questview.js";
 
-const L = content.quests.main.steps.map((s) => s.line);
+const L = content.mainSteps.map((s) => s.line);
 const qev = (s) => s.eventLog.filter((e) => e.type.startsWith("quest."));
-const stepOf = (s) => snapshot(s).quests.main.step;
+const stepOf = (s) => mainStep(s.quests.main.m); // the global step 1..10 (11 = all three main quests done)
 
 function inLobbyNextTo(npcId, seed = 7) {
   const s = newGame(seed, { start: "town" });
@@ -30,11 +31,12 @@ test("AC-R-241-2 catch-up: teleport to floor 4 from step 1 while paused reaches 
   s.paused = true;
   teleportFloor(s, 4);
   assert.equal(s.quests.main.m.depth, 4);
-  assert.equal(stepOf(s), 4);
-  assert.equal(qev(s).length, 1, "a catch-up over several steps is one event");
+  assert.equal(stepOf(s), 5, "steps 1 to 4 are done: arc 1 and the first step of arc 2");
+  assert.deepEqual(qev(s).map((e) => [e.type, e.id]), [["quest.completed", "main"], ["quest.step", "main2"], ["quest.pinned", "main2"]], "a catch-up is one completed per finished arc and one step (and the pin follows)");
+  assert.equal(qev(s).find((e) => e.type === "quest.step").unlocked, true);
   teleportFloor(s, 0); teleportFloor(s, 2);
-  assert.equal(stepOf(s), 4);
-  assert.equal(qev(s).length, 1, "no event for a repeat or a lower floor");
+  assert.equal(stepOf(s), 5);
+  assert.equal(qev(s).length, 3, "no event for a repeat or a lower floor");
 });
 
 test("storyRead start completes step 1; repeated, bad ids and the victory before the boss are refused or no-ops; works while paused", () => {
@@ -54,23 +56,24 @@ test("storyRead start completes step 1; repeated, bad ids and the victory before
 test("steps 3..6 follow stairsUnlocked, bossDefeated and the verdict; quest.completed ends the main quest; later steps imply earlier", () => {
   const s = newGame(3, { start: "town" });
   emit(s, { type: "floorEnter", depth: 4, from: 3 });
-  assert.equal(stepOf(s), 4);
+  assert.equal(stepOf(s), 5);
   emit(s, { type: "stairsUnlocked", depth: 8 });
-  assert.equal(stepOf(s), 5); // unlocking completes step 4
+  assert.equal(stepOf(s), 9); // unlocking completes step 8 and everything before it
   emit(s, { type: "bossDefeated", id: "m1", tile: { x: 1, y: 1 } });
-  assert.equal(stepOf(s), 6);
+  assert.equal(stepOf(s), 10);
   assert.deepEqual(applyInput(s, { t: "storyRead", id: "victory" }), { ok: true });
-  const q = snapshot(s).quests.main;
-  assert.equal(q.state, "completed"); assert.equal(q.nextStep, "");
-  const types = qev(s).map((e) => e.type);
-  assert.deepEqual(types, ["quest.step", "quest.step", "quest.step", "quest.completed"]);
-  assert.equal(qev(s).at(-1).title, content.quests.main.title);
+  const q = snapshot(s).quests;
+  assert.deepEqual(content.mainIds.map((id) => q[id].state), ["completed", "completed", "completed"]); assert.equal(q.main3.nextStep, "");
+  const types = qev(s).filter((e) => e.type !== "quest.pinned").map((e) => `${e.type}:${e.id}`);
+  assert.deepEqual(types, ["quest.completed:main", "quest.step:main2", "quest.completed:main2", "quest.step:main3", "quest.step:main3", "quest.completed:main3"]);
+  assert.equal(qev(s).filter((e) => e.type === "quest.completed").at(-1).title, content.quests.main3.title);
+  const n = qev(s).length;
   emit(s, { type: "keepPlaying" });
-  assert.equal(qev(s).length, 4, "a repeat is silent");
+  assert.equal(qev(s).length, n, "a repeat is silent");
   // boss defeated straight from step 1 (cheat order): everything catches up
   const t = newGame(3, { start: "town" });
   emit(t, { type: "bossDefeated", id: "m1", tile: { x: 1, y: 1 } });
-  assert.equal(stepOf(t), 6);
+  assert.equal(stepOf(t), 10);
 });
 
 test("keepPlaying before the boss is beaten does not read a verdict", () => {

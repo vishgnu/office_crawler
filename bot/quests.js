@@ -1,14 +1,17 @@
 // Bot quest paths (R7-0.4, AC-R-256-2). Pure like policy.js: decisions come from the state-shaped view (core state or snapshot) and go out as the public
 // input commands (interact, questAccept, questHandIn, sell, stash, useStairs, storyRead). No cheats, no hidden data beyond what the snapshot carries.
 //   Lobby (decideTown): talk to each giver whose quest is available (accept) or ready (hand in); on bagFull sell spare gear, else stash an item, then retry.
-//   Floors: the quest item (a ground entry) and the elite and the interns are met by the normal explore-and-fight loop (nextLoot takes the ground entry);
-//           once floor `climbDepth` is clear and a quest is ready the bot climbs the stairs back to the Lobby once, hands in, and the elevator brings it back down.
-//   Main quest: floor entries complete steps 1 to 4, the boss kill step 5, `keepPlaying` (run-headless) step 6. The bot also reports the memo as read.
+//   Floors: the quest items (ground entries), the elite, the interns and the consultants are met by the normal explore-and-fight loop (nextLoot takes the ground entry);
+//           once the floor of a trip stage (QBOT.trips: floor 4 for sq1..sq3, floor 6 for sq4 and sq5) is clear and a quest of the stage (or any other) is ready,
+//           the bot climbs the stairs back to the Lobby once per stage, hands in, and the elevator brings it back down to the deepest floor.
+//   Main quests: floor entries complete the arcs' floor steps, the boss kill step 9, `keepPlaying` (run-headless) the verdict. The bot also reports the memo as read.
 import { content } from "../src/core/index.js";
 
 export const QBOT = {
-  maxTrips: 2,     // trips to the Lobby: the second one is for a quest that became ready after the first (the badge picked up late, ADV-R7-03)
-  climbDepth: 4,   // the floor after which the single trip to the Lobby happens (item and elite are on floors 3 and 4)
+  maxTrips: 2,     // trips to the Lobby: one per stage of `trips`
+  // Trip stages (R7-4, ADR-0007 A5): the floor after which the bot climbs to the Lobby once, and the quests it expects to hand in there. Any other quest that is ready by then
+  // (a badge picked up late, ADV-R7-03) is handed in on the same trip; a stage is skipped when the run does not go below its floor.
+  trips: [{ depth: 4, ids: ["sq1", "sq2", "sq3"] }, { depth: 6, ids: ["sq4", "sq5"] }],
   maxTries: 12,    // interact orders per NPC per Lobby visit before the bot leaves it alone
   maxFails: 3,     // refused accept or hand-in commands per quest before the bot gives the quest up
   bagFullRounds: 4 // sell or stash rounds after a bagFull refusal before the bot gives the quest up
@@ -18,7 +21,7 @@ export const QBOT = {
 export const WAIT = Object.freeze({ t: "wait" });
 const SIDE = content.sideIds, giverOf = (id) => content.quests[id].giver;
 
-export const questMemory = () => ({ tries: {}, fail: {}, gaveUp: {}, bagFull: false, bagFullRounds: 0, sells: 0, climb: false, trips: 0, tripStart: 0, tripTicks: 0, memoRead: false });
+export const questMemory = () => ({ tries: {}, fail: {}, gaveUp: {}, bagFull: false, bagFullRounds: 0, sells: 0, climb: false, trips: 0, tripStart: 0, tripTicks: 0, stage: -1, stagesDone: [], stageTicks: [], memoRead: false });
 const on = (mem) => mem.profile.quests !== false && !!mem.q;
 
 /** New floor (the Lobby included): the per-visit interact counters start again. */
@@ -67,7 +70,7 @@ export function questTown(view, mem) {
   }
   const todo = pending(view, mem);
   if (!todo.length) {
-    if (q.climb) { q.climb = false; q.trips++; q.tripTicks += view.tick - q.tripStart; } // the trip is over; the elevator takes the hero back down
+    if (q.climb) { q.climb = false; q.trips++; q.tripTicks += view.tick - q.tripStart; q.stageTicks[q.stage] = view.tick - q.tripStart; } // the trip is over; the elevator takes the hero back down
     return null;
   }
   const at = todo.find((id) => dlg?.npc === giverOf(id));
@@ -83,10 +86,12 @@ export function questClimb(view, mem, live) {
   return p.stairs || p.next || p.path.length ? null : { t: "useStairs", dir: "up" };
 }
 
-/** Floor `climbDepth` is clear and the loot is taken: start the single trip to the Lobby when a quest is ready (and the run goes on below). */
+/** The stage floor is clear and the loot is taken: start that stage's single trip to the Lobby when one of its quests (or any other) is ready and the run goes on below. */
 export function questTrip(view, mem) {
-  if (!on(mem) || !view.quests || mem.q.trips >= QBOT.maxTrips || mem.q.climb || view.depth !== QBOT.climbDepth || (mem.profile.depth ?? 1) <= view.depth) return null;
+  if (!on(mem) || !view.quests || mem.q.trips >= QBOT.maxTrips || mem.q.climb || (mem.profile.depth ?? 1) <= view.depth) return null;
+  const i = QBOT.trips.findIndex((st) => st.depth === view.depth);
+  if (i < 0 || mem.q.stagesDone[i]) return null;
   if (!SIDE.some((id) => !mem.q.gaveUp[id] && view.quests[id].s === "ready")) return null;
-  mem.q.climb = true; mem.q.tripStart = view.tick;
+  mem.q.stagesDone[i] = true; mem.q.stage = i; mem.q.climb = true; mem.q.tripStart = view.tick;
   return { t: "useStairs", dir: "up" };
 }

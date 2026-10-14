@@ -4,7 +4,7 @@
 // Band (circle-02 Q7 option A): median clear time and median deaths of each class within 25 % of the three-class median; clear time 20 to 40 min; no tree skill above 50 % of the damage the class's tree skills deal (basic attacks reported apart).
 import { fork } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
-import { classes } from "../src/core/index.js";
+import { classes, content } from "../src/core/index.js";
 import { runOne } from "./run-headless.mjs";
 
 const median = (a) => { const b = [...a].sort((x, y) => x - y); return b.length ? (b.length % 2 ? b[(b.length - 1) / 2] : (b[b.length / 2 - 1] + b[b.length / 2]) / 2) : null; };
@@ -24,8 +24,9 @@ export function parity(byClass) {
     const BASIC = new Set(["basic-melee", "toss", "zap"]), tree = share.filter(([k]) => !BASIC.has(k)), treeTotal = tree.reduce((a, [, v]) => a + v, 0);
     const dd = {}; for (const r of runs) for (const d of r.deathDepths ?? []) dd[d] = (dd[d] ?? 0) + 1;
     const wd = runs.map((r) => ({ seed: r.seed, n: r.watchdogFired ?? 0, log: r.watchdogLog ?? [] })).filter((x) => x.n > 0);
-    const qr = runs.filter((r) => r.quests), side = (k) => qr.filter((r) => r.quests.done.includes(k)).length, trips = qr.filter((r) => r.quests.trips > 0).map((r) => r.quests.tripTicks / 3600);
-    const quests = { runs: qr.length, all: qr.filter((r) => r.quests.all).length, main: side("main"), sq1: side("sq1"), sq2: side("sq2"), sq3: side("sq3"), trips: trips.length, medianTripMin: median(trips), gaveUp: qr.flatMap((r) => r.quests.gaveUp.map((g) => `${r.seed}:${g}`)) };
+    const qr = runs.filter((r) => r.quests), done = (k) => qr.filter((r) => r.quests.done.includes(k)).length, trips = qr.filter((r) => r.quests.trips > 0).map((r) => r.quests.tripTicks / 3600);
+    const stages = {}; for (const r of qr) for (const t of r.quests.tripStages ?? []) (stages[t.depth] ??= []).push(t.ticks / 3600);
+    const quests = { runs: qr.length, all: qr.filter((r) => r.quests.all).length, done: Object.fromEntries(content.questIds.map((k) => [k, done(k)])), trips: trips.length, medianTripMin: median(trips), stages: Object.fromEntries(Object.entries(stages).map(([d, v]) => [d, { n: v.length, medianMin: median(v) }])), gaveUp: qr.flatMap((r) => r.quests.gaveUp.map((g) => `${r.seed}:${g}`)) };
     rows[id] = { quests, watchdogQuiet: runs.reduce((a, r) => a + (r.watchdogQuiet ?? 0), 0), watchdog: wd.reduce((a, x) => a + x.n, 0), watchdogSeeds: wd.map((x) => `${x.seed}${x.n > 1 ? `x${x.n}` : ""}`), watchdogLog: wd.flatMap((x) => x.log.map((l) => `seed ${x.seed} depth ${l.depth} tick ${l.tick} hero ${l.hero} awake ${l.awake.join(" ") || "-"}`)), deathsByDepth: dd, basicShare: share.filter(([k]) => BASIC.has(k)).reduce((a, [, v]) => a + v, 0), topTree: tree[0]?.[0] ?? null, topTreeShare: treeTotal ? tree[0][1] / treeTotal : 0, runs: runs.length, won: won.length, medianMin: median(min), minMin: min.length ? Math.min(...min) : null, maxMin: min.length ? Math.max(...min) : null, medianDeaths: median(runs.map((r) => r.deaths ?? 0)), meanDeaths: mean(runs.map((r) => r.deaths ?? 0)), medianLevel: median(runs.map((r) => r.level ?? 1)), share };
   }
   const ids = Object.keys(rows), mT = median(ids.map((i) => rows[i].medianMin).filter((v) => v !== null)), mD = median(ids.map((i) => rows[i].medianDeaths));
@@ -45,8 +46,8 @@ export function print(p, byClass) {
   for (const [id, r] of Object.entries(p.rows)) out.push(`| ${id} | ${r.runs} | ${r.won} | ${f1(r.medianMin)} (${f1(r.minMin)}-${f1(r.maxMin)}) | ${r.timeDev === null ? "n/a" : (r.timeDev * 100).toFixed(0) + " %"} | ${r.medianDeaths} | ${(r.deathDev * 100).toFixed(0)} % | ${f1(r.meanDeaths)} | ${r.medianLevel} | ${(r.basicShare * 100).toFixed(0)} % | ${r.topTree} ${(r.topTreeShare * 100).toFixed(0)} % | ${r.pass ? "in band" : "OUT: " + [!r.inTime && "time", !r.inDeaths && "deaths", !r.inWindow && "20-40 min", !r.noDominant && "dominant skill"].filter(Boolean).join(", ")} |`);
   out.push("", `Three-class median: ${f1(p.medianMin)} min, ${p.medianDeaths} deaths.`, "", "Damage share per skill (all runs of the class, damage dealt to monsters):");
   for (const [id, r] of Object.entries(p.rows)) out.push(`- ${id}: ` + r.share.filter(([, s]) => s >= 0.01).map(([k, s]) => `${k} ${(s * 100).toFixed(0)} %`).join(", "));
-  out.push("", "Quests per class (R7-0.4; runs that completed main + sq1..sq3 / runs; per quest; the Lobby trip = climb from floor 4, hand-in, back down, median minutes = the extra time):");
-  for (const [id, r] of Object.entries(p.rows)) { const q = r.quests; if (q.runs) out.push(`- ${id}: all ${q.all}/${q.runs} (main ${q.main}, sq1 ${q.sq1}, sq2 ${q.sq2}, sq3 ${q.sq3}); trips ${q.trips}, median trip ${f1(q.medianTripMin)} min${q.gaveUp.length ? "; gave up: " + q.gaveUp.join(", ") : ""}`); }
+  out.push("", "Quests per class (R7-4; runs that completed all eight quests / runs; per quest; the Lobby trips = climb from floor 4 (T1) and from floor 6 (T2), hand-in, back down, median minutes = the extra time of each):");
+  for (const [id, r] of Object.entries(p.rows)) { const q = r.quests; if (q.runs) out.push(`- ${id}: all ${q.all}/${q.runs} (${Object.entries(q.done).map(([k, n]) => `${k} ${n}`).join(", ")}); trips ${q.trips}, median trip ${f1(q.medianTripMin)} min (${Object.entries(q.stages).map(([d, s]) => `from floor ${d}: ${s.n} x ${f1(s.medianMin)} min`).join("; ") || "none"})${q.gaveUp.length ? "; gave up: " + q.gaveUp.join(", ") : ""}`); }
   out.push("", "Deaths by depth (all runs; 9 = boss arena):");
   for (const [id, r] of Object.entries(p.rows)) out.push(`- ${id}: ` + Object.entries(r.deathsByDepth).map(([d, n]) => `d${d} ${n}`).join(", "));
   out.push("", `Bot no-xp watchdog give-ups (a hunted monster never arrived; not the same as the 240-tick wait give-up; allowed in total: ${WATCHDOG_MAX}): ${p.watchdog} ${p.watchdogOk ? "(ok)" : "(OVER THE LIMIT: look for a core chase or pathing defect on these seeds)"}; quiet minutes without xp and nothing awake (exploring, informational): ${p.watchdogQuiet}`);
@@ -57,7 +58,7 @@ export function print(p, byClass) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   if (process.argv[2] === "--one") { // worker: one run, result back to the parent
     const [, , , id, seed, maxTicks] = process.argv;
-    process.send(runOne(+seed, +maxTicks, { depth: 9, respawn: true, maxDeaths: 12, class: id }));
+    process.send(runOne(+seed, +maxTicks, { depth: 9, respawn: true, maxDeaths: 12, class: id, ...(process.env.PARITY_QUESTS === "off" ? { quests: false } : {}) })); // PARITY_QUESTS=off: the same seeds without the quest part of the bot (R7-4: shift of the medians caused by the quests)
     process.exit(0);
   }
   if (process.argv[2] === "--read") { const byClass = JSON.parse(readFileSync(process.argv[3], "utf8")); const p = parity(byClass); console.log(print(p, byClass)); process.exit(p.watchdogOk ? 0 : 1); }

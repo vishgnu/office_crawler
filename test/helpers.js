@@ -77,3 +77,14 @@ export function v3Text(state) {
 }
 /** Re-seal a parsed save after a test changed it. */
 export const sealText = (save) => { const { checksum, ...rest } = save; return canonical({ ...rest, checksum: checksumOf(rest) }); };
+
+/**
+ * The text a version 4 build would have written for this state (R7-4 fixtures are never typed by hand, L-038): the current `toSave` output with the two R7-4 side quests
+ * deleted from the quest block, `version: 4` and the checksum re-sealed. A pin on a main quest is the alias "main", as the v4 build wrote it.
+ */
+export function v4Text(state) {
+  const save = toSave(state);
+  delete save.quests.sq4; delete save.quests.sq5; save.version = 4;
+  if (["main2", "main3"].includes(save.quests.pinned)) save.quests.pinned = "main";
+  return canonical({ ...save, checksum: checksumOf(save) });
+}

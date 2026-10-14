@@ -4,6 +4,8 @@
 import { hash32 } from "../core/hash.js";
 import { classById, retiredClasses } from "../core/content/classes.js";
 import { DEFAULT_NAME } from "../core/name.js";
+import { activeMainId } from "../core/systems/questview.js";
+import { mainIds } from "../core/content/quests.js";
 
 const maxItemId = (data) => {
   let n = 0;
@@ -82,6 +84,20 @@ export const MIGRATIONS = {
         sq1: { s: "available", p: 0 }, sq2: { s: "available", p: 0 }, sq3: { s: "available", p: 0 }, pinned: "main", pouch: [],
       },
     };
+  },
+  /**
+   * Version 4 to 5 (ADR-0007 amendment "R7-4", ADR-0006 amendment): two new side quests, `sq4` and `sq5`, start `available`; the main quest is now three arcs over the
+   * same milestones, so a pin on "main" becomes the arc that is active for them (`main` while arc 1 is open, then `main2`, `main3`, and `main3` when all are done);
+   * a pinned side quest stays. No reward is paid and nothing else is read or changed (`m`, `sq1..sq3`, `pouch` and every other field are returned as they are).
+   * Pure; a version 5 input is returned unchanged; malformed input is left for the schema check (never throws).
+   */
+  4(d) {
+    if (d.version >= 5) return d;
+    const q = d.quests;
+    if (q === null || typeof q !== "object" || Array.isArray(q)) return { ...d, version: 5 };
+    const quests = { ...q, sq4: { s: "available", p: 0 }, sq5: { s: "available", p: 0 } }, m = q.main?.m;
+    if (q.pinned === "main" && m !== null && typeof m === "object" && !Array.isArray(m)) quests.pinned = activeMainId(m) ?? mainIds[mainIds.length - 1];
+    return { ...d, version: 5, quests };
   },
 };
 

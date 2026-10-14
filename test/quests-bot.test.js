@@ -1,5 +1,5 @@
-// R7-0.4 bot quest paths: AC-R-256-2 (the headless bot finishes main + three side quests on fixed seeds, inside the 20-40 minute window, public inputs only),
-// AC-R-241-2 (steps 1..6 complete in order on the normal path), AC-R-246-3 (quest item through the pouch), AC-R-247-3 (bagFull: sell or stash, retry).
+// R7-0.4 / R7-4.1 bot quest paths: AC-R-256-2, AC-R-259-3 (the headless bot finishes the three main quests and five side quests on fixed seeds, two trips, inside the 20-40 minute window, public inputs only),
+// AC-R-241-2 (the ten main steps complete in order on the normal path), AC-R-246-3 (quest item through the pouch), AC-R-247-3 (bagFull: sell or stash, retry).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { newGame, step, applyInput, content, makeItem, config } from "../src/core/index.js";
@@ -18,7 +18,7 @@ const drive = (s, mem, ticks, until) => {
 };
 const SEEDS = [1, 2, 3];
 
-test("AC-R-256-2 Lobby: before the first descent the bot has accepted all three side quests by talking to their givers", () => {
+test("AC-R-256-2 Lobby: before the first descent the bot has accepted all five side quests by talking to their givers (the vendor twice)", () => {
   const s = newGame(1, { start: "town" }), mem = createBotMemory({ depth: 9 });
   drive(s, mem, 6000, (x) => x.depth > 0);
   assert.ok(s.depth > 0, "the bot took the elevator");
@@ -52,12 +52,18 @@ test("AC-R-247-3 bagFull: a bag with no gear in it is emptied into the stash, th
 });
 
 for (const cls of content.classes.map((c) => c.id)) {
-  test(`AC-R-256-2 AC-R-241-2 ${cls}: seeds ${SEEDS} finish main and sq1..sq3 headlessly, steps in order, 20-40 min, no watchdog give-up`, () => {
+  test(`AC-R-256-2 AC-R-259-3 ${cls}: seeds ${SEEDS} finish main, main2, main3 and sq1..sq5 headlessly, steps in order, two trips, 20-40 min, no give-up`, () => {
     const runs = SEEDS.map((seed) => runOne(seed, 150000, { depth: 9, respawn: true, maxDeaths: 12, class: cls }));
     for (const r of runs) {
       assert.equal(r.result, "won", `${cls} seed ${r.seed}: ${r.result}`);
       assert.ok(r.quests.all, `${cls} seed ${r.seed}: completed ${r.quests.done}, gave up ${r.quests.gaveUp}`);
-      assert.deepEqual(r.quests.mainSteps, [2, 3, 4, 5, 6, 7], `${cls} seed ${r.seed}: main steps ${r.quests.mainSteps}`);
+      assert.deepEqual(r.quests.done.slice().sort(), [...content.questIds].sort(), `${cls} seed ${r.seed}: all eight`);
+      assert.deepEqual(r.quests.mainSteps, [2, 3, 4, 5, 6, 7, 8, 9, 10, 11], `${cls} seed ${r.seed}: main steps ${r.quests.mainSteps}`);
+      assert.deepEqual(r.quests.arcs, ["main", "main2", "main3"], "the arcs complete in order");
+      assert.ok(r.quests.ticks.main < r.quests.ticks.main2 && r.quests.ticks.main2 < r.quests.ticks.main3, "main on floor 3, main2 on floor 6, main3 at the verdict");
+      assert.ok(r.quests.trips <= 2, `${cls} seed ${r.seed}: ${r.quests.trips} Lobby trips`);
+      assert.deepEqual(r.quests.tripStages.map((t) => t.depth), [4, 6], "trip T1 from floor 4, trip T2 from floor 6");
+      assert.deepEqual(r.quests.gaveUp, [], "no quest given up");
       const min = r.ticks / (config.tickHz ?? 60) / 60;
       assert.ok(min >= 20 && min <= 40, `${cls} seed ${r.seed}: ${min.toFixed(1)} min`);
       assert.equal(r.watchdogFired, 0, `${cls} seed ${r.seed}: watchdog`);

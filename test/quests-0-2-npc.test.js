@@ -19,10 +19,9 @@ const open3 = (seed) => { // a game with all three quests accepted, and the same
 const noIds = (k, v) => (k === "id" ? undefined : v); // item ids differ when dialogs minted vendor stock in another order
 const econ = (s) => JSON.stringify({ gold: s.player.gold, inv: s.inventory, belt: s.belt, stash: s.stash, hp: s.player.hp }, noIds);
 
-test("AC-R-245-1 three side quests, givers vendor/healer/potions, none by the stash keeper, no new NPC", () => {
+test("AC-R-245-1 / AC-R-258-1 five side quests, givers vendor/healer/potions/stash/vendor, no new NPC", () => {
   assert.equal(content.sideIds.length, config.quests.sideCount);
-  assert.deepEqual(content.sideIds.map((id) => content.quests[id].giver), ["vendor", "healer", "potions"]);
-  assert.ok(!content.sideIds.some((id) => content.quests[id].giver === "stash"));
+  assert.deepEqual(content.sideIds.map((id) => content.quests[id].giver), ["vendor", "healer", "potions", "stash", "vendor"]);
   assert.deepEqual(Object.keys(content.npcs).sort(), ["healer", "potions", "stash", "vendor"]);
 });
 

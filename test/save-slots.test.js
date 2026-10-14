@@ -32,7 +32,7 @@ test("ADR-0006 section 2: the index has the documented shape and listing reads o
   assert.equal(view.v, 2); assert.equal(view.slots.length, 5);
   assert.deepEqual(view.slots.map((e) => e.state), ["empty", "ok", "empty", "ok", "empty"]);
   const e = view.slots[1];
-  assert.deepEqual(Object.keys(e).sort(), ["boss", "bytes", "class", "deepest", "depth", "lastPlayed", "level", "mainDone", "mainStep", "n", "name", "playSec", "sidesDone", "state", "sum"].sort());
+  assert.deepEqual(Object.keys(e).sort(), ["boss", "bytes", "class", "deepest", "depth", "lastPlayed", "level", "mainDone", "mainStep", "n", "name", "playSec", "qv", "sidesDone", "state", "sum"].sort());
   assert.equal(e.name, "Dana Lee"); assert.equal(e.class, "sales-rep"); assert.equal(e.level, 1); assert.equal(e.depth, 0);
   assert.equal(e.bytes, adapter.getItem("office-crawler.slot.2").length);
   assert.equal(e.sum, textSum(adapter.getItem("office-crawler.slot.2")));

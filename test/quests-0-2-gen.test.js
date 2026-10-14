@@ -164,16 +164,20 @@ test("AC-R-240-2 questRng is derived from fixed inputs only and the state stream
   assert.deepEqual(Object.keys(s.rng).sort(), ["ai", "combat", "loot", "world"]);
 });
 
-test("AC-R-240-2 a run that never accepts a quest spawns nothing: the state with and without the quest state hashes the same", () => {
-  for (const seed of [1, 4, 9]) {
-    const s = newGame(seed, { start: "town" }), t = newGame(seed, { start: "town" });
-    delete t.quests;
-    for (const d of [1, 2, 3, 4, 5, 6, 7, 8, 3, 0, 4]) { enterFloor(s, d); enterFloor(t, d); }
-    assert.equal(s.groundItems.filter((g) => g.quest).length, 0);
-    assert.equal(s.monsters.filter((m) => m.quest).length, 0);
-    const strip = { paths: ["quests"], eventPrefixes: ["quest."] };
-    assert.equal(hashStateWithout(s, strip), hashStateWithout(t, strip));
-  }
+test("AC-R-240-2 a run that never accepts a quest spawns nothing: the state with and without the quest state hashes the same (arc rewards zeroed: floors 3 and up pay an arc)", () => {
+  const keep = config.quests.arc, zero = { gold: { base: 0, perDepth: 0 }, xp: { base: 0, perDepth: 0 } };
+  try {
+    config.quests.arc = { main: zero, main2: zero };
+    for (const seed of [1, 4, 9]) {
+      const s = newGame(seed, { start: "town" }), t = newGame(seed, { start: "town" });
+      delete t.quests;
+      for (const d of [1, 2, 3, 4, 5, 6, 7, 8, 3, 0, 4]) { enterFloor(s, d); enterFloor(t, d); }
+      assert.equal(s.groundItems.filter((g) => g.quest).length, 0);
+      assert.equal(s.monsters.filter((m) => m.quest).length, 0);
+      const strip = { paths: ["quests"], eventPrefixes: ["quest."] };
+      assert.equal(hashStateWithout(s, strip), hashStateWithout(t, strip));
+    }
+  } finally { config.quests.arc = keep; }
 });
 
 test("AC-R-250-1 all three quests accepted: floors 1..8 stay valid and generateFloor is unchanged by quests; placement work is bounded", () => {

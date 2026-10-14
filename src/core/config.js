@@ -160,21 +160,31 @@ export const config = {
 
   // Quests (R7, ADR-0007): every number a balance pass may touch. Text and structure live in content/quests.js.
   quests: {
-    sideCount: 3,
+    sideCount: 5,
     kill: { monster: "zombie-intern", count: 8, depths: [1, 2] },
     item: { floors: [3, 4], pickupRange: 1 },
     elite: { type: "middle-manager", depth: 4, hpMult: 1.6, level: 4 },
-    gearFloor: 4,
+    gearFloor: 4,                    // default item level floor of a gear reward; a quest may carry its own `gearFloor`
+    // R7-4: arcs 1 and 2 pay gold and experience once, when the arc completes (the last arc pays nothing). Same formula as a side quest.
+    arc: {
+      main: { refDepth: 3, gold: { base: 20, perDepth: 10 }, xp: { base: 20, perDepth: 15 } },
+      main2: { refDepth: 6, gold: { base: 20, perDepth: 10 }, xp: { base: 20, perDepth: 15 } },
+    },
+    newXpShare: 0.10,                // relation test: the experience the R7-4 rewards add is at most this share of the level-up cost at ...
+    balanceLevel: 12,                // ... this level (xpTable[balanceLevel - 1])
     sq1: { refDepth: 2, gold: { base: 30, perDepth: 15 }, xp: { base: 40, perDepth: 25 }, potions: 3 },
     sq2: { refDepth: 4, gold: { base: 30, perDepth: 15 }, xp: { base: 40, perDepth: 25 }, slots: ["body", "head", "hands", "feet"] },
     sq3: { refDepth: 4, gold: { base: 30, perDepth: 15 }, xp: { base: 40, perDepth: 25 }, slots: ["weapon"], potions: 2 },
+    // R7-4: a quest names its own objective block (`config.quests[id][type]`, else the global one above), its gear floor and its rarity range.
+    sq4: { refDepth: 5, gold: { base: 30, perDepth: 15 }, xp: { base: 30, perDepth: 15 }, potions: 2, gearFloor: 5, item: { floors: [5, 6], pickupRange: 1 } },
+    sq5: { refDepth: 6, gold: { base: 30, perDepth: 15 }, xp: { base: 30, perDepth: 15 }, slots: ["ring", "amulet", "belt"], gearFloor: 6, rarity: { min: "magic", max: "magic" }, kill: { monster: "consultant", count: 6, depths: [5, 6] } },
     rewardRerolls: 8,
     genBudgetFactor: 1.05,
     toastMs: 4000,
   },
 
   // Save and load (S3-3, R-090..R-092). One slot; options are stored apart from the save.
-  saveVersion: 4,                    // ADR-0006: 2 adds the character name, stats.playTicks and the class trees; 3 refunds attribute points of classes whose power attribute changed (R6); 4 adds the quest block (R7)
+  saveVersion: 5,                    // ADR-0006: 2 adds the character name, stats.playTicks and the class trees; 3 refunds attribute points of classes whose power attribute changed (R6); 4 adds the quest block (R7); 5 adds sq4 and sq5 and the three main quests (R7-4)
   saveKey: "office-crawler.save",
   saveBackupKey: "office-crawler.save.corrupt",
   optionsKey: "office-crawler.options",

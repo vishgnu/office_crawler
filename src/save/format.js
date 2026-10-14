@@ -18,8 +18,8 @@ import { slotKeys, slotAccepts, rarityOrder, bases } from "../core/content/items
 import { affixes as affixDefs, affixById } from "../core/content/affixes.js";
 import { uniques as uniqueDefs, uniqueById } from "../core/content/uniques.js";
 import { skills as skillDefs } from "../core/content/skills.js";
-import { quests as questDefs, sideIds, newQuestState } from "../core/content/quests.js";
-import { goalOf } from "../core/systems/questview.js";
+import { quests as questDefs, sideIds, mainIds, newQuestState } from "../core/content/quests.js";
+import { goalOf, objCfg, activeMainId } from "../core/systems/questview.js";
 import { itemFloorOf } from "../core/systems/quests.js";
 import { migrate } from "./migrate.js";
 
@@ -209,11 +209,13 @@ function questsProblem(d) {
     if (!isInt(e.p, 0, goal) || (e.s === "available" && e.p !== 0) || (e.s === "active" && e.p >= goal) || ((e.s === "ready" || e.s === "completed") && e.p !== goal)) return "bad side quest";
     // The play a state needs (ADV-R7-01): kills counted for the kill quest, the floor that holds the item or the elite for the others.
     const type = questDefs[id].objective.type, done = e.s === "ready" || e.s === "completed";
-    if (done && type === "kill" && d.stats.kills < goal) return "bad side quest progress"; // every counted kill is also a kill of the hero
-    if (done && type === "item" && d.deepestDepth < itemFloorOf(d.seed)) return "bad side quest progress";
-    if (done && type === "elite" && d.deepestDepth < config.quests.elite.depth) return "bad side quest progress";
+    if (done && type === "kill" && (d.stats.kills < goal || d.deepestDepth < Math.min(...objCfg(id, "kill").depths))) return "bad side quest progress"; // every counted kill is also a kill of the hero, made on a kill floor
+    if (done && type === "item" && d.deepestDepth < itemFloorOf(d.seed, id)) return "bad side quest progress";
+    if (done && type === "elite" && d.deepestDepth < objCfg(id, "elite").depth) return "bad side quest progress";
   }
-  if (typeof q.pinned !== "string" || !(q.pinned === "main" || (sideIds.includes(q.pinned) && q[q.pinned].s !== "completed"))) return "bad pinned quest";
+  // the pin is the active main quest (the last one when all are done) or a side quest that is not completed; a locked or an earlier main quest is never pinned
+  const activeMain = activeMainId(m) ?? mainIds[mainIds.length - 1];
+  if (typeof q.pinned !== "string" || !(q.pinned === activeMain || (sideIds.includes(q.pinned) && q[q.pinned].s !== "completed"))) return "bad pinned quest";
   if (!Array.isArray(q.pouch) || q.pouch.length > sideIds.length) return "bad pouch";
   const held = new Set();
   for (const e of q.pouch) {

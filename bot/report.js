@@ -1,5 +1,7 @@
 // Shared bookkeeping for the bot runners: observe(view, rec) is called with every state-shaped view
 // (the live core state in Node, a __app.getState() snapshot in the browser) and summarise() builds the report.
+import { content, mainState } from "../src/core/index.js";
+import { QBOT } from "./quests.js";
 export const TICKS_PER_SECOND = 60;
 
 export function createRecorder(seed) {
@@ -11,18 +13,18 @@ export function observeEvents(view, rec) {
   for (const ev of view.events ?? []) { // a browser snapshot may not carry events
     if (ev.type === "hit" && ev.target !== "player") { const k = ev.skill ?? (ev.source === "ally" ? "allies" : ev.damageType ? "burn" : "basic-melee"); rec.dmg[k] = (rec.dmg[k] ?? 0) + ev.value; }
     else if (ev.type === "cast") rec.casts[ev.skill] = (rec.casts[ev.skill] ?? 0) + 1;
-    else if (ev.type === "quest.step" && ev.id === "main" && !(rec.evSeen ??= new WeakSet()).has(ev)) { rec.evSeen.add(ev); (rec.mainSteps ??= []).push(ev.step); } // R7-0.4: the main quest steps in the order they completed (AC-R-241-2)
-    else if (ev.type === "quest.completed" && ev.id === "main" && !(rec.evSeen ??= new WeakSet()).has(ev)) { rec.evSeen.add(ev); (rec.mainSteps ??= []).push(7); }
+    else if (ev.type === "quest.step" && MAIN_IDS.includes(ev.id) && !(rec.evSeen ??= new WeakSet()).has(ev)) { rec.evSeen.add(ev); (rec.mainSteps ??= []).push(content.mainSteps.find((s) => s.arcId === ev.id).n + ev.step - 1); } // R7-0.4: the main steps (global 1..10) in the order they were reached (AC-R-241-2)
+    else if (ev.type === "quest.completed" && MAIN_IDS.includes(ev.id) && !(rec.evSeen ??= new WeakSet()).has(ev)) { rec.evSeen.add(ev); (rec.arcsDone ??= []).push(ev.id); if (ev.id === MAIN_IDS[MAIN_IDS.length - 1]) (rec.mainSteps ??= []).push(content.mainSteps.length + 1); }
   }
 }
 
-const QUEST_IDS = ["main", "sq1", "sq2", "sq3"];
-/** Tick at which each quest was first seen completed (R7-0.4): side quests by their stored state, the main quest by its verdict milestone (same fields in the core state and in a browser snapshot). */
+const MAIN_IDS = content.mainIds, QUEST_IDS = content.questIds;
+/** Tick at which each quest was first seen completed (R7-0.4): side quests by their stored state, a main quest by its milestones (same fields in the core state and in a browser snapshot). */
 export function observeQuests(view, rec) {
   const qs = view.quests;
   if (!qs) return;
   rec.qDone ??= {};
-  for (const id of QUEST_IDS) if (rec.qDone[id] === undefined && (id === "main" ? qs.main?.m?.verdict : qs[id]?.s === "completed")) rec.qDone[id] = view.tick;
+  for (const id of QUEST_IDS) if (rec.qDone[id] === undefined && (MAIN_IDS.includes(id) ? qs.main?.m && mainState(qs.main.m, id) === "completed" : qs[id]?.s === "completed")) rec.qDone[id] = view.tick;
 }
 
 export function observe(view, rec) {
@@ -58,7 +60,7 @@ export function finish(view, mem, rec, maxTicks) {
     if (mem.done) { rec.result = "cleared"; rec.clearTick = view.tick; }
     else if (view.tick >= maxTicks) rec.result = "timeout";
   }
-  return { seed: rec.seed, result: rec.result, deathDepths: rec.deathDepths ?? [], dmg: rec.dmg, casts: rec.casts, ticks: rec.tick, kills: rec.kills, total: rec.total, ttk: rec.ttk, stuck: mem.stuck, waitGaveUp: mem.waitGaveUp, watchdogFired: mem.watchdogFired ?? 0, watchdogQuiet: mem.watchdogQuiet ?? 0, watchdogLog: mem.watchdogLog ?? [], failedMoves: mem.failedMoves, hpMin: rec.hpMin, boss: { ...rec.boss, hpMin: rec.boss.hpMin === Infinity ? null : rec.boss.hpMin, fightTicks: rec.boss.killed !== null && rec.boss.engaged !== null ? rec.boss.killed - rec.boss.engaged : null }, victory: rec.victory ?? null, quests: { done: Object.keys(rec.qDone ?? {}), all: QUEST_IDS.every((id) => rec.qDone?.[id] !== undefined), ticks: rec.qDone ?? {}, mainSteps: rec.mainSteps ?? [], trips: mem.q?.trips ?? 0, tripTicks: mem.q?.tripTicks ?? 0, gaveUp: Object.keys(mem.q?.gaveUp ?? {}) }, depth: view.deepestDepth ?? 1, level: rec.maxLevel, deaths: rec.deaths + (rec.result === "died" ? 1 : 0), gold: view.player.gold - (rec.gold0 ?? 0), worn: Object.values(view.equipment ?? {}).filter(Boolean).length, loot: (view.groundItems ?? []).length };
+  return { seed: rec.seed, result: rec.result, deathDepths: rec.deathDepths ?? [], dmg: rec.dmg, casts: rec.casts, ticks: rec.tick, kills: rec.kills, total: rec.total, ttk: rec.ttk, stuck: mem.stuck, waitGaveUp: mem.waitGaveUp, watchdogFired: mem.watchdogFired ?? 0, watchdogQuiet: mem.watchdogQuiet ?? 0, watchdogLog: mem.watchdogLog ?? [], failedMoves: mem.failedMoves, hpMin: rec.hpMin, boss: { ...rec.boss, hpMin: rec.boss.hpMin === Infinity ? null : rec.boss.hpMin, fightTicks: rec.boss.killed !== null && rec.boss.engaged !== null ? rec.boss.killed - rec.boss.engaged : null }, victory: rec.victory ?? null, quests: { done: Object.keys(rec.qDone ?? {}), all: QUEST_IDS.every((id) => rec.qDone?.[id] !== undefined), ticks: rec.qDone ?? {}, mainSteps: rec.mainSteps ?? [], arcs: rec.arcsDone ?? [], trips: mem.q?.trips ?? 0, tripTicks: mem.q?.tripTicks ?? 0, tripStages: (mem.q?.stageTicks ?? []).map((t, i) => (t === undefined ? null : { depth: QBOT.trips[i].depth, ticks: t })).filter(Boolean), gaveUp: Object.keys(mem.q?.gaveUp ?? {}) }, depth: view.deepestDepth ?? 1, level: rec.maxLevel, deaths: rec.deaths + (rec.result === "died" ? 1 : 0), gold: view.player.gold - (rec.gold0 ?? 0), worn: Object.values(view.equipment ?? {}).filter(Boolean).length, loot: (view.groundItems ?? []).length };
 }
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);

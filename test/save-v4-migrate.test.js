@@ -1,15 +1,16 @@
-// Migration 3 to 4 (R7-0.3, ADR-0006 amendment "R7 quests" point 4, AC-R-251-2, AC-R-251-3, AC-R-252-1): five legal v3 saves built from real play, the chains
-// v1 to v4 and v2 to v4, no retroactive reward, no note, slot index fields and upgradeIndex.
+// Migration 3 to 4 (R7-0.3, ADR-0006 amendment "R7 quests" point 4, AC-R-251-2, AC-R-251-3, AC-R-252-1) as it runs inside the chain to the current version 5 (R7-4): five legal
+// v3 saves built from real play, the chains v1 and v2 to the current version, no retroactive reward, no note, slot index fields and upgradeIndex.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { newGame, config } from "../src/core/index.js";
 import { deserialize, serialize, check, migrate, MIGRATIONS, SAVE_KEYS, checksumOf, createSlotStore, createMemoryAdapter, slotsView } from "../src/save/index.js";
-import { mainStep } from "../src/core/systems/questview.js";
+import { mainStep, activeMainId } from "../src/core/systems/questview.js";
 import { v3Text, sealText } from "./helpers.js";
 
 const fx = (n) => readFileSync(new URL(`./fixtures/${n}.json`, import.meta.url), "utf8");
-const FIX = [["lobby", 1, 0], ["floor1", 3, 1], ["floor4", 4, 4], ["boss-unlocked", 5, 8], ["boss-defeated", 6, 9]]; // name, derived main step, milestone depth
+const FIX = [["lobby", 1, 0], ["floor1", 3, 1], ["floor4", 5, 4], ["boss-unlocked", 9, 8], ["boss-defeated", 10, 9]]; // name, derived global main step (1..10), milestone depth
+const PIN = ["main", "main", "main2", "main3", "main3"]; // the pin of each fixture after the chain: the derived active main quest (AC-R-259-1)
 const clock = () => { let t = 1000; return () => (t += 1000); };
 
 test("the five v3 fixtures are legal v3 saves: version 3, every v3 key, no quests, sealed", () => {
@@ -33,15 +34,15 @@ test("the v3 test writer (helpers.v3Text) produces the same shape as the real fi
   assert.equal(j.version, 3);
 });
 
-test("AC-R-251-2 each fixture loads in v4 with the derived main step, all side quests available, pinned main, empty pouch, and no note", () => {
-  for (const [name, step, depth] of FIX) {
+test("AC-R-251-2 each fixture loads in v5 with the derived main step, all five side quests available, the derived pin, empty pouch, and no note", () => {
+  for (const [i, [name, step, depth]] of FIX.entries()) {
     const r = deserialize(fx(`save-v3-${name}`));
     assert.equal(r.ok, true, `${name}: ${r.message}`);
-    assert.equal(r.save.version, 4);
-    assert.deepEqual(r.notes, [], "no notice for 3 to 4");
+    assert.equal(r.save.version, 5);
+    assert.deepEqual(r.notes, [], "no notice for 3 to 5");
     const q = r.state.quests;
     assert.equal(mainStep(q.main.m), step, name); assert.equal(q.main.m.depth, depth, name);
-    assert.deepEqual([q.sq1, q.sq2, q.sq3], Array(3).fill({ s: "available", p: 0 })); assert.equal(q.pinned, "main"); assert.deepEqual(r.state.player.pouch, []);
+    assert.deepEqual([q.sq1, q.sq2, q.sq3, q.sq4, q.sq5], Array(5).fill({ s: "available", p: 0 })); assert.equal(q.pinned, PIN[i], name); assert.deepEqual(r.state.player.pouch, []);
     assert.equal(q.main.m.verdict, false); assert.equal(q.main.m.defeated, name === "boss-defeated"); assert.equal(q.main.m.unlocked, name === "boss-unlocked" || name === "boss-defeated");
     assert.equal(r.state.events.length, 0, "no quest cue on load");
   }
@@ -86,20 +87,20 @@ test("derived depth rule: 'ever descended' is deepestDepth >= 2, explored[1], re
   assert.deepEqual(flags((j) => { j.bossUnlocked = true; j.deepestDepth = 8; }), [true, true, false, false]);
 });
 
-test("chains: version 0, 1 and 2 saves end as version 4 with a quest block (v1 to v4, v2 to v4), and a Clerk save still reports its refund note", () => {
+test("chains: version 0, 1 and 2 saves end as version 5 with a quest block, and a Clerk save still reports its refund note", () => {
   for (const f of ["save-v0", "save-v1", "save-v2-r5-fm", "save-v2-r5-it", "save-v2-r5-sales"]) {
     const old = JSON.parse(fx(f)), r = deserialize(fx(f));
     assert.equal(r.ok, true, `${f}: ${r.message}`);
-    assert.equal(r.save.version, 4, f); assert.ok(r.save.quests, f);
+    assert.equal(r.save.version, 5, f); assert.ok(r.save.quests, f);
     assert.equal(mainStep(r.state.quests.main.m) >= 1, true);
-    assert.deepEqual(r.state.quests.pinned, "main");
+    assert.deepEqual(r.state.quests.pinned, activeMainId(r.state.quests.main.m), f);
     const again = deserialize(serialize(r.state)); assert.equal(again.ok, true, f); assert.deepEqual(again.notes, [], f);
     if (f.startsWith("save-v2")) assert.deepEqual(r.notes.map((n) => n.from), f === "save-v2-r5-fm" ? [] : [2], f);
     if (f === "save-v1") assert.deepEqual(r.notes.map((n) => n.from), [1]);
     if (old.deepestDepth >= 2) assert.equal(r.state.quests.main.m.depth, old.deepestDepth, f);
   }
-  const v2 = migrate(JSON.parse(fx("save-v2-r5-it")), 4); assert.equal(v2.ok, true); assert.equal(v2.data.version, 4);
-  const v1 = migrate(JSON.parse(fx("save-v1")), 4); assert.equal(v1.ok, true); assert.deepEqual(v1.notes.map((n) => n.from), [1]);
+  const v2 = migrate(JSON.parse(fx("save-v2-r5-it")), 5); assert.equal(v2.ok, true); assert.equal(v2.data.version, 5);
+  const v1 = migrate(JSON.parse(fx("save-v1")), 5); assert.equal(v1.ok, true); assert.deepEqual(v1.notes.map((n) => n.from), [1]);
 });
 
 test("a corrupt v3 text still ends as corrupt or schema without an exception; malformed fields never crash the migration", () => {
@@ -137,10 +138,10 @@ test("entryFromState: a saved game writes the fields; completed side quests are 
   const { store } = mk(), s = newGame(5, { class: "sales-rep", name: "Cards", start: "town" });
   assert.equal(store.create(1, s).ok, true);
   assert.deepEqual(["mainStep", "mainDone", "sidesDone"].map((k) => store.list().slots[0][k]), [1, false, 0]);
-  s.quests.main.m = { memo: true, depth: 9, unlocked: true, defeated: true, verdict: true }; s.bossDefeated = true; s.bossUnlocked = true; s.deepestDepth = 9;
+  s.quests.main.m = { memo: true, depth: 9, unlocked: true, defeated: true, verdict: true }; s.bossDefeated = true; s.bossUnlocked = true; s.deepestDepth = 9; s.quests.pinned = "main3";
   s.quests.sq1 = { s: "completed", p: 8 }; s.quests.sq3 = { s: "completed", p: 1 };
   assert.equal(store.write(1, s).ok, true);
-  assert.deepEqual(["mainStep", "mainDone", "sidesDone"].map((k) => store.list().slots[0][k]), [6, true, 2]);
+  assert.deepEqual(["mainStep", "mainDone", "sidesDone"].map((k) => store.list().slots[0][k]), [10, true, 2]);
 });
 
 test("slotsView().list carries the three fields for ok entries and none for empty, bad and newer entries", () => {
@@ -149,7 +150,7 @@ test("slotsView().list carries the three fields for ok entries and none for empt
   adapter.setItem("office-crawler.slot.3", "{not json"); adapter.setItem("office-crawler.slot.4", JSON.stringify({ ...JSON.parse(fx("save-v3-lobby")), version: 9 }));
   const idx = JSON.parse(adapter.getItem("office-crawler.slots")); idx.slots[2] = { n: 3, state: "bad", reason: "parse", bytes: 10 }; idx.slots[3] = { n: 4, state: "newer" }; adapter.setItem("office-crawler.slots", JSON.stringify(idx));
   const list = slotsView(createSlotStore(adapter, { now: clock() })).list;
-  assert.deepEqual([list[0].mainStep, list[0].mainDone, list[0].sidesDone], [4, false, 0]);
+  assert.deepEqual([list[0].mainStep, list[0].mainDone, list[0].sidesDone], [5, false, 0]);
   for (const i of [1, 2, 3]) assert.ok(!("mainStep" in list[i]) && !("mainDone" in list[i]) && !("sidesDone" in list[i]), `slot ${i + 1}: ${list[i].state}`);
 });
 
@@ -157,7 +158,7 @@ test("upgradeIndex: an index written by R5 or R6 (no quest fields) is rebuilt at
   const { store, adapter } = mk();
   store.importText(1, fx("save-v3-floor1"), { confirm: true }); store.importText(2, fx("save-v3-boss-defeated"), { confirm: true });
   const old = JSON.parse(adapter.getItem("office-crawler.slots"));
-  for (const e of old.slots) { delete e.mainStep; delete e.mainDone; delete e.sidesDone; }
+  for (const e of old.slots) { delete e.mainStep; delete e.mainDone; delete e.sidesDone; delete e.qv; }
   old.active = 2; old.last = 2; old.owner = { id: "tab-x", beat: 123 }; old.slots[0].lastPlayed = 4242; old.slots[1].lastPlayed = 777;
   adapter.setItem("office-crawler.slots", JSON.stringify(old));
   const fresh = createSlotStore(adapter, { now: clock() });
@@ -165,7 +166,8 @@ test("upgradeIndex: an index written by R5 or R6 (no quest fields) is rebuilt at
   assert.equal(r.ok, true); assert.equal(r.skipped, true); assert.equal(r.upgraded, true);
   const idx = JSON.parse(adapter.getItem("office-crawler.slots"));
   assert.deepEqual([idx.active, idx.last, idx.owner], [2, 2, { id: "tab-x", beat: 123 }]);
-  assert.deepEqual([idx.slots[0].mainStep, idx.slots[1].mainStep, idx.slots[1].mainDone, idx.slots[0].sidesDone], [3, 6, false, 0]);
+  assert.deepEqual([idx.slots[0].mainStep, idx.slots[1].mainStep, idx.slots[1].mainDone, idx.slots[0].sidesDone], [3, 10, false, 0]);
+  assert.deepEqual([idx.slots[0].qv, idx.slots[1].qv], [5, 5]);
   assert.deepEqual([idx.slots[0].lastPlayed, idx.slots[1].lastPlayed], [4242, 777]);
   assert.deepEqual(idx.slots.slice(2).map((e) => e.state), ["empty", "empty", "empty"]);
   const raw = adapter.getItem("office-crawler.slots");
@@ -180,11 +182,11 @@ test("upgradeIndex leaves a damaged or missing index to the normal repair and ne
   assert.equal(store.list().slots.length, 5);
 });
 
-test("AC-R-251-3 a v3 floor-4 save beside a valid v4 slot: both are listed ok, each with its own step", () => {
+test("AC-R-251-3 a v3 floor-4 save beside a valid current slot: both are listed ok, each with its own (global) step", () => {
   const { store } = mk();
   store.create(1, newGame(5, { class: "it-wizard", name: "Fresh", start: "town" }));
   store.importText(2, fx("save-v3-floor4"), { confirm: true });
   const l = store.list().slots;
-  assert.deepEqual([l[0].state, l[0].mainStep, l[1].state, l[1].mainStep], ["ok", 1, "ok", 4]);
-  const r = store.load(2); assert.equal(r.ok, true); assert.equal(mainStep(r.state.quests.main.m), 4);
+  assert.deepEqual([l[0].state, l[0].mainStep, l[1].state, l[1].mainStep], ["ok", 1, "ok", 5]);
+  const r = store.load(2); assert.equal(r.ok, true); assert.equal(mainStep(r.state.quests.main.m), 5);
 });

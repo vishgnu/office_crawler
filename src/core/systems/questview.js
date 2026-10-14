@@ -1,45 +1,70 @@
-// Derived, never stored: the main step, next-step text, NPC markers and map targets (ADR-0007 sections 4 and 10). Pure functions of the state.
+// Derived, never stored: the main step (three arcs over ten steps), next-step text, NPC markers and map targets (ADR-0007 sections 4 and 10). Pure functions of the state.
 import { config } from "../config.js";
-import { quests, sideIds, questIds, markerLabels } from "../content/quests.js";
+import { quests, sideIds, questIds, mainSteps, markerLabels } from "../content/quests.js";
 import { npcs } from "../content/npcs.js";
 import { strings } from "../content/strings.js";
 import { exploredAt } from "./explore.js";
 
-export const MAIN_STEPS = quests.main.steps.length;
+export const MAIN_STEPS = mainSteps.length;
 
-/** Which of the six main steps are done, derived from the milestones. A later milestone implies the earlier steps (catch-up). */
+/** Is the predicate of one main step met by the milestones? (`when` is data: a milestone flag or a floor number.) */
+const met = (when, m) => (when.milestone ? !!m[when.milestone] : m.depth >= when.depth);
+
+/** Which of the ten main steps are done, derived from the milestones. A later step implies the earlier ones (suffix-OR: the catch-up rule). */
 export function mainDone(m) {
-  const d6 = !!m.verdict, d5 = !!m.defeated || d6, d4 = !!m.unlocked || d5, d3 = m.depth >= 4 || d4, d2 = m.depth >= 1 || d3, d1 = !!m.memo || d2;
-  return [d1, d2, d3, d4, d5, d6];
+  const d = new Array(MAIN_STEPS);
+  let later = false;
+  for (let i = MAIN_STEPS - 1; i >= 0; i--) { later = later || met(mainSteps[i].when, m); d[i] = later; }
+  return d;
 }
-/** The current main step 1..6, or 7 when all six are done. */
+/** The current global main step 1..10, or 11 when all are done. */
 export const mainStep = (m) => { const d = mainDone(m); const i = d.indexOf(false); return i < 0 ? MAIN_STEPS + 1 : i + 1; };
 
-export const goalOf = (id) => (quests[id]?.objective?.type === "kill" ? config.quests.kill.count : 1);
+/** The arc (a main quest id) that holds the first undone step, or null when all three are done. */
+export const activeMainId = (m) => { const s = mainStep(m); return s > MAIN_STEPS ? null : mainSteps[s - 1].arcId; };
+
+/** A main quest's state: completed when all its steps are done, active when it holds the first undone step, else unavailable (locked). */
+export function mainState(m, id) {
+  const s = mainStep(m), steps = quests[id].steps, first = mainSteps.find((x) => x.arcId === id).n, last = first + steps.length - 1;
+  return s > last ? "completed" : s >= first ? "active" : "unavailable";
+}
+
+/** `config.quests[id][type]` when the quest names its own objective block, else the global block (sq1 to sq3 keep reading `config.quests.kill`, `.item`, `.elite`). */
+export const objCfg = (id, type = quests[id]?.objective?.type) => config.quests[id]?.[type] ?? config.quests[type];
+
+export const goalOf = (id) => (quests[id]?.objective?.type === "kill" ? objCfg(id).count : 1);
 export const giverName = (id) => { const g = quests[id]?.giver; return g ? strings[npcs[g].nameKey] : null; };
 
-/** The quest's state word: available | active | ready | completed (the main quest: active | completed). */
+/** The quest's state word: available | active | ready | completed (a main quest: unavailable | active | completed). */
 export function stateOf(state, id) {
-  if (id === "main") return mainStep(state.quests.main.m) > MAIN_STEPS ? "completed" : "active";
+  if (quests[id]?.kind === "main") return mainState(state.quests.main.m, id);
   return state.quests[id].s;
 }
 
-/** The one instruction line for the quest's current state ("" when completed). */
+/** The one instruction line for the quest's current state ("" when completed or locked). */
 export function nextStep(state, id) {
   const q = quests[id];
   if (!q || !state.quests) return "";
-  if (id === "main") { const s = mainStep(state.quests.main.m); return s > MAIN_STEPS ? "" : q.steps[s - 1].line; }
+  if (q.kind === "main") {
+    const m = state.quests.main.m, s = mainStep(m);
+    return s <= MAIN_STEPS && mainSteps[s - 1].arcId === id ? mainSteps[s - 1].line : "";
+  }
   const st = state.quests[id].s;
   return st === "completed" ? "" : q.next[st].replace("{giver}", giverName(id));
 }
 
-/** Snapshot data: the stored fields plus { id, state, step, stepCount, progress, goal, nextStep, title, giver }; `pinned` stays the stored string. */
+/**
+ * Snapshot data: the stored fields plus { id, state, step, stepCount, progress, goal, nextStep, title, giver }; `pinned` stays the stored string.
+ * For a main quest `step` is the step inside the arc (1..stepCount, stepCount when completed, 0 while unavailable) and `stepCount` the arc's length.
+ */
 export function questView(state) {
   const out = {};
   for (const id of questIds) {
-    const q = state.quests[id], isMain = id === "main", step = isMain ? mainStep(q.m) : 0;
+    const q = state.quests[id], isMain = quests[id].kind === "main", st = stateOf(state, id);
+    let step = 0;
+    if (isMain) { const g = mainStep(state.quests.main.m); step = st === "completed" ? quests[id].steps.length : st === "active" ? mainSteps[g - 1].arcStep : 0; }
     out[id] = {
-      ...structuredClone(q), id, state: stateOf(state, id), step: isMain ? Math.min(step, MAIN_STEPS) : 0, stepCount: isMain ? MAIN_STEPS : 0,
+      ...(q ? structuredClone(q) : {}), id, state: st, step, stepCount: isMain ? quests[id].steps.length : 0,
       progress: isMain ? 0 : q.p, goal: isMain ? 0 : goalOf(id), nextStep: nextStep(state, id), title: quests[id].title, giver: isMain ? null : giverName(id),
     };
   }
@@ -68,9 +93,8 @@ export function mapMarkers(state) {
   if (!q) return out;
   const known = (t) => t && exploredAt(state, t.x, t.y);
   const add = (kind, tile, label) => { if (known(tile)) out.push({ quest: id, kind, tile: { x: tile.x, y: tile.y }, label }); };
-  if (id === "main") {
-    const step = mainStep(state.quests.main.m);
-    const target = step > MAIN_STEPS ? null : q.steps[step - 1].target;
+  if (q.kind === "main") {
+    const step = mainStep(state.quests.main.m), target = step > MAIN_STEPS || mainSteps[step - 1].arcId !== id ? null : mainSteps[step - 1].target;
     if (!target) return out;
     if (target.kind === "elevator") { if (state.depth === 0 && f.exit) add("elevator", f.exit, markerLabels.elevator); }
     else if (target.kind === "stairs-down") {

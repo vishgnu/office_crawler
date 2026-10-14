@@ -44,10 +44,12 @@ function validIndex(x) {
   return true;
 }
 
-/** The slot card's quest fields (ADR-0006 amendment point 6) from a quest block (state.quests or the save's `quests`): mainStep 1..6, mainDone, sidesDone. */
+/** Version of the quest fields of an index entry (R7-4): an entry without `qv: 5` was written by a v4 build, its `mainStep` is on the old 1..6 scale. */
+export const QUEST_FIELDS_VERSION = 5;
+/** The slot card's quest fields (ADR-0006 amendment point 6) from a quest block (state.quests or the save's `quests`): mainStep 1..10 (the global step), mainDone (all three main quests), sidesDone 0..sideCount. */
 function questFields(q) {
   const step = mainStep(q.main.m);
-  return { mainStep: Math.min(step, MAIN_STEPS), mainDone: step > MAIN_STEPS, sidesDone: sideIds.filter((id) => q[id].s === "completed").length };
+  return { qv: QUEST_FIELDS_VERSION, mainStep: Math.min(step, MAIN_STEPS), mainDone: step > MAIN_STEPS, sidesDone: sideIds.filter((id) => q[id].s === "completed").length };
 }
 
 /** The index entry for a running state (metadata only; lastPlayed comes from the injected clock). */
@@ -404,13 +406,22 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
      * boot tries again.
      */
     /**
-     * Once at boot (called first by migrateLegacy): an index written by an R5 or R6 build has `ok` entries without the quest fields; rebuild it from
+     * Once at boot (called first by migrateLegacy): an index written by an R5, R6 or R7 (v4) build has `ok` entries without the quest fields or with them on the old 1..6 scale (no `qv: 5`); rebuild it from
      * the slot texts, which keeps `active`, `last`, `owner` and each `lastPlayed`. Costs five parses, once.
      */
     upgradeIndex() {
       const idx = readIndex();
-      if (!idx || !idx.slots.some((e) => e.state === "ok" && !Number.isInteger(e.mainStep))) return { ok: true, skipped: true };
-      const w = writeIndex(rebuild(idx));
+      if (!idx || !idx.slots.some((e) => e.state === "ok" && (e.qv !== QUEST_FIELDS_VERSION || !Number.isInteger(e.mainStep)))) return { ok: true, skipped: true };
+      const next = rebuild(idx);
+      // A stale entry whose slot cannot be rebuilt (text gone or no longer valid) keeps its old state and metadata, without the quest fields it cannot vouch for:
+      // the card then shows no quest line (no crash, nothing guessed from the old 1..6 scale).
+      next.slots = next.slots.map((e, i) => {
+        const old = idx.slots[i];
+        if (old?.state !== "ok" || (old.qv === QUEST_FIELDS_VERSION && Number.isInteger(old.mainStep)) || e.state === "ok") return e;
+        const { qv, mainStep: _m, mainDone, sidesDone, ...kept } = old;
+        return kept;
+      });
+      const w = writeIndex(next);
       return w.ok ? { ok: true, upgraded: true } : fail("write-failed");
     },
 

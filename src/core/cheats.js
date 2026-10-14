@@ -6,8 +6,8 @@ import { enterFloor } from "./systems/world.js";
 import { spawnMonster } from "./state.js";
 import { giveGold } from "./systems/loot.js";
 import { emit } from "./events.js";
-import { quests } from "./content/quests.js";
-import { mainStep, MAIN_STEPS, goalOf, nextStep } from "./systems/questview.js";
+import { quests, mainSteps } from "./content/quests.js";
+import { mainStep, goalOf, nextStep, objCfg } from "./systems/questview.js";
 import * as questSystem from "./systems/quests.js"; // `handInQuest` arrives with R7-0.2: looked up by name so this file works before and after it
 
 const fail = (error) => ({ ok: false, error });
@@ -42,44 +42,42 @@ export function teleportFloor(state, depth) {
 
 const pouchId = (id) => `qi-${id}`;
 
-/** Change the main milestones and emit the one cue event the event path would (quest.step, or quest.completed after the last step). */
-function bumpMain(state, change) {
-  const m = state.quests.main.m, before = mainStep(m);
-  change(m);
-  const after = mainStep(m), q = quests.main;
-  if (after === before) return;
-  if (after > MAIN_STEPS) emit(state, { type: "quest.completed", id: "main", title: q.title, rewards: { gold: 0, xp: 0, items: [] } });
-  else emit(state, { type: "quest.step", id: "main", step: after, title: q.title, next: q.steps[after - 1].line });
-}
 /** The world flags a milestone needs so the character stays a legal save (the schema ties them: depth <= deepestDepth, unlocked and defeated to the boss flags). */
 const reach = (state, depth) => { state.deepestDepth = Math.max(state.deepestDepth, depth); };
 
+/** Make one main step's predicate true: the same milestones the events set, with the world flags a legal save needs. Pure on `m` plus the flags of `state`. */
+function satisfy(state, m, step) {
+  const w = step.when;
+  if (w.depth) { m.depth = Math.max(m.depth, w.depth); reach(state, w.depth); return; }
+  if (w.milestone === "memo") m.memo = true;
+  else if (w.milestone === "unlocked") { m.depth = Math.max(m.depth, config.bossDepth - 1); m.unlocked = true; state.bossUnlocked = true; reach(state, config.bossDepth - 1); }
+  else if (w.milestone === "defeated") { m.depth = Math.max(m.depth, config.bossDepth); m.unlocked = true; m.defeated = true; state.bossUnlocked = true; state.bossDefeated = true; reach(state, config.bossDepth); }
+  else if (w.milestone === "verdict") { satisfy(state, m, { when: { milestone: "defeated" } }); m.verdict = true; } // a verdict needs the boss down in a legal save
+}
+
 /**
- * Put the main quest at step n (1..6, forward only; the step is the first one not done). Sets the same milestones the events would, keeps the world flags
- * consistent, and emits the same quest.step cue. The same step is a no-op, an earlier one is refused.
+ * Put a main quest at step n of its own steps (1..its length, forward only; the step is the first one not done). Every step before it, in this and in the
+ * earlier quests, is done: same milestones, same cues and the same arc rewards as the event path (one quest.completed per finished arc, one quest.step).
+ * The same step is a no-op, an earlier one is refused.
  */
-function setMainStep(state, n) {
-  if (!Number.isInteger(n) || n < 1 || n > MAIN_STEPS) return fail("step out of range");
-  const cur = mainStep(state.quests.main.m);
-  if (n < cur) return fail("steps only go forward");
-  if (n === cur) return OK;
-  bumpMain(state, (m) => {
-    if (n >= 2) m.memo = true;
-    if (n >= 3) m.depth = Math.max(m.depth, 1);
-    if (n >= 4) { m.depth = Math.max(m.depth, 4); reach(state, 4); }
-    if (n >= 5) { m.depth = Math.max(m.depth, config.bossDepth - 1); m.unlocked = true; state.bossUnlocked = true; reach(state, config.bossDepth - 1); }
-    if (n >= 6) { m.depth = Math.max(m.depth, config.bossDepth); m.defeated = true; state.bossDefeated = true; reach(state, config.bossDepth); }
-  });
+function setMainStep(state, id, n) {
+  const def = quests[id];
+  if (!Number.isInteger(n) || n < 1 || n > def.steps.length) return fail("step out of range");
+  const target = mainSteps.find((s) => s.arcId === id).n + n - 1, cur = mainStep(state.quests.main.m);
+  if (target < cur) return fail("steps only go forward");
+  if (target === cur) return OK;
+  questSystem.changeMain(state, (m0) => { const m = { ...m0 }; satisfy(state, m, mainSteps[target - 2]); return m; });
   return OK;
 }
 
 /**
- * Quest cheat (R7): main quest step 1..6, or a side quest state 0 available, 1 active, 2 ready (the item goes into the pouch for an item quest),
- * 3 completed (the reward goes through the hand-in path; a refusal such as bagFull is returned, not hidden). Returns { ok } or { ok: false, error }.
+ * Quest cheat (R7): a main quest at step n of its own steps (main 1..3, main2 1..3, main3 1..4; "main" with n up to 3), or a side quest state 0 available,
+ * 1 active, 2 ready (the item goes into the pouch for an item quest), 3 completed (the reward goes through the hand-in path; a refusal such as bagFull is
+ * returned, not hidden). Returns { ok } or { ok: false, error }.
  */
 export function setQuestStep(state, id, n) {
   if (!state.quests || !quests[id]) return fail("unknown quest");
-  if (id === "main") return setMainStep(state, n);
+  if (quests[id].kind === "main") return setMainStep(state, id, n);
   if (!Number.isInteger(n) || n < 0 || n > 3) return fail("state out of range");
   const q = state.quests[id], def = quests[id], pouch = state.player.pouch;
   const drop = () => { const i = pouch.findIndex((e) => e.quest === id); if (i >= 0) pouch.splice(i, 1); };
@@ -87,7 +85,7 @@ export function setQuestStep(state, id, n) {
   if (n === 1) {
     if (q.s === "active") return OK;
     state.quests[id] = { s: "active", p: 0 }; drop();
-    if (def.objective.type === "kill") questSystem.reviveInterns(state); // the interns of floors 1 and 2 must still be there to kill (CR7-01)
+    if (def.objective.type === "kill") questSystem.reviveKills(state, id); // the monsters of the kill floors must still be there to kill (CR7-01)
     emit(state, { type: "quest.accepted", id, title: def.title, next: nextStep(state, id) });
     return OK;
   }
@@ -95,10 +93,11 @@ export function setQuestStep(state, id, n) {
   if (n === 3 && q.s === "completed") return OK;
   if (q.s !== "ready") {
     // the world a legal save has when this quest is ready (ADV-R7-01: the schema ties the state to the play it needs)
-    if (def.objective.type === "kill") state.stats.kills = Math.max(state.stats.kills, goalOf(id));
-    else reach(state, def.objective.type === "item" ? questSystem.itemFloorOf(state.seed) : config.quests.elite.depth);
+    const type = def.objective.type;
+    if (type === "kill") { state.stats.kills = Math.max(state.stats.kills, goalOf(id)); reach(state, Math.min(...objCfg(id, "kill").depths)); }
+    else reach(state, type === "item" ? questSystem.itemFloorOf(state.seed, id) : objCfg(id, "elite").depth);
     state.quests[id] = { s: "ready", p: goalOf(id) };
-    if (def.objective.type === "item" && !pouch.some((e) => e.quest === id)) {
+    if (type === "item" && !pouch.some((e) => e.quest === id)) {
       pouch.push({ id: pouchId(id), quest: id });
       emit(state, { type: "quest.item", id: pouchId(id), quest: id, name: def.item.name });
     }
@@ -109,14 +108,13 @@ export function setQuestStep(state, id, n) {
   return questSystem.handInQuest(state, id); // the ungated hand-in the input command also uses: pin, pouch, reward and events as in play
 }
 
-/** Finish a quest: the main quest (all six milestones, one quest.completed) or a side quest (ready, then handed in). */
+/** Finish a quest: a main quest (every step up to its last, so "main3" completes all three; one quest.completed per finished arc) or a side quest (ready, then handed in). */
 export function completeQuest(state, id) {
   if (!state.quests || !quests[id]) return fail("unknown quest");
-  if (id === "main") {
-    if (mainStep(state.quests.main.m) > MAIN_STEPS) return OK;
-    const r = setMainStep(state, MAIN_STEPS);
-    if (!r.ok) return r;
-    bumpMain(state, (m) => { m.verdict = true; });
+  if (quests[id].kind === "main") {
+    const last = mainSteps.filter((s) => s.arcId === id).pop().n;
+    if (mainStep(state.quests.main.m) > last) return OK;
+    questSystem.changeMain(state, (m0) => { const m = { ...m0 }; satisfy(state, m, mainSteps[last - 1]); return m; });
     return OK;
   }
   return setQuestStep(state, id, 3);

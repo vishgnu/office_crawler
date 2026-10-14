@@ -36,12 +36,12 @@ test("setStep and completeQuest use the shell's cheat wrapper when it exists, ot
   assert.deepEqual(w.api.cheat.completeQuest("sq1"), { ok: true, wrapped: true });
   assert.deepEqual(w.calls, [["wrapper", "setQuestStep", "main", 3], ["wrapper", "completeQuest", "sq1"]]);
   const d = rig();
-  assert.deepEqual(d.api.quests.setStep("main", 4), { ok: true });
-  assert.equal(d.api.quests.state().main.step, 4);
+  assert.deepEqual(d.api.quests.setStep("main2", 2), { ok: true });
+  assert.equal(d.api.quests.state().main2.step, 2); assert.equal(d.api.quests.state().main.state, "completed"); assert.equal(d.api.quests.state().main3.state, "unavailable");
   assert.deepEqual(d.api.quests.setStep("sq2", 2), { ok: true });
   assert.equal(d.api.quests.state().sq2.state, "ready"); assert.equal(d.game.core.player.pouch.length, 1);
-  assert.deepEqual(d.api.cheat.completeQuest("main"), { ok: true });
-  assert.equal(d.api.quests.state().main.state, "completed");
+  assert.deepEqual(d.api.cheat.completeQuest("main3"), { ok: true });
+  assert.deepEqual(["main", "main2", "main3"].map((id) => d.api.quests.state()[id].state), ["completed", "completed", "completed"]);
   assert.equal(d.api.quests.setStep("main", 2).ok, false, "forward only");
 });
 

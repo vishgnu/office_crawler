@@ -10,36 +10,47 @@ const hero = () => newGame(5, { class: "facilities-manager", name: "Cheater", st
 const types = (s) => s.events.map((e) => e.type);
 const legal = (s) => assert.equal(schemaProblem(toSave(s)), null);
 
-test("setQuestStep(main, n) goes forward only, emits one quest.step per change, and keeps the save legal at every step", () => {
-  for (let n = 2; n <= 6; n++) {
+test("setQuestStep(main id, n) takes a step within the quest, goes forward only, emits the event path's cues, and keeps the save legal at every step (AC-R-256-1)", () => {
+  for (const st of content.mainSteps.slice(1)) {
     const s = hero(); s.events.length = 0;
-    assert.deepEqual(setQuestStep(s, "main", n), { ok: true });
-    assert.equal(mainStep(s.quests.main.m), n);
-    assert.deepEqual(s.events.map((e) => [e.type, e.id, e.step]), [["quest.step", "main", n]], `step ${n}`);
-    assert.equal(s.events[0].next, content.quests.main.steps[n - 1].line);
+    assert.deepEqual(setQuestStep(s, st.arcId, st.arcStep), { ok: true });
+    assert.equal(mainStep(s.quests.main.m), st.n);
+    const step = s.events.filter((e) => e.type === "quest.step");
+    assert.equal(step.length, 1, `step ${st.n}: one quest.step`);
+    assert.deepEqual([step[0].id, step[0].step, step[0].next, !!step[0].unlocked], [st.arcId, st.arcStep, st.line, st.arcId !== "main"], `step ${st.n}: unlocked when the active quest changed`);
+    assert.equal(s.events.filter((e) => e.type === "quest.completed").length, st.arc - 1, "one quest.completed per finished quest");
     legal(s);
-    assert.deepEqual(setQuestStep(s, "main", n), { ok: true }); assert.equal(s.events.length, 1, "same step again is a no-op");
-    assert.equal(setQuestStep(s, "main", n - 1).ok, false, "backwards refused");
+    const n = s.events.length;
+    assert.deepEqual(setQuestStep(s, st.arcId, st.arcStep), { ok: true }); assert.equal(s.events.length, n, "same step again is a no-op");
+    assert.equal(setQuestStep(s, content.mainSteps[st.n - 2].arcId, content.mainSteps[st.n - 2].arcStep).ok, false, "backwards refused");
   }
   const s = hero();
-  for (const bad of [0, 7, 1.5, "3", null, undefined]) assert.equal(setQuestStep(s, "main", bad).ok, false, String(bad));
-  assert.equal(setQuestStep(s, "nope", 1).ok, false);
+  for (const bad of [0, 4, 1.5, "3", null, undefined]) assert.equal(setQuestStep(s, "main", bad).ok, false, String(bad));
+  assert.equal(setQuestStep(s, "main3", 5).ok, false); assert.equal(setQuestStep(s, "main3", 4).ok, true);
+  assert.equal(setQuestStep(hero(), "nope", 1).ok, false);
 });
 
-test("setQuestStep(main, n) sets the same world flags the real events would (deepest floor, boss flags)", () => {
-  const s = hero(); setQuestStep(s, "main", 5);
+test("setQuestStep(main id, n) sets the same world flags the real events would (deepest floor, boss flags)", () => {
+  const s = hero(); setQuestStep(s, "main3", 3);
   assert.equal(s.bossUnlocked, true); assert.ok(s.deepestDepth >= config.bossDepth - 1); assert.equal(s.bossDefeated, false);
-  setQuestStep(s, "main", 6);
+  setQuestStep(s, "main3", 4);
   assert.equal(s.bossDefeated, true); assert.equal(s.quests.main.m.defeated, true); assert.equal(s.quests.main.m.verdict, false);
+  legal(s);
 });
 
-test("completeQuest(main) ends in one quest.completed; asking again changes nothing", () => {
+test("completeQuest(main) finishes the first quest; completeQuest(main3) finishes all three: one quest.completed per quest in order, the arc rewards paid once; again changes nothing", () => {
   const s = hero(); s.events.length = 0;
   assert.deepEqual(completeQuest(s, "main"), { ok: true });
-  assert.equal(mainStep(s.quests.main.m), 7);
-  assert.deepEqual(types(s), ["quest.step", "quest.completed"]);
-  legal(s);
-  const n = s.events.length; assert.deepEqual(completeQuest(s, "main"), { ok: true }); assert.equal(s.events.length, n);
+  assert.equal(mainStep(s.quests.main.m), 4);
+  assert.deepEqual(s.events.filter((e) => e.type.startsWith("quest.") && e.type !== "quest.pinned").map((e) => `${e.type}:${e.id}`), ["quest.completed:main", "quest.step:main2"]);
+  const t = hero(); t.events.length = 0; const gold = t.player.gold, xp = t.player.xp;
+  assert.deepEqual(completeQuest(t, "main3"), { ok: true });
+  assert.equal(mainStep(t.quests.main.m), 11);
+  assert.deepEqual(t.events.filter((e) => e.type === "quest.completed").map((e) => e.id), ["main", "main2", "main3"]);
+  assert.equal(t.player.gold - gold, 50 + 80); assert.equal(t.events.filter((e) => e.type === "levelup").length > 0 || t.player.xp - xp === 65 + 110, true);
+  assert.equal(t.quests.pinned, "main3");
+  legal(t);
+  const n = t.events.length; assert.deepEqual(completeQuest(t, "main3"), { ok: true }); assert.deepEqual(completeQuest(t, "main"), { ok: true }); assert.equal(t.events.length, n);
 });
 
 test("setQuestStep on a side quest: 0 available, 1 active, 2 ready (the badge enters the pouch), refusals for bad input", () => {

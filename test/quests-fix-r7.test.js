@@ -81,17 +81,21 @@ test("CR7-02 run-b (the bot from the Lobby to floor 3: stairs, loot, 95 kills, n
   const s = replay(runB, { start: "town" });
   assert.ok(s.deepestDepth >= 3 && s.stats.kills > 50, "the run uses stairs and fights");
   assert.equal(hashState(s), readFileSync("test/fixtures/run-b.hash", "utf8").trim());
-  assert.ok(s.eventLog.length === 256, "the log window is full: the strip is exact only because quest entries do not count towards it");
+  assert.ok(s.eventLog.filter((e) => !e.type.startsWith("quest.")).length === 256, "the log window is full: the strip is exact only because quest entries do not count towards it");
   assert.deepEqual(s.player.pouch, []);
   assert.ok(content.sideIds.every((id) => s.quests[id].s === "available"));
 });
 
-test("CR7-02 run-b without any quest system (state.quests removed before the first tick) hashes the same as the full run once the quest subtree and events are stripped", () => {
-  const full = replay(runB, { start: "town" });
-  const bare = newGame(runB.seed, { start: "town" });
-  delete bare.quests; // the quest tap and the floor hooks do nothing without it
-  for (let t = 0; t < runB.ticks; t++) step(bare, runB.inputs.filter((i) => i.tick === t).map((i) => i.input));
-  assert.equal(hashStateWithout(full, STRIP), hashStateWithout(bare, STRIP), "quests never touched gameplay: spawn order, ids, loot, rng and the event log are identical");
+test("CR7-02 run-b without any quest system (state.quests removed before the first tick) hashes the same as the full run once the quest subtree and events are stripped (arc rewards zeroed: floor 3 is reached)", () => {
+  const keep = config.quests.arc, zero = { gold: { base: 0, perDepth: 0 }, xp: { base: 0, perDepth: 0 } };
+  try {
+    config.quests.arc = { main: zero, main2: zero };
+    const full = replay(runB, { start: "town" });
+    const bare = newGame(runB.seed, { start: "town" });
+    delete bare.quests; // the quest tap and the floor hooks do nothing without it
+    for (let t = 0; t < runB.ticks; t++) step(bare, runB.inputs.filter((i) => i.tick === t).map((i) => i.input));
+    assert.equal(hashStateWithout(full, STRIP), hashStateWithout(bare, STRIP), "quests never touched gameplay: spawn order, ids, loot, rng and the event log are identical");
+  } finally { config.quests.arc = keep; }
 });
 
 test("CR7-02 run-b plays identically with the R7 retarget and hold rules off (they never act in the recorded run)", () => {
@@ -110,15 +114,27 @@ test("CR7-02 run-b plays identically with the R7 retarget and hold rules off (th
 const preB = "test/fixtures/run-b.pre-quests.hash";
 test("CR7-02 run-b: the stripped hash equals the golden recorded before the quests existed", { todo: existsSync(preB) ? false : "needs test/fixtures/run-b.pre-quests.hash from the pre-quest commit (orchestrator)" }, () => {
   assert.ok(existsSync(preB), "no pre-quest golden for run-b yet");
-  assert.equal(hashStateWithout(replay(runB, { start: "town" }), STRIP), readFileSync(preB, "utf8").trim());
+  // run-b reaches floor 3: arc 1 pays gold and experience there (R7-4), which the pre-quest game could not. The proof zeroes the arc rewards in the config; everything else is the real game.
+  const keep = config.quests.arc, zero = { gold: { base: 0, perDepth: 0 }, xp: { base: 0, perDepth: 0 } };
+  const paid = replay(runB, { start: "town" });
+  assert.ok(paid.quests.main.m.depth >= 3 && paid.quests.main.m.depth < 6, "run-b reaches floor 3 (arc 1 pays) and not floor 6");
+  assert.notEqual(hashStateWithout(paid, STRIP), readFileSync(preB, "utf8").trim(), "with the arc reward paid the stripped hash legitimately differs: gold and experience");
+  try {
+    config.quests.arc = { main: zero, main2: zero };
+    assert.equal(hashStateWithout(replay(runB, { start: "town" }), STRIP), readFileSync(preB, "utf8").trim());
+  } finally { config.quests.arc = keep; }
 });
 
 // ---------------------------------------------------------------------------------------------------- CR7-05 / CR7-06
 test("CR7-05 rewardSummary is the one source: hard numbers for each side quest, and the payout of rewardOf equals it", () => {
   assert.deepEqual(rewardSummary("sq1"), { gold: 60, xp: 90, potions: 3, gear: null });
-  assert.deepEqual(rewardSummary("sq2"), { gold: 90, xp: 140, potions: 0, gear: { slot: "armour", slots: ["body", "head", "hands", "feet"], minRarity: "magic" } });
-  assert.deepEqual(rewardSummary("sq3"), { gold: 90, xp: 140, potions: 2, gear: { slot: "weapon", slots: ["weapon"], minRarity: "magic" } });
-  assert.equal(rewardSummary("main"), null);
+  assert.deepEqual(rewardSummary("sq2"), { gold: 90, xp: 140, potions: 0, gear: { slot: "armour", slots: ["body", "head", "hands", "feet"], minRarity: "magic", maxRarity: "rare" } });
+  assert.deepEqual(rewardSummary("sq3"), { gold: 90, xp: 140, potions: 2, gear: { slot: "weapon", slots: ["weapon"], minRarity: "magic", maxRarity: "rare" } });
+  assert.deepEqual(rewardSummary("sq4"), { gold: 105, xp: 105, potions: 2, gear: null });
+  assert.deepEqual(rewardSummary("sq5"), { gold: 120, xp: 120, potions: 0, gear: { slot: "accessory", slots: ["ring", "amulet", "belt"], minRarity: "magic", maxRarity: "magic" } });
+  assert.deepEqual(rewardSummary("main"), { gold: 50, xp: 65, potions: 0, gear: null });
+  assert.deepEqual(rewardSummary("main2"), { gold: 80, xp: 110, potions: 0, gear: null });
+  assert.equal(rewardSummary("main3"), null, "the last arc pays nothing");
   assert.equal(rewardSummary("nope"), null);
   const s = newGame(4, { start: "town" });
   for (const id of content.sideIds) {

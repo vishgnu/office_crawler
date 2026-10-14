@@ -13,7 +13,7 @@ import { bases, slotKeys, rarities, rarityOrder } from "./content/items.js";
 import { affixes, affixGroups } from "./content/affixes.js";
 import { uniques } from "./content/uniques.js";
 import { drops } from "./content/monsters.js";
-import { quests, questIds, sideIds } from "./content/quests.js";
+import { quests, questIds, sideIds, mainIds, mainSteps, lockedLine } from "./content/quests.js";
 import { questView as questViewOf, npcMarker as npcMarkerOf, mapMarkers as mapMarkersOf } from "./systems/questview.js";
 
 export { createRng } from "../rng.js";
@@ -53,10 +53,10 @@ export { generateFloor } from "./gen/floor.js";
 export { findPath } from "./pathfind.js";
 export { advance } from "./clock.js";
 export { hashState, hashStateWithout };
-export { placeQuestObjects, questSpot, questRng, questHandIn, handInQuest, rewardSummary, rewardOf, reviveInterns } from "./systems/quests.js";
-export { questView, nextStep, npcMarker, mapMarkers } from "./systems/questview.js";
+export { placeQuestObjects, questSpot, questRng, questHandIn, handInQuest, rewardSummary, rewardOf, reviveInterns, reviveKills } from "./systems/quests.js";
+export { questView, nextStep, npcMarker, mapMarkers, mainState } from "./systems/questview.js";
 
-export const content = { monsters, bosses, championMods, skills, skillTrees, npcs, themes, props, strings, story, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops, quests, questIds, sideIds };
+export const content = { monsters, bosses, championMods, skills, skillTrees, npcs, themes, props, strings, story, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops, quests, questIds, sideIds, mainIds, mainSteps, lockedLine };
 
 export const cloneState = (state) => structuredClone(state);
 

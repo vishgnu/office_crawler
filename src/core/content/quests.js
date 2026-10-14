@@ -2,17 +2,43 @@
 // All text is working text written for this game (R-255): the customer may rename it, only this file changes.
 // `{giver}` in the `next` lines is replaced by the giver NPC's name string.
 
+// The main quest is three arcs over ONE stored milestone block (state.quests.main.m, ADR-0007 amendment R7-4 A1). Each step has exactly one completion
+// predicate `when`: { milestone: "memo" | "unlocked" | "defeated" | "verdict" } or { depth: N } (floor N reached). A later step implies the earlier ones.
 const main = {
-  id: "main", kind: "main", title: "Why the Lights Went Out",
+  id: "main", kind: "main", arc: 1, title: "Why the Lights Went Out",
+  blurb: "The lights went out overnight, and nobody upstairs will say why.",
   steps: [
-    { id: "memo", title: "Read the memo", line: "Take the lift down.", target: { kind: "elevator" } },
-    { id: "dark-floor", title: "Find the dark floor", line: "Reach floor 1 and look for what cut the power.", target: { kind: "elevator" } },
-    { id: "go-deeper", title: "Go deeper", line: "Reach floor 4. Visit the Lobby first: the staff may pay in gear.", target: { kind: "stairs-down" } },
-    { id: "executive-floor", title: "Open the executive floor", line: "Reach floor 8 and find the way up to the Executive Suite.", target: { kind: "stairs-down" } },
-    { id: "face-director", title: "Face the Regional Director", line: "Defeat the Regional Director.", target: { kind: "stairs-down" } },
-    { id: "report", title: "File the report", line: "Read the verdict.", target: null },
+    { id: "memo", title: "Read the memo", line: "Take the lift down.", when: { milestone: "memo" }, target: { kind: "elevator" } },
+    { id: "dark-floor", title: "Find the dark floor", line: "Reach floor 1 and look for what cut the power.", when: { depth: 1 }, target: { kind: "elevator" } },
+    { id: "cables", title: "Follow the cables", line: "Follow the power cables down to floor 3.", when: { depth: 3 }, target: { kind: "stairs-down" } },
   ],
 };
+
+const main2 = {
+  id: "main2", kind: "main", arc: 2, title: "The Paper Trail",
+  blurb: "The cables lead to a paper trail, and the paper trail leads down.",
+  unlock: "A new assignment is on your desk: The Paper Trail.",
+  steps: [
+    { id: "go-deeper", title: "Go deeper", line: "Reach floor 4. Visit the Lobby first: the staff may pay in gear.", when: { depth: 4 }, target: { kind: "stairs-down" } },
+    { id: "records", title: "Check the records floor", line: "Reach floor 5 and look for where the paperwork goes.", when: { depth: 5 }, target: { kind: "stairs-down" } },
+    { id: "mail-room", title: "Find the mail room", line: "Reach floor 6 and find the mail room.", when: { depth: 6 }, target: { kind: "stairs-down" } },
+  ],
+};
+
+const main3 = {
+  id: "main3", kind: "main", arc: 3, title: "Final Notice",
+  blurb: "Somebody on the top floor signed off on all of it.",
+  unlock: "A new assignment is on your desk: Final Notice.",
+  steps: [
+    { id: "back-stairs", title: "Take the back stairs", line: "Reach floor 7 by the back stairs.", when: { depth: 7 }, target: { kind: "stairs-down" } },
+    { id: "executive-floor", title: "Open the executive floor", line: "Reach floor 8 and find the way up to the Executive Suite.", when: { milestone: "unlocked" }, target: { kind: "stairs-down" } },
+    { id: "face-director", title: "Face the Regional Director", line: "Defeat the Regional Director.", when: { milestone: "defeated" }, target: { kind: "stairs-down" } },
+    { id: "report", title: "File the report", line: "Read the verdict.", when: { milestone: "verdict" }, target: null },
+  ],
+};
+
+/** Shown in the journal for a quest that is not yet open; `{previous}` is the title of the quest before it. */
+export const lockedLine = "Locked. Finish {previous} first.";
 
 const sq1 = {
   id: "sq1", kind: "side", title: "Intern Overflow", giver: "vendor", salt: 1,
@@ -67,15 +93,54 @@ const sq3 = {
   reward: { gold: true, xp: true, potions: true, gear: true },
 };
 
-export const quests = { main, sq1, sq2, sq3 };
-export const sideIds = ["sq1", "sq2", "sq3"];
-export const questIds = ["main", ...sideIds];
+const sq4 = {
+  id: "sq4", kind: "side", title: "The Misfiled Ledger", giver: "stash", salt: 4,
+  objective: { type: "item" },
+  item: { name: "Misfiled Ledger", description: "A heavy ledger with a sticky note: 'Return to Storage. Urgent.'" },
+  text: {
+    offer: "Somebody on the fifth or sixth floor borrowed a ledger from my shelves and never brought it back. It is badly overdue. Find it, and I will make the late fee disappear.",
+    progress: "Not back yet. Try the side rooms on the fifth and sixth floors.",
+    ready: "That is the one, spine cracked and all. Take these for your trouble.",
+    done: "Back on the shelf where it belongs. The shelves thank you.",
+  },
+  next: {
+    available: "Talk to the {giver} in the Lobby about an overdue ledger.",
+    active: "Find the missing ledger on floor 5 or 6.",
+    ready: "Return to {giver} in the Lobby with the ledger.",
+  },
+  reward: { gold: true, xp: true, potions: true, gear: false },
+};
+
+const sq5 = {
+  id: "sq5", kind: "side", title: "Slide Deck Surplus", giver: "vendor", salt: 5,
+  objective: { type: "kill" },
+  text: {
+    offer: "The consultants upstairs leave their slide decks everywhere, and I am the one who gets the toner bill. Clear a few of them out and I will find you something from the good shelf.",
+    progress: "Still handing out slides down there. Keep at it.",
+    ready: "Quiet at last. This was at the back of the shelf. It should help you more than it helps me.",
+    done: "No more slides. I owe you one.",
+  },
+  next: {
+    available: "Talk to the {giver} in the Lobby about the consultants.",
+    active: "Defeat Consultants on floors 5 and 6.",
+    ready: "Return to {giver} in the Lobby for your reward.",
+  },
+  reward: { gold: true, xp: true, potions: false, gear: true },
+};
+
+export const quests = { main, main2, main3, sq1, sq2, sq3, sq4, sq5 };
+export const mainIds = ["main", "main2", "main3"];
+/** The ten main steps in journal order: each step plus its arc id, its arc number, its 1-based index inside the arc (`arcStep`) and its global index `n` (1..10). */
+export const mainSteps = mainIds.flatMap((id) => quests[id].steps.map((s) => ({ ...s, arcId: id, arc: quests[id].arc, arcStep: quests[id].steps.indexOf(s) + 1 })))
+  .map((s, i) => ({ ...s, n: i + 1 }));
+export const sideIds = ["sq1", "sq2", "sq3", "sq4", "sq5"];
+export const questIds = [...mainIds, ...sideIds];
 /** Labels of map targets (the UI may translate them; core data keeps one English text). */
 export const markerLabels = { elevator: "Elevator", "stairs-down": "Stairs down", "stairs-up": "Stairs up" };
 
-/** A fresh quest state (plain JSON, hashed, saved from v4). Milestones of the main quest only ever grow. */
+/** A fresh quest state (plain JSON, hashed, saved from v4; v5 adds sq4 and sq5). Milestones of the main quests only ever grow; main2 and main3 have no stored entry. */
 export const newQuestState = () => ({
   main: { m: { memo: false, depth: 0, unlocked: false, defeated: false, verdict: false } },
-  sq1: { s: "available", p: 0 }, sq2: { s: "available", p: 0 }, sq3: { s: "available", p: 0 },
+  ...Object.fromEntries(sideIds.map((id) => [id, { s: "available", p: 0 }])),
   pinned: "main",
 });
