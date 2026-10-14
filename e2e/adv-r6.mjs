@@ -129,7 +129,7 @@ if (sec("respec")) {
   check("[R6-respec] a double click on Yes respecs once: every point back exactly once, only the signature left", after.skillPoints === 15 && Object.keys(after.skills).join() === "pallet-slam" && after.respecsUsed === 1, [after.skillPoints, after.skills, after.respecsUsed]);
   check("[R6-respec] after Yes the confirmation is gone and the panel is still open", (await g.page.locator(T("respec-confirm")).count()) === 0 && (await g.state()).ui.panels?.skills === true);
   check("[R6-respec] focus is on a live control after Yes (not on the body)", (await focusId(g.page)) !== "BODY", await focusId(g.page));
-  check("[R6-respec] Respec with nothing learned runs at once, no confirmation, nothing changes in free mode", await (async () => { await g.page.click(T("respec")); return (await g.page.locator(T("respec-confirm")).count()) === 0 && (await g.state()).player.skillPoints === 15; })());
+  check("[R6-respec] free mode, nothing learned: Respec runs at once (nothing to lose), no confirmation, points unchanged", await (async () => { await g.page.click(T("respec")); return (await g.page.locator(T("respec-confirm")).count()) === 0 && (await g.state()).player.skillPoints === 15; })());
   check("[R6-respec] no page error", g.errors.length === 0, g.errors);
   await g.context.close();
 }
@@ -173,19 +173,23 @@ if (sec("respec")) {
 { // the once mode, with the first click being a respec of an empty tree
   const g = await boot({ file: VARIANTS.once }); await startNew(g.page, { cls: CL.sr, name: "Once0" });
   await g.app("cheat.setLevel", 16); await openSkills(g);
-  await g.page.click(T("respec")); // nothing learned: runs without a confirmation
+  check("[R6-once] with nothing learned Respec is disabled and says why", (await g.page.locator(T("respec")).isDisabled()) && /nothing/i.test(await g.page.textContent(T("respec-note"))), await g.page.textContent(T("respec-note")));
+  const r0 = await g.app("tree.respec");
+  check("[R6-once] [ADV-R6-02 fixed] the API refuses with nothing-to-respec and the once is not used", r0.ok === false && (r0.error === "nothing-to-respec" || r0.reason === "nothing-to-respec") && (await g.state()).player.respecsUsed === 0, r0);
   await learnSome(g, PLAN[CL.sr]);
-  const r = await g.app("tree.respec");
-  xfail("[R6-once] clicking Respec with nothing learned does not use up the one respec of the once mode", r.ok === true, "ADV-R6-02", { second: r });
+  await g.page.waitForTimeout(80);
+  await g.page.click(T("respec")); await g.page.click(T("respec-yes"));
+  check("[R6-once] the real respec after learning works and uses the once", (await g.state()).player.respecsUsed === 1 && (await g.page.locator(T("respec")).isDisabled()), (await g.state()).player.respecsUsed);
   await g.context.close();
 }
 {
   const g = await boot({ file: VARIANTS.gold }); await startNew(g.page, { cls: CL.it, name: "Gold" });
   await g.app("cheat.setLevel", 16); await g.app("cheat.giveGold", 1000); await openSkills(g);
   const g0 = (await g.state()).player.gold;
-  await g.page.click(T("respec"));
+  check("[R6-gold] with nothing learned Respec is disabled with the hint", (await g.page.locator(T("respec")).isDisabled()) && /nothing/i.test(await g.page.textContent(T("respec-note"))));
+  await g.page.locator(T("respec")).click({ force: true }).catch(() => {}); await g.app("tree.respec");
   const g1 = (await g.state()).player.gold;
-  xfail("[R6-gold] Respec with nothing to return takes no gold (here it silently charged 210 gold for 0 points, with no confirmation)", g1 === g0, "ADV-R6-02", { before: g0, after: g1 });
+  check("[R6-gold] [ADV-R6-02 fixed] no gold is taken for a respec of nothing (button, forced click and API)", g1 === g0, { before: g0, after: g1 });
   await learnSome(g, PLAN[CL.it]);
   await g.page.click(T("respec"));
   const txt = await g.page.textContent(T("respec-refund"));
@@ -265,7 +269,7 @@ for (const [clsKey, cls] of Object.entries(CL)) {
       }
     }
     check(`[R6-tree] ${clsKey} ${stage}: every prerequisite has a connector with the right direction and colour (met or not), parent stubs match, nodes keep their state`, bad.length === 0, bad.slice(0, 3));
-    if (stage === "lvl8") xfail(`[R6-tree] ${clsKey}: every elbow reaches the centre of its parent's stub (it stops 2 to 7 px short: 100% excludes the 4 px of border per column)`, short.length === 0, "ADV-R6-03", short.slice(0, 2));
+    if (stage === "lvl8") check(`[R6-tree] [ADV-R6-03 fixed] ${clsKey}: every elbow reaches the centre of its parent's stub`, short.length === 0, short.slice(0, 2));
     if (stage === "partial" || stage === "lvl8") check(`[R6-tree] ${clsKey} ${stage}: no horizontal scroll`, await overflow(g.page));
     if (stage === "partial") await shot(g.page, `tree-${clsKey}-partial`);
     check(`[R6-tree] ${clsKey} ${stage}: no page error`, g.errors.length === 0, g.errors);
@@ -300,7 +304,7 @@ if (sec("keys")) {
   for (let i = 0; i < 6; i++) await g.page.keyboard.press("Enter");
   const st = (await g.state()).player;
   check("[R6-keys] Enter on a focused Learn six times stops at max level 5", st.skills["floor-buffer"] === 5, st.skills);
-  xfail("[R6-keys] after the Learn button became disabled (maxed) by keyboard, focus stays in the panel (on the node) and is not dropped to <body>", (await focusId(g.page)) !== "BODY", "ADV-R6-04", await focusId(g.page));
+  check("[R6-keys] [ADV-R6-04 fixed] after the Learn button became disabled (maxed) by keyboard, focus stays in the panel and is not dropped to <body>", (await focusId(g.page)) !== "BODY", await focusId(g.page));
   // Space and Enter on an F-button assign, again unassigns
   await g.page.focus(T("assign-floor-buffer-3")); await g.page.keyboard.press("Space");
   check("[R6-keys] Space on F4 assigns the skill to F4", (await g.state()).player.skillBar.hotkeys[3] === "floor-buffer", (await g.state()).player.skillBar);
@@ -660,6 +664,78 @@ if (sec("charsel")) {
     await g.context.close();
   }
 } // sec charsel
+
+// ================================================================ 10. the fix round in the browser: v2 to v3 migration, forged saves, refused casts
+if (sec("fix2")) {
+  const v2 = (n) => readFileSync(`test/fixtures/${n}.json`, "utf8");
+  for (const [f, cls, power] of [["save-v2-r5-it", CL.it, "Focus"], ["save-v2-r5-sales", CL.sr, "Agility"], ["save-v2-r5-fm", CL.fm, null]]) {
+    const g = await boot({ seed: { "office-crawler.slot.1": v2(f) }, query: "test=1&seed=1&start=floor" });
+    await g.page.click(T("continue")); await g.page.waitForTimeout(200);
+    const p = (await g.state()).player, st = (await g.app("slots.view")).status;
+    check(`[R6-fix] R5 fixture ${cls}: Continue loads it (scene town, level ${p.level})`, (await g.state()).scene === "town" && p.level === 14, (await g.state()).scene);
+    if (power) {
+      check(`[R6-fix] [ADV-R6-05 fixed] ${cls}: attribute points are back (attrPoints ${p.attrPoints}) and a notice naming ${power} is set`, p.attrPoints >= 60 && st.notice === "attributes-refunded" && /./.test(st.noticeAttr ?? ""), [p.attrPoints, st]);
+      await g.app("pause"); await g.page.waitForTimeout(150);
+      const txt = await g.page.evaluate(() => document.querySelector('[data-testid="save-notice"]')?.innerText ?? "");
+      check(`[R6-fix] ${cls}: the pause menu shows the refund notice with the attribute name and a Dismiss button`, new RegExp(power, "i").test(txt) && (await g.page.locator(T("save-notice-dismiss")).count()) === 1, txt);
+      await g.page.click(T("save-notice-dismiss")); await g.page.waitForTimeout(80);
+      check(`[R6-fix] ${cls}: Dismiss removes the notice`, (await g.page.locator(T("save-notice")).count()) === 0 && (await g.app("slots.view")).status.notice === null);
+      await g.app("pause"); await g.app("save.write");
+      const saved = JSON.parse(await g.page.evaluate(() => localStorage.getItem("office-crawler.slot.1")));
+      check(`[R6-fix] ${cls}: the slot is rewritten as version 3 with the refunded points`, saved.version === 3 && saved.player.attrPoints === p.attrPoints, [saved.version, saved.player.attrPoints]);
+      await g.page.reload(); await g.page.waitForFunction(() => window.__app?.getState().scene === "title");
+      await g.page.click(T("continue")); await g.page.waitForTimeout(200);
+      const p2 = (await g.state()).player;
+      check(`[R6-fix] ${cls}: after reload the same hero loads with no second refund and no notice`, p2.attrPoints === p.attrPoints && JSON.stringify(p2.attrs) === JSON.stringify(p.attrs) && (await g.app("slots.view")).status.notice === null, [p2.attrPoints, p.attrPoints]);
+      // spending the refunded points in the Employee File puts them in the power attribute and adds damage
+      const d0 = (await g.state()).player.damage.max;
+      await g.page.keyboard.press("KeyC"); await g.page.waitForTimeout(120);
+      const n = p2.attrPoints; for (let i = 0; i < 20 && i < n; i++) await g.app("input", { t: "allocate", attr: cls === CL.it ? "focus" : "agility" });
+      check(`[R6-fix] ${cls}: spending the refunded points in the power attribute raises weapon damage`, (await g.state()).player.damage.max > d0, [d0, (await g.state()).player.damage.max]);
+    } else check(`[R6-fix] ${cls}: the Facilities Manager keeps its points and gets no notice`, p.attrPoints === 0 && st.notice === null, [p.attrPoints, st.notice]);
+    check(`[R6-fix] ${cls}: no page error`, g.errors.length === 0, g.errors);
+    await g.context.close();
+  }
+  // forged saves in the browser: the slot is shown as damaged, Continue never starts it, nothing throws
+  for (const [name, mutate] of [["1000 in every attribute at level 1", (sv) => { for (const a of Object.keys(sv.player.attrs)) sv.player.attrs[a] = 1000; }], ["a forged focus affix on the weapon", (sv) => { sv.equipment.weapon.affixes = [{ stat: "focus", value: 900, range: [900, 900] }]; }]]) {
+    const sv = toSave(newGame(5, { class: CL.it, name: "Forged", start: "town", wearStartKit: true })); mutate(sv);
+    const g = await boot({ seed: { "office-crawler.slot.1": canonical({ ...sv, checksum: checksumOf(sv) }) }, query: "test=1&seed=1&start=floor" });
+    const states = (await g.app("slots.list")).slots.map((e) => e.state);
+    await g.page.locator(T("continue")).click({ force: true, timeout: 2000 }).catch(() => {});
+    await g.page.waitForTimeout(150);
+    check(`[R6-fix] [ADV-R6-01 fixed] forged save (${name}) in storage is shown as damaged and cannot be played`, states[0] !== "ok" && (await g.state()).scene === "title", [states, (await g.state()).scene]);
+    check(`[R6-fix] forged save (${name}): no page error`, g.errors.length === 0, g.errors);
+    await g.context.close();
+  }
+  // the importer through the UI path: pasting the forged text into Import is refused with a message
+  {
+    const sv = toSave(newGame(5, { class: CL.it, name: "Forged", start: "town", wearStartKit: true })); for (const a of Object.keys(sv.player.attrs)) sv.player.attrs[a] = 1000;
+    const g = await hero({}, CL.fm, "Host");
+    const r = await g.app("slots.run", { t: "importSlot", slot: 3, text: canonical({ ...sv, checksum: checksumOf(sv) }), confirm: true });
+    check("[R6-fix] [ADV-R6-01 fixed] importing the forged save into slot 3 is refused", r.ok === false, r);
+    await g.context.close();
+  }
+  // refused casts: no toast spam
+  {
+    const g = await hero({}, CL.it, "Mana"); await g.app("cheat.teleportFloor", 1); await g.app("step", 5);
+    await g.page.evaluate(() => { window.__toasts = []; const t = document.querySelector('[data-testid="toast"]'); new MutationObserver(() => { const x = t.innerText.trim(); if (x && window.__toasts.at(-1)?.x !== x || (x && performance.now() - (window.__toasts.at(-1)?.t ?? 0) > 400)) window.__toasts.push({ x, t: performance.now() }); }).observe(t, { childList: true, characterData: true, subtree: true }); });
+    await g.app("input", { t: "assignSkill", slot: 0, id: "server-overheat" }).catch(() => {});
+    await g.app("cheat.setHp", 1).catch(() => {});
+    // drain the mana, then press the cast key 120 times over about 2.4 s
+    await g.page.evaluate(() => { const c = window.__app.getState(); });
+    const st0 = await g.state(), tile = freeTilesNear(st0, st0.player.tile, 4, 2)[0];
+    for (let i = 0; i < 40; i++) { await g.app("input", { t: "cast", skill: st0.player.skillBar.hotkeys[0] ?? st0.player.skillBar.secondary, tile }); await g.app("step", 4); if ((await g.state()).player.mp < 3) break; }
+    await g.page.evaluate(() => { window.__toasts.length = 0; });
+    let drained = (await g.state()).player.mp;
+    for (let i = 0; i < 120; i++) { await g.app("input", { t: "cast", skill: st0.player.skillBar.hotkeys[0] ?? st0.player.skillBar.secondary, tile }); await g.app("step", 1); if (i % 5 === 0) await g.page.waitForTimeout(20); }
+    const toasts = await g.page.evaluate(() => window.__toasts.map((x) => x.x));
+    check("[R6-fix] [CR6-07] 120 refused casts over about 2.4 s show a short reason a few times at most (not 120), and say what is wrong", toasts.length >= 1 && toasts.length <= 4 && toasts.every((x) => /mana|direction|target/i.test(x)), { drained, toasts: toasts.slice(0, 6), n: toasts.length });
+    // a cast without a tile (a key press with the mouse off the map) says so once
+    await g.app("input", { t: "cast", skill: st0.player.skillBar.hotkeys[0], tile: null }); await g.app("step", 1);
+    check("[R6-fix] no page error", g.errors.length === 0, g.errors);
+    await g.context.close();
+  }
+} // sec fix2
 
 // ---- END
 await browser.close();
