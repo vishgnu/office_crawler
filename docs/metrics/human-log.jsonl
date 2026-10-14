@@ -3,3 +3,4 @@
 {"at": "2026-10-14T02:45:58Z", "kind": "ack", "text": "Nice work I will check in later"}
 {"at": "2026-10-14T02:47:25Z", "kind": "decision", "text": "Ip closeness we are good, naes good"}
 {"at": "2026-10-14T03:09:10Z", "kind": "instruction", "text": "Make sure you survive context compression"}
+{"at": "2026-10-14T05:10:39Z", "kind": "question", "text": "Where do we stire the metrics for a project?"}
