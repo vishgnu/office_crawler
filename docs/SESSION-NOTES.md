@@ -1,7 +1,7 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
-_Last updated 2026-10-14T08:31:30Z. Keep this block current after every step; the log below is history._
+_Last updated 2026-10-14T09:30:30Z. Keep this block current after every step; the log below is history._
 
-**Where we are:** R4, R5, G accepted (proxy); retro R5+G done (L-025..L-030, round-05.json, round-G.json). **R6 in flight** (contract + ownership `docs/reviews/R6-contract.md`): BAL-R6 class balance + caster scaling + golden re-record (`R6-balance-progress.md`), UI-R6 N5/N6/N7, tree connectors, select polish, respec confirm (`R6-ui-progress.md`), WORLD-R6 N1-N4, slam lifetime, atlas ≤ 4300 ms (`R6-world-progress.md`). After: forward BAL e2e_red to UI owner, orchestrator full suite + quiet bench, ADV-R6 + code review in parallel (L-030), visual review, proxy acceptance, retro R6. Then R7-8 flawless gameplay; **R7 starts with R7-0 quest journal + next steps (sixth briefing); R8 starts with R8-0 hero visuals follow equipped gear; then R8-T e2e test + polish round (seventh briefing); then R9-10 lighting, R11-12 overall test & polish.**
+**Where we are:** R6 packages done (BAL-R6, UI-R6, WORLD-R6) + harness PORTAL-H1 done. Orchestrator verify: 686 tests green, e2e 12/13 (adv-r5 respec), bench fps50 46.2/38.5 (one FAIL vs 40). **In flight:** PERF-R6 fps headroom (`docs/reviews/R6-perf-progress.md`), ADV-R6 (fixes adv-r5 respec first; `R6-adversarial-progress.md`), code review R6 (`R6-code-review-progress.md`). Then fix round, quiet bench (5 runs), visual review, proxy acceptance (+ feel note: monster scaling/xp curve changed), retro R6 (candidate learnings: stop looping agents; bench variance needs 5 runs + p99). Then R7 (R7-0 quest journal first), R8 (R8-0 gear visuals), R8-T, R9-10 lighting, R11-12.
 
 **In flight (check the files, not memory):**
 - ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
