@@ -1,0 +1,2 @@
+09:44 done: e2e fix adv-r5 (respec-yes click); adv-r6 respec section (29 checks, ADV-R6-02 once/gold 0-refund); node probes: attr import 1000 accepted (ADV-R6-01 candidate); next: tree connectors, pause/slot layout, scaling, lazy atlas, no-cheat runs
+09:48 done: tree connectors all classes x4 stages (ADV-R6-03 elbow 2-7px short), keyboard (ADV-R6-04 focus lost to body when Learn maxes), phone/mid layouts; next: pause+slot layout w/ banners, scaling, lazy atlas, saves, no-cheat

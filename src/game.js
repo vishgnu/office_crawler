@@ -22,7 +22,7 @@ import { damageMonster } from "./core/systems/damage.js";
 const MAX_CATCHUP_TICKS = 8;
 
 export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed, atlasMs = 0, lowFx = false, hc = false, story = false }) {
-  const g = canvas.getContext("2d", { alpha: false }); // opaque canvas: render() paints every pixel first, and an opaque backing store skips the compositor blend and lets Skia take its opaque fast paths (PERF-R6: +13 fps in the bench)
+  const g = canvas.getContext("2d");
   const fx = createFx(style), lighting = createLighting(style), labels = createLabels(style), hud = createHud(style), fmap = createMap(style);
   fx.lowFx = lowFx; fx.hc = hc;
   const rs = { facing: new Map() };

@@ -51,6 +51,8 @@ try {
     s = await g.app("step", 6); // a few ticks so the pack members start to move
     const visible = s.monsters.filter((m) => { const c = s.ui.camera, x = c.ox + (m.pos.x - m.pos.y) * 32 * c.z + 32 * c.z, y = c.oy + (m.pos.x + m.pos.y + 1) * 16 * c.z; return x > 0 && x < c.w && y > 0 && y < c.h; }).length;
     await g.page.waitForTimeout(1500); // warm-up
+    // the lazy sprites of the new types are drawn a few per frame in the first seconds after they appear (world.js warmFrames); wait until that is done so the window is steady state
+    for (let i = 0, last = -1; i < 60; i++) { const c = await g.page.evaluate(() => window.__atlasStats?.lazy ?? 0); if (c === last) break; last = c; await g.page.waitForTimeout(400); }
     // the measured window: 150 real frames; every frame's dt, the atlas first-use counters and heap drops (GC) are recorded inside it
     const win = await g.page.evaluate(() => new Promise((r) => {
       const st = window.__atlasStats ?? { lazy: 0, lazyMs: 0, sil: 0, silMs: 0 }, s0 = { ...st }, dts = [], mem = () => performance.memory?.usedJSHeapSize ?? 0;
@@ -76,6 +78,31 @@ try {
     const fr = r.frame, w = r.win;
     console.log(`INFO   frame ms p50 ${fr.p50.toFixed(1)} p95 ${fr.p95.toFixed(1)} p99 ${fr.p99.toFixed(1)} max ${fr.max.toFixed(1)}, ${fr.over25} frames > 25 ms; in window: ${w.lazy} lazy draws (${w.lazyMs.toFixed(1)} ms), ${w.sil} silhouettes (${w.silMs.toFixed(1)} ms), ${w.heapDrops} heap drops (GC), heap +${w.heapGrowthKB} KB; load ${os.loadavg().map((x) => x.toFixed(2)).join(" ")}`);
     result[key + "Frame"] = { p50: +fr.p50.toFixed(1), p95: +fr.p95.toFixed(1), p99: +fr.p99.toFixed(1), max: +fr.max.toFixed(1), lazy: w.lazy, sil: w.sil, gc: w.heapDrops };
+  }
+  // New floor in play (PERF-R6, CR6-04): frames right after a floor loads, with the simulation running (one tick a frame), so monsters of types not yet seen
+  // are drawn for the first time. Reports the worst frames and the first-use draws inside the window; informational (the cost is the same on any machine, the frame budget is not).
+  for (const depth of [2, 5]) {
+    const g = await open(browser, { query: "test=1&seed=3&zoom=1.8", viewport: { width: 1280, height: 720 } });
+    await g.app("newGame", { seed: 3 });
+    await g.app("step", 30);
+    await g.page.waitForTimeout(800);
+    await g.app("cheat.teleportFloor", depth);
+    const w = await g.page.evaluate(() => new Promise((r) => {
+      const st = window.__atlasStats ?? { lazy: 0, lazyMs: 0 }, s0 = { ...st }, dts = [], jsMs = [];
+      let i = 0, last = performance.now();
+      const f = (t) => {
+        dts.push(t - last); last = t;
+        const t0 = performance.now(); window.__app.step(1); jsMs.push(performance.now() - t0);
+        if (++i >= 180) r({ dts: dts.slice(1), jsMs, lazy: st.lazy - s0.lazy, lazyMs: st.lazyMs - s0.lazyMs, firstLazy: jsMs.findIndex((x) => x > 8) });
+        else requestAnimationFrame(f);
+      };
+      requestAnimationFrame(f);
+    }));
+    const s = await g.app("getState");
+    await g.context.close();
+    const d = [...w.dts].sort((a, b) => a - b), j = [...w.jsMs].sort((a, b) => a - b);
+    console.log(`INFO floor ${depth} load (${new Set(s.monsters.map((m) => m.type)).size} monster types), 180 frames after the load: frame ms p50 ${d[d.length >> 1].toFixed(1)} p99 ${d[Math.floor(d.length * 0.99)].toFixed(1)} max ${d[d.length - 1].toFixed(1)}; step+render ms p50 ${j[j.length >> 1].toFixed(1)} max ${j[j.length - 1].toFixed(1)}; ${w.lazy} lazy draws (${w.lazyMs.toFixed(0)} ms); load ${os.loadavg().map((x) => x.toFixed(2)).join(" ")}`);
+    result["floor" + depth] = { frameMax: +d[d.length - 1].toFixed(1), jsMax: +j[j.length - 1].toFixed(1), lazy: w.lazy };
   }
   const ok = result.fps50 >= FPS_TARGET;
   if (!ok) failed++;

@@ -4,8 +4,8 @@ import { createAtlas } from "../../atlas.js";
 import { keys, FLOOR_KINDS, FLOOR_VARIANTS, WALL_VARIANTS, MARKERS, ANIMS, PLAYER_ANIMS, DIRS, DIR_VEC, PLAYER_CLASS, HERO_CLASSES, ALLY_IDS, ALLY_ANIMS, PROJECTILES, NPC_FRAMES, BOSS_ANIMS, BOSS_P2 } from "../../keys.js";
 import { content } from "../../../core/index.js";
 import { palette } from "./palette.js";
-import { setInkScale } from "../../draw/shapes.js";
-import { setTexRes } from "../../draw/textures.js";
+import { setInkScale, inkScale, restoreInkScale } from "../../draw/shapes.js";
+import { setTexRes, texRes } from "../../draw/textures.js";
 import { drawFloor, drawMarker, drawWall, WALL_W, WALL_CANVAS_H, WALL_CY } from "./tiles.js";
 import { drawProp, drawDecor, DECOR_IDS, drawElevator, drawPortal, PORTAL_W, PORTAL_H, PORTAL_CX, PORTAL_CY, PROP_W, PROP_H, PROP_CX, PROP_CY } from "./props.js";
 import { drawFigure, FIG_W, FIG_H, FIG_FX, FIG_FY, FIG_DIM, BOSS_W, BOSS_H, BOSS_FX, BOSS_FY } from "./characters.js";
@@ -59,7 +59,12 @@ export const vector = {
     const inkZoom = Math.min(4, Math.max(0.5, 2 / rim));
     setInkScale(inkZoom); setTexRes(scale);
     // Lazily drawn sprites run long after the build: they re-apply this atlas's ink weight and texture resolution first (a rebuild for another zoom changes the globals)
-    const lazyDraw = (fn) => (g, sc) => { setInkScale(inkZoom); setTexRes(scale); fn(g, sc); }; // the on-screen zoom follows from the rim width (rim = 2 screen px)
+    // ... and put the previous values back (CR6-03): a lazy draw of an old atlas during a rebuild in flight must not change what the new build's remaining eager sprites see.
+    const lazyDraw = (fn) => (g, sc) => {
+      const k0 = inkScale(), r0 = texRes();
+      setInkScale(inkZoom); setTexRes(scale);
+      try { fn(g, sc); } finally { restoreInkScale(k0); setTexRes(r0); }
+    }; // the on-screen zoom follows from the rim width (rim = 2 screen px)
     const atlas = createAtlas(scale, { rim, hc });
     const steps = [];
     for (const theme of Object.keys(content.themes)) {

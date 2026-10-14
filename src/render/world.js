@@ -60,6 +60,39 @@ export function warmHero(atlas, cls, budgetMs = Infinity) {
   return true;
 }
 
+/**
+ * Budgeted warm-up of the lazy monster and hero frames (PERF-R6, CR6-04). Each frame the world pass draws a few more sprites of the monster types on the
+ * floor (idle and walk first, every direction, then attack) and of the hero, so the first sight of a new type, facing or frame does not pay
+ * its rim bake (about 4 ms a sprite) inside a frame. Drawing a sprite earlier changes nothing on screen. `budgetMs` bounds the work of one call.
+ */
+const warmState = new WeakMap();
+const WARM_ORDER = ["idle", "walk", "attack"]; // death is one sprite per kill, a single 4 ms draw: not worth 32 sprites a type
+export function warmFrames(atlas, core, budgetMs = 1.5) {
+  let w = warmState.get(atlas);
+  if (!w) warmState.set(atlas, (w = { types: new Set(), queue: [], i: 0, hero: "" }));
+  const mons = core.monsters;
+  for (let i = 0; i < mons.length; i++) {
+    const t = mons[i].type;
+    if (w.types.has(t) || !content.monsters[t]) continue;
+    w.types.add(t);
+    for (const anim of WARM_ORDER) for (let d = 0; d < DIRS; d++) for (let f = 0; f < ANIMS[anim]; f++) w.queue.push(keys.mon(t, anim, d, f));
+  }
+  const cls = heroType(core.player.class);
+  if (w.hero !== cls) { // the hero's frames go to the front of what is left
+    w.hero = cls;
+    const hk = [];
+    for (const anim of WARM_ORDER) for (let d = 0; d < DIRS; d++) for (let f = 0; f < PLAYER_ANIMS[anim]; f++) hk.push(keys.plr(cls, anim, d, f));
+    w.queue.splice(w.i, 0, ...hk);
+  }
+  if (w.i >= w.queue.length) { if (w.i) { w.queue.length = 0; w.i = 0; } return true; }
+  const t0 = performance.now();
+  while (w.i < w.queue.length) {
+    const k = w.queue[w.i++];
+    if (atlas.isDrawn?.(k) === false) { atlas.get(k); if (performance.now() - t0 >= budgetMs) break; }
+  }
+  return w.i >= w.queue.length;
+}
+
 function allyFigs(atlas, id) {
   const t = figureTable(atlas);
   if (t.ally[id]) return t.ally[id];
@@ -562,6 +595,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     const e = gi.gold ? atlas.get(keys.loot(GOLD_SIZES[gi.gold < 25 ? 0 : gi.gold < 80 ? 1 : 2])) : atlas.get(keys.loot("item"));
     items.push(grab(gi.tile.x + gi.tile.y + 1 - 0.25, e, pt.x, pt.y));
   }
+  warmFrames(atlas, core);
   F.prev = prev; F.alpha = alpha; fx.heroType = heroType(core.player.class);
   fx.drawGround(g, cam, atlas, now); out.lights = fx.lights; // light hook: [{x, y, r, colour, intensity}] for the lighting rounds
   // cast runes, burst and heal rings: flat on the floor, under every actor

@@ -5,8 +5,8 @@
 // Debug counters for the bench (first-use draws that could land inside a measured window): window.__atlasStats.
 const stats = (globalThis.__atlasStats ??= { lazy: 0, lazyMs: 0, sil: 0, silMs: 0 });
 function silhouette(e, colour, alpha, mode) {
-  const cache = (e.sil ??= {}), ck = mode + colour;
-  let s = cache[ck];
+  const sil = (e.sil ??= {}), cache = (sil[mode] ??= {}); // two levels (mode, colour): no string is built per lookup in the frame loop
+  let s = cache[colour];
   if (!s) {
     const t0 = performance.now(); stats.sil++;
     const img = document.createElement("canvas");
@@ -17,7 +17,7 @@ function silhouette(e, colour, alpha, mode) {
     g.fillStyle = colour; g.globalAlpha = alpha;
     g.fillRect(0, 0, img.width, img.height);
     s = { ...e, img, sil: null };
-    cache[ck] = s;
+    cache[colour] = s;
     stats.silMs += performance.now() - t0;
   }
   return s;
@@ -28,15 +28,15 @@ function silhouette(e, colour, alpha, mode) {
  * instead of a ring of silhouette stamps). Same size and anchor as the sprite; draw it under the sprite itself.
  */
 function outline(e, colour, px) {
-  const cache = (e.sil ??= {}), ck = `ol${colour}${px}`;
-  let o = cache[ck];
+  const sil0 = (e.sil ??= {}), cache = ((sil0.ol ??= {})[colour] ??= {});
+  let o = cache[px];
   if (!o) {
     const sil = silhouette(e, colour, 1, "source-in"), img = document.createElement("canvas");
     img.width = e.img.width; img.height = e.img.height;
     const g = img.getContext("2d"), r = px * (e.img.width / e.w);
     for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; g.drawImage(sil.img, Math.cos(a) * r, Math.sin(a) * r); }
     o = { ...e, img, sil: null };
-    cache[ck] = o;
+    cache[px] = o;
   }
   return o;
 }

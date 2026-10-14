@@ -127,3 +127,57 @@ test("perf: an atlas entry added with addLazy is drawn once, on its first get(),
   assert.equal(atlas.has("mon:x"), true); assert.equal(atlas.isDrawn("mon:x"), false); assert.equal(draws, 0);
   const e = atlas.get("mon:x"); assert.equal(draws, 1); assert.equal(atlas.get("mon:x"), e); assert.equal(draws, 1); assert.equal(atlas.isDrawn("mon:x"), true);
 }));
+
+// ---- PERF-R6 / CR6-03: a lazy draw of an old atlas during a rebuild in flight leaves the globals of the running build alone
+test("perf CR6-03: a lazy draw of atlas A while atlas B builds does not change the ink weight and texture resolution B's eager sprites are drawn with", async () => {
+  const { vector } = await import("../src/render/styles/vector/index.js");
+  const { inkScale } = await import("../src/render/draw/shapes.js");
+  const { texRes } = await import("../src/render/draw/textures.js");
+  // a stub 2D context that accepts every call and returns itself (gradients, patterns, measureText, ...)
+  const deep = () => new Proxy(function () {}, { get: (_, k) => (k === Symbol.toPrimitive ? () => 1 : k === "canvas" ? {} : k === "width" ? 7 : deep()), apply: () => deep(), set: () => true });
+  const d = globalThis.document, w = globalThis.window, dm = globalThis.DOMMatrix;
+  globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => deep() }) };
+  globalThis.window = { devicePixelRatio: 1 };
+  globalThis.DOMMatrix = class { scale() { return this; } rotate() { return this; } translate() { return this; } };
+  try {
+    const A = await vector.build(() => {}, { scale: 1, rim: 0.8 });
+    let seen = null, n = 0;
+    const lazyKey = A.keys().find((k) => k.startsWith("mon:") && A.isDrawn(k) === false);
+    assert.ok(lazyKey, "atlas A has an undrawn lazy monster sprite");
+    const B = await vector.build(() => {
+      if (++n !== 3) return;
+      const before = [inkScale(), texRes()];
+      A.get(lazyKey); // first use of a lazy A sprite, in the middle of B's build
+      seen = { before, after: [inkScale(), texRes()] };
+    }, { scale: 2, rim: 2 });
+    assert.ok(seen, "the lazy draw happened during the second build");
+    assert.equal(A.isDrawn(lazyKey), true);
+    assert.deepEqual(seen.after, seen.before, "the globals are what B's build had set");
+    assert.equal(B.scale, 2);
+  } finally {
+    if (d === undefined) delete globalThis.document; else globalThis.document = d;
+    if (w === undefined) delete globalThis.window; else globalThis.window = w;
+    if (dm === undefined) delete globalThis.DOMMatrix; else globalThis.DOMMatrix = dm;
+  }
+});
+
+// ---- PERF-R6 / CR6-04: the budgeted warm-up draws the lazy frames of the floor's monster types and the hero, each once
+test("perf CR6-04: warmFrames draws idle/walk/attack in 8 directions of every monster type on the floor and the hero's frames, within a budget per call, once each", async () => {
+  const { warmFrames } = await import("../src/render/world.js");
+  const { keys, DIRS, ANIMS, PLAYER_ANIMS } = await import("../src/render/keys.js");
+  const drawn = new Set(), counts = new Map(), all = [];
+  const atlas = { isDrawn: (k) => (all.includes(k) ? drawn.has(k) : undefined), get: (k) => { drawn.add(k); counts.set(k, (counts.get(k) ?? 0) + 1); return {}; } };
+  const types = ["zombie-intern", "printer-imp"];
+  for (const t of types) for (const a of ["idle", "walk", "attack"]) for (let d = 0; d < DIRS; d++) for (let f = 0; f < ANIMS[a]; f++) all.push(keys.mon(t, a, d, f));
+  const core = { monsters: [{ type: types[0] }, { type: types[1] }, { type: types[0] }], player: { class: "it-wizard" } };
+  const before = drawn.size;
+  let calls = 0;
+  while (!warmFrames(atlas, core, 0) && calls < 5000) calls++;
+  assert.ok(calls > 1, "with a zero budget the work is spread over many calls");
+  for (const k of all) assert.ok(drawn.has(k), `${k} warmed`);
+  for (const [k, c] of counts) assert.equal(c, 1, `${k} drawn once`);
+  assert.equal(before, 0);
+  // a monster type that appears later is queued on its own
+  atlas.get = (k) => { drawn.add(k); return {}; };
+  assert.equal(warmFrames(atlas, core, 0), true, "nothing left to do");
+});

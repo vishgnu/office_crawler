@@ -13,6 +13,7 @@ export const AMBIENT_LIFT = 0.12;
 /** Static ("baked") pools: constant, never flickering, drawn in the same additive pass as the dynamic ones; they do not count towards MAX_LIGHTS. */
 export const MAX_STATIC = 3;
 export const HERO_RADIUS = 5.6; // tiles
+const BIG_MAX = 9e6; // device pixels of the expanded mask copy (36 MB): above this the mask is drawn the old way
 const THEME_RADIUS = { executive: 1.5, basement: 1.2 }; // the boss arena is lit more widely: the fight must be readable across the whole boardroom
 const POOL = {
   monitor: { r: 2.1, lift: 22 }, fluor: { r: 3.6, lift: 0 }, lamp: { r: 2.7, lift: 14 },
@@ -121,7 +122,7 @@ function shaftSprite(o) {
 export function createLighting(style) {
   const P = style.palette, sprites = new Map();
   const sprite = (colour, bands) => { const k = colour + bands.length; let s = sprites.get(k); if (!s) { s = radialSprite(colour, bands); sprites.set(k, s); } return s; };
-  const mask = { canvas: null, w: 0, h: 0, z: 0, mode: "" };
+  const mask = { canvas: null, w: 0, h: 0, z: 0, mode: "", big: null };
   const last = { cam: null, lowFx: false, hc: false };
   const L = {
     lights: Array.from({ length: MAX_LIGHTS }, () => ({ kind: "", x: 0, y: 0, a: 0, colour: "", r: 0, d2: 0, o: "" })), n: 0,
@@ -177,10 +178,35 @@ export function createLighting(style) {
       L.drawLights(g, cam, heroScreen, now);
       if (L.after) L.after(g); // the world's actor pass: bodies drawn back over the additive wash (round G3, F2)
     },
+    /**
+     * Fast path for the darkness mask (PERF-R6). The baked mask is half (or quarter) resolution, so drawing it every frame is a bilinear 2x upscale of
+     * a screen-sized area, the single most expensive draw of the frame in software raster (about 6.5 ms of 18 at 1080p; a 1:1 copy is about 1 ms). Here the
+     * same upscale is done ONCE per bake into a device-resolution canvas 1.5 screens wide and high, centred on the hero, and every frame copies 1:1 at a
+     * whole device pixel. Same pixels as the upscale each frame, up to the hero position rounded to a device pixel. Returns false (the caller draws the old way)
+     * when the hero is not within the middle half of the screen, the context has no usable transform, or the canvas would be larger than BIG_MAX pixels.
+     */
+    drawMaskFast(g, cam, hx, hy) {
+      const m = g.getTransform?.(), s = m?.a;
+      if (!(s > 0) || m.d !== s || m.b !== 0 || m.c !== 0 || m.e !== 0 || m.f !== 0) return false;
+      if (hx < cam.w * 0.25 || hx > cam.w * 0.75 || hy < cam.h * 0.25 || hy > cam.h * 0.75) return false;
+      const bw = Math.ceil(cam.w * 1.5 * s), bh = Math.ceil(cam.h * 1.5 * s);
+      if (bw * bh > BIG_MAX) return false;
+      let b = mask.big;
+      if (!b || b.rebake !== L.stats.rebakes || b.s !== s || b.cw !== cam.w || b.ch !== cam.h) {
+        const c = b && b.c.width === bw && b.c.height === bh ? b.c : document.createElement("canvas");
+        c.width = bw; c.height = bh;
+        const k = c.getContext("2d"), mc = mask.canvas, sw = mc.width * 0.75, sh = mc.height * 0.75; // the middle 1.5 of the 2 screens
+        k.drawImage(mc, mc.width * 0.125, mc.height * 0.125, sw, sh, 0, 0, bw, bh);
+        b = mask.big = { c, rebake: L.stats.rebakes, s, cw: cam.w, ch: cam.h };
+        L.stats.bigBakes = (L.stats.bigBakes ?? 0) + 1;
+      }
+      g.drawImage(b.c, Math.round((hx - cam.w * 0.75) * s) / s, Math.round((hy - cam.h * 0.75) * s) / s, bw / s, bh / s);
+      return true;
+    },
     drawLights(g, cam, heroScreen, now) {
       if (!mask.canvas) return;
       const hx = heroScreen.x, hy = heroScreen.y - 18 * cam.z;
-      g.drawImage(mask.canvas, hx - cam.w, hy - cam.h, cam.w * 2, cam.h * 2);
+      if (!L.drawMaskFast(g, cam, hx, hy)) g.drawImage(mask.canvas, hx - cam.w, hy - cam.h, cam.w * 2, cam.h * 2);
       if (L.n === 0) { L.drawStatic(g, cam); return; }
       g.globalCompositeOperation = "lighter";
       for (let i = 0; i < L.n; i++) {

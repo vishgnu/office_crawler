@@ -8,6 +8,8 @@ let K = 1;
 export const inkWidth = (zoom) => Math.min(4.2, Math.max(1.6, 2.0 * zoom));
 export const setInkScale = (zoom) => { K = zoom > 0 ? inkWidth(zoom) / (1.8 * zoom) : 1; return K; };
 export const inkScale = () => K;
+/** Put a factor read from inkScale() back (a lazy draw restores what the running build had set). */
+export const restoreInkScale = (k) => { K = k; };
 /** An outline width in logical px, scaled by the current factor. */
 export const ink = (w) => w * K;
 

@@ -63,6 +63,8 @@ let pctx = null;
 /** Set the texture resolution (the atlas scale); clears the caches when it changes. */
 export function setTexRes(r) { const rr = Math.max(1, Math.min(3, Math.round(r * 2) / 2)); if (rr !== res) { res = rr; canv.clear(); pats.clear(); } }
 
+export const texRes = () => res;
+
 function texCanvas(name) {
   let c = canv.get(name);
   if (!c) {
