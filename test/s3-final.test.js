@@ -8,6 +8,7 @@ import { BACKUPS } from "../src/save/storage.js";
 import { canonical } from "../src/core/hash.js";
 import { createBus } from "../src/bus.js";
 import { createAudio } from "../src/audio/index.js";
+import { palette } from "../src/render/styles/vector/palette.js";
 import { createFx, FLASH_HALF_MS, lowHpPeriod } from "../src/render/fx.js";
 
 const rich = () => {
@@ -189,4 +190,34 @@ test("AC-NFR-A04-1 no stylesheet text is smaller than 14 px", () => {
   assert.deepEqual(small.map((m) => m[0]), []);
   const calcSmall = [...css.matchAll(/calc\((\d+(?:\.\d+)?)px \* var\(--ts/g)].filter((m) => Number(m[1]) < 14);
   assert.deepEqual(calcSmall.map((m) => m[0]), []);
+});
+
+test("regression: impacts, pillars and slashes drawn before their birth time (stepped ticks) never use a negative radius", () => {
+  const bad = [];
+  const g = new Proxy({}, { get: (_, k) => {
+    if (k === "canvas") return {};
+    return (...a) => {
+      if (k === "arc" && a[2] < 0) bad.push(`arc ${a[2]}`);
+      if (k === "ellipse" && (a[2] < 0 || a[3] < 0)) bad.push(`ellipse ${a[2]},${a[3]}`);
+      if (k === "createLinearGradient") return { addColorStop() {} };
+      return undefined;
+    };
+  }, set: () => true });
+  const fx = createFx({ palette });
+  const cam = { w: 800, h: 600, z: 2, ox: 0, oy: 0 };
+  for (const kind of ["toner", "stapler", "slide"]) for (const mode of ["hit", "wall", "range", "muzzle"]) {
+    const im = { kind, mode, x: 5, y: 5, z: 12, born: 1000, life: 380 };
+    for (const now of [-5000, 400, 999, 1000, 1190, 1380, 1400]) fx.drawImpact(g, cam, im, now);
+  }
+  fx.drawPillar(g, cam, { x: 5, y: 5, born: 1000, life: 900 }, 100);
+  assert.deepEqual(bad, []);
+});
+
+test("wearStartKit: the rapier is worn and Strike is on F1; the default core start stays unarmed (golden hash unchanged)", () => {
+  const a = newGame(3, { start: "town", wearStartKit: true });
+  assert.equal(a.equipment.weapon?.base, config.startKit.weapon);
+  assert.equal(a.player.skillBar.hotkeys[0], "strike");
+  assert.ok(a.player.damage.max > newGame(3, { start: "town" }).player.damage.max);
+  assert.equal(newGame(3, { start: "town" }).equipment.weapon, null);
+  assert.equal(deserialize(serialize(a)).ok, true, "such a game saves and loads");
 });

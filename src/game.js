@@ -33,7 +33,8 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     options: defaultOptions(), optSnap: null, titleNotice: null, capturing: false,
     // UI state that is not game state: which drawers are open (left: character | skills | npc), vendor tab, hover tooltip, toast
     ui: { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null },
-    storyOn: !!story, inset: 0, defaultStart: "town",
+    // the real game (story on) starts armed; test fixtures keep the unarmed core default
+    storyOn: !!story, wearStartKit: !!story, inset: 0, defaultStart: "town",
   };
   const syncUi = () => { // the NPC window follows the core dialog; the drawers go away with the run
     const u = game.ui;
@@ -79,21 +80,28 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (game.core.paused) return "pause";
     return null;
   };
-  let storyBossSeen = false;
-  const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null }); game.inset = 0; storyBossSeen = false; game.heldOrigin = null; };
+  let storyBossSeen = false, pointsHintSeen = false;
+  /** One-time prompt per run when attribute or skill points are waiting to be spent. */
+  const pointsHint = () => {
+    const p = game.core?.player;
+    if (!game.storyOn || pointsHintSeen || !p || !(p.attrPoints > 0 || p.skillPoints > 0)) return;
+    pointsHintSeen = true; game.toast(T.pointsHint);
+  };
+  bus.on("levelup", () => pointsHint());
+  const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null }); game.inset = 0; storyBossSeen = false; pointsHintSeen = false; game.heldOrigin = null; };
   const resetRender = () => { game.run.kills = 0; game.prev.clear(); rs.facing.clear(); fx.reset(); game.acc = 0; game.hover = null; game.focus = null; };
   game.setBackdrop = () => { game.backdrop = newGame(game.titleSeed); resetRender(); };
   /** Start a run. opts.start: "town" (default: the Lobby, R-040) or "floor" (fixtures and tests that want floor 1). */
   game.newGame = (s = game.titleSeed, opts = {}) => {
     game.titleSeed = Number(s) >>> 0;
-    game.core = newGame(game.titleSeed, { start: opts.start ?? game.defaultStart });
+    game.core = newGame(game.titleSeed, { start: opts.start ?? game.defaultStart, wearStartKit: game.wearStartKit });
     resetUi(); resetRender();
     if (game.storyOn) game.ui.story = "start"; // R-104: the start text, dismissed by click or key
     emitChange();
     return game.core;
   };
   /** Swap in a state built by the save package (Continue). */
-  game.loadState = (state) => { game.core = state; resetUi(); resetRender(); emitChange(); return state; };
+  game.loadState = (state) => { game.core = state; resetUi(); resetRender(); emitChange(); pointsHint(); return state; };
   game.dismissStory = () => { if (!game.ui.story) return { ok: true }; game.ui.story = null; bus.emit({ type: "ui:close" }); emitChange(); return { ok: true }; };
   bus.on("floorEnter", (ev) => { // R-104: the boss text, once per run, the first time the Executive Suite is entered
     if (game.storyOn && game.core && ev.depth === config.bossDepth && !game.core.bossDefeated && !storyBossSeen) { storyBossSeen = true; game.ui.story = "boss"; emitChange(); }

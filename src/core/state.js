@@ -12,6 +12,7 @@ import { newEquipment } from "./items/equipment.js";
 import { newBelt } from "./items/belt.js";
 import { deriveStats } from "./items/derive.js";
 import { makeItem } from "./items/roll.js";
+import { equipItem } from "./items/equipment.js";
 import { initFloorMap } from "./systems/explore.js";
 
 const STREAMS = ["world", "combat", "ai", "loot"];
@@ -117,14 +118,19 @@ export function newGame(seedOrOpts, opts = {}) {
   state.blockedSpawns = [];
   floor.spawns.forEach((s, i) => { if (!spawnMonster(state, s.type, s.tile, s.packId, { ...s, spawn: i })) state.blockedSpawns.push(i); });
   initFloorMap(state);
-  giveStartKit(state);
+  giveStartKit(state, !!opts.wearStartKit);
   return state;
 }
 
-// Starting kit (QF-06-8): one weapon in the inventory (not worn: the hero starts unarmed) and health potions on the belt.
-function giveStartKit(state) {
+// Starting kit (QF-06-8): one weapon in the inventory; the unarmed start is the core default (fixtures, golden hash). The shell asks
+// for `wearStartKit` so a real first run starts with the rapier worn and Strike on F1. and health potions on the belt.
+function giveStartKit(state, wear = false) {
   const kit = config.startKit, mint = () => `i${state.nextItemId++}`;
-  if (kit.weapon) autoplaceStart(state, { ...makeItem(kit.weapon), id: mint() });
+  if (kit.weapon) {
+    const w = { ...makeItem(kit.weapon), id: mint() };
+    autoplaceStart(state, w);
+    if (wear) { equipItem(state, w.id); state.player.skillBar.hotkeys[0] = "strike"; } // first-run feel: armed, Strike on F1
+  }
   for (let i = 0; i < kit.healthPotions && i < state.belt.length; i++) state.belt[i] = { ...makeItem(kit.healthPotion), id: mint() };
 }
 const autoplaceStart = (state, item) => { item.x = 0; item.y = 0; state.inventory.items.push(item); };

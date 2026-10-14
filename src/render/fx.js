@@ -315,7 +315,7 @@ export function createFx(style) {
       }
       g.globalAlpha = 1;
       for (let i = 0; i < fx.slashes.length; i++) {
-        const sl = fx.slashes[i], e = atlas.get(keys.slash(playerDir)), k = (now - sl.born) / 170;
+        const sl = fx.slashes[i], e = atlas.get(keys.slash(playerDir)), k = Math.min(1, Math.max(0, (now - sl.born) / 170));
         project(cam, sl.x, sl.y, pos);
         if (!sl.skill) {
           g.globalAlpha = 1 - k;
@@ -525,7 +525,7 @@ export function createFx(style) {
 
     /** Muzzle flashes and impact splats for projectiles (toner splat, stapler sparks; slide impact shows as paper particles). */
     drawImpact(g, cam, im, now) {
-      const z = cam.z, k = (now - im.born) / im.life;
+      const z = cam.z, k = Math.min(1, Math.max(0, (now - im.born) / im.life)); // stepped ticks can draw an effect before its birth time
       project(cam, im.x, im.y, pos);
       const cx = pos.x, cy = pos.y - im.z * z;
       g.save(); g.globalAlpha = Math.max(0, 1 - k * k); g.lineJoin = "round"; g.lineCap = "round";
@@ -555,7 +555,7 @@ export function createFx(style) {
 
     /** Level-up pillar of light with rising edges. */
     drawPillar(g, cam, pl, now) {
-      const z = cam.z, k = (now - pl.born) / pl.life;
+      const z = cam.z, k = Math.min(1, Math.max(0, (now - pl.born) / pl.life));
       project(cam, pl.x, pl.y, pos);
       const w = (26 + 10 * Math.sin(k * 6)) * z * (1 - k * 0.5), h = 190 * z * Math.min(1, k * 4);
       const grad = g.createLinearGradient(0, pos.y, 0, pos.y - h);
