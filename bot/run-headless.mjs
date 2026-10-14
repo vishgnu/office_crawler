@@ -2,7 +2,7 @@
 // Drives the same applyInput path as the real game; prints a summary and returns it as JSON on the last line.
 import { newGame, step, applyInput, classes } from "../src/core/index.js";
 import { BOT, createBotMemory, decide, noteResult } from "./policy.js";
-import { createRecorder, observe, observeEvents, finish, summarise, table } from "./report.js";
+import { createRecorder, observe, observeQuests, observeEvents, finish, summarise, table } from "./report.js";
 
 /**
  * profile: { class (a class id; default the Facilities Manager), reckless, depth (play on until this floor is clear; default 1 = clear floor 1 only), respawn (after a death go back
@@ -22,6 +22,7 @@ export function runOne(seed, maxTicks = 20000, profile = {}) {
     if (state.scene === "victory") { // the finale: record it and choose "keep playing" (back to the Lobby)
       rec.result = "won"; rec.winTick = state.tick; rec.victory = state.victory?.stats ?? null;
       noteResult(mem, { t: "keepPlaying" }, applyInput(state, { t: "keepPlaying" })); mem.done = true;
+      observeEvents(state, rec); observeQuests(state, rec); // the verdict step (main quest step 6) completes with keepPlaying
     }
   }
   if (state.scene === "floor") decide(state, mem); // settle `done` for a floor cleared on the last tick

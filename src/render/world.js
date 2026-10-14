@@ -77,6 +77,12 @@ export function warmFrames(atlas, core, budgetMs = 1.5) {
     w.types.add(t);
     for (const anim of WARM_ORDER) for (let d = 0; d < DIRS; d++) for (let f = 0; f < ANIMS[anim]; f++) w.queue.push(keys.mon(t, anim, d, f));
   }
+  // the quest elite's type may not be in the floor's spawn set (R7-0.7): warm it while its quest is active so its first sight is not a cold draw
+  const et = config.quests?.elite?.type;
+  if (et && core.quests?.sq3?.s === "active" && !w.types.has(et) && content.monsters[et]) {
+    w.types.add(et);
+    for (const anim of WARM_ORDER) for (let d = 0; d < DIRS; d++) for (let f = 0; f < ANIMS[anim]; f++) w.queue.push(keys.mon(et, anim, d, f));
+  }
   const cls = heroType(core.player.class);
   if (w.hero !== cls) { // the hero's frames go to the front of what is left
     w.hero = cls;
@@ -283,6 +289,7 @@ const S = content.strings;
 const modLines = new Map();
 /** "Burly . Vicious" style readout of a champion's modifiers (cached per modifier set). */
 function modLine(m) {
+  if (!m.mods?.length) return ""; // a named quest elite has no modifiers: an empty line, so its plate is just the name
   const key = m.mods.join(",");
   let t = modLines.get(key);
   if (t === undefined) { t = m.mods.map((k) => content.championMods[k]?.name ?? k).join(" \u00b7 "); modLines.set(key, t); }
@@ -744,3 +751,4 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
   pruneFacing(core, rs);
   return out;
 }
+

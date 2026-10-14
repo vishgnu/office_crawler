@@ -10,6 +10,7 @@ import { project } from "../ui/camera.js";
 import { keys, PLAYER_CLASS } from "./keys.js";
 import { config, content } from "../core/index.js";
 import { actorPos } from "./world.js";
+import { drawQuestSign, drawNpcMarkers } from "./questmark.js";
 import { createSkillFx, FLOAT_COL } from "./draw/effects.js";
 
 const S = content.strings;
@@ -147,8 +148,8 @@ function lootSync(lt, P, list, hx, hy) {
   lt.hx = hx; lt.hy = hy; src.length = n; lt.order.length = n; lt.prio.length = n;
   for (let i = 0; i < n; i++) {
     const gi = list[i], e = lt.pool[i] ?? (lt.pool[i] = { gi: null, d: 0, rank: 0, x: 0, my: 0, colour: "", on: false, near: false, sp: null, sfs: 0, shc: false, sdpr: 0 });
-    src[i] = gi; e.gi = gi; e.d = Math.hypot(gi.tile.x - hx, gi.tile.y - hy); e.rank = RARITY_RANK[gi.rarity] ?? 0; e.sp = null;
-    e.colour = gi.gold ? (gi.color ?? "#e6c84a") : P.rarity[gi.rarity] ?? gi.color ?? "#d6d3cb";
+    src[i] = gi; e.gi = gi; e.d = Math.hypot(gi.tile.x - hx, gi.tile.y - hy); e.rank = gi.quest ? 3 : RARITY_RANK[gi.rarity] ?? 0; e.sp = null; // a quest entry (no item, no gold) always gets its plate in sight
+    e.colour = gi.gold ? (gi.color ?? "#e6c84a") : gi.quest ? (gi.color ?? "#f0e442") : P.rarity[gi.rarity] ?? gi.color ?? "#d6d3cb";
     lt.order[i] = e; lt.prio[i] = e;
   }
   lt.order.sort(byDist); lt.prio.sort(byPrio);
@@ -291,6 +292,15 @@ export function createFx(style) {
     /** Rarity ring under a ground item (world pass, lit): none for normal, thin for magic, double for rare, notched with a white core for unique. */
     lootRing(g, gi, sx, sy, z, now) {
       const rarity = gi.rarity;
+      if (gi.quest) { // quest item: a steady (reduced motion) or slowly pulsing yellow ring, dashed so it is not only a colour
+        const rx = 15 * z, pulse = fx.reducedMotion ? 0.8 : 0.65 + 0.2 * Math.sin(now / 380 + sx);
+        g.save(); g.lineJoin = "round"; g.beginPath(); g.ellipse(sx, sy, rx, rx * 0.5, 0, 0, Math.PI * 2);
+        g.globalAlpha = 0.18; g.fillStyle = gi.color ?? "#f0e442"; g.fill();
+        g.globalAlpha = pulse; g.lineWidth = Math.max(2, 2.2 * z * 0.6); g.strokeStyle = P.ink; g.stroke();
+        g.setLineDash([5 * z, 3 * z]); g.lineWidth = Math.max(1.4, 1.4 * z * 0.6); g.strokeStyle = gi.color ?? "#f0e442"; g.stroke();
+        g.restore();
+        return;
+      }
       if (gi.gold || !rarity || rarity === "normal") return;
       const col = P.rarity[rarity] ?? "#ffffff", rx = (rarity === "unique" ? 17 : rarity === "rare" ? 15 : 13) * z, ry = rx * 0.5, pulse = 0.65 + 0.2 * Math.sin(now / 380 + sx);
       g.save(); g.lineJoin = "round";
@@ -670,6 +680,7 @@ export function createFx(style) {
       const lt = fx.lt ?? (fx.lt = newLootState());
       const placed = fx.platesPlaced ?? (fx.platesPlaced = []);
       placed.length = 0; lt.vis = 0;
+      drawNpcMarkers(g, cam, core, fx.bodies, fx.npcMarkers ?? (fx.npcMarkers = []), style, fx.reducedMotion, now); // R7-0.7 quest markers over the Lobby NPCs
       const list = core.groundItems, z = cam.z;
       if (!list || list.length === 0) return;
       const hero = core.player, hx = hero.tile.x, hy = hero.tile.y, size = Math.max(16, Math.round(6.5 * z)), dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -690,7 +701,8 @@ export function createFx(style) {
         e.x = pos.x; e.my = pos.y - 14 * z - (gi.rarity === "unique" ? Math.sin(now / 400) * 1.5 * z : 0);
         if (e.on) {
           lt.vis++;
-          if (gi.rarity) {
+          if (gi.quest) beam(g, "magic", e.colour, pos.x, pos.y - 4 * z, z, now); // a thin beam so the item is found from across the room
+          else if (gi.rarity) {
             beam(g, gi.rarity, e.colour, pos.x, pos.y - 4 * z, z, now);
             const bw = (gi.rarity === "magic" ? 2 : gi.rarity === "rare" ? 4.5 : 7) * z, bh = (gi.rarity === "magic" ? 52 : gi.rarity === "rare" ? 80 : 110) * z;
             if (pos.x + bw > hr.x && pos.x - bw < hr.x + hr.w && pos.y - 4 * z > hr.y && pos.y - 4 * z - bh < hr.y + hr.h) overHero = true;
@@ -700,7 +712,7 @@ export function createFx(style) {
       if (overHero && fx.heroRedraw) fx.heroRedraw(g); // N3: a beam never crosses the hero's body: he is drawn over it
       for (let i = 0; i < n; i++) {
         const e = order[i];
-        if (e.on) marker(g, P, e.gi, e.x, e.my, size * (e.gi.rarity === "unique" ? 1.15 : 1), e.colour);
+        if (e.on) { if (e.gi.quest) drawQuestSign(g, e.x, e.my, size * 1.1, e.colour, P.ink); else marker(g, P, e.gi, e.x, e.my, size * (e.gi.rarity === "unique" ? 1.15 : 1), e.colour); }
       }
       lt.size = size; lt.fs = fs; lt.dpr = dpr; lt.hc = !!fx.hc;
     },

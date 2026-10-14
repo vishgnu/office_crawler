@@ -5,6 +5,8 @@
 import { WALL, DOOR, STAIRS_UP, STAIRS_DOWN, FLOOR, VOID } from "../core/tiles.js";
 import { T } from "../ui/text.js";
 import { isPhone } from "../ui/layout.js";
+import { mapMarkers } from "../core/index.js";
+import { drawMapPin } from "./questmark.js";
 
 const CELL = 6;                                   // baked pixels per tile
 const FONT = "'Trebuchet MS','Segoe UI',system-ui,'Helvetica Neue','Liberation Sans',Arial,sans-serif";
@@ -15,6 +17,22 @@ export const exploredOf = (core) => core?.floor?.explored ?? core?.floors?.[core
 export function createMap(style) {
   const P = style.palette;
   let baked = null; // { key, c, w, h }
+  // R7-0.7: the pinned quest's known targets (core.mapMarkers), recomputed only when what they depend on changes (depth, pin, quest states, hero tile), so a steady frame allocates nothing
+  const qm = { depth: -1, pin: "", sig: -1, hx: -1, hy: -1, list: [] };
+  const questMarkers = (core) => {
+    const qs = core.quests;
+    if (!qs) return qm.list.length ? (qm.list = []) : qm.list;
+    const t = core.player.tile, pin = qs.pinned ?? "";
+    let sig = 0;
+    for (const id of ["sq1", "sq2", "sq3"]) sig = sig * 4 + (qs[id]?.s === "available" ? 1 : qs[id]?.s === "active" ? 2 : qs[id]?.s === "ready" ? 3 : 0);
+    const m = qs.main?.m;
+    if (m) sig = sig * 64 + (m.memo ? 1 : 0) + ((m.depth | 0) >= 1 ? 2 : 0) + ((m.depth | 0) >= 4 ? 4 : 0) + (m.unlocked ? 8 : 0) + (m.defeated ? 16 : 0) + (m.verdict ? 32 : 0);
+    if (qm.depth !== core.depth || qm.pin !== pin || qm.sig !== sig || qm.hx !== t.x || qm.hy !== t.y) {
+      qm.depth = core.depth; qm.pin = pin; qm.sig = sig; qm.hx = t.x; qm.hy = t.y;
+      qm.list = mapMarkers(core);
+    }
+    return qm.list;
+  };
 
   function bake(core, ex) {
     const f = core.floor, { w, h, tiles } = f, t = core.player.tile;
@@ -55,7 +73,7 @@ export function createMap(style) {
   const poly = (g, pts, fill) => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.fillStyle = fill; g.fill(); g.lineWidth = 2; g.lineJoin = "round"; g.strokeStyle = P.ink; g.stroke(); };
 
   /** Markers on top of the baked map. at(tx, ty) -> screen {x,y} of the tile centre; u = marker size in px. */
-  function markers(g, core, ex, at, u, now, clip) {
+  function markers(g, core, ex, at, u, now, clip, labelsOn) {
     const f = core.floor, w = f.w, seen = (t) => !!t && (core.depth === 0 || ex[t.y * w + t.x] === 1), pt = { x: 0, y: 0 };
     const place = (t) => { const p = at(t.x + 0.5, t.y + 0.5); pt.x = p.x; pt.y = p.y; return pt.x >= clip.x && pt.y >= clip.y && pt.x <= clip.x + clip.w && pt.y <= clip.y + clip.h; };
     g.save(); g.beginPath(); g.rect(clip.x, clip.y, clip.w, clip.h); g.clip();
@@ -68,6 +86,8 @@ export function createMap(style) {
       g.beginPath(); g.ellipse(x, y, u * 0.62 * pulse, u * 0.95 * pulse, 0, 0, Math.PI * 2); g.fillStyle = "#b48cff"; g.fill(); g.lineWidth = 2; g.strokeStyle = P.ink; g.stroke();
       g.beginPath(); g.ellipse(x, y, u * 0.28, u * 0.5, 0, 0, Math.PI * 2); g.fillStyle = "#f3eefc"; g.fill();
     }
+    const qlist = questMarkers(core);
+    for (let i = 0; i < qlist.length; i++) if (place(qlist[i].tile)) drawMapPin(g, pt.x, pt.y - u * 1.2, u, P.ink);
     const hp = core.player.tile;
     if (place(hp)) {
       const { x, y } = pt, pulse = 0.5 + 0.5 * Math.sin(now / 300);
@@ -76,6 +96,14 @@ export function createMap(style) {
       g.beginPath(); g.arc(x, y, u * 0.32, 0, Math.PI * 2); g.fillStyle = "#e0363f"; g.fill();
     }
     g.restore();
+    if (labelsOn) for (let i = 0; i < qlist.length; i++) { // the text label next to the pin (not colour only), kept inside the canvas
+      const p = at(qlist[i].tile.x + 0.5, qlist[i].tile.y + 0.5), txt = qlist[i].label, fs = Math.max(12, Math.min(15, u * 1.9));
+      g.font = `800 ${fs}px ${FONT}`; g.textBaseline = "middle"; g.lineWidth = 4; g.lineJoin = "round"; g.strokeStyle = P.ink; g.fillStyle = "#f0e442";
+      const tw = g.measureText(txt).width, left = p.x + u * 1.6 + tw + 8 < labelsOn.w;
+      g.textAlign = left ? "left" : "right";
+      const x = left ? p.x + u * 1.6 : p.x - u * 1.6, y = p.y - u * 1.2;
+      g.strokeText(txt, x, y); g.fillText(txt, x, y);
+    }
   }
 
   const frame = (g, r, hc, a = 0.82) => {
@@ -133,7 +161,7 @@ export function createMap(style) {
       g.save(); g.beginPath(); g.roundRect(rect.x - 4, rect.y - 4, rect.w + 8, rect.h + 8, 5); g.clip();
       g.imageSmoothingEnabled = false; g.drawImage(b.c, x0 * CELL, y0 * CELL, bw * CELL, bh * CELL, rect.x, rect.y, rect.w, rect.h); g.imageSmoothingEnabled = true;
       g.restore();
-      markers(g, core, ex, (tx, ty) => ({ x: rect.x + (tx - x0) * sc, y: rect.y + (ty - y0) * sc }), Math.max(3.5, Math.min(8, sc * 0.9)), now, { x: rect.x - 6, y: rect.y - 6, w: rect.w + 12, h: rect.h + 12 });
+      markers(g, core, ex, (tx, ty) => ({ x: rect.x + (tx - x0) * sc, y: rect.y + (ty - y0) * sc }), Math.max(3.5, Math.min(8, sc * 0.9)), now, { x: rect.x - 6, y: rect.y - 6, w: rect.w + 12, h: rect.h + 12 }, { w });
       g.font = `700 ${phone ? 12 : 14}px ${FONT}`; g.lineWidth = 4; g.strokeStyle = P.ink;
       const ly = Math.min(h - 12, rect.y + rect.h + 34);
       g.strokeText(T.mapLegend, w / 2, ly); g.fillStyle = "#c9c3ec"; g.fillText(T.mapLegend, w / 2, ly);

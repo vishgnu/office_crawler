@@ -6,6 +6,7 @@ import { hasLineOfSight, rayClear } from "../src/core/los.js";
 import { skills as SKILLS, manaCost } from "../src/core/content/skills.js";
 import { classById, defaultClass } from "../src/core/content/classes.js";
 import { config as CORE } from "../src/core/config.js";
+import { questMemory, questNewFloor, noteQuest, questTown, WAIT, questClimb, questTrip } from "./quests.js";
 
 export const BOT = {
   decideEvery: 6,       // ticks between decisions (10 Hz at 60 ticks/s)
@@ -43,7 +44,7 @@ const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
 /** profile: { reckless } - a reckless bot never waits for chasers; it walks into packs (shows how deadly the floor is). */
 export function createBotMemory(profile = {}) {
-  return { profile, depth: -1, shopped: false, sold: false, rooms: null, goal: null, lastKey: "", lastMoveTick: 0, stuck: 0, decisions: 0, failedMoves: 0, lootTries: {}, lootSkip: new Set(), noEquip: new Set(), waitSince: -1, waitGaveUp: 0, watchdogFired: 0, watchdogQuiet: 0, watchdogLog: [], done: false, skip: new Set() };
+  return { profile, depth: -1, shopped: false, sold: false, rooms: null, goal: null, lastKey: "", lastMoveTick: 0, stuck: 0, decisions: 0, failedMoves: 0, lootTries: {}, lootSkip: new Set(), noEquip: new Set(), waitSince: -1, waitGaveUp: 0, watchdogFired: 0, watchdogQuiet: 0, watchdogLog: [], done: false, skip: new Set(), q: questMemory() };
 }
 
 /** Record the outcome of a command the runner executed (a refused move makes the bot try another room). */
@@ -57,7 +58,8 @@ export function noteResult(mem, cmd, res) {
   if (cmd?.t === "toBelt" && res && res.ok === false) mem.beltFail = true;
   if (cmd?.t === "useStairs" && res && res.ok === false) mem.failedMoves++;
   if (cmd?.t === "buy" && res && res.ok === false) { if (cmd.gear) { mem.noBuy ??= new Set(); mem.noBuy.add(cmd.id); } else mem.shopped = true; }
-  if (cmd?.t === "sell" && res && res.ok === false) mem.sold = true;
+  if (cmd?.t === "sell" && res && res.ok === false && !mem.q?.bagFull) mem.sold = true;
+  noteQuest(mem, cmd, res);
 }
 
 /**
@@ -268,6 +270,8 @@ function decideTown(view, mem) {
   const p = view.player;
   const pts = spendPoints(view, mem) ?? upgrade(view, mem);
   if (pts) return pts;
+  const qc = questTown(view, mem); // R7-0.4: accept the givers' quests, hand in what is ready (sell or stash on bagFull)
+  if (qc) return qc === WAIT ? null : qc;
   const free = view.belt ? view.belt.findIndex((b) => b === null) : -1;
   const dlg = view.ui?.dialog;
   // vendor round: spare gear (everything the bot would not wear) is sold so the bag never fills up, then upgrades are bought
@@ -306,6 +310,7 @@ export function decide(view, mem) {
   if (view.paused) return null;
   if (view.depth !== mem.depth) { // a new floor: forget the old floor's exploration state
     Object.assign(mem, { depth: view.depth, prog: null, rooms: null, goal: null, skip: new Set(), waitSince: -1, shopped: false, sold: false, lootTries: {}, lootSkip: new Set(), lastKey: "", lastMoveTick: view.tick, beltFail: false, dodge: null });
+    questNewFloor(mem);
   }
   if (view.scene === "town") return decideTown(view, mem);
   if (view.scene !== "floor") return null;
@@ -344,10 +349,14 @@ export function decide(view, mem) {
     const b = live.find((m) => m.tile.x === p.path[0].x && m.tile.y === p.path[0].y);
     if (b && b.id !== p.target) return { t: "attack", id: b.id };
   }
+  const climb = questClimb(view, mem, live); // R7-0.4: on the way up to the Lobby with a ready quest
+  if (climb) return climb;
   if (live.length === 0) {
     const c = spendPoints(view, mem) ?? upgrade(view, mem) ?? nextLoot(view, mem);
     if (c) return c.t === "pickup" && p.pickup === c.id ? null : c;
     if (busy) return null; // still walking to the last pile
+    const trip = questTrip(view, mem); // floor 4 is clear: hand the quests in at the Lobby once
+    if (trip) return trip;
     // before the boss arena: rest on the cleared floor until nearly healthy (natural regeneration), then go down
     if (view.depth === (mem.profile.depth ?? 1) - 1 && view.depth >= 8 && p.hp < p.hpMax * BOT.restBelow && (mem.restTicks = (mem.restTicks ?? 0) + BOT.decideEvery) < BOT.restMaxTicks) return null;
     if (view.depth < (mem.profile.depth ?? 1)) return p.stairs ? null : { t: "useStairs", dir: "down" }; // floor clear: on to the next one

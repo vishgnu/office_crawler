@@ -683,7 +683,7 @@ if (sec("fix2")) {
       check(`[R6-fix] ${cls}: Dismiss removes the notice`, (await g.page.locator(T("save-notice")).count()) === 0 && (await g.app("slots.view")).status.notice === null);
       await g.app("pause"); await g.app("save.write");
       const saved = JSON.parse(await g.page.evaluate(() => localStorage.getItem("office-crawler.slot.1")));
-      check(`[R6-fix] ${cls}: the slot is rewritten as version 3 with the refunded points`, saved.version === 3 && saved.player.attrPoints === p.attrPoints, [saved.version, saved.player.attrPoints]);
+      check(`[R6-fix] ${cls}: the slot is rewritten as version 3 with the refunded points`, saved.version === config.saveVersion && saved.player.attrPoints === p.attrPoints, [saved.version, saved.player.attrPoints]);
       await g.page.reload(); await g.page.waitForFunction(() => window.__app?.getState().scene === "title");
       await g.page.click(T("continue")); await g.page.waitForTimeout(200);
       const p2 = (await g.state()).player;

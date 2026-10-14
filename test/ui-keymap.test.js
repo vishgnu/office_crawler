@@ -4,9 +4,9 @@ import assert from "node:assert/strict";
 import { DEFAULT_KEYS, ACTIONS, RESERVED, defaultKeys, normalizeKeys, bindKey, resolveKey, actionOf, keyLabel, sameKeys } from "../src/input/keymap.js";
 import { panelFor } from "../src/input/keys.js";
 
-test("defaults: 12 actions, every default code distinct, inventory is I", () => {
-  assert.equal(ACTIONS.length, 12);
-  assert.equal(new Set(Object.values(DEFAULT_KEYS)).size, 12);
+test("defaults: 13 actions, every default code distinct, inventory is I", () => {
+  assert.equal(ACTIONS.length, 13);
+  assert.equal(new Set(Object.values(DEFAULT_KEYS)).size, 13);
   assert.equal(DEFAULT_KEYS.inventory, "KeyI");
   assert.ok(Object.isFrozen(DEFAULT_KEYS));
   assert.deepEqual(defaultKeys(), DEFAULT_KEYS);
@@ -49,7 +49,7 @@ test("normalizeKeys: garbage, unknown actions and duplicate codes fall back to t
   assert.deepEqual(normalizeKeys({ inventory: "KeyB", map: 7, extra: "KeyZ" }), { ...DEFAULT_KEYS, inventory: "KeyB" });
   assert.deepEqual(normalizeKeys({ inventory: "KeyC" }), DEFAULT_KEYS, "two actions on one key reset everything");
   assert.deepEqual(normalizeKeys({ inventory: "Escape" }), DEFAULT_KEYS);
-  assert.ok(sameKeys(normalizeKeys({ skills: "KeyJ" }), { ...DEFAULT_KEYS, skills: "KeyJ" }));
+  assert.ok(sameKeys(normalizeKeys({ skills: "KeyH" }), { ...DEFAULT_KEYS, skills: "KeyH" }));
 });
 
 test("actionOf and keyLabel", () => {

@@ -175,6 +175,7 @@ async function boot() {
     openSlots: () => game.openSlots(), closeSlots: () => game.closeSlots(), openCreate: (o) => game.openCreate(o), closeCreate: () => game.closeCreate(),
     titleMessage: (r) => { game.titleNotice = game.titleNotice ?? errorText(r.error); shellSync(); },
     resume: () => game.key("Escape"),
+    openJournal: () => { game.key("Escape"); game.openPanel("journal"); }, // the pause menu entry: leave the pause, then open the journal like the J key does
     restart: () => game.input({ t: "restart" }),
     respawn: () => game.input({ t: "respawn" }),
     keepPlaying: () => game.keepPlaying(),

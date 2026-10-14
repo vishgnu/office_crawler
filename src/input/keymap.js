@@ -5,7 +5,7 @@
 
 /** action id -> default code. Spec name: config.defaultKeys (src/core is frozen, so the table lives here). */
 export const DEFAULT_KEYS = Object.freeze({
-  inventory: "KeyI", character: "KeyC", skills: "KeyS", map: "KeyM",
+  inventory: "KeyI", character: "KeyC", skills: "KeyS", map: "KeyM", journal: "KeyJ",
   skill1: "F1", skill2: "F2", skill3: "F3", skill4: "F4",
   belt1: "Digit1", belt2: "Digit2", belt3: "Digit3", belt4: "Digit4",
 });

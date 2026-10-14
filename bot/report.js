@@ -11,12 +11,24 @@ export function observeEvents(view, rec) {
   for (const ev of view.events ?? []) { // a browser snapshot may not carry events
     if (ev.type === "hit" && ev.target !== "player") { const k = ev.skill ?? (ev.source === "ally" ? "allies" : ev.damageType ? "burn" : "basic-melee"); rec.dmg[k] = (rec.dmg[k] ?? 0) + ev.value; }
     else if (ev.type === "cast") rec.casts[ev.skill] = (rec.casts[ev.skill] ?? 0) + 1;
+    else if (ev.type === "quest.step" && ev.id === "main" && !(rec.evSeen ??= new WeakSet()).has(ev)) { rec.evSeen.add(ev); (rec.mainSteps ??= []).push(ev.step); } // R7-0.4: the main quest steps in the order they completed (AC-R-241-2)
+    else if (ev.type === "quest.completed" && ev.id === "main" && !(rec.evSeen ??= new WeakSet()).has(ev)) { rec.evSeen.add(ev); (rec.mainSteps ??= []).push(7); }
   }
+}
+
+const QUEST_IDS = ["main", "sq1", "sq2", "sq3"];
+/** Tick at which each quest was first seen completed (R7-0.4): side quests by their stored state, the main quest by its verdict milestone (same fields in the core state and in a browser snapshot). */
+export function observeQuests(view, rec) {
+  const qs = view.quests;
+  if (!qs) return;
+  rec.qDone ??= {};
+  for (const id of QUEST_IDS) if (rec.qDone[id] === undefined && (id === "main" ? qs.main?.m?.verdict : qs[id]?.s === "completed")) rec.qDone[id] = view.tick;
 }
 
 export function observe(view, rec) {
   const t = view.tick;
   rec.tick = t;
+  observeQuests(view, rec);
   if (rec.total === null) { rec.total = 0; rec.gold0 = view.player.gold; }
   rec.maxLevel = Math.max(rec.maxLevel, view.player.level);
   for (const m of view.monsters) {
@@ -46,7 +58,7 @@ export function finish(view, mem, rec, maxTicks) {
     if (mem.done) { rec.result = "cleared"; rec.clearTick = view.tick; }
     else if (view.tick >= maxTicks) rec.result = "timeout";
   }
-  return { seed: rec.seed, result: rec.result, deathDepths: rec.deathDepths ?? [], dmg: rec.dmg, casts: rec.casts, ticks: rec.tick, kills: rec.kills, total: rec.total, ttk: rec.ttk, stuck: mem.stuck, waitGaveUp: mem.waitGaveUp, watchdogFired: mem.watchdogFired ?? 0, watchdogQuiet: mem.watchdogQuiet ?? 0, watchdogLog: mem.watchdogLog ?? [], failedMoves: mem.failedMoves, hpMin: rec.hpMin, boss: { ...rec.boss, hpMin: rec.boss.hpMin === Infinity ? null : rec.boss.hpMin, fightTicks: rec.boss.killed !== null && rec.boss.engaged !== null ? rec.boss.killed - rec.boss.engaged : null }, victory: rec.victory ?? null, depth: view.deepestDepth ?? 1, level: rec.maxLevel, deaths: rec.deaths + (rec.result === "died" ? 1 : 0), gold: view.player.gold - (rec.gold0 ?? 0), worn: Object.values(view.equipment ?? {}).filter(Boolean).length, loot: (view.groundItems ?? []).length };
+  return { seed: rec.seed, result: rec.result, deathDepths: rec.deathDepths ?? [], dmg: rec.dmg, casts: rec.casts, ticks: rec.tick, kills: rec.kills, total: rec.total, ttk: rec.ttk, stuck: mem.stuck, waitGaveUp: mem.waitGaveUp, watchdogFired: mem.watchdogFired ?? 0, watchdogQuiet: mem.watchdogQuiet ?? 0, watchdogLog: mem.watchdogLog ?? [], failedMoves: mem.failedMoves, hpMin: rec.hpMin, boss: { ...rec.boss, hpMin: rec.boss.hpMin === Infinity ? null : rec.boss.hpMin, fightTicks: rec.boss.killed !== null && rec.boss.engaged !== null ? rec.boss.killed - rec.boss.engaged : null }, victory: rec.victory ?? null, quests: { done: Object.keys(rec.qDone ?? {}), all: QUEST_IDS.every((id) => rec.qDone?.[id] !== undefined), ticks: rec.qDone ?? {}, mainSteps: rec.mainSteps ?? [], trips: mem.q?.trips ?? 0, tripTicks: mem.q?.tripTicks ?? 0, gaveUp: Object.keys(mem.q?.gaveUp ?? {}) }, depth: view.deepestDepth ?? 1, level: rec.maxLevel, deaths: rec.deaths + (rec.result === "died" ? 1 : 0), gold: view.player.gold - (rec.gold0 ?? 0), worn: Object.values(view.equipment ?? {}).filter(Boolean).length, loot: (view.groundItems ?? []).length };
 }
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
@@ -61,6 +73,7 @@ export function summarise(runs) {
     ttkMeanSec: +(mean(ttk) / TICKS_PER_SECOND).toFixed(2), ttkMaxSec: +(Math.max(0, ...ttk) / TICKS_PER_SECOND).toFixed(2),
     stuckEvents: runs.reduce((a, r) => a + r.stuck, 0), waitGaveUp: runs.reduce((a, r) => a + r.waitGaveUp, 0), watchdogFired: runs.reduce((a, r) => a + (r.watchdogFired ?? 0), 0), watchdogQuiet: runs.reduce((a, r) => a + (r.watchdogQuiet ?? 0), 0), failedMoves: runs.reduce((a, r) => a + r.failedMoves, 0),
     meanDepth: +mean(runs.map((r) => r.depth ?? 1)).toFixed(2), maxDepth: Math.max(1, ...runs.map((r) => r.depth ?? 1)), meanLevel: +mean(runs.map((r) => r.level ?? 1)).toFixed(1), deaths: runs.reduce((a, r) => a + (r.deaths ?? 0), 0),
+    questsAll: runs.filter((r) => r.quests?.all).length,
     meanRunSec: +(mean(runs.map((r) => r.ticks)) / TICKS_PER_SECOND).toFixed(1),
   };
 }

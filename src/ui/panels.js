@@ -3,7 +3,7 @@
 // toast and a live region. Plain data in (game.core, game.ui), commands out (game.input / game.openPanel); no game rules here.
 // Everything is a real <button>: keyboard (arrows in the grid, Enter picks up and places, Esc puts back), focus ring,
 // labelled, contrast >= 4.5:1 (see style.css tokens and test/ui-contrast.test.js).
-import { content, itemAt, config, treeView } from "../core/index.js";
+import { content, itemAt, config, treeView, questView } from "../core/index.js";
 import { T } from "./text.js";
 import { itemIcon, skillIcon, rarityMark, arrow, coinIcon } from "./icons.js";
 import { describeItem, compareToEquipped, unmetGear, allocPreview, dropCheck, rarityName, statLabel, xpRatio, xpProgress } from "./itemview.js";
@@ -12,6 +12,7 @@ import { keyLabel, DEFAULT_KEYS } from "../input/keymap.js";
 import { sellValue, buyPrice, classById } from "../core/index.js";
 import { renderTree, nodeTipHtml, nodeFor } from "./tree.js";
 import { paintBust } from "./slots.js";
+import { journalModel, journalHtml, trackerOf } from "./journal.js";
 
 const S = content.strings;
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -53,11 +54,12 @@ export function createPanels(root, game) {
       <aside class="drawer" id="pleft" data-testid="drawer-left" aria-label="${esc(T.character)}"></aside>
       <aside class="drawer" id="pright" data-testid="drawer-inventory" aria-label="${esc(T.inventory)}"></aside>
     </div>
+    <div class="tracker" id="tracker" data-testid="tracker" role="group" hidden><span class="tr-in"><span class="tr-l"></span><span class="tr-t" data-testid="tracker-text"></span></span></div>
     <div class="tip" id="tip" role="tooltip" hidden></div>
     <div class="ghost" id="ghost" hidden aria-hidden="true"></div>
     <div class="toast" id="toast" data-testid="toast" hidden></div>
     <div class="sr" id="live" role="status" aria-live="polite" data-testid="live"></div>`;
-  const el = { hud: root.querySelector("#hudui"), left: root.querySelector("#pleft"), right: root.querySelector("#pright"), tip: root.querySelector("#tip"), ghost: root.querySelector("#ghost"), toast: root.querySelector("#toast"), live: root.querySelector("#live") };
+  const el = { hud: root.querySelector("#hudui"), left: root.querySelector("#pleft"), right: root.querySelector("#pright"), tip: root.querySelector("#tip"), ghost: root.querySelector("#ghost"), toast: root.querySelector("#toast"), tracker: root.querySelector("#tracker"), live: root.querySelector("#live") };
   const view = { cur: { x: 0, y: 0 }, hoverKey: null, hoverEl: null, last: { x: -999, y: -999 }, drag: null, grab: { gx: 0, gy: 0 }, sigs: { hud: "", left: "", right: "" }, stats: {}, preview: null, toastId: 0, toastTimer: 0, sellArm: null, sellTimer: 0, respecAsk: false };
 
   // ------------------------------------------------------------ lookups
@@ -205,7 +207,9 @@ export function createPanels(root, game) {
     h += `<button class="hbtn" type="button" data-testid="dock-inventory" data-fk="h.d.i" data-open="inventory" aria-pressed="${panels.inventory}"><span>${esc(T.openInventory)}</span><kbd>${esc(kl("inventory"))}</kbd></button>`;
     h += `<button class="hbtn" type="button" data-testid="dock-character" data-fk="h.d.c" data-open="character" aria-pressed="${panels.character}"><span>${esc(T.openCharacter)}</span><kbd>${esc(kl("character"))}</kbd>${badge(p.attrPoints, T.attrPointsBadge)}</button>`;
     h += `<button class="hbtn" type="button" data-testid="dock-skills" data-fk="h.d.s" data-open="skills" aria-pressed="${panels.skills}"><span>${esc(T.openSkills)}</span><kbd>${esc(kl("skills"))}</kbd>${badge(p.skillPoints, T.skillPointsBadge)}</button>`;
-    h += `<button class="hbtn" type="button" data-testid="dock-map" data-fk="h.d.m" data-open="map" aria-pressed="${panels.map}"><span>${esc(T.openMap)}</span><kbd>${esc(kl("map"))}</kbd></button></div>`;
+    h += `<button class="hbtn" type="button" data-testid="dock-map" data-fk="h.d.m" data-open="map" aria-pressed="${panels.map}"><span>${esc(T.openMap)}</span><kbd>${esc(kl("map"))}</kbd></button>`;
+    const jb = game.ui.badge?.journal;
+    h += `<button class="hbtn" type="button" data-testid="dock-journal" data-fk="h.d.j" data-open="journal" aria-pressed="${panels.journal}"><span>${esc(T.openJournal)}</span><kbd>${esc(kl("journal"))}</kbd>${jb ? `<span class="bdg" data-testid="journal-badge" aria-label="${esc(T.journalNew)}">!</span>` : ""}</button></div>`;
     return h;
   }
 
@@ -252,27 +256,61 @@ export function createPanels(root, game) {
     root.classList.toggle("front-left", frontLeft); root.classList.toggle("front-right", rightOpen && !frontLeft);
     el.left.classList.toggle("open", leftOpen); el.right.classList.toggle("open", rightOpen);
     el.left.dataset.panel = u.left ?? ""; el.right.dataset.panel = "inventory";
-    el.left.setAttribute("aria-label", u.left === "skills" ? T.skills : u.left === "npc" ? (S[c.ui.dialog?.nameKey] ?? "") : T.character);
+    el.left.setAttribute("aria-label", u.left === "journal" ? T.journalTitle : u.left === "skills" ? T.skills : u.left === "npc" ? (S[c.ui.dialog?.nameKey] ?? "") : T.character);
 
-    const hudSig = sigOf(game.w, game.h, c.options?.keys, p.skillBar.hotkeys, p.skillBar.selected, p.skills, p.mp >= 0 && p.skillBar.hotkeys.map((id) => (id && content.skills[id]?.mana ? p.mp < content.skills[id].mana(Math.max(1, id === "strike" ? 1 : p.skills[id] ?? 0)) : 0)), c.belt.map((b) => b?.id ?? 0), p.attrPoints, p.skillPoints, u.inventory, u.left, u.map, p.xp, p.level);
+    const hudSig = sigOf(game.w, game.h, c.options?.keys, p.skillBar.hotkeys, p.skillBar.selected, p.skills, p.mp >= 0 && p.skillBar.hotkeys.map((id) => (id && content.skills[id]?.mana ? p.mp < content.skills[id].mana(Math.max(1, id === "strike" ? 1 : p.skills[id] ?? 0)) : 0)), c.belt.map((b) => b?.id ?? 0), p.attrPoints, p.skillPoints, u.inventory, u.left, u.map, p.xp, p.level, !!u.badge?.journal);
     if (hudSig !== view.sigs.hud) { view.sigs.hud = hudSig; renderInto(el.hud, renderHud(c)); }
 
     const base = [game.w, game.h, c.options?.keys, u.front, held?.id ?? 0, game.heldOrigin, !!view.drag, p.level, p.xp, p.xpNext, p.attrs, p.attrsTotal, p.attrPoints, p.skillPoints, p.hp, p.hpMax, p.mp, p.mpMax, p.gold, p.damage, p.defense, p.attackRating, p.resist, p.skills, p.skillBar.hotkeys, p.aura, p.name, p.class, c.depth, c.scene, c.player.respecsUsed,
       c.inventory.items.map((i) => [i.id, i.x, i.y]), Object.values(c.equipment).map((i) => i?.id ?? 0), c.belt.map((b) => b?.id ?? 0), c.floor.name];
     if (rightOpen) { const sg = sigOf(base); if (sg !== view.sigs.right) { view.sigs.right = sg; renderInto(el.right, renderInventory(c)); } } else view.sigs.right = "";
     if (leftOpen) {
-      const sg = sigOf(base, u.left, u.vendorTab, view.sellArm, view.respecAsk, c.ui.dialog, c.vendor && [c.vendor.id, c.vendor.stock.map((e) => e.item.id)], c.stash.items.map((i) => i.id));
+      const sg = sigOf(base, u.left, u.vendorTab, view.sellArm, view.respecAsk, c.ui.dialog, c.vendor && [c.vendor.id, c.vendor.stock.map((e) => e.item.id)], c.stash.items.map((i) => i.id), u.left === "journal" && [c.quests, c.player.pouch, c.scene]);
       if (sg !== view.sigs.left) {
         view.sigs.left = sg;
-        renderInto(el.left, u.left === "skills" ? renderSkills(c) : u.left === "npc" ? renderNpc(c) : renderCharacter(c));
+        renderInto(el.left, u.left === "skills" ? renderSkills(c) : u.left === "npc" ? renderNpc(c) : u.left === "journal" ? renderJournal(c) : renderCharacter(c));
         if (u.left === "character") { flashChanged(); for (const cv of el.left.querySelectorAll("canvas[data-bust]")) { try { paintBust(cv, cv.dataset.bust); } catch { /* decoration */ } } }
         if (view.preview && u.left === "character") showPreview(view.preview);
       }
     } else { view.sigs.left = ""; view.stats = {}; }
+    syncJournalFocus(leftOpen && u.left === "journal");
+    syncTracker(c, D, leftOpen, rightOpen, menu);
     syncGhost();
     syncToast();
     if (view.hoverKey && !itemFor(view.hoverKey)) hideTip(); // the item under the cursor was equipped, used, sold or dropped
     else if (!leftOpen && !rightOpen && !view.hoverEl?.closest?.("#hudui")) hideTip();
+  }
+
+  // ------------------------------------------------------------ journal (R7) and tracker
+  const renderJournal = (c) => journalHtml(journalModel(c.quests ? questView(c) : null, c.player.pouch ?? [], c.scene), closeBtn);
+  /** Opening the journal puts focus on its first quest; closing it gives focus back to what had it before (AC-R-244-2). */
+  function syncJournalFocus(open) {
+    if (open && !view.jOpen) {
+      view.jOpen = true; const a = doc.activeElement; view.jPrev = a && a !== doc.body && !el.left.contains(a) ? (a.dataset?.fk ? { fk: a.dataset.fk } : a) : null; // the HUD is redrawn when a panel opens: remember a re-rendered button by its focus key
+      el.left.querySelector('[data-fk="j.q.0"]')?.focus({ preventScroll: true });
+    } else if (!open && view.jOpen) {
+      view.jOpen = false; const p = view.jPrev; view.jPrev = null;
+      const t = p?.fk ? root.querySelector(`[data-fk="${CSS.escape(p.fk)}"]`) : p;
+      if (t?.isConnected && !t.disabled && !game.menu()) t.focus({ preventScroll: true });
+    }
+  }
+  /** One line for the pinned quest. It sits between the drawers and the dock, so it never covers a panel control. */
+  function syncTracker(c, D, leftOpen, rightOpen, menu) {
+    const t = el.tracker, tr = c.quests ? trackerOf(questView(c)) : null;
+    t.hidden = !tr || !!menu || c.scene === "dead" || (D.phone && (leftOpen || rightOpen));
+    if (!tr) return;
+    const s = hudLayout(game.w, game.h).scale;
+    if (D.phone) { t.style.left = "6px"; t.style.right = "6px"; t.style.top = "54px"; }
+    else {
+      t.style.left = (leftOpen ? D.leftW + 8 : Math.round(12 * s)) + "px";
+      t.style.right = ((rightOpen ? D.rightW + 8 : 8) + 140) + "px";
+      t.style.top = Math.round(170 * s) + "px";
+    }
+    const label = `${T.trackerLabel}: ${tr.title}`, text = tr.text;
+    if (t.dataset.sig === label + "|" + text) return;
+    t.dataset.sig = label + "|" + text; t.dataset.quest = tr.id;
+    t.querySelector(".tr-l").textContent = tr.title; t.querySelector(".tr-t").textContent = text;
+    t.title = `${tr.title}: ${text}`; t.setAttribute("aria-label", `${label}. ${text}`);
   }
 
   // ------------------------------------------------------------ toast + live region
@@ -522,6 +560,8 @@ export function createPanels(root, game) {
     if (!b || !core()) return;
     const d = b.dataset;
     if (b.matches(".cell,.slot,.bslot")) { if (e.detail === 0) { const t = targetOf(b); if (t) activate(t); } return; } // keyboard activation (pointer path is handled on pointerdown)
+    if (d.pin) { game.input({ t: "questPin", id: d.pin }); return; }
+    if (d.verdict) { game.readVerdict(); return; }
     if (d.close) game.closePanel(d.close);
     else if (d.open) { if (b.classList.contains("tab")) game.openPanel(d.open); else game.togglePanel(d.open); }
     else if (d.alloc) game.input({ t: "allocate", attr: d.alloc });
@@ -575,6 +615,11 @@ export function createPanels(root, game) {
 
   // keyboard in the grid: arrows move, E equips/uses; Enter/Space click through the click handler (detail 0)
   root.addEventListener("keydown", (e) => {
+    const jq = e.target.closest?.(".jq");
+    if (jq && (e.key === "ArrowDown" || e.key === "ArrowUp") && e.target === jq) { // the journal: arrows walk the quest entries
+      const all = [...root.querySelectorAll(".jq")], i = all.indexOf(jq), nx = all[Math.min(all.length - 1, Math.max(0, i + (e.key === "ArrowDown" ? 1 : -1)))];
+      nx?.focus({ preventScroll: true }); e.preventDefault(); return;
+    }
     const cell = e.target.closest?.(".cell");
     if (cell) {
       const x = Number(cell.dataset.x), y = Number(cell.dataset.y), D = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];

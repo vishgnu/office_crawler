@@ -29,7 +29,7 @@ export function normalizeOptions(raw) {
   };
 }
 
-const ACTION_LABEL = { inventory: T.actInventory, character: T.actCharacter, skills: T.actSkills, map: T.actMap, skill1: T.actSkill1, skill2: T.actSkill2, skill3: T.actSkill3, skill4: T.actSkill4, belt1: T.actBelt1, belt2: T.actBelt2, belt3: T.actBelt3, belt4: T.actBelt4 };
+const ACTION_LABEL = { inventory: T.actInventory, character: T.actCharacter, skills: T.actSkills, map: T.actMap, journal: T.keyJournal, skill1: T.actSkill1, skill2: T.actSkill2, skill3: T.actSkill3, skill4: T.actSkill4, belt1: T.actBelt1, belt2: T.actBelt2, belt3: T.actBelt3, belt4: T.actBelt4 };
 const KIT_LABEL = { foley: T.kitFoley, gothic: T.kitGothic, chiptune: T.kitChiptune };
 const SIZE_LABEL = { 1: T.sizeNormal, 1.25: T.sizeLarge, 1.5: T.sizeHuge };
 

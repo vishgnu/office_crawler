@@ -135,3 +135,18 @@ Object.assign(T, {
   errPreSwitch: "The running game could not be saved first, so nothing was changed. Free some space and try again.",
   slLoadTitle: "Load this character?", slLoadText: "The running game is saved first, but unsaved floor progress is lost: you come back at the floor entrance. Cancel keeps the game as it is.", slLoadYes: "Load", slDeepest: "Deepest", slDeepestLobby: "Lobby only",
 });
+
+// ---- R7: quest journal, tracker, quest dialogue and toasts (contract section 2.5; quest texts come from content/quests.js) ----
+Object.assign(T, {
+  journalTitle: "Journal", openJournal: "Journal", journalClose: "Close Journal (J)", journalActive: "Active", journalCompleted: "Completed", journalEmpty: "No quests yet.",
+  journalPouch: "Quest items", journalPouchEmpty: "You carry no quest items.", journalNew: "updated", journalPanel: "Quests",
+  nextStepLabel: "Next step", giverLabel: "Given by", progressLabel: "{n}/{goal}", stepLabel: "Step", pinAction: "Pin", unpinAction: "Unpin", pinnedMark: "Pinned",
+  stateAvailable: "Available", stateActive: "Active", stateReady: "Ready to hand in", stateCompleted: "Completed",
+  mainQuestLabel: "Main quest", sideQuestLabel: "Side quest",
+  questAccept: "Accept", questDecline: "Decline", questHandIn: "Hand in", rewardLabel: "Reward", rewardGold: "{n} gold", rewardXp: "{n} experience",
+  rewardGear: "{kind} (at least {rarity})", rewardPotions: "{n} potions",
+  bagFullNotice: "Your bag has no room for the reward. Free some space and try again.",
+  readVerdict: "Read the verdict", verdictRefused: "There is no verdict to read yet.", trackerLabel: "Quest tracker",
+  mapMarkerStairsDown: "Stairs down", mapMarkerStairsUp: "Stairs up", mapMarkerNpc: "Talk here", mapMarkerElevator: "Elevator",
+  slotQuestLine: "{step} · {n}/{m}", toastQuest: "{title}: {next}", keyJournal: "Journal", pauseJournal: "Journal",
+});

@@ -182,7 +182,7 @@ test("v2 to v3: unspent points are kept and added, a hero below start values los
 test("v2 to v3: the Facilities Manager is only re-stamped (attributes and points identical, no note)", () => {
   const s = hero("facilities-manager"); setLevel(s, 14); s.player.attrs.grit += 30; s.player.attrPoints = 35; applyDerived(s);
   const r = loadV2(asV2(s));
-  assert.ok(r.ok); assert.equal(r.state.player.attrs.grit, s.player.attrs.grit); assert.equal(r.state.player.attrPoints, 35); assert.equal(r.notes?.length ?? 0, 0); assert.equal(r.save.version, 3);
+  assert.ok(r.ok); assert.equal(r.state.player.attrs.grit, s.player.attrs.grit); assert.equal(r.state.player.attrPoints, 35); assert.equal(r.notes?.length ?? 0, 0); assert.equal(r.save.version, config.saveVersion);
 });
 
 test("v2 to v3 is idempotent: a migrated save loads, re-saves as version 3 and loads again with no second refund and no note", () => {

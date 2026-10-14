@@ -1,6 +1,7 @@
 // The browser shell around the pure core: owns the state, the fixed-step loop, the camera, input
 // translation and rendering. Everything the test hook needs goes through this object.
 import { newGame, step, applyInput, snapshot, hashState, advance, config, spawnMonster, content, setLevel, setHp, teleportFloor, giveGold, spawnItem, takeGround, canPlace } from "./core/index.js";
+import { setQuestStep, completeQuest } from "./core/cheats.js";
 import { makeCamera, easeFollow } from "./ui/camera.js";
 import { hudLayout, cameraInset } from "./ui/layout.js";
 import { T } from "./ui/text.js";
@@ -8,6 +9,7 @@ import { panelFor } from "./input/keys.js";
 import { resolveKey } from "./input/keymap.js";
 import { defaultOptions } from "./ui/options.js";
 import { messageFor } from "./ui/messages.js";
+import { trackerOf } from "./ui/journal.js";
 import { drawWorld, actorPos } from "./render/world.js";
 import { createHud, hudState } from "./render/hud.js";
 import { createFx } from "./render/fx.js";
@@ -34,7 +36,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     // persisted options (volume, keys, accessibility; main.js replaces this with the stored object) and a frozen copy the core state points at
     options: defaultOptions(), optSnap: null, titleNotice: null, capturing: false,
     // UI state that is not game state: which drawers are open (left: character | skills | npc), vendor tab, hover tooltip, toast
-    ui: { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null, slots: false, create: null },
+    ui: { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null, slots: false, create: null, badge: { journal: false } },
     // the real game (story on) starts armed; test fixtures keep the unarmed core default
     storyOn: !!story, wearStartKit: !!story, inset: 0, defaultStart: "town",
   };
@@ -64,6 +66,11 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (m) game.toast(m);
     if (ev.type === "portalOpen" || ev.type === "portalUse") portalToast = true;
   });
+  // R7: a new, advanced or completed quest lights the journal badge (cleared when the journal opens); the open journal and the tracker redraw on every change
+  bus.on("*", (ev) => {
+    if (!game.core || (ev.type !== "quest.accepted" && ev.type !== "quest.step" && ev.type !== "quest.completed")) return;
+    if (game.ui.left !== "journal") game.ui.badge.journal = true;
+  });
   bus.on("dialog", () => { game.ui.left = "npc"; game.ui.inventory = true; game.ui.front = "left"; game.ui.vendorTab = "buy"; });
   // run summary for the death screen, derived from the event stream (the core keeps no kill counter)
   game.run = { kills: 0 };
@@ -92,7 +99,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     pointsHintSeen = true; game.toast(T.pointsHint);
   };
   bus.on("levelup", () => pointsHint());
-  const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null, slots: false, create: null }); game.inset = 0; storyBossSeen = false; pointsHintSeen = false; game.heldOrigin = null; };
+  const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null, slots: false, create: null, badge: { journal: false } }); game.inset = 0; storyBossSeen = false; pointsHintSeen = false; game.heldOrigin = null; };
   const resetRender = () => { game.run.kills = 0; game.prev.clear(); rs.facing.clear(); fx.reset(); game.acc = 0; game.hover = null; game.focus = null; };
   game.setBackdrop = () => { game.backdrop = newGame(game.titleSeed, { start: "town" }); resetRender(); };
   /** Start a run. opts.start: "town" (default: the Lobby, R-040) or "floor" (fixtures and tests that want floor 1). */
@@ -106,7 +113,17 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   };
   /** Swap in a state built by the save package (Continue). */
   game.loadState = (state) => { game.core = state; resetUi(); resetRender(); emitChange(); pointsHint(); return state; };
-  game.dismissStory = () => { if (!game.ui.story) return { ok: true }; game.ui.story = null; bus.emit({ type: "ui:close" }); emitChange(); return { ok: true }; };
+  game.dismissStory = () => {
+    if (!game.ui.story) return { ok: true };
+    if (game.ui.story === "start" && game.core) game.input({ t: "storyRead", id: "start" }); // R7: reading the memo completes main step 1 (refused or repeated is harmless)
+    game.ui.story = null; bus.emit({ type: "ui:close" }); emitChange(); return { ok: true };
+  };
+  /** The journal action "Read the verdict" (main step 6): the core records it, the shell shows the closing text once. */
+  game.readVerdict = () => {
+    const r = game.input({ t: "storyRead", id: "victory" });
+    if (r.ok && game.core?.scene !== "victory") { game.ui.story = "victory"; bus.emit({ type: "ui:open" }); emitChange(); } else if (!r.ok) game.toast(T.verdictRefused);
+    return r;
+  };
   bus.on("floorEnter", (ev) => { // R-104: the boss text, once per run, the first time the Executive Suite is entered
     if (game.storyOn && game.core && ev.depth === config.bossDepth && !game.core.bossDefeated && !storyBossSeen) { storyBossSeen = true; game.ui.story = "boss"; emitChange(); }
   });
@@ -246,11 +263,11 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
 
   // ---- panels (UI state, not game state) ----
   const isOpen = (n) => (n === "inventory" ? game.ui.inventory : n === "map" ? !!game.ui.map : game.ui.left === n);
-  const isLeft = (n) => n === "character" || n === "skills" || n === "npc";
+  const isLeft = (n) => n === "character" || n === "skills" || n === "npc" || n === "journal";
   game.panels = () => {
     const c = game.core, u = game.ui, d = c?.ui.dialog;
     return {
-      inventory: u.inventory, character: u.left === "character", skills: u.left === "skills", npc: u.left === "npc",
+      inventory: u.inventory, character: u.left === "character", skills: u.left === "skills", journal: u.left === "journal", npc: u.left === "npc",
       vendor: u.left === "npc" && d?.kind === "vendor", stash: u.left === "npc" && d?.kind === "stash", healer: u.left === "npc" && d?.kind === "healer", map: !!u.map,
     };
   };
@@ -265,6 +282,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
       u.left = name; u.front = "left";
     } else return { ok: false, error: "unknown panel" };
     u.tooltip = null;
+    if (name === "journal") u.badge.journal = false;
     if (!was) bus.emit({ type: "ui:open" });
     emitChange();
     return { ok: true };
@@ -340,7 +358,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     const cam = game.camera();
     base.ui = {
       ...(game.core ? game.core.ui : { notice: game.titleNotice }), menu,
-      panels: game.panels(), tooltip: game.ui.tooltip, toast: game.ui.toast?.text ?? null, inset: game.inset, fx: { gore: false, shake: game.shakeOn() ? 1 : 0, flash: game.options.reducedMotion ? 0 : 1 }, // no gore by default, none at all (AC-R-103-3)
+      panels: game.panels(), tracker: trackerOf(base.quests), badge: { journal: !!game.ui.badge.journal }, tooltip: game.ui.tooltip, toast: game.ui.toast?.text ?? null, inset: game.inset, fx: { gore: false, shake: game.shakeOn() ? 1 : 0, flash: game.options.reducedMotion ? 0 : 1 }, // no gore by default, none at all (AC-R-103-3)
       hud: game.core ? hudState(game.core, game.w, game.h, style, game.core.player.target ?? game.hover) : null,
       camera: cam ? { ox: cam.ox, oy: cam.oy, z: cam.z, w: cam.w, h: cam.h } : null,
       hover: game.hover,
@@ -374,6 +392,9 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     /** Drop a rolled item on the ground next to the hero: opts as rollItem ({slot, rarity, base, ilvl} or {potion:true}). */
     spawnItem: (opts = {}, tile) => cheat((c) => { const e = spawnItem(c, opts, tile ?? c.player.tile); return { ok: true, id: e.id, label: e.label }; }),
     /** spawnItem, then pick it up into the inventory. */
+    /** Quest cheats (R7): main step 1..6 or a side state 0..3 / finish a quest; the events go to audio and the UI like the real path. */
+    setQuestStep: (id, n) => cheat((c) => setQuestStep(c, id, n)),
+    completeQuest: (id) => cheat((c) => completeQuest(c, id)),
     giveItem: (opts = {}) => cheat((c) => {
       const e = spawnItem(c, opts, c.player.tile), r = takeGround(c, e); // straight into the drawer, wherever the pile landed
       return r.ok ? { ok: true, id: e.id, label: e.label } : { ok: false, error: r.error };

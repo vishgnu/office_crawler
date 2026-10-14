@@ -97,7 +97,7 @@ export function createScreens(root, h) {
     pause: () => {
       const s = el("section", "screen pause");
       const banner = createSaveStatus({ session: h.session, slots: h.slots, emit: h.emit }, { errorText });
-      s.append(el("h2", "", S.paused), banner, button(S.resume, "resume", h.resume), button(T.saveSlots, "pause-slots", () => { returnFocus = "pause-slots"; h.openSlots(); }), button(T.options, "options", () => h.openOptions()), button(S.quitToTitle, "quit", h.quit));
+      s.append(el("h2", "", S.paused), banner, button(S.resume, "resume", h.resume), button(T.pauseJournal, "pause-journal", h.openJournal), button(T.saveSlots, "pause-slots", () => { returnFocus = "pause-slots"; h.openSlots(); }), button(T.options, "options", () => h.openOptions()), button(S.quitToTitle, "quit", h.quit));
       return s;
     },
     options: () => {
