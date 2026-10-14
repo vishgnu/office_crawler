@@ -383,12 +383,14 @@ let exported = null;
   await levelUp(g, 30);
   await g.app("cheat.teleportFloor", 9);
   await g.app("audio.clearCueLog");
-  let barShot = false, s = await g.state(), sawBar = false, sawLive = "";
+  let barShot = false, s = await g.state(), sawBar = false, sawLive = "", engagedFor = 0;
   for (let i = 0; i < 90 && s.scene !== "victory"; i++) {
     const b = s.monsters.find((m) => m.tier === "boss");
     if (!b) { await g.app("step", 10); s = await g.state(); continue; }
     await g.app("cmd.attack", b.id);
-    await g.app("cheat.damageMonster", b.id, Math.ceil(b.hpMax * 0.06)); // class-independent: the boss resists fire and cold, so a skill kill would depend on the class
+    // class-independent damage: the boss resists fire and cold, so a kill by skills would depend on the class. It starts once the boss is engaged and a few
+    // seconds in (so the engage, telegraph and slam cues sound as in a real fight) and is small enough that the fight keeps its two phases.
+    if (b.boss?.engaged) { engagedFor++; if (engagedFor > 4) await g.app("cheat.damageMonster", b.id, Math.ceil(b.hpMax * 0.035)); }
     await g.app("step", 30);
     s = await g.state();
     const bar = s.ui.hud?.boss;
