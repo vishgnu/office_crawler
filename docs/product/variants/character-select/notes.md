@@ -17,3 +17,9 @@
 
 ## Shared figure code
 The three class figures are one section in each file marked `FIGURES (exported, port to src/render/styles)` and also saved as `figures.js`. API: `drawFacilitiesManager(ctx,t,f,dim)`, `drawSalesRep(...)`, `drawITWizard(...)`, `drawClassFigure(i,...)`. The context must be translated to the feet and scaled (the figure is about 97 units tall, y up is negative); `t` is idle seconds, `f` is the flourish 0..1 or -1, `dim` darkens toward a silhouette. The figures use their own small helpers (`fE`, `fP`, `fL`, `fGlow`, `fText`, `fmix`) and a palette `FIG_MATS`, so they can be lifted without the screen code. They are drawn front-on, not in the game's isometric view; the WORLD implementer will need isometric or three-quarter variants for in-world sprites, but the proportions, palette and props carry over.
+
+## Answers (customer-proxy, 2026-10-14)
+1. Variant or mix: **PROXY** (confidence high): A "Lobby lineup", with borrowings from C and B (see `decision.md`). Basis: customer asked for "visually appealing"; reviewer scored A 34/40 vs 30 and 28, and A matches the game's look.
+2. Unchosen classes visible: **PROXY** (confidence high): yes, all three stay visible (A). Basis: comparing classes is the point of a class screen; genre convention is a visible lineup; C hides two of three.
+3. Dark vs paper look: **PROXY** (confidence high): dark, matching the game. Paper look only as small accents (stamp, badge bust). Basis: customer wants a coherent game ("nice graphics"); reviewer cohesion score B=2.
+4. Class, stat and difficulty names: **PROXY** (confidence medium): working names proceed (Facilities Manager / Sales Rep / IT Wizard; Toughness, Damage, Speed, Reach). ESCALATE: final names are a brand decision for the real customer (R-233).

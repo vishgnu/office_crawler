@@ -104,3 +104,6 @@ One line per decision by `customer-proxy`. The real customer can overrule any of
 - 2026-10-14 | spec-questions-02 ADR-0005 skill names Firewall/Fire Drill | Packet Filter / Evacuation Drill stand; ESCALATE confirmation (IP/brand) | n/a
 - 2026-10-14 | spec-questions-02 ADR-0006 second tab | read-only message, best effort | medium
 - 2026-10-14 | spec-questions-02 ADR-0006 delete undo copy | accept; one undo copy until next write, "Delete forever" clears it | medium
+- 2026-10-14 | character-select variant pick | A "Lobby lineup" with borrows from C (stats row, ding pulse, door transition) and B (stamp, badge bust); must-fix = reviewer top 5 + in-world sprites carry class identity (hat/hi-vis, suit/headset, hoodie/laptop) | high (pick), medium (borrows)
+- 2026-10-14 | character-select Q: unchosen classes visible; dark look | visible; dark | high
+- 2026-10-14 | character-select Q: class/stat/difficulty names | working names proceed; final names ESCALATE (brand, R-233) | n/a
