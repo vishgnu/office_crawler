@@ -1,7 +1,7 @@
 // R7-4.1 the two new side quests (AC-R-258-1..5): sq4 "The Misfiled Ledger" (item, stash keeper, floors 5 and 6) and sq5 "Slide Deck Surplus" (6 Consultants on floors 5 and 6, vendor).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { newGame, applyInput, config, content, snapshot, npcMarker, enterFloor, questRng, questSpot, rewardSummary, rewardOf } from "../src/core/index.js";
+import { newGame, generateFloor, applyInput, config, content, snapshot, npcMarker, enterFloor, questRng, questSpot, rewardSummary, rewardOf } from "../src/core/index.js";
 import { itemFloorOf } from "../src/core/systems/quests.js";
 import { killMonster } from "../src/core/systems/damage.js";
 import { buildGrid, flood } from "../src/core/grid.js";
@@ -125,12 +125,46 @@ test("AC-R-258-3 CR7-01 per quest: floors 5 and 6 cleared before the accept, the
   }
 });
 
-test("AC-R-258-3 validity: floors 5 and 6 of 100 seeds together spawn at least `count` Consultants (the generator spawns, the count is config)", () => {
-  for (const seed of SEEDS) {
-    const s = newGame(seed, { start: "town" });
+test("AC-R-258-3 validity (ADV-R7-10): on 1000 seeds, once sq5 is accepted floors 5 and 6 hold at least `count` Consultants (the missing ones are placed on entry); not accepted, nothing is added", () => {
+  let topped = 0;
+  for (let seed = 1; seed <= 1000; seed++) {
+    const gen = [5, 6].reduce((t, d) => t + generateFloor(seed, d).spawns.filter((sp) => sp.type === "consultant").length, 0);
+    if (gen >= config.quests.sq5.kill.count && seed > 100) continue; // enough by generation (the 1000 seeds are counted without entering the floors; the first 100 run in full)
+    if (gen < config.quests.sq5.kill.count) topped++;
+    const s = lobby(seed, ["sq5"]);
     let n = 0;
     for (const d of [5, 6]) { enterFloor(s, d); n += s.monsters.filter((m) => m.type === "consultant" && !m.summoned).length; }
     assert.ok(n >= config.quests.sq5.kill.count, `seed ${seed}: ${n}`);
+    if (gen >= config.quests.sq5.kill.count) assert.equal(n, gen, `seed ${seed}: nothing is added when the floors hold enough`);
+    if (seed > 100 && seed % 7) continue;
+    const u = newGame(seed, { start: "town" });
+    let m = 0;
+    for (const d of [5, 6]) { enterFloor(u, d); m += u.monsters.filter((x) => x.type === "consultant").length; }
+    assert.equal(m, gen, `seed ${seed}: not accepted, the floors are as generated`);
+  }
+  assert.ok(topped >= 10, `the sample contains short seeds (102, 105, ...): ${topped}`);
+});
+
+test("ADV-R7-10 the top-up is deterministic, stable across re-entry and kills, and the quest finishes on short seeds (102, 105)", () => {
+  for (const seed of [102, 105, 173]) {
+    const a = lobby(seed, ["sq5"]), b = lobby(seed, ["sq5"]);
+    for (const d of [5, 6]) { enterFloor(a, d); enterFloor(b, d); }
+    assert.deepEqual(a.monsters.map((m) => [m.type, m.tile]), b.monsters.map((m) => [m.type, m.tile]), `seed ${seed}: same placement`);
+    enterFloor(a, 5); enterFloor(a, 6); enterFloor(a, 6);
+    assert.equal(consultants(a).length, consultants(b).length, `seed ${seed}: re-entry adds nothing more`);
+    // play it out: kill everything on 5 and 6, leave and come back; the quest reaches ready
+    for (const d of [5, 6, 5, 6]) { enterFloor(a, d); for (const m of consultants(a)) { if (a.quests.sq5.s === "ready") break; killMonster(a, m); } }
+    assert.equal(a.quests.sq5.s, "ready", `seed ${seed}: ${a.quests.sq5.p}/6`);
+  }
+});
+
+test("ADV-R7-10 every other kill quest of the content table (sq1 interns) is winnable on 1000 seeds without a top-up: the generator holds at least `count`", () => {
+  for (const id of content.sideIds.filter((x) => x !== "sq5" && content.quests[x].objective.type === "kill")) {
+    const k = config.quests[id]?.kill ?? config.quests.kill;
+    for (let seed = 1; seed <= 1000; seed++) {
+      const n = k.depths.reduce((t, d) => t + generateFloor(seed, d).spawns.filter((sp) => sp.type === k.monster).length, 0);
+      assert.ok(n >= k.count, `${id} seed ${seed}: ${n}`);
+    }
   }
 });
 

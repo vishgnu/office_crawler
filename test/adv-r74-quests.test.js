@@ -447,7 +447,7 @@ test("[R74-sq5] revive: floors 5 and 6 cleared BEFORE the accept can still be co
   assert.deepEqual(JSON.stringify([t.floors[5].killed]), before, "enough alive: nothing is revived");
 });
 
-test("[R74-sq5] ADV-R7-10 every seed can complete sq5: floors 5 and 6 together spawn at least config.quests.sq5.kill.count consultants (700 seeds; AC-R-258-3 checked 100)", { todo: "ADV-R7-10: seeds 102 (3+2), 105 (0+2), 173, 183, 194, 412, 446 and more spawn fewer than 6, the revive rule only brings killed spawns back, so the quest can never be completed" }, () => {
+test("[R74-sq5] ADV-R7-10 every seed can complete sq5: floors 5 and 6 together spawn at least config.quests.sq5.kill.count consultants (700 seeds; AC-R-258-3 checked 100)", { todo: "ADV-R7-10: kept as todo on purpose: the generator still spawns fewer than 6 on these seeds; the fix guarantees the count when sq5 is accepted (topUpKills, tested in quests-sq45.test.js on 1000 seeds)" }, () => {
   const short = [];
   for (let seed = 1; seed <= 700; seed++) {
     const n = [5, 6].reduce((t, d) => t + generateFloor(seed, d).spawns.filter((sp) => sp.type === config.quests.sq5.kill.monster).length, 0);
@@ -622,7 +622,7 @@ test("[R74-golden] the quest streams stay stateless: the sq2 item floor and tile
   assert.deepEqual(a.groundItems.find((g) => g.quest === "sq2").tile, b.groundItems.find((g) => g.quest === "sq2").tile, "accepting sq4 moves no badge");
 });
 
-test("[R74-xss] ADV-R7-07 questPin ids are matched against the content table's own keys: constructor, toString and __proto__ are not quests and must not be pinned (the pin then fails the schema and the next save is unloadable)", { todo: "ADV-R7-07: questPin looks the id up with quests[id] (inherited properties), pins 'constructor', 'toString' or '__proto__' and writes a save that deserialize rejects (bad pinned quest)" }, () => {
+test("[R74-xss] ADV-R7-07 questPin ids are matched against the content table's own keys: constructor, toString and __proto__ are not quests and must not be pinned (the pin then fails the schema and the next save is unloadable)", () => {
   const s = hero(92);
   for (const id of ["sq4\"><img src=x onerror=alert(1)>", "main2<script>", "constructor", "toString", "__proto__", "sq4 ", "SQ4", "", null, undefined, 4, {}]) {
     for (const t of ["questAccept", "questHandIn", "questPin"]) { const r = applyInput(s, { t, id }); assert.equal(r.ok === true && id !== "sq4" && id !== "main2", false, `${t} ${String(id)}`); }

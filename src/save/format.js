@@ -202,6 +202,7 @@ function questsProblem(d) {
   if (!hasOnly(q.main, ["m"]) || !hasOnly(m, ["depth", ...MAIN_FLAGS]) || [...MAIN_FLAGS, "depth"].some((k) => !(k in m))) return "bad quest milestones";
   if (MAIN_FLAGS.some((k) => typeof m[k] !== "boolean") || !isInt(m.depth, 0, config.bossDepth)) return "bad quest milestones";
   if (m.depth > d.deepestDepth || (m.unlocked && !(d.bossUnlocked || d.bossDefeated)) || (m.defeated && !d.bossDefeated) || (m.verdict && !m.defeated)) return "bad quest milestones";
+  let killSum = 0;
   for (const id of sideIds) {
     const e = q[id];
     if (!hasOnly(e, ["s", "p"]) || !("s" in e) || !("p" in e) || !SIDE_STATES.includes(e.s)) return "bad side quest";
@@ -209,10 +210,12 @@ function questsProblem(d) {
     if (!isInt(e.p, 0, goal) || (e.s === "available" && e.p !== 0) || (e.s === "active" && e.p >= goal) || ((e.s === "ready" || e.s === "completed") && e.p !== goal)) return "bad side quest";
     // The play a state needs (ADV-R7-01): kills counted for the kill quest, the floor that holds the item or the elite for the others.
     const type = questDefs[id].objective.type, done = e.s === "ready" || e.s === "completed";
-    if (done && type === "kill" && (d.stats.kills < goal || d.deepestDepth < Math.min(...objCfg(id, "kill").depths))) return "bad side quest progress"; // every counted kill is also a kill of the hero, made on a kill floor
+    if (type === "kill" && e.p > 0 && d.deepestDepth < Math.min(...objCfg(id, "kill").depths)) return "bad side quest progress"; // every counted kill was made on a kill floor (ADV-R7-08: also a partial progress)
+    if (type === "kill" && done) killSum += e.p; // the shared counter is checked for the finished kill quests, summed
     if (done && type === "item" && d.deepestDepth < itemFloorOf(d.seed, id)) return "bad side quest progress";
     if (done && type === "elite" && d.deepestDepth < objCfg(id, "elite").depth) return "bad side quest progress";
   }
+  if (killSum > d.stats.kills) return "bad side quest progress"; // each counted kill is also a kill of the hero, and one kill counts for one quest (ADV-R7-09)
   // the pin is the active main quest (the last one when all are done) or a side quest that is not completed; a locked or an earlier main quest is never pinned
   const activeMain = activeMainId(m) ?? mainIds[mainIds.length - 1];
   if (typeof q.pinned !== "string" || !(q.pinned === activeMain || (sideIds.includes(q.pinned) && q[q.pinned].s !== "completed"))) return "bad pinned quest";

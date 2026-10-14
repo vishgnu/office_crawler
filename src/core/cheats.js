@@ -6,7 +6,7 @@ import { enterFloor } from "./systems/world.js";
 import { spawnMonster } from "./state.js";
 import { giveGold } from "./systems/loot.js";
 import { emit } from "./events.js";
-import { quests, mainSteps } from "./content/quests.js";
+import { quests, mainSteps, sideIds } from "./content/quests.js";
 import { mainStep, goalOf, nextStep, objCfg } from "./systems/questview.js";
 import * as questSystem from "./systems/quests.js"; // `handInQuest` arrives with R7-0.2: looked up by name so this file works before and after it
 
@@ -76,7 +76,7 @@ function setMainStep(state, id, n) {
  * returned, not hidden). Returns { ok } or { ok: false, error }.
  */
 export function setQuestStep(state, id, n) {
-  if (!state.quests || !quests[id]) return fail("unknown quest");
+  if (!state.quests || !questSystem.questDef(id)) return fail("unknown quest");
   if (quests[id].kind === "main") return setMainStep(state, id, n);
   if (!Number.isInteger(n) || n < 0 || n > 3) return fail("state out of range");
   const q = state.quests[id], def = quests[id], pouch = state.player.pouch;
@@ -94,7 +94,8 @@ export function setQuestStep(state, id, n) {
   if (q.s !== "ready") {
     // the world a legal save has when this quest is ready (ADV-R7-01: the schema ties the state to the play it needs)
     const type = def.objective.type;
-    if (type === "kill") { state.stats.kills = Math.max(state.stats.kills, goalOf(id)); reach(state, Math.min(...objCfg(id, "kill").depths)); }
+    if (type === "kill") { // the kill quests share the one counter (ADV-R7-09)
+      state.stats.kills = Math.max(state.stats.kills, goalOf(id) + sideIds.reduce((t, o) => t + (o !== id && quests[o].objective.type === "kill" ? state.quests[o].p : 0), 0)); reach(state, Math.min(...objCfg(id, "kill").depths)); }
     else reach(state, type === "item" ? questSystem.itemFloorOf(state.seed, id) : objCfg(id, "elite").depth);
     state.quests[id] = { s: "ready", p: goalOf(id) };
     if (type === "item" && !pouch.some((e) => e.quest === id)) {
@@ -110,7 +111,7 @@ export function setQuestStep(state, id, n) {
 
 /** Finish a quest: a main quest (every step up to its last, so "main3" completes all three; one quest.completed per finished arc) or a side quest (ready, then handed in). */
 export function completeQuest(state, id) {
-  if (!state.quests || !quests[id]) return fail("unknown quest");
+  if (!state.quests || !questSystem.questDef(id)) return fail("unknown quest");
   if (quests[id].kind === "main") {
     const last = mainSteps.filter((s) => s.arcId === id).pop().n;
     if (mainStep(state.quests.main.m) > last) return OK;

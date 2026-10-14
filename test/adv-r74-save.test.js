@@ -77,11 +77,11 @@ for (const [name, opts, mut] of HOSTILE) {
 }
 
 // ADV-R7-08 and -09: rules the schema leaves open for the two new kill/item quests (each is a state real play cannot produce).
-test("[R74-forge] ADV-R7-08 sq5 active with progress needs floors 5 or 6 reached: an active sq5 with 3 kills and deepestDepth 4 cannot come from play", { todo: "ADV-R7-08: accepted: sq5 { active, p 3 } with deepestDepth 4 and stats.kills 9 (ready and completed are tied to deepestDepth 5, a partial progress is not)" }, () => {
+test("[R74-forge] ADV-R7-08 sq5 active with progress needs floors 5 or 6 reached: an active sq5 with 3 kills and deepestDepth 4 cannot come from play", () => {
   const r = forge((o) => { o.quests.sq5 = { s: "active", p: 3 }; }, { depth: 4, kills: 9 });
   assert.equal(r.ok, false);
 });
-test("[R74-forge] ADV-R7-09 two kill quests share the one kill counter: sq1 ready (8 interns) plus sq5 ready (6 consultants) need stats.kills >= 14", { todo: "ADV-R7-09: accepted with stats.kills 8, because each kill quest is checked against the counter on its own" }, () => {
+test("[R74-forge] ADV-R7-09 two kill quests share the one kill counter: sq1 ready (8 interns) plus sq5 ready (6 consultants) need stats.kills >= 14", () => {
   const r = forge((o) => { o.quests.sq1 = { s: "ready", p: 8 }; o.quests.sq5 = { s: "ready", p: 6 }; }, { depth: 6, kills: 8 });
   assert.equal(r.ok, false);
 });

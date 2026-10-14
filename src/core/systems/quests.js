@@ -17,6 +17,8 @@ import { npcs } from "../content/npcs.js";
 import { mainStep, mainState, activeMainId, goalOf, nextStep, objCfg } from "./questview.js";
 
 const fail = (error) => ({ ok: false, error });
+/** A quest definition by id, own keys only: "constructor", "toString" and "__proto__" are not quests (ADV-R7-07). */
+export const questDef = (id) => (typeof id === "string" && Object.hasOwn(quests, id) ? quests[id] : undefined);
 const OK = { ok: true };
 const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
@@ -129,7 +131,7 @@ function giverGate(state, def) {
 /** Input questAccept { id }: needs the giver's dialog open. Decline is closeDialog (no state change). */
 export function questAccept(state, id) {
   if (typeof id !== "string") return fail("bad id");
-  const def = quests[id];
+  const def = questDef(id);
   if (!def || def.kind !== "side" || !state.quests) return fail("unknown quest");
   const gate = giverGate(state, def);
   if (gate) return fail(gate);
@@ -172,7 +174,7 @@ export const reviveInterns = (state, id = "sq1") => reviveKills(state, id);
  */
 export function questPin(state, id) {
   if (typeof id !== "string") return fail("bad id");
-  if (!quests[id] || !state.quests) return fail("unknown quest");
+  if (!questDef(id) || !state.quests) return fail("unknown quest");
   if (id === "main") id = activeMainId(state.quests.main.m) ?? "main";
   if (quests[id].kind === "main") {
     const st = mainState(state.quests.main.m, id);
@@ -233,7 +235,8 @@ export function placeQuestObjects(state) {
     if (type === "item" && q.s === "active" && q.p === 0 && !state.player.pouch.some((e) => e.quest === id) && state.depth === itemFloorOf(state.seed, id) && !state.groundItems.some((g) => g.quest === id)) items.push(id);
     if (type === "elite" && q.s === "active" && state.depth === objCfg(id, "elite").depth && !state.monsters.some((m) => m.quest === id && m.ai !== "dead")) elites.push(id);
   }
-  if (!items.length && !elites.length) return;
+  const kills = sideIds.filter((id) => quests[id].objective.type === "kill" && qs[id].s === "active" && state.depth === Math.max(...objCfg(id, "kill").depths));
+  if (!items.length && !elites.length && !kills.length) return;
   const used = [...f.spawns.map((s) => s.tile), state.player.tile, ...state.groundItems.map((g) => g.tile), ...state.monsters.map((m) => m.tile)];
   for (const id of items) {
     const tile = questSpot(f, questRng(state.seed, quests[id].salt, 2, state.depth), used);
@@ -242,6 +245,7 @@ export function placeQuestObjects(state) {
       used.push(tile);
     }
   }
+  for (const id of kills) topUpKills(state, id, used);
   for (const id of elites) {
     const e = objCfg(id, "elite"), rng = questRng(state.seed, quests[id].salt, 3, state.depth), avoid = [...used];
     for (let i = 0; i < 12; i++) {
@@ -250,6 +254,30 @@ export function placeQuestObjects(state) {
       if (spawnMonster(state, e.type, tile, null, { tier: "champion", mods: [], level: e.level, name: quests[id].elite.name, hpMult: e.hpMult, quest: id })) break;
       avoid.push(tile);
     }
+  }
+}
+
+/**
+ * ADV-R7-10: a kill quest must be winnable on every seed. On the last floor of its kill range, while the quest is active, the monsters of its kind that are
+ * still alive on the kill floors (this floor as it stands, the others as their spawns minus their killed ones) plus the extras placed here must reach what
+ * the quest still needs; the missing ones are placed now on questSpot tiles from the quest's own stream (purpose 6), as plain monsters of that kind that
+ * count like any spawn. They are not in floor.spawns, so a floor entry rebuilds them from the same rule (kills lower the need as they raise the progress).
+ * Nothing is drawn or spawned when the quest is not active or the floors already hold enough (reviveKills has brought killed spawns back by then).
+ */
+function topUpKills(state, id, used) {
+  const k = objCfg(id, "kill"), need = k.count - state.quests[id].p;
+  let alive = state.monsters.filter((m) => m.type === k.monster && !m.summoned && m.ai !== "dead").length;
+  for (const d of k.depths) {
+    if (d === state.depth) continue;
+    const parked = state.floors[d], floor = parked?.floor ?? generateFloor(state.seed, d), killed = new Set(parked?.killed ?? []);
+    floor.spawns.forEach((s, i) => { if (s.type === k.monster && !killed.has(i)) alive++; });
+  }
+  const rng = questRng(state.seed, quests[id].salt, 6, state.depth), avoid = [...used];
+  for (let missing = need - alive, tries = 0; missing > 0 && tries < 60; tries++) {
+    const tile = questSpot(state.floor, rng, avoid);
+    if (!tile) break;
+    avoid.push(tile);
+    if (spawnMonster(state, k.monster, tile)) { used.push(tile); missing--; }
   }
 }
 
@@ -317,7 +345,7 @@ export function rewardOf(state, id) {
 
 /** Hand a ready quest in, atomically (no dialog gate; the input command and the completeQuest cheat share it). */
 export function handInQuest(state, id) {
-  const def = quests[id], q = state.quests?.[id];
+  const def = questDef(id), q = def ? state.quests?.[id] : undefined;
   if (!def || def.kind !== "side" || !q) return fail("unknown quest");
   if (q.s === "completed") return fail("already done");
   if (q.s !== "ready") return fail("not ready");
@@ -342,7 +370,7 @@ export function handInQuest(state, id) {
 /** Input questHandIn { id }: needs the giver's dialog open (same gate as accept). Refused with bagFull when the whole reward does not fit. */
 export function questHandIn(state, id) {
   if (typeof id !== "string") return fail("bad id");
-  const def = quests[id];
+  const def = questDef(id);
   if (!def || def.kind !== "side" || !state.quests) return fail("unknown quest");
   const gate = giverGate(state, def);
   return gate ? fail(gate) : handInQuest(state, id);

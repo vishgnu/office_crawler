@@ -4,9 +4,10 @@ import { config } from "../config.js";
 import { getCtx } from "../ctx.js";
 import { isAdjacent } from "../grid.js";
 import { planPath } from "../nav.js";
+import { hasLineOfSight } from "../los.js";
 import { emit } from "../events.js";
 import { createSpatialHash } from "../spatial.js";
-import { restartInPlace } from "../state.js";
+import { restartInPlace, moveTicksFor } from "../state.js";
 import { groundAt, takeGround, dropItem, releaseCursor } from "./loot.js";
 import { clickCell, findById, remove } from "../items/inventory.js";
 import { equipItem, unequipItem, clickSlot } from "../items/equipment.js";
@@ -282,7 +283,12 @@ export function playerIntent(state) {
     const a = reachableAttacker(state, ctx, p, m);
     if (a) { p.target = a.id; p.goal = null; p.path = []; p.repathT = 0; p.standT = 0; return; }
   }
-  if (p.standT < config.holdMaxTicks && m.ai === "chase" && (m.next || m.path.length > 0) && Math.max(Math.abs(m.tile.x - at.x), Math.abs(m.tile.y - at.y)) <= config.holdRadius) { p.path = []; return; }
+  const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)), coming = m.ai === "chase" && (m.next || m.path.length > 0);
+  if (p.standT < config.holdMaxTicks && coming && cheb(m.tile, at) <= config.holdRadius) { p.path = []; return; }
+  // Core chase fix (R7-3, the orbit seen in the bot parity run): when the target is coming for us but there is a block between us (no line to it), the two
+  // of us take the same turn round the block and stay half a ring apart for ever. Wait for it, as a player would; the longer cap covers a loop of corridors.
+  // (only for a chaser that will be here within the cap: a very slow one is not waited for, as before)
+  if (p.standT < config.holdFarTicks && coming && (m.path.length + (m.next ? 1 : 0)) * moveTicksFor(m.speed) <= config.holdFarTicks && m.goal && cheb(m.goal, at) <= config.holdRadius && !hasLineOfSight(ctx.grid, at.x, at.y, m.tile.x, m.tile.y)) { p.path = []; return; }
   const stale = !p.goal || p.goal.x !== m.tile.x || p.goal.y !== m.tile.y;
   if ((p.path.length === 0 || stale) && p.repathT === 0) {
     const path = planPath(ctx, p.next ?? p.tile, m.tile, { adjacent: true });

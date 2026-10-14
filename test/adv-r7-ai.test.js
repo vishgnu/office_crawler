@@ -131,7 +131,7 @@ test("[R7-bot] ADV-R7-03 every run completes all eight quests (AC-R-256-2 and AC
 });
 
 // ADV-R7-10: on 15 of 1000 seeds floors 5 and 6 hold fewer than 6 consultants (seed 102: 3 + 2, seed 105: 0 + 2), so sq5 can never be completed and the bot (and a player) ends the run with it open.
-test("[R7-bot] ADV-R7-10 every run completes all eight quests: Sales Rep seed 102 (floors 5 and 6 spawn 5 consultants, sq5 asks for 6)", { todo: "ADV-R7-10: sq5 unwinnable on seeds 102, 105, 173, 183, 194, ... (AC-R-258-3 only checks seeds 1 to 100); the bot ends with sq5 active 5/6" }, () => {
+test("[R7-bot] ADV-R7-10 every run completes all eight quests: Sales Rep seed 102 (floors 5 and 6 spawn 5 consultants, sq5 asks for 6)", () => {
   const r = runOne(102, 400000, { depth: 9, respawn: true, maxDeaths: 12, class: "sales-rep" });
   assert.equal(r.quests.all, true, `quests done: ${r.quests.done.join("+")}`);
 });
