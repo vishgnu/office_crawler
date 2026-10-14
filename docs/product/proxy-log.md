@@ -82,3 +82,11 @@ One line per decision by `customer-proxy`. The real customer can overrule any of
 - 2026-10-13 | sound-direction provisional default kit | C Foley-synth (A close second, B last); all three kits ship in Options (audio.kit); final pick by the real customer by ear | low
 - 2026-10-13 | sound-direction Q (cues separate or merged) | separate: miss, monster attacks, stairs keep own ids | medium
 - 2026-10-13 | sound-direction Q (title ambient, QF-08-2) | soft lobby bed after first gesture, fades into zone ambient, no music | medium
+- 2026-10-14 | circle-02 Q1 (three classes, Clerk) | A: Facilities Manager / Sales Rep / IT Wizard as working names; Clerk retired, old saves migrate to Facilities Manager; final class names ESCALATE (brand) | medium
+- 2026-10-14 | circle-02 Q2 (skill tree) | A: 3 branches, ~10 skills, 3 tiers, 1 pt/level, max level 5, level gate plus branch prerequisite; replaces flat list QF-06-7 per customer's "skill trees" | high
+- 2026-10-14 | circle-02 Q3 (respec) | A: free unlimited skill respec in town; "close to the original" may point to no respec, easy to flip | low
+- 2026-10-14 | circle-02 Q4 (items/stash) | A: all items for all classes, class-tagged affixes, stash per character | medium
+- 2026-10-14 | circle-02 Q5 (selection screen) | A: carousel of 3 class cards with animated rig, name field; 2-3 layout variants with independent visual review; B demo reel as could | medium
+- 2026-10-14 | circle-02 Q6 (5 save slots) | default as written: Options "Save slots" plus title/pause, confirmations, migrate old save to slot 1, 400 KB cap, stash per character | high
+- 2026-10-14 | circle-02 Q7 (balance) | A: 20-40 min per class, parity band 25%, bot gate with fixed seeds; B fallback | medium
+- 2026-10-14 | circle-02 brand | final class names and game title ESCALATE (not delegated); working names proceed | n/a

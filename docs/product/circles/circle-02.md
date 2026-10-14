@@ -1,4 +1,4 @@
-Status: open
+Status: answered (PROXY, 2026-10-14; class names escalated)
 Readiness: 11/20
 
 # Circle 2: classes, skill trees, character selection, five save slots
@@ -121,7 +121,33 @@ Fourth class or multiple characters visible in one world; attribute respec; skil
 - Affects: R-230, R-234, `bot/policy.js`.
 
 ## Answers
-(pending)
+**Answered by PROXY, 2026-10-14** (provisional until the real customer reviews; overrule any line in `../proxy-log.md`).
+
+### Q1 Classes and the Clerk
+**PROXY** (confidence medium): Option A (Facilities Manager, Sales Rep, IT Wizard as working names), Clerk retired as a class with skills redistributed as proposed and old saves migrated to the Facilities Manager with skill points refunded. Basis: "3 player classes with skill trees" (Third briefing) and "stay close to the original" (brief); the melee/ranged/caster trio is the genre's later convention, so it fits closeness in mechanics (brief G2: close in mechanics, original names). The customer named no concepts, so the office concepts are the default. **ESCALATE: needs the real customer** for the final class names (brand, R-233, QF-06-1); the three names above stay working names and work proceeds on them. Names and branch names must stay original; no echo of the original's classes or skills.
+
+### Q2 Skill tree structure
+**PROXY** (confidence high): Option A: 3 branches per class, about 10 skills (3 + 3 + 4), 3 tiers (levels about 1, 8, 16), 1 point per level (29 points at cap 30), max skill level 5 (capstones single), one earlier skill in the branch plus a level gate; synergies stay could; basic attack free. Basis: "skill trees" (Third briefing) means branching with prerequisites, which replaces the flat list of QF-06-7 (the customer's later words override the earlier proxy answer); genre convention for point scarcity and build choice (customer words silent on numbers).
+
+### Q3 Respec
+**PROXY** (confidence low): Option A: skill points respec free and unlimited in town; attributes not respecced. Basis: no customer words on respec; default taken because it keeps bot testing and 20-40 minute runs cheap. Tension noted: "stay close to the original" could point to C/D (no or limited respec, genre purist), so this is cheap to flip: the real customer may switch to B or C by changing one config value.
+
+### Q4 Shared items, attributes, stash
+**PROXY** (confidence medium): Option A: all items usable by all classes (level and attribute requirements only), classes differ in start values, growth, basic attack and tree, a few class-tagged affixes, same four attributes, stash per character slot. Basis: default; the customer's words are silent, and A avoids multiplying item tables for three classes in three rounds. Genre closeness (B, restricted weapon types) is not demanded by the customer.
+
+### Q5 Character creation and selection screen
+**PROXY** (confidence medium): Option A (three class cards in a carousel in the lobby scene, large animated character from the same rig, idle loop and attack demo, role tag, original blurb, stat bars, three branch names with icons, name field with suggest button, Begin and Back), name rules as proposed, reduced motion shows a static pose. Review route: 2-3 layout variants, independent visual review at desktop and phone width, as for art direction. Basis: "visually appealing character selection screen" (Third briefing), "generate what you need ... nice graphics" (Addendum, agreed). Option B (skill demo reel) accepted as a could if the renderer budget allows (NFR-P06). Final look is judged by eye, so the real customer may overrule on screen.
+
+### Q6 Save slots
+**PROXY** (confidence high): all of the proposed default: 5 slots, section "Save slots" in the Options menu (customer's words, agreed) plus the same list on title New game/Continue and in the pause menu; overwrite and delete confirmation naming the character; rename; options global; stash per character; autosave to the active slot; Continue opens the last used slot; slot card with number, name, class, level, depth, play time, last played; old single save migrates to slot 1 with the old key kept as backup and skills refunded; export/import per slot; 400 KB per-slot cap (NFR-D05). Basis: "a save with 5 slots to the options menu" (Third briefing, agreed), which overrides circle 1 Q4 "one slot"; the remaining rules are the safe defaults for destructive actions.
+
+### Q7 Balance targets
+**PROXY** (confidence medium): Option A: each class reaches the end boss in 20-40 minutes by bot and normal player, parity band within 25% of the three-class median for clear time and deaths, no dominant skill, numbers in one config module, release-gate bot runs per class with fixed seeds; B (soft report) as fallback if the caster bot policy proves unreliable. Basis: circle 1 Q7 (20-40 minute run, unchanged by the customer) and "keep improving the games and the tool as before" (Third briefing).
+
+### Escalations
+- Final class names and the game title (brand, R-233, QF-06-1, QF-07-3): ESCALATE: needs the real customer. Working names proceed.
+- Circle 1 Q1 (IP closeness) remains escalated; strict originality stays in force.
+
 
 ## Next
 After answers: update area M statuses, add ADR stubs if the answers change storage (stash scope) or tree schema, and ask the spec-writer to add ACs for the new requirements (character, skills, HUD, save files). Expected readiness after defaults are accepted: about 14-15/20 (items 1, 2, 4 and 10 rise to 2; items 3, 6, 7, 9 reach 2 only with ACs in Spec). A short circle 3 on edge cases is likely, and the class names stay a brand escalation.
