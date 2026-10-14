@@ -18,7 +18,7 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R7 | 13 | 2249.3 | 326.4 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 69 rows, 10958.0 k subagent tokens. **Your messages logged:** 23.
+**Ledger total:** 70 rows, 10958.0 k subagent tokens. **Your messages logged:** 27.
 
 ## Round R3
 
@@ -127,6 +127,7 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | implementer | UI-R7Q 0.5 (journal, tracker) | 235.6 | 34.7 | done | tests: 895; e2e: r7journal 59/59 + all touched scripts green |
 | implementer | WORLD-R7Q 0.7 (quest markers) | 202.2 | 49.7 | done | tests: 895; fps50: [53.7,50,52.2,49.3,49.7]; load: 1.75-5.09; atlasMs: 441-596 |
 | implementer | UI-R7Q 0.6 (dialogue, toasts, slot card) | 225.4 | 30.2 | done | tests: 900; e2e: r7quest 54/54 + touched scripts green |
+| orchestrator | verify after R7-0 packages | – | – | done | tests: 900; e2e: 16/16; fps50: [54.5,53.3,51.8,58.1]; fps50Median: 53.9; load: 1.0-1.4; note: 5th bench run cut by the 30-min background limit |
 
 ## Harness work
 
@@ -161,3 +162,7 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | 2026-10-14T14:54:14Z | decision | yes (add noindex to the game build) |
 | 2026-10-14T15:14:11Z | question | did you updatge the harnes and reviews after the completed rounds? |
 | 2026-10-14T15:30:45Z | decision | YES (release harness 0.5.0) |
+| 2026-10-14T15:52:37Z | instruction | go ahead i will go afk for a while |
+| 2026-10-14T15:57:09Z | decision | 1 done, 2 done 3 no need, 4 keep as is , 5 ok, 6 spread it pout better accross the floors 7 keep 8  do 3 quests and 5 sidequests,  ; gitve me details for 9 now |
+| 2026-10-14T16:03:53Z | decision | Circle 2 answers Q1-Q7, drop circle 2, wrap up a new harness version at the very end with all files and htmls updated |
+| 2026-10-14T16:04:32Z | decision | = don change it is good (AMBIENT_LIFT keep) |
