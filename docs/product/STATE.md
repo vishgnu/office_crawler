@@ -25,4 +25,7 @@ Gate authority for this project is delegated to `customer-proxy` while the user 
 - **Known risk, file:// play**: in automation Chromium lost saves ~4 of 23 times when the page was reloaded immediately after
   saving from file:// (0 of 48 on http/https). Not seen in normal play. Tell us if you want a note in play/README.md or a
   tiny local server script.
+- **Pace (new after round 6)**: the early game is quick (level 2 in under a minute, about a minute per floor, floors 1-4
+  painless), then floor 5 is a wall for a hero without gear. Say if you want slower early floors or a softer step at floor 5
+  (`docs/reviews/R6-acceptance.md`).
 - Review `proxy-log.md` whenever you are back.

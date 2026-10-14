@@ -363,6 +363,12 @@ R4-4 -> R6-1 ; R5 -> R6-2
 
 ## Round R7 (first "flawless gameplay" round): added item from the sixth briefing (2026-10-14)
 
+### R7-3 Follow-ups from the R6 acceptance
+- Hero falls back to an adjacent attacker when its target never arrives (FM seed 5, floor 1, ~1 min; joins R7-1).
+- Smooth the damage step at floor 5 (human playtest floors 4-6 with gear); IT deaths median and FM Pallet Slam share: tune or accept.
+- Size ceiling test, one-line ASSET-LICENCES.md, offline/engines e2e from the R6 plan (run or drop).
+- Low visual items N9-N15 from docs/reviews/R6-visual-review.md.
+
 ### R7-2 Floor-entry stutter (from the R6 orchestrator bench)
 - After entering a floor the frame time sits at 33-50 ms (20-30 fps) for about 3 s while 480-740 monster frames are drawn on first use (0.5-0.7 s of drawing spread by the per-floor warm-up). Hide it behind the elevator transition (warm before the floor is shown) or spread it thinner; gate: frame p99 after floor load <= 33 ms.
 
