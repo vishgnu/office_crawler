@@ -99,14 +99,15 @@ test("R6-scaling: a respec changes no attribute and no weapon damage, and gives 
 function castAll(cls, attrValue) {
   const out = [];
   for (const def of Object.values(content.skills).filter((d) => d.class === cls && d.kind === "active")) {
-    const s = gameOn(OPEN, [["zombie-intern", 12, 4]], 3, { class: cls });
+    const s = gameOn(OPEN, [["zombie-intern", 12, 4]], 3, { class: cls, wearStartKit: true });
     const p = s.player; p.level = 30; p.attrs[POWER[cls]] = attrValue; p.skills[def.id] = 5; p.skillBar.hotkeys[0] = def.id; p.skillBar.secondary = def.id;
     s.monsters[0].hp = s.monsters[0].hpMax = 1e9;
-    applyDerived(s, { fill: true }); p.mp = p.mpMax = 5000; p.attackRating = 1e6; // accuracy is not under test: the clamp leaves a few misses, so cast six times
+    s.equipment.weapon.affixes = [{ stat: "attackRating", value: 100000 }]; // accuracy is not under test: capped by config, and the clamp still leaves misses, so cast six times
+    applyDerived(s, { fill: true }); p.mp = p.mpMax = 5000;
     const vals = [];
     for (let k = 0; k < 6; k++) {
       p.mp = p.mpMax; applyInput(s, { t: "cast", skill: def.id, tile: { x: 12, y: 4 } });
-      for (let i = 0; i < 40; i++) { step(s); p.attackRating = 1e6; for (const e of s.events) if (e.type === "hit" && e.target !== "player" && e.skill === def.id) vals.push(e.value); }
+      for (let i = 0; i < 40; i++) { step(s); for (const e of s.events) if (e.type === "hit" && e.target !== "player" && e.skill === def.id) vals.push(e.value); }
     }
     out.push({ id: def.id, vals });
   }
