@@ -24,7 +24,12 @@ Date: 2026-10-13. Author: spec-writer. Status: draft for the architect (next rol
 | `08-audio.md` | H | 0 | 0 | 17 | 17 |
 | `09-save-load.md` | I, NFR-D | 0 | 0 | 24 | 24 |
 | `10-tech-and-testability.md` | K, L, NFR-P/B/O/S/Q/L | 36 | 7 | 5 | 48 |
-| **Total** | | **104** | **165** | **72** | **341** |
+| `11-classes-trees-slots.md` (added 2026-10-14, circle 2; rounds R4/R5/R6, see below) | M, NFR-D05, D06, P06, A07 | - | - | - | 70 |
+| **Total** | | **104** | **165** | **72** | **411** (341 in S1-S3 plus 70 in rounds R4-R6) |
+
+## Rounds R4-R6 (added 2026-10-14)
+
+`11-classes-trees-slots.md` covers area M (R-200..R-234), NFR-D05, D06, P06, A07 from the customer's third briefing and circle 2 (PROXY answers; final class names escalated). Its ACs carry round tags instead of slice tags: R4 core (class registry, trees, spending, respec, class-tagged affixes, per-character stash, five slots, migration into slot 1): 43; R5 UI and render (selection screen, tree panel, slot list with confirmations): 21; R6 balance parity per class and polish: 6. Must ACs per round: 38, 19, 3 (L-03). Feel and look criteria are marked `verify: playtest/visual review`. It supersedes, for the multi-slot case, AC-R-090-5, AC-R-091-5 and AC-R-092-4 in `09-save-load.md` and the one-class/flat-list ACs R-010-* and R-014-* in `06-character-and-progression.md`; those files are not edited here, the architect and the next spec pass should reconcile them. Nine new questions: QF-11-1..9 in that file.
 
 ## Coverage of the requirements
 
