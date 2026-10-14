@@ -312,7 +312,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     return r;
   };
   game.cheat = {
-    setLevel: (n) => cheat((c) => setLevel(c, n)),
+    setLevel: (n) => { const r = cheat((c) => setLevel(c, n)); pointsHint(); return r; },
     setHp: (n) => cheat((c) => setHp(c, n)),
     teleportFloor: (d) => cheat((c) => teleportFloor(c, d)),
     giveGold: (n) => cheat((c) => (giveGold(c, n) ? { ok: true, gold: c.player.gold } : { ok: false, error: "gold must be a positive integer" })),
