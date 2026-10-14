@@ -259,7 +259,7 @@ let exported = null;
   check("AC-R-082-5 defaults: master 0.6, effects 0.8, ambient 0.5, unmuted, kit foley", near(a0.master, 0.6) && near(a0.sfx, 0.8) && near(a0.ambient, 0.5) && a0.muted === false && a0.kit === "foley", a0);
   await g.page.click(T("options"));
   let s = await g.state();
-  check("AC-R-076-5 Options opens from the title (menu options) with sliders, key rebinding, reduced motion and text size", s.ui.menu === "options" && (await g.page.locator('input[type=range]').count()) === 3 && (await g.page.locator(".opt-kbtn").count()) === 12 && (await g.page.locator(T("opt-reduce-motion")).count()) === 1 && (await g.page.locator(T("opt-text-size")).count()) === 1);
+  check("AC-R-076-5 Options opens from the title (menu options) with sliders, key rebinding, reduced motion and text size", s.ui.menu === "options" && (await g.page.locator('input[type=range]').count()) === 3 && (await g.page.locator(".opt-kbtn").count()) === 13 && (await g.page.locator(T("opt-reduce-motion")).count()) === 1 && (await g.page.locator(T("opt-text-size")).count()) === 1);
   await g.page.setViewportSize({ width: 1280, height: 1180 }); // the whole panel in one picture
   await g.page.waitForTimeout(150);
   await shot(g.page, "options");

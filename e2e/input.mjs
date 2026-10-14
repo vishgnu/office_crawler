@@ -81,11 +81,14 @@ const frames = (page, n) => page.evaluate((k) => new Promise((res) => { let i = 
   const focused = () => g.page.evaluate(() => document.activeElement?.dataset?.testid ?? null);
   check("pause screen focuses Resume", (await focused()) === "resume");
   await g.page.keyboard.press("Tab");
-  check("Tab moves focus between pause buttons (Resume, Save slots, Options, Quit)", (await focused()) === "pause-slots");
+  check("Tab moves focus between pause buttons (Resume, Journal, Save slots, Options, Quit)", (await focused()) === "pause-journal");
+  await g.page.keyboard.press("Tab");
+  check("Tab again reaches Save slots", (await focused()) === "pause-slots");
   await g.page.keyboard.press("Tab");
   check("Tab again reaches Options", (await focused()) === "options");
   await g.page.keyboard.press("Tab");
   check("Tab again reaches Quit", (await focused()) === "quit");
+  await g.page.keyboard.press("Shift+Tab");
   await g.page.keyboard.press("Shift+Tab");
   await g.page.keyboard.press("Shift+Tab");
   await g.page.keyboard.press("Shift+Tab");

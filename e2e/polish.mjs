@@ -18,7 +18,7 @@ const hit = (a, b) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top 
     const pick = (n) => { const cs = getComputedStyle(n); return { color: cs.color, bg: cs.backgroundColor, w: n.getBoundingClientRect().width }; };
     return { pressed: b.getAttribute("aria-pressed"), label: b.firstElementChild.textContent, ...pick(b), lab: pick(b.firstElementChild), scroll: b.scrollWidth > b.clientWidth + 1 };
   }));
-  check("hc + 1.5: every dock button label has contrast >= 4.5:1 on the button (open and closed)", dock.length === 4 && dock.every((d) => ratio(rgb(d.lab.color), rgb(d.bg)) >= 4.5), dock);
+  check("hc + 1.5: every dock button label has contrast >= 4.5:1 on the button (open and closed)", dock.length === 5 && dock.every((d) => ratio(rgb(d.lab.color), rgb(d.bg)) >= 4.5), dock);
   check("hc + 1.5: at least one dock button is in the open state (so the open state was tested)", dock.some((d) => d.pressed === "true"));
   check("hc + 1.5: dock labels do not overflow their buttons", dock.every((d) => !d.scroll), dock);
   await g.app("ui.open", "character"); await g.page.waitForTimeout(400);
