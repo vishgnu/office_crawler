@@ -233,3 +233,130 @@ S2 -> S3-1, S3-2, S3-3 (parallel) -> S3-4 -> S3-5 -> S3-6
 5. **Reference runner for performance** (QF-10-1): E2E perf assertions are advisory elsewhere.
 6. **Spec amendments needed (mechanical):** `step` mutates and returns the same state; alias names added to the hook; decisions table in ADR-0002 section 11 (hit chance, click on wall, skill keys, boss depth, town stairs target, re-entry rules).
 7. **Line budget:** S1-2, S1-3, S1-4, S2-1..S2-6 and S3-2 are the packages most likely to exceed 600 lines; the implementer should stop at a coherent half and report instead of cramming (split rule: one new WP inserted, same slice).
+
+---
+
+# Rounds R4-R6: classes, skill trees, character selection, five save slots (added 2026-10-14)
+
+Owner: architect. Status: proposed, awaiting plan gate for area M. Inputs: `00-brief.md` (Third briefing: "add 3 more rounds of work", 3 classes with skill trees, a visually appealing character-selection screen, 5 save slots in the options menu, keep improving game and tool), `20-requirements.md` area M (R-200..R-234), `circles/circle-02.md` (PROXY answers, binding), `decisions/ADR-0005-classes-and-skill-trees.md`, `decisions/ADR-0006-save-slots.md`, `../reviews/R4-contract.md` (data contract for the parallel packages, learning L-13).
+
+The customer wrote "3 more rounds of work": one round = one orchestrated cycle (core, then render/UI, then balance and polish), as S1-S3 were. Slices are demoable on a preview: **R4** ends with the three classes playable by bot and hook with their trees and five slots working without any new screen; **R5** ends with the real screens; **R6** ends with parity and polish. Rules from the first plan hold: one WP is one implementer run of at most about 600 lines of code (tests excluded, mandatory), one branch/PR, listed order; if a WP runs over, the implementer stops at a coherent half and reports (split rule: one new WP inserted, same round). Core-first (L-11): bots play all three classes before any sprite exists.
+
+Line counts below are estimates of production code. Estimates S/M/L as above. Infra changes: none. Migrations: save format 1 to 2 (R4-1, R4-5).
+
+## Round R4: core, content data and save slots (no new screens)
+
+**Demo at the end of R4:** headless bots clear floors with each class; `window.__app` can create a character per class in any of five slots, learn skills, respec, switch slots, export and import, and migrate an old v1 save; the old UI still works with a minimal class picker fallback (a `?class=` URL param and the hook).
+
+### R4-1 Class and tree data model, validation, save version 2
+- **Goal:** class defs, curve helper, 30 skills as data (no behaviour yet), merged `skills` table, `learnSkill` with class, level gate and prerequisites, point accounting with the free signature, `validateName`, save format v2 (`name`, `stats.playTicks`, class and skill validation) and the v1 to v2 Clerk migration with refund.
+- **Depends:** S3 complete. **Parallel-ok with:** nothing (everything builds on it). **Estimate:** M (about 550 lines, mostly data).
+- **ACs/Reqs:** R-200..R-205, R-211, R-225 (core half), R-233 (data half), AC for point accounting levels 1-30.
+- **Files:** `src/core/content/classes.js`, `content/skilltrees/{facilities,sales,it}.js`, `content/skills.js` (merge, `at`, `manaCost`), `content/strings.js` (class blurbs, branch and skill names and one-line texts, error codes), `core/systems/progression.js` (`learnSkill`, `gainXp`), `core/state.js` (class-aware `newPlayer`, `name`, signature, start kit per class), `core/config.js` (`skillTiers`, `respec`, `slotCount`, `slotMaxBytes`, per-class constants), `core/items/derive.js` (class `derived` overrides, passive fold placeholder), `core/items/content` (3 weapon bases: `pipe-wrench`, `letter-opener`, `usb-staff`), `save/{format,migrate}.js` (v2 + `MIGRATIONS[1]`), `core/index.js` (exports `classById`, `treeView`, `skillView`, `classCards`, `validateName`, `suggestName`).
+- **Tests:** `test/classes.test.js` (3 classes, equal attribute sums, kit bases exist, differ in start values), `test/skilltrees.test.js` (10 per class, 3 branches, unique ids, no cycles, prerequisites in branch, gates default to tiers, texts exist, `maxLevel` sum at least 1.3 x 29, legal denylist scan over names and texts), `test/progression.test.js` (learn rejects with codes and spends nothing; accounting invariant over levels 1-30), `test/save-migrate-v2.test.js` (synthetic v1 Clerk fixture: class mapped, refund exact, bar reset, attrs kept, idempotent, corrupt v1 rejected), `test/name.test.js` (empty, long, markup, unicode, trimming).
+- **Risk:** medium: touches `newGame` used by every fixture; keep `facilities-manager` the default so old tests pass; golden hashes re-pinned once at the end of R4-3, not here.
+
+### R4-2 Skill runner: damage types, statuses, projectile and area archetypes, crits
+- **Goal:** `systems/skillfx.js` with the effect ops (`damage`, `dot`, `heal`, `hot`, `status`, `knockback`, `execute`, `statMod`), archetypes `projectile`, `area`, `self`, `melee`; monster `resist` table; statuses (`stun/mute/freeze` on `muteT`, `slow`, `weaken`, `burn`); class basic attacks `toss` and `zap` through click-to-attack; crit rolls; `castSkill` becomes a thin dispatcher with an unchanged result shape; passives and `statMod` folded in `deriveStats`.
+- **Depends:** R4-1. **Parallel-ok with:** R4-5. **Estimate:** L (about 600 lines; if over, split ops into `skillfx-ops.js` as a new WP R4-2b).
+- **ACs/Reqs:** R-201 (basic attack differs), R-203 (per-level values), R-207, R-231 (affix part prepared), AC for AC-R-014-5/-6/-7 kept.
+- **Files:** `core/systems/{skills,skillfx,statuses,damage,combat,ai,movement}.js` (named hooks only), `core/content/monsters.js` (optional `resist`), `core/items/derive.js`, `core/state.js` (monster status fields), `content/skilltrees/*` (fill `delivery` and `effects` for projectile, area, self and passive skills: 20 of 30).
+- **Tests:** `test/skillfx.test.js` (every op on a fixture: damage type and resist, dot ticks, statuses expire, bosses resist stun not slow, crit uses the combat stream, heal clamps, execute multiplier), `test/skills-data.test.js` (every skill's ops are known; every `now`/`next` row formats), `test/basic-attacks.test.js` (toss and zap range and line of sight), `e2e/hook.mjs` extended (cast each archetype via hook).
+- **Risk:** medium-high: changes hit rolls; replay hashes shift; keep old Strike path byte-compatible until hashes are re-pinned in R4-3.
+
+### R4-3 Buffs, auras, allies, zones, dash; remaining ten skills; respec
+- **Goal:** archetypes `buff`, `aura`, `summon`, `dash`, `trap` plus lingering fields via `state.zones`; ally AI (follow, attack nearest, expire, decoy), monsters may target allies; `respec` and `toggleAura` commands; the last ten skills' data; golden hashes and replay re-pinned.
+- **Depends:** R4-2. **Parallel-ok with:** R4-5. **Estimate:** L (about 600 lines).
+- **ACs/Reqs:** R-203, R-207, R-209, R-232 (behaviour half), R-234.
+- **Files:** `core/systems/{allies,zones,skillfx,intent}.js`, `core/content/allies.js` (intern, cone), `core/state.js`, `core/systems/{ai,combat,damage,world}.js` (clear allies and zones on floor change), `content/skilltrees/*`.
+- **Tests:** `test/allies.test.js` (cap, expiry, follow, decoy draws attack, cleared on floor change), `test/zones.test.js` (trap arm, trigger once, linger ticks, `max` traps), `test/dash.test.js` (walls, LOS, crossed monsters), `test/buffs.test.js` (absorb drains first, reflect, aura reserve and one-aura rule), `test/respec.test.js` (town only, refund exact, signature stays, hotkeys cleared, modes free/gold/once/off), `test/determinism.test.js` and `e2e/replay.mjs` (per class replay hash, R-234).
+- **Risk:** medium: determinism of ally and zone order (iterate by id, fixed phase order in `step`).
+
+### R4-4 Class-tagged affixes, loot, bot support
+- **Goal:** class-tagged affixes (`skillLevel.all`, `skillLevel.branch.*`, `skillDamagePct.*`) rolled only for the matching class; `effLevel` bonus; tooltip data; bot policy per class (build order, priority list, kiting for ranged and casters) so headless runs exist for all three classes; `bot/run-headless.mjs` takes `--class`.
+- **Depends:** R4-3. **Parallel-ok with:** R4-5. **Estimate:** M (about 450 lines).
+- **ACs/Reqs:** R-231, R-230 (tooling half), R-234.
+- **Files:** `core/content/affixes.js`, `core/items/{roll,derive}.js`, `core/content/strings.js`, `bot/policy.js`, `bot/run-headless.mjs`, `bot/report.js`.
+- **Tests:** `test/affixes-class.test.js` (never rolls for other classes over 2000 rolls per class; same seed and class deterministic; requirement check class-independent), `test/bot-class.test.js` (each class reaches floor 3 within a tick budget on fixed seeds), `test/skill-bonus.test.js`.
+- **Risk:** medium: bot kiting for casters may be unreliable (circle-02 Q7 fallback B: soft report instead of gate).
+
+### R4-5 Slot store, migration, shell session commands, hook (parallel with R4-2..R4-4)
+- **Goal:** `save/slots.js` per ADR-0006: five slot keys, index with metadata and repair, undo copy, quotas and recovery order, per-slot export/import, `migrateLegacy`; shell: active slot, `createCharacter`, `loadSlot`, `continue`, `deleteSlot`, `renameSlot`, `selectSlot`, autosave to the active slot only; hook `slots.*`, `character.*`; the old single-slot title behaviour is kept working through `continue`.
+- **Depends:** R4-1 (save v2 and names). **Parallel-ok with:** R4-2, R4-3, R4-4 (disjoint files per `R4-contract.md` section 7). **Estimate:** L (about 600 lines; split `migrateLegacy` into R4-5b if over).
+- **ACs/Reqs:** R-220, R-221 (logic), R-222 (projection), R-224, R-225, R-226, R-227, NFR-D05, NFR-D06, AC-NFR-Q02-1 kept.
+- **Files:** `src/save/{slots,storage,index}.js`, `src/game.js`, `src/main.js`, `src/testhook/index.js`, `src/core/config.js` (only the slot constants, coordinate with R4-1 through the note file), `test/save-slots.test.js`, `e2e/save.mjs`.
+- **Tests:** `test/save-slots.test.js` (index shape, list reads one key, 100 autosaves in slot 2 leave 1/3/4/5 byte-identical, bad slot isolated and `.bad` kept, newer slot untouched, quota ladder in order with `failWrites`, over-400-KB refused with old save intact, crash between slot and index writes repaired, index missing rebuilt, migration idempotent and legacy keys kept, import into another slot equals export), `e2e/save.mjs` (create in slot 3, reload, continue; export slot 2, import into 4; corrupt slot 3 only).
+- **Risk:** medium: two-key writes; covered by ordering and repair; legacy Playwright tests that use `office-crawler.save` are updated here.
+
+## Round R5: screens, art and effects (split WORLD and UI, parallel)
+
+**Demo at the end of R5:** title -> slots -> class selection -> game for all three classes; skill tree panel; Options "Save slots" section; class figures, ally sprites and all effects rendered; independent visual review.
+
+### R5-W1 Class figures, portraits, allies (WORLD)
+- **Goal:** three hero figures from the shared rig with per-class palettes and accessories, all animation keys (`idle walk attack cast hurt die portrait card-idle`), `drawFigure(canvas, figureKey, opts)`, ally sprites `intern` and `cone`; atlas test for completeness; reduced motion static pose.
+- **Depends:** R4 (figure keys in `R4-contract.md`; can start after R4-1). **Parallel-ok with:** R5-U1, R5-U2. **Estimate:** L (about 600 lines; art cost is high, time-box one review cycle).
+- **ACs/Reqs:** R-232, R-212 (figure half), R-213, NFR-P06.
+- **Files:** `src/render/styles/vector/{heroes,allies}.js`, `render/{atlas,world,draw/*}.js`, `render/figure.js`, `e2e/render.mjs`, `e2e/world-shots.mjs`.
+- **Tests:** `test/atlas-classes.test.js` (every `figureKey` has every animation key; frames differ between two ticks for `card-idle`), `e2e/world-shots.mjs` (screenshots of each class idle, walk, attack, cast at 1280x720 and 390x844 for the reviewer).
+- **Risk:** medium: three distinct silhouettes on a shared rig; review by eye.
+
+### R5-W2 Effect archetypes and 24 skill icons (WORLD)
+- **Goal:** all `fx:*` keys from `R4-contract.md` section 5 (about fourteen), damage-type tints, status marks over monsters, zone and aura drawings, shield dome, dash streak, floaters per damage type, 24 new skill icons plus 9 branch icons and 3 class icons.
+- **Depends:** R4-3 (events exist), R5-W1 not required. **Parallel-ok with:** R5-W1, R5-U1, R5-U2. **Estimate:** L (about 600 lines; if over, icons become R5-W2b).
+- **ACs/Reqs:** R-232, R-203 (icon per skill), NFR-A07 (no colour-only state), reduced motion/flash.
+- **Files:** `src/render/fx.js`, `render/draw/fx-*.js`, `render/styles/vector/fx.js`, `src/ui/icons.js` (icon bodies only), `e2e/render.mjs`.
+- **Tests:** `test/fx-keys.test.js` (every skill's `fx.cast`/`fx.hit` key resolves; every skill id has an icon body; `skillIcon` non-empty), `test/fx-reduced.test.js` (reduced motion produces static output), `e2e/world-shots.mjs` (one cast of every archetype).
+- **Risk:** medium: performance with many zones/allies; pooled objects as in the existing renderer.
+
+### R5-U1 Skill tree panel, Save slots section and slot manager (UI)
+- **Goal:** replace the flat skills list with the tree panel (tabs per branch, nodes on a grid from `tier/col`, edges, tooltips from `now/next`, learn on click and keyboard, point counter, respec button with confirm, text states); Options section "Save slots" and the same list on title, pause and in game (cards from the index, create, load, overwrite, delete, rename, export, import with confirmations that name the character, bad and newer states); phone layout (one branch at a time).
+- **Depends:** R4-3, R4-5. **Parallel-ok with:** R5-W1, R5-W2, R5-U2. **Estimate:** L (about 600 lines; if over, slot manager becomes R5-U1b).
+- **ACs/Reqs:** R-206, R-207, R-209, R-220, R-221, R-222, R-223, R-226, R-227, NFR-A07.
+- **Files:** `src/ui/{panels,options,slots,layout,text,messages}.js`, `src/style.css`, `src/index.html` (only if a container is needed), `src/ui/screens.js` (menu routing for `slots`).
+- **Tests:** `e2e/ui.mjs` (3 tabs, click learns, counter decreases, locked reason text, tooltip non-empty, respec in the Lobby), `e2e/slots.mjs` (every operation incl. cancel; other slots unchanged), `test/layout.test.js` (tree on 390 px width without horizontal scroll), a11y checks (focus order, state in text).
+- **Risk:** medium: many destructive dialogs; confirmations must name the character.
+
+### R5-U2 Character selection screen and title flow (UI)
+- **Goal:** the visually appealing class screen per circle-02 Q5 option A: carousel of three cards in the lobby scene, large animated figure (idle, attack demo on hover or click), role tag, blurb, stat bars, three branch names with icons, name field with validation and suggest button, Begin and Back; title flow New game -> slot picker -> class -> game, Continue, keyboard path, reduced motion static; **2-3 layout variants** delivered for the independent visual review (as for art direction and the inventory panel), the pick is the customer's or the proxy's.
+- **Depends:** R4-5, R5-W1 (figures; stub with portraits if late). **Parallel-ok with:** R5-U1. **Estimate:** L (about 600 lines including variants; variants as CSS/markup switches, not copies).
+- **ACs/Reqs:** R-210, R-211, R-212, R-213, R-214, R-215, NFR-P06, NFR-A07.
+- **Files:** `src/ui/{create,screens,title}.js`, `src/style.css`, `docs/product/variants/` (variant notes and screenshots), `e2e/create.mjs`.
+- **Tests:** `e2e/create.mjs` (create per class with name -> `getState().player.class`; invalid name disables Begin; keyboard-only path title to game; reduced motion leaves canvas identical between frames; canvas differs between two frames otherwise), frame-time check in the perf script, visual review file in `docs/reviews/R5-visual-review.md`.
+- **Risk:** medium-high: judged by eye; the real customer may overrule on screen (record in `proxy-log.md`).
+
+## Round R6: balance, polish and release checks
+
+**Demo at the end of R6:** three classes each within the parity band, full acceptance run, size/legal/offline gates green, visual review closed.
+
+### R6-1 Per-class balance and bot gates
+- **Goal:** tune curves, attribute starts, mana and class growth in data; bot policies finish each class in 20-40 minutes of game time; parity report (median clear time and deaths within 25 percent of the three-class median, no dominant skill, damage share per skill); fixed-seed gate in the release checks (circle-02 Q7 option A, fallback B if casters are unreliable).
+- **Depends:** R4-4, R5 for browser runs (headless is enough for numbers). **Parallel-ok with:** R6-2. **Estimate:** L (open-ended; time-box to two tuning passes).
+- **ACs/Reqs:** R-230, R-006 per class, R-234.
+- **Files:** `src/core/content/{classes,skilltrees/*,monsters}.js` (numbers), `core/config.js`, `bot/{policy,report,run-headless}.mjs`, `docs/reviews/R6-balance.md`, `test/balance-gate.test.js` (fast fixed-seed smoke, the long runs stay in `bot/`).
+- **Tests:** `test/balance-gate.test.js` (short horizon: each class reaches a depth and level by tick N on three seeds), release script prints the parity table.
+- **Risk:** high: open-ended; report numbers, adjust data only.
+
+### R6-2 Synergies (could), polish, accessibility, legal, size
+- **Goal:** implement R-208 synergies if room (tooltip and damage numbers), fix independent visual and acceptance review findings from R5, performance re-check (many allies/zones), size ceiling, `file://` and offline re-run, legal scans over all new strings, README and ASSET-LICENCES update, `harness` learnings entries for the round.
+- **Depends:** R5, R6-1. **Parallel-ok with:** R6-1 (disjoint after R5). **Estimate:** M-L.
+- **ACs/Reqs:** R-208 (could), R-233, NFR-A07, NFR-P06, AC-NFR-L01-*, AC-NFR-O01-1, previous visual-review items.
+- **Files:** `core/systems/skillfx.js` (synergy lookup), `ui/panels.js`, `render/*` (review fixes), `test/{size,legal,ip-denylist}.test.js`, `e2e/{offline,engines}.mjs`, `README.md`, `ASSET-LICENCES.md`.
+- **Tests:** full `npm test` and `npm run e2e` on three engines; synergy tests only if implemented.
+- **Risk:** medium: subjective review cycles; time-box one fix cycle.
+
+## Dependency summary for R4-R6
+
+```
+S3 -> R4-1 -> R4-2 -> R4-3 -> R4-4
+          \-> R4-5 (parallel with R4-2..R4-4)
+R4-1 -> R5-W1 ; R4-3 -> R5-W2 ; R4-3 + R4-5 -> R5-U1 ; R4-5 + (R5-W1) -> R5-U2    (R5-W1, W2, U1, U2 run in parallel)
+R4-4 -> R6-1 ; R5 -> R6-2
+```
+
+## Open points for the plan gate (R4-R6)
+
+1. **Brand:** final class names and the game title are escalated to the real customer (R-233); working names are used everywhere as strings, ids stay stable.
+2. **Respec rule** (PROXY, low confidence): one config switch; no code change if the customer picks gold, once or off.
+3. **Free signature skill** keeps the "29 points at level 30" answer; the alternative (one open point at level 1) is a config change.
+4. **Round budget:** R4 holds five packages with two large ones (R4-2, R4-3) at the 600-line limit; R5 has four parallel packages; if a package overruns, the split rule inserts a WP in the same round rather than moving work to the next round. Synergies and skill demo reel are explicitly the first items to drop.
+5. **Replay hashes** change in R4-2/-3 (crit draws, new state); they are re-pinned once in R4-3 and each class gets its own replay hash.

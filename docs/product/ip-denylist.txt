@@ -28,3 +28,4 @@ valor
 khanduras
 westmarch
 nephalem
+fire wall
