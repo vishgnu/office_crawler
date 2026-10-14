@@ -100,3 +100,19 @@ and a new round **R8-T** (end-to-end testing and polish) right after round 8, be
 by the orchestrator: the hero's look changes with the **equipped** gear (head, body, hands, feet, weapon, off-hand are
 visible slots; rings, amulet and belt are not), as in the original. Today the hero sprite ignores equipment (checked in
 `src/render`). Inventory items that are carried but not worn don't change the look.
+
+## Customer decisions (user, 2026-10-14, verbatim)
+
+> 1 done, 2 done 3 no need, 4 keep as is , 5 ok, 6 spread it pout better accross the floors 7 keep 8  do 3 quests and 5
+> sidequests,  ; gitve me details for 9 now
+
+**Recorded as real-customer answers** (numbers refer to the "waiting for you" list given in chat the same day):
+1. Sound kit: done (listened). The current default kit stays unless the customer names another.
+2. Respec rule: done. The current rule stays (free respec in the Lobby, with confirmation).
+3. AMBIENT_LIFT +12 %: "no need". Ambiguous (no lift needed vs no need to change); asked once, until then unchanged.
+4. Graphics gate (proxy pass at 34/33): keep as is.
+5. Note in play/README for file:// play: ok, add it.
+6. Pace: spread the difficulty more evenly across the floors (no wall at floor 5). Round 7 balance work (R7-3).
+7. Quest names and texts: keep the working names.
+8. Quests: 3 main quests and 5 side quests (was 1 main quest with 6 steps and 3 side quests). New plan item R7-4.
+9. Harness circle 2: details given in chat.

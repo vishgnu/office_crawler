@@ -363,9 +363,12 @@ R4-4 -> R6-1 ; R5 -> R6-2
 
 ## Round R7 (first "flawless gameplay" round): added item from the sixth briefing (2026-10-14)
 
+### R7-4 Quest count from the customer (2026-10-14): 3 main quests and 5 side quests
+- Today: 1 main quest (6 steps) and 3 side quests. Add 2 main quests (the story becomes three main quest lines across the 8 floors) and 2 side quests from the remaining givers, as data in content/quests.js; extend the bot, journal, save migration (v4 slots get the new quests as available), ACs and tests. The customer kept the working names; new texts follow the same style and denylists.
+
 ### R7-3 Follow-ups from the R6 acceptance
 - Hero falls back to an adjacent attacker when its target never arrives (FM seed 5, floor 1, ~1 min; joins R7-1).
-- Smooth the damage step at floor 5 (human playtest floors 4-6 with gear); IT deaths median and FM Pallet Slam share: tune or accept.
+- Customer (2026-10-14): spread the difficulty more evenly across the floors (no wall at floor 5); re-check with quest rewards in place. IT deaths median and FM Pallet Slam share: tune or accept.
 - Size ceiling test, one-line ASSET-LICENCES.md, offline/engines e2e from the R6 plan (run or drop).
 - Low visual items N9-N15 from docs/reviews/R6-visual-review.md.
 

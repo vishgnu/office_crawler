@@ -17,17 +17,11 @@ Gate authority for this project is delegated to `customer-proxy` while the user 
 - IP closeness: keep the current approach (mechanics/feel, everything else original). Names and title approved.
 
 ## Waiting for the real customer
-- **Graphics mood**: the proxy lifted the ambient floor tone by +12 % so the new detail reads (`AMBIENT_LIFT`, 0 = the old darker look). Confirm or revert.
-- **Respec rule** (proxy chose free respec in town at LOW confidence; "stay close to the original" may mean no respec).
-- **Listen and pick the sound kit**: open docs/product/variants/sound-direction/{A,B,C}.html, play the ambients and SFX (about 2 minutes). Agents cannot judge sound by ear.
-- **G gate (2026-10-14)**: the proxy passed round G at in-game 34/33 and character select 34/33 (craft 1 short of 34), with the
-  remaining polish items as round 6 must-fix (`docs/reviews/R5-acceptance.md`). Accept or overrule.
-- **Known risk, file:// play**: in automation Chromium lost saves ~4 of 23 times when the page was reloaded immediately after
-  saving from file:// (0 of 48 on http/https). Not seen in normal play. Tell us if you want a note in play/README.md or a
-  tiny local server script.
-- **Pace (new after round 6)**: the early game is quick (level 2 in under a minute, about a minute per floor, floors 1-4
-  painless), then floor 5 is a wall for a hero without gear. Say if you want slower early floors or a softer step at floor 5
-  (`docs/reviews/R6-acceptance.md`).
-- **Quest journal wording (R7)**: working titles and texts for the main quest and 3 side quests are the proxy's (circle-03). Confirm or rename (docs/product/circles/circle-03.md Q1/Q2).
-- **Side quests: count and rewards**: you did not say whether you want them; the proxy chose 3, two of which give gear before floor 5. Say if you want more, fewer or none.
+- **AMBIENT_LIFT**: you answered "no need": remove the +12 % lift (darker look) or keep it? Unchanged until you say.
+- **Harness circle 2** (harness/docs/product/circles/circle-02.md): 7 questions, details given in chat 2026-10-14.
+- **Portal-overview variant pick** (harness).
 - Review `proxy-log.md` whenever you are back.
+
+## Decided by the real customer (2026-10-14)
+- Sound kit: current default kept. Respec: current rule kept. Graphics gate: proxy pass kept. Quest names/texts: kept.
+- file:// note in play/README: yes. Pace: spread difficulty across floors. Quests: 3 main quests + 5 side quests.

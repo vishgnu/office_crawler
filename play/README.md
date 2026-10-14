@@ -18,3 +18,7 @@ Options (title or pause menu): volumes, **sound kit (foley / gothic / chiptune)*
 Bots and crawlers: `robots.txt` and the page's `noindex, nofollow` tag keep well-behaved crawlers out. To restrict who can
 open it, use the storage firewall (Networking → selected networks → your IP; test from another network) or move to
 Azure Static Web Apps with login. Set a budget alert (Cost Management → Budgets). Saves stay in each visitor's browser.
+
+Playing from the file (double-click, file://): saves live in the browser. In automated tests Chromium lost a save a few
+times when the page was reloaded within a moment of saving; give it a second before reloading, or host it (above), where
+this was never seen.
