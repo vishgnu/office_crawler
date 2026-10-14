@@ -130,13 +130,13 @@ test("attribute invariant: a hero may sit below the start values (points refunde
   assert.ok(rt(s).ok);
 });
 
-test("ADV-R6-06: the level in a save is not tied to xp, so a level 30 hero (145 attribute points, 29 skill points, tier 3) can be forged at xp 0", { todo: "ADV-R6-06" }, () => {
+test("ADV-R6-06: the level in a save is not tied to xp, so a level 30 hero (145 attribute points, 29 skill points, tier 3) can be forged at xp 0", () => {
   const r = forged("it-wizard", (s) => { s.player.level = 30; s.player.attrPoints = 145; s.player.skillPoints = 29; s.player.xp = 0; });
   assert.equal(r.ok, false, "level 30 at xp 0 loaded");
 });
 
 // ---------------------------------------------------------------- gear bypass attempts that the new validation should stop
-const gearBypass = (name, f, todo) => test(`${todo ? "ADV-R6-07: " : "gear: "}${name}`, todo ? { todo } : {}, () => {
+const gearBypass = (name, f, todo) => test(`${todo ? "ADV-R6-07: " : "gear: "}${name}`, {}, () => {
   const r = forged("it-wizard", f); assert.equal(r.ok, false, "accepted");
 });
 gearBypass("a potion that restores 1 000 000 health is refused", (s) => { s.belt[0] = { id: "i92", base: "lukewarm-coffee", baseName: "x", name: "x", kind: "potion", rarity: "normal", w: 1, h: 1, restore: 1000000, restores: "hp", slot: "potion", affixes: [] }; }, "ADV-R6-07");
@@ -149,7 +149,7 @@ gearBypass("two affixes of the same group are refused", (s) => { const it = roll
 gearBypass("a unique with one fixed affix changed is refused", (s) => { const it = rollItem(createRng(4), { rarity: "unique", ilvl: 20, base: "ruler-rapier" }); it.affixes[0].value += 1; it.affixes[0].range = [it.affixes[0].value, it.affixes[0].value]; it.id = "i99"; s.equipment.weapon = it; });
 gearBypass("a normal item that carries a unique's name and flavour but no unique id is accepted as plain text only", (s) => { /* allowed: text is free */ s.equipment.weapon.name = "Paper Cut"; s.equipment.weapon.affixes = [{ id: "unique-damage", group: "damage", kind: "prefix", stat: "damage", value: 3, range: [3, 3] }]; });
 
-test("ADV-R6-07b: the same unique can be carried twice (uniqueOncePerGame is not part of the schema)", { todo: "ADV-R6-07" }, () => {
+test("ADV-R6-07b: the same unique can be carried twice (uniqueOncePerGame is not part of the schema)", () => {
   const it = rollItem(createRng(4), { rarity: "unique", ilvl: 20, base: "ruler-rapier" });
   const r = forged("it-wizard", (s) => { s.inventory.items.push({ ...structuredClone(it), id: "i97", x: 0, y: 0 }, { ...structuredClone(it), id: "i98", x: 5, y: 0 }); });
   assert.equal(r.ok, false, "two Paper Cuts loaded");

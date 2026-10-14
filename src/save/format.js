@@ -14,7 +14,7 @@ import { xpNextFor, syncBar } from "../core/systems/progression.js";
 import { canPlace } from "../core/items/inventory.js";
 import { classById } from "../core/content/classes.js";
 import { validateName } from "../core/name.js";
-import { slotKeys, rarityOrder, bases } from "../core/content/items.js";
+import { slotKeys, slotAccepts, rarityOrder, bases } from "../core/content/items.js";
 import { affixes as affixDefs, affixById } from "../core/content/affixes.js";
 import { uniques as uniqueDefs, uniqueById } from "../core/content/uniques.js";
 import { skills as skillDefs } from "../core/content/skills.js";
@@ -133,7 +133,20 @@ function rollableOk(it) {
   return true;
 }
 
-function itemOk(it, { placed }) {
+const sameJson = (a, b) => canonical(a) === canonical(b);
+/** Everything about an item that comes from its base must match the base (ADV-R6-07): kind, potion and consumable values, gear size, requirements, hands. */
+function baseOk(it, base) {
+  if (it.kind !== base.kind) return false;
+  if (it.kind === "potion") return it.restores === base.restores && it.restore === base.restore;
+  if (it.kind === "consumable") return it.effect === base.effect;
+  if (it.slot !== undefined && it.slot !== base.slot) return false;
+  if (it.w !== base.w || it.h !== base.h) return false;
+  if (it.reqs !== undefined && !sameJson(it.reqs, base.reqs)) return false;
+  if (it.twoHanded !== undefined && it.twoHanded !== (base.twoHanded ?? false)) return false;
+  return true;
+}
+
+function itemOk(it, { placed, slotKey }) {
   if (!hasOnly(it, ITEM_KEYS) || !safeId(it.id) || !str(it.name) || !str(it.base) || !own(bases, it.base)) return false;
   if (it.baseName !== undefined && !str(it.baseName)) return false;
   if (it.slot !== undefined && !safeId(it.slot)) return false;
@@ -147,6 +160,8 @@ function itemOk(it, { placed }) {
   if (!isInt(it.w, 1, 6) || !isInt(it.h, 1, 6)) return false;
   if (placed && (!isInt(it.x, 0, 99) || !isInt(it.y, 0, 99))) return false;
   if (!Array.isArray(it.affixes ?? []) || (it.affixes ?? []).length > 12 || (it.affixes ?? []).some((a) => !affixOk(a))) return false;
+  if (!baseOk(it, bases[it.base])) return false;
+  if (slotKey !== undefined && !(it.kind === "gear" && bases[it.base].slot === slotAccepts(slotKey))) return false; // a head base in the weapon slot
   if (it.kind === "gear" && !rollableOk(it)) return false;
   if (it.damage !== undefined && !(hasOnly(it.damage, ["min", "max"]) && num(it.damage.min, 0) && num(it.damage.max, 0))) return false;
   if (it.defense !== undefined && !num(it.defense, 0)) return false;
@@ -179,6 +194,7 @@ export function schemaProblem(d) {
   if (!isInt(d.deepestDepth, 1, config.bossDepth) || typeof d.bossDefeated !== "boolean" || typeof d.bossUnlocked !== "boolean" || !isInt(d.townVisit, 0)) return "bad progress";
   const p = d.player;
   if (!hasOnly(p, PLAYER_KEYS) || PLAYER_KEYS.some((k) => !(k in p))) return "bad player";
+  if (isInt(p.level, 1, config.levelCap) && isInt(p.xp, 0) && p.xp < config.xpTable[p.level - 1]) return "bad xp"; // the level is earned: xp at least the level's threshold (ADV-R6-06)
   if (!isInt(p.level, 1, config.levelCap) || !isInt(p.xp, 0, config.xpPastCap) || !isInt(p.attrPoints, 0, 1000) || !isInt(p.skillPoints, 0, 1000) || !isInt(p.gold, 0, 1e9) || !isInt(p.respecsUsed, 0, 1e6)) return "bad player numbers";
   if (!hasOnly(p.attrs, ATTRS) || ATTRS.some((a) => !isInt(p.attrs[a], 0, 1000))) return "bad attributes";
   const cls = classById(d.class);
@@ -208,10 +224,14 @@ export function schemaProblem(d) {
   if (!gridOk(d.inventory, config.inventory.w, config.inventory.h, ids)) return "bad inventory";
   if (!gridOk(d.stash, config.stash.w, config.stash.h, ids)) return "bad stash";
   if (!isObj(d.equipment) || Object.keys(d.equipment).some((k) => !slotKeys.includes(k))) return "bad equipment";
-  for (const it of Object.values(d.equipment)) if (it !== null && (!itemOk(it, { placed: false }) || ids.has(it.id) || !ids.add(it.id))) return "bad equipment item";
+  for (const it of Object.values(d.equipment)) if (it !== null && (!itemOk(it, { placed: false, slotKey: Object.keys(d.equipment).find((k) => d.equipment[k] === it) }) || ids.has(it.id) || !ids.add(it.id))) return "bad equipment item";
   if (!Array.isArray(d.belt) || d.belt.length !== config.beltSlots) return "bad belt";
   for (const it of d.belt) if (it !== null && (!itemOk(it, { placed: false }) || ids.has(it.id) || !ids.add(it.id))) return "bad belt item";
   if (d.cursorItem !== null && (!itemOk(d.cursorItem, { placed: false }) || ids.has(d.cursorItem.id))) return "bad cursor item";
+  if (config.uniqueOncePerGame) { // a unique is found once per game (QF-05-2): never two copies
+    const seen = new Set();
+    for (const it of [...d.inventory.items, ...d.stash.items, ...Object.values(d.equipment), ...d.belt, d.cursorItem]) if (it?.unique !== undefined && (seen.has(it.unique) || !seen.add(it.unique))) return "duplicate unique";
+  }
   if (!Array.isArray(d.uniquesFound) || d.uniquesFound.length > 100 || d.uniquesFound.some((u) => !safeId(u))) return "bad uniques";
   if (!isInt(d.nextItemId, 1)) return "bad item counter";
   if (!isObj(d.rng) || ["world", "combat", "ai", "loot"].some((n) => !isObj(d.rng[n]) || !isInt(d.rng[n].s, 0, 0xffffffff)) || Object.keys(d.rng).length !== 4) return "bad random streams";
