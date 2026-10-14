@@ -467,6 +467,14 @@ R4-4 -> R6-1 ; R5 -> R6-2
 
 ## Round R8: added item from the seventh briefing (2026-10-14)
 
+### R8-1 Follow-ups from the R7 acceptance (docs/reviews/R7-acceptance.md)
+- R8-Q1 (high) bag-full blocks quest gear rewards: reward to the pouch/ground or sell junk from the dialogue.
+- R8-B1 (high) the first floor-1 pack kills level-1 heroes in ~20 s: shrink/split it, check the first 90 s per class.
+- R8-B2 (medium) death spiral at the lift entry (awake monsters near the entry after respawn).
+- R8-B3 (medium) first potions: price vs 50 start gold; bought potions go to the belt.
+- R8-AI1 (medium) deterministic re-click test in a crowd (adjacent attacker hit within 1.5 s).
+- R8-Q2/Q3 (low) close the inventory with the NPC window; second hand-in toast wording.
+
 ### R8-0 Hero visuals follow equipped gear (customer request, first item of R8)
 - **Goal:** the hero's figure shows what is equipped in the visible slots (head, body, hands, feet, weapon, off-hand), for all
   three classes, all facings and animations, in game, on the character sheet and on the character select and slot busts.
