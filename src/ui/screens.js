@@ -31,7 +31,7 @@ function titleArt(wide) {
 <defs><linearGradient id="sky${wide ? "w" : "t"}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1030"/><stop offset=".6" stop-color="#1d1a45"/><stop offset="1" stop-color="#3a2150"/></linearGradient>
 <radialGradient id="glow${wide ? "w" : "t"}" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd29a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd29a" stop-opacity="0"/></radialGradient></defs>
 <rect width="${W}" height="${H}" fill="url(#sky${wide ? "w" : "t"})"/>${stars}
-<circle cx="${wide ? 560 : 120}" cy="${wide ? 110 : 140}" r="34" fill="#f4f0ff" opacity=".85"/><circle cx="${wide ? 574 : 134}" cy="${wide ? 102 : 132}" r="30" fill="#1d1a45"/>
+<circle cx="${wide ? 250 : 120}" cy="${wide ? 120 : 140}" r="34" fill="#f4f0ff" opacity=".85"/><circle cx="${wide ? 264 : 134}" cy="${wide ? 112 : 132}" r="30" fill="#1d1a45"/>
 ${side(tx - tw / 2 - 150, 120, 220, "#171a3a")}${side(tx - tw / 2 - 40, 60, 330, "#1a1e40")}${side(tx + tw / 2 + 20, 110, 260, "#171a3a")}${side(tx + tw / 2 + 140, 90, 180, "#1a1e40")}
 <rect x="${tx - tw / 2}" y="${ty}" width="${tw}" height="${gy - ty}" fill="#232851" stroke="#0a0d20" stroke-width="4"/>
 <rect x="${tx - tw / 2 - 10}" y="${ty - 12}" width="${tw + 20}" height="16" fill="#2c3263" stroke="#0a0d20" stroke-width="3"/>
@@ -39,7 +39,7 @@ ${side(tx - tw / 2 - 150, 120, 220, "#171a3a")}${side(tx - tw / 2 - 40, 60, 330,
 ${win}
 <ellipse cx="${hx}" cy="${gy}" rx="190" ry="34" fill="url(#glow${wide ? "w" : "t"})"/>
 <rect x="0" y="${gy}" width="${W}" height="${H - gy + 2}" fill="#0b0d1e"/>
-<g fill="#0a0c18" stroke="#9aa6d8" stroke-width="2.5" stroke-linejoin="round"><ellipse cx="${hx}" cy="${gy}" rx="42" ry="9" fill="#000" stroke="none" opacity=".6"/>
+<g transform="translate(${hx} ${gy}) scale(${wide ? 1 : 0.7}) translate(${-hx} ${-gy})" fill="#0a0c18" stroke="#9aa6d8" stroke-width="2.5" stroke-linejoin="round"><ellipse cx="${hx}" cy="${gy}" rx="42" ry="9" fill="#000" stroke="none" opacity=".6"/>
 <path d="M${hx - 30} ${gy - 4} L${hx - 26} ${gy - 78} Q${hx - 24} ${gy - 100} ${hx} ${gy - 102} Q${hx + 24} ${gy - 100} ${hx + 26} ${gy - 78} L${hx + 30} ${gy - 4} Z"/>
 <circle cx="${hx}" cy="${gy - 126}" r="22"/><path d="M${hx - 22} ${gy - 130} Q${hx - 26} ${gy - 154} ${hx} ${gy - 154} Q${hx + 26} ${gy - 154} ${hx + 22} ${gy - 130}" fill="none"/><path d="M${hx - 20} ${gy - 128} Q${hx - 34} ${gy - 122} ${hx - 24} ${gy - 106}" fill="none"/></g>
 </svg>`;
