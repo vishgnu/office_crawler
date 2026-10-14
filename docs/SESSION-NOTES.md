@@ -1,7 +1,7 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
-_Last updated 2026-10-14T08:26:24Z. Keep this block current after every step; the log below is history._
+_Last updated 2026-10-14T08:31:30Z. Keep this block current after every step; the log below is history._
 
-**Where we are:** Rounds 4, 5 and G ACCEPTED by proxy with follow-ups (`docs/reviews/R5-acceptance.md`); G gate passed by proxy at 34/33 (real customer may overrule, in STATE.md). play/ + both portals rebuilt. **In flight:** harness-retro R5+G (`docs/reviews/R5-retro-progress.md`) → round-05.json, round-G.json, L-025+, E1 result. **Next:** R6 = class balance (SR weakest, ±25 % parity, caster scaling flaw, bigger bot set) + polish must-fix in this order: N5 slot Close clipped at 720, N6 take-over pushes title off, N1 pale/faceless figures, N3 beams through hero, N4, N2 slam lifetime, tree connectors + tier-2 cut, select polish, mana check Power Surge/Packet Filter, atlas time (4.78 of 5 s).
+**Where we are:** R4, R5, G accepted (proxy); retro R5+G done (L-025..L-030, round-05.json, round-G.json). **R6 in flight** (contract + ownership `docs/reviews/R6-contract.md`): BAL-R6 class balance + caster scaling + golden re-record (`R6-balance-progress.md`), UI-R6 N5/N6/N7, tree connectors, select polish, respec confirm (`R6-ui-progress.md`), WORLD-R6 N1-N4, slam lifetime, atlas ≤ 4300 ms (`R6-world-progress.md`). After: forward BAL e2e_red to UI owner, orchestrator full suite + quiet bench, ADV-R6 + code review in parallel (L-030), visual review, proxy acceptance, retro R6. Then R7-8 flawless gameplay.
 
 **In flight (check the files, not memory):**
 - ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
