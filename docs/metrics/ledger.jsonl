@@ -21,3 +21,4 @@
 {"round": "G", "role": "visual-reviewer", "pkg": "G in-game craft", "tokensK": 98.8, "minutes": 2.9, "status": "done", "score": 31, "source": "agent report"}
 {"round": "G", "role": "implementer", "pkg": "G-FIX", "tokensK": 295.3, "minutes": 32.1, "status": "done", "tests": 569, "fps50": 47.1, "e2e_red": ["ui.mjs", "s3ui.mjs"], "source": "agent report"}
 {"round": "R5", "role": "implementer", "pkg": "UI-R5", "tokensK": 506.6, "minutes": 68.5, "status": "done", "tests": 574, "e2e": "12/12 ok (orchestrator re-run)", "e2e_red": [], "source": "task usage + orchestrator re-run"}
+{"round": "G", "role": "visual-reviewer", "pkg": "G2 in-game + char select", "tokensK": 116.1, "minutes": 4.3, "status": "done", "score": {"g": [33, 32], "charselect": [33, 30]}, "verdict": "iterate", "source": "task usage"}
