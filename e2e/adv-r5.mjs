@@ -37,12 +37,15 @@ const goTitle = (page) => page.waitForFunction(() => window.__app?.getState().sc
 /** A browser context whose localStorage is seeded once (before the game script runs) with `data`. */
 async function seeded(data, { query = "test=1&seed=1&start=floor", viewport = { width: 1280, height: 720 } } = {}) {
   const context = await browser.newContext({ viewport });
+  // Serve the build from a real https origin: on file:// Chromium (Playwright, ephemeral profile) sometimes starts the reloaded document with an EMPTY
+  // localStorage, before any game code runs (measured 4 of 23 runs under load; 0 of 24 on http and on this route). Harness artefact, see R5-adversarial.md.
+  await context.route("https://oc.test/**", (r) => r.fulfill({ path: "dist/index.html", contentType: "text/html" }));
   await context.addInitScript((d) => { if (localStorage.getItem("advseed")) return; localStorage.setItem("advseed", "1"); for (const [k, v] of Object.entries(d)) localStorage.setItem(k, v); }, data);
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message + " @ " + String(e.stack).split("\n").slice(1, 3).join(" | ")));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-  await page.goto(`${DIST}?${query}`);
+  await page.goto(`https://oc.test/index.html?${query}`);
   await goTitle(page);
   const app = (fn, ...args) => page.evaluate(([f, a]) => f.split(".").reduce((o, k) => o[k], window.__app)(...a), [fn, args]);
   return { context, page, errors, app, state: () => app("getState") };
