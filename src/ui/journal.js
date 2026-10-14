@@ -1,26 +1,30 @@
 // Quest journal and tracker (R7, ADR-0007): pure view models and markup. Plain data in (snapshot.quests, the pouch), no game rules here.
 // Quest texts (titles, next-step lines) come from the core (content/quests.js); only the labels around them live in T.
-import { content, config } from "../core/index.js";
+import * as core from "../core/index.js";
 import { T } from "./text.js";
 import { rarityName } from "./itemview.js";
+
+const { content } = core;
 
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const STATE_TEXT = { available: T.stateAvailable, active: T.stateActive, ready: T.stateReady, completed: T.stateCompleted };
 const ids = () => content.questIds;
 const fill = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => o[k] ?? "");
 
-/** Reward of a side quest as lines of text: gold, experience, gear kind with its minimum rarity, potions. Empty for the main quest. */
+/** Reward of a side quest as lines of text: gold, experience, gear kind with its minimum rarity, potions. Empty for the main quest.
+ *  The numbers come from the core's rewardSummary(questId) (the same function the payout uses); no formula here (CR7-05). */
 export function rewardLines(id) {
-  const def = content.quests[id], c = config.quests, qc = c[id];
-  if (!def || def.kind !== "side" || !qc) return [];
+  const def = content.quests[id];
+  if (!def || def.kind !== "side") return [];
+  const r = typeof core.rewardSummary === "function" ? core.rewardSummary(id) : null; // guarded: FIX-R7-CORE adds it in parallel
+  if (!r) return [];
   const out = [];
-  if (def.reward.gold) out.push(fill(T.rewardGold, { n: qc.gold.base + qc.gold.perDepth * qc.refDepth }));
-  if (def.reward.xp) out.push(fill(T.rewardXp, { n: qc.xp.base + qc.xp.perDepth * qc.refDepth }));
-  if (def.reward.gear) out.push(fill(T.rewardGear, { kind: qc.slots.includes("weapon") ? T.rewardGearWeapon : T.rewardGearArmour, rarity: rarityName("magic") }));
-  if (def.reward.potions && qc.potions) out.push(fill(T.rewardPotions, { n: qc.potions }));
+  if (r.gold > 0) out.push(fill(T.rewardGold, { n: r.gold }));
+  if (r.xp > 0) out.push(fill(T.rewardXp, { n: r.xp }));
+  if (r.gear) out.push(fill(T.rewardGear, { kind: r.gear.slot === "weapon" ? T.rewardGearWeapon : T.rewardGearArmour, rarity: rarityName(r.gear.minRarity) }));
+  if (r.potions > 0) out.push(fill(T.rewardPotions, { n: r.potions }));
   return out;
 }
-
 
 /** The quest the tracker shows: the pinned one while it is not completed, else the first active or ready quest; null when none is. `qv` is snapshot.quests. */
 export function trackerOf(qv) {

@@ -22,6 +22,7 @@ export const config = {
   meleeRange: 1,
   holdRadius: 2,       // a hero whose target is already chasing it waits once the target is this close (no mutual-pursuit orbits)
   retargetTicks: 60,   // a standing hero whose held target has not come into reach for this long (a second) strikes an adjacent attacker instead (R7-3)
+  retargetEvery: 10,   // ... looking for that attacker once then, and every this many ticks while the hero stays blocked (not every tick)
   holdMaxTicks: 120,   // ... and stops waiting for a chasing target after this long and walks to it itself (a blocked chaser must not freeze the pair)
 
   // Combat

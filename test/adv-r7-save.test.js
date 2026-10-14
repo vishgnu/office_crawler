@@ -81,24 +81,15 @@ const BYPASS = [
   ["sq2 ready with the badge in the pouch on a hero that never reached floor 3 or 4", (o) => { o.quests.sq2 = { s: "ready", p: 1 }; o.quests.pouch = [{ id: "qi-sq2", quest: "sq2" }]; }],
 ];
 for (const [name, mut] of BYPASS) {
-  test(`[R7-forge] ADV-R7-01 rejected: ${name}`, { todo: "ADV-R7-01 forged ready/completed side quests are accepted" }, () => {
+  test(`[R7-forge] ADV-R7-01 rejected: ${name}`, () => {
     const r = forge(mut);
     assert.equal(r.ok, false, name);
   });
 }
 
-test("[R7-forge] ADV-R7-01 the bypass is worth something: a forged ready sq3 on a fresh hero pays a rare weapon, gold and xp at the next hand-in", () => {
+test("[R7-forge] ADV-R7-01 the bypass is closed: a forged ready sq3 on a fresh hero no longer loads, so it cannot be paid (this test demonstrated the defect before the fix)", () => {
   const r = forge((o) => { o.quests.sq3 = { s: "ready", p: 1 }; });
-  assert.equal(r.ok, true, "(documents the defect: the forged save loads)");
-  const s = r.state;
-  s.ui.dialog = { npc: "potions" };
-  s.floor.npcs ??= [];
-  const npc = s.floor.npcs.find((n) => n.id === "potions");
-  s.player.tile = { ...npc.tile };
-  const gear0 = s.inventory.items.filter((i) => i.kind === "gear").length, xp0 = s.player.xp;
-  const h = applyInput(s, { t: "questHandIn", id: "sq3" });
-  assert.equal(h.ok, true);
-  assert.ok(s.inventory.items.filter((i) => i.kind === "gear").length > gear0 && s.player.xp > xp0, "a never-earned reward was paid");
+  assert.equal(r.ok, false, "the forged save is refused at load");
 });
 
 // ---------------------------------------------------------------------------------------------------- legal saves are never rejected

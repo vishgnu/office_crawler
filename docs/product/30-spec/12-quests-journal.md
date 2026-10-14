@@ -161,3 +161,107 @@ Total ACs in this file: 39 (limit L-03: 40). By area: state machine and determin
 - **QF-12-4** AC-R-256-3 changes the golden hash because the state gains `quests` even for a run that never talks to a giver. If the architect prefers to keep the golden unchanged, `quests` must be excluded from `hashState` (like `ui.hud` and `perf`), which hides quest drift from replay checks; the spec recommends re-pinning.
 - **QF-12-5** The victory verdict (main step 6) needs a "verdict read" event from the victory screen; confirm that screen exists as an event source.
 - **QF-12-6** Escalations carried from circle-03: confirm 3 side quests with the customer, confirm the working titles and the six step lines, and confirm that quests hand out gear rather than only gold and experience.
+
+---
+
+## Addendum R7-4: three main quests and five side quests (2026-10-14)
+
+Source: customer decision 8 (`../00-brief.md`: "do 3 quests and 5 sidequests"), items 6 and 7 (spread the difficulty; keep the working names). Design: `../decisions/ADR-0007-quests.md`, amendment "R7-4". Author: architect (with the spec-writer's AC rules). Round: R7-4. 15 new ACs (`R-257`, `R-258`, `R-259`, proposed requirement ids for `../20-requirements.md`, area N); with the 39 above the file holds 54 ACs, the L-03 limit of 40 applying per round (R7-0: 39, R7-4: 15). Level and `verify:` conventions as above.
+
+### What changes in the ACs above (this addendum wins)
+
+| AC | Change |
+|---|---|
+| AC-R-240-1 | `snapshot.quests`: `main` active at step 1, `main2` and `main3` `unavailable`, `sq1..sq5` `available`; the idle-ticks rule is unchanged |
+| AC-R-241-1 | The six step lines stay word for word but are spread over three quests, `main` (steps 1 to 3), `main2` (1 to 3), `main3` (1 to 4); see AC-R-257-1. "After step 6 `main` is `completed`" becomes "after the last step of `main3` all three are `completed`" |
+| AC-R-241-2 | The catch-up rule runs over the ten steps and the three quests (AC-R-257-2) |
+| AC-R-245-1 | `sideCount` is 5; `sq4` is given by the stash keeper and `sq5` by the vendor (a second quest of the vendor); still no new NPC unless the customer asks for one (ADR question 1); "none by the stash keeper" is dropped |
+| AC-R-247-2 | Unchanged for `sq2` and `sq3`; `sq4` and `sq5` are in AC-R-258-4 |
+| AC-R-248-2 | A pinned id is an active main quest or a side quest; `questPin "main"` means the active main quest; AC-R-257-4 |
+| AC-R-251-2 | The v3 fixtures run through the chain to version 5: the five side quests are `available`, and the main steps are the derived global steps of AC-R-259-1 |
+| AC-R-252-1 | The card shows "N/`sideCount`" with `sideCount` 5 and the title of the current global step |
+| AC-R-256-1 | `quests.setStep(id, n)` takes any main id and a step within it; `cheat.completeQuest("main3")` completes all three |
+| AC-R-256-2 | `sq1..sq5` and `main..main3` all `completed` at the end of every bot run; AC-R-259-3 |
+| AC-R-256-3 | The golden is re-pinned once more (AC-R-259-4) |
+
+### Working text, R7-4 (WORKING NAMES, escalated like R-255; the customer kept the existing names and texts, item 7, so only the new strings are new)
+
+Main quests: `main` "Why the Lights Went Out" (existing title), `main2` "The Paper Trail", `main3` "Final Notice". Step table (`when` is the completion event; the global index is the order of the journal and of the slot card):
+
+| # | Quest | Step id | Title | Completes | Next-step line |
+|---|---|---|---|---|---|
+| 1 | main | memo | Read the memo | memo read, or first descent | Take the lift down. |
+| 2 | main | dark-floor | Find the dark floor | floor 1 | Reach floor 1 and look for what cut the power. |
+| 3 | main | cables (new) | Follow the cables | floor 3 | Follow the power cables down to floor 3. |
+| 4 | main2 | go-deeper | Go deeper | floor 4 | Reach floor 4. Visit the Lobby first: the staff may pay in gear. |
+| 5 | main2 | records (new) | Check the records floor | floor 5 | Reach floor 5 and look for where the paperwork goes. |
+| 6 | main2 | mail-room (new) | Find the mail room | floor 6 | Reach floor 6 and find the mail room. |
+| 7 | main3 | back-stairs (new) | Take the back stairs | floor 7 | Reach floor 7 by the back stairs. |
+| 8 | main3 | executive-floor | Open the executive floor | boss stairs unlocked | Reach floor 8 and find the way up to the Executive Suite. |
+| 9 | main3 | face-director | Face the Regional Director | boss defeated | Defeat the Regional Director. |
+| 10 | main3 | report | File the report | verdict read | Read the verdict. |
+
+Quest blurbs (journal, one line each) and the unlock line (toast text when the previous quest completes):
+- `main` blurb: "The lights went out overnight, and nobody upstairs will say why." (no unlock line: it starts active)
+- `main2` blurb: "The cables lead to a paper trail, and the paper trail leads down." Unlock: "A new assignment is on your desk: The Paper Trail."
+- `main3` blurb: "Somebody on the top floor signed off on all of it." Unlock: "A new assignment is on your desk: Final Notice."
+- Locked line in the journal: "Locked. Finish {previous} first."
+
+Side quests (same shape as `sq1..sq3`; `{giver}` is replaced by the NPC name):
+
+`sq4` "The Misfiled Ledger", giver the stash keeper (Storage Locker), objective: one item on floor 5 or 6. Item "Misfiled Ledger", description "A heavy ledger with a sticky note: 'Return to Storage. Urgent.'"
+- offer: "Somebody on the fifth or sixth floor borrowed a ledger from my shelves and never brought it back. It is badly overdue. Find it, and I will make the late fee disappear."
+- progress: "Not back yet. Try the side rooms on the fifth and sixth floors."
+- ready: "That is the one, spine cracked and all. Take these for your trouble."
+- done: "Back on the shelf where it belongs. The shelves thank you."
+- next: available "Talk to the {giver} in the Lobby about an overdue ledger."; active "Find the missing ledger on floor 5 or 6."; ready "Return to {giver} in the Lobby with the ledger."
+- reward: gold, experience, potions (2); no gear.
+
+`sq5` "Slide Deck Surplus", giver the vendor (Office Supplies), objective: defeat 6 Consultants on floors 5 and 6.
+- offer: "The consultants upstairs leave their slide decks everywhere, and I am the one who gets the toner bill. Clear a few of them out and I will find you something from the good shelf."
+- progress: "Still handing out slides down there. Keep at it."
+- ready: "Quiet at last. This was at the back of the shelf. It should help you more than it helps me."
+- done: "No more slides. I owe you one."
+- next: available "Talk to the {giver} in the Lobby about the consultants."; active "Defeat Consultants on floors 5 and 6."; ready "Return to {giver} in the Lobby for your reward."
+- reward: gold, experience, one magic ring, amulet or belt; no potions.
+
+Originality: written for this game; no real person, company or brand; the Consultant is an existing monster. The scan of AC-R-255-1 covers every new string (it iterates the content module); the architect also checked the new text against `ip-denylist.txt` and `ip-denylist-brands.txt` on 2026-10-14 (zero hits, see `../../reviews/R7-4-arch-progress.md`).
+
+### R-257 Three main quests (must)
+
+- **AC-R-257-1** `R7` `Unit` — Given `content.quests`, When the main quests are listed, Then `content.mainIds` is `main`, `main2`, `main3` with 3, 3 and 4 steps in the order and with the ids, titles and next-step lines of the table above, and each step has exactly one completion predicate (a milestone or a floor number); the six pre-existing lines (steps 1, 2, 4, 8, 9, 10) are byte-identical to `AC-R-241-1`; no stored field exists for `main2` or `main3` (`Object.keys(state.quests)` is `main`, `sq1..sq5`, `pinned`).
+- **AC-R-257-2** `R7` `Unit` — Given a new game, When events arrive in order, out of order (`cheat.teleportFloor(7)` from step 1) or twice, Then `main` is `active` and `main2`, `main3` are `unavailable` until the previous one is `completed`, a quest is `active` only if every earlier one is `completed`, a step never goes backwards, death and revisits change nothing, and a catch-up emits one `quest.completed` per quest it finished (in order) and exactly one `quest.step` for the quest now active, which carries `unlocked: true` when the active quest changed; a repeated event emits nothing; 600 idle ticks leave `quests` deep-equal.
+- **AC-R-257-3** `R7` `Unit` — Given `config.quests.arc`, When `main` completes and when `main2` completes, Then the hero receives exactly `base + perDepth x refDepth` gold and experience for that quest, once (a second event, a save and load, and a migration pay nothing), no item, skill point or attribute point; a catch-up that finishes both pays both once; `main3` pays nothing; the `rewards` field of the `quest.completed` event equals what was paid.
+- **AC-R-257-4** `R7` `Unit` — Given the pinned quest completes, When the tap runs, Then `pinned` moves to the next active main quest (after the last one: to the first open side quest, else `main3`) with one `quest.pinned` event; `questPin "main"` pins the active main quest and is stored as its id; pinning a locked or a completed main quest is refused (`locked`, `already done`); `nextStep` of an `unavailable` quest is empty and `snapshot.quests.<id>.state` is `unavailable`, `step` 0.
+- **AC-R-257-5** `R7` `E2E` — Given `main` completed, `main2` at step 2, `main3` locked, `sq1` completed, `sq4` active, When the journal is open, Then the DOM lists the active main quest first with title, blurb and next step, then the active side quests, then the locked quest with the text "Locked. Finish The Paper Trail first." and no next step, and a "Completed" list holding `main` and `sq1`; the tracker shows the next step of the pinned quest; reaching floor 6 later raises one toast whose text names the new assignment ("A new assignment is on your desk: Final Notice." after `main2` completes). Look and layout: `verify: playtest/visual review`.
+
+### R-258 Five side quests (should)
+
+- **AC-R-258-1** `R7` `Unit` — Given `content.quests`, When the side quests are listed, Then there are `config.quests.sideCount` = 5: `sq4` given by `stash` and `sq5` by `vendor`, no new NPC exists, and `npcMarker` is `available` or `handin` for a giver while any of its quests is offered or ready; E2E: talking to the vendor with `sq1` completed and `sq5` available shows only `sq5` with Accept and Decline, with `sq1` and `sq5` both open it shows both, and trading, healing and stash work as before in every state.
+- **AC-R-258-2** `R7` `Unit` — Given `sq4` accepted (and, in a second case, `sq2` accepted too), When floors 5 and 6 are generated for 100 seeds, Then exactly one ledger exists in total, on the floor chosen by `questRng(seed, 4, 1, 0)` from `config.quests.sq4.item.floors`, in a valid room (R-042, `questSpot`), it goes to `player.pouch` as `qi-sq4` with a full bag, the badge and the ledger can be in the pouch together and each readies only its own quest, and none exists when `sq4` is not `active`; the sq2 draws of AC-R-246-2 are unchanged (same floor and tile for the same seed as before R7-4).
+- **AC-R-258-3** `R7` `Unit` — Given `sq5` accepted, When Consultants die on floors 5 and 6, Then progress rises by 1 per kill and `sq5` is `ready` at `config.quests.sq5.kill.count` (6); kills before Accept, on other floors, or of summoned monsters do not count; after floors 5 and 6 were cleared before the accept the objective is still satisfiable (the CR7-01 rule); for 100 seeds floors 5 and 6 together spawn at least `count` Consultants (if not, `count` is lowered in config, the test is not).
+- **AC-R-258-4** `R7` `Unit` — Given `sq4` and `sq5` `ready`, When each is handed in (atomic, bag-full refusal as AC-R-247-3), Then `sq4` pays `base + perDepth x refDepth` gold and experience and `config.quests.sq4.potions` potions and no gear, and `sq5` pays its gold and experience and exactly one item that is `magic` (never normal, rare or unique), in a slot of `config.quests.sq5.slots` (ring, amulet, belt: never weapon, body, head, hands, feet), item level `sq5.gearFloor x ilvlPerDepth`, identical for the same seed (the CR7-06 rule); over 200 seeds the mean affix count of the `sq5` reward is below that of the `sq2` and `sq3` rewards; `rewardSummary("sq4"|"sq5")` equals what is paid; no skill or attribute point is granted.
+- **AC-R-258-5** `R7` `Unit` — Given `config.quests`, When the new rewards are summed, Then `sum(xp of arcs 1 and 2, sq4, sq5) <= config.quests.newXpShare x xpTable[config.quests.balanceLevel - 1]` (defaults 0.10 and 12; today 400 of 4356), gold, experience and potions are the same for all three classes for the same seed, and the only class-dependent part of any new reward is the class affix tag of the `sq5` piece (`affixTagOf`); the per-class parity of AC-R-259-3 holds with the quests on.
+
+### R-259 Save v5, slot card, bot, golden, originality (must)
+
+- **AC-R-259-1** `R7` `Unit` — Given `config.saveVersion === 5` and v4 fixtures built by the helper from a v4 `toSave` (`save-v4-lobby`, `-floor4`, `-floor8-unlocked`, `-boss-defeated`, `-pinned-side`), When `migrate` runs, Then `sq4` and `sq5` are `available` with progress 0, `main.m`, `sq1..sq3`, `pouch` and every other field are deep-equal to the fixture, `pinned` `"main"` becomes the derived active main quest (`main` at depth 0 to 2, `main2` at depth 3 to 5, `main3` from depth 6 on, with the boss unlocked or defeated), a pinned side quest stays, no reward is paid, a second `migrate` is the identity, a version 6 text is `newer`, a corrupt v4 text ends as `corrupt` without an exception, and the v3 fixtures of AC-R-251-2 reach version 5 with global steps 1, 3, 5, 9 and 10 for never descended, floor 1 reached, depth 4, boss unlocked and boss defeated respectively; the schema accepts exactly what play can produce (a forged `sq4` ready with `deepestDepth` 1, a forged `sq5` completed with `stats.kills` 0, a pinned locked or completed main quest, a pouch entry for a quest that is not `ready`: all rejected).
+- **AC-R-259-2** `R7` `Unit` — Given slots saved by a v4 build (index entries with `mainStep` on the 1..6 scale and no `qv`) and slots saved by the new build, When the slot list is read, Then `upgradeIndex` rebuilds the stale entries once from their text (`qv: 5`, `mainStep` 1..10, `sidesDone` 0..5, `mainDone` true only when all three main quests are done), keeps `active`, `last` and `owner`, and a rebuild that fails keeps the old entry without crashing; E2E: the card shows the title of the current global step and "N/5" ("Go deeper · 1/5"), a migrated v4 slot shows its derived step with its completed sides.
+- **AC-R-259-3** `R7` `Unit` — Given the headless bot, `config.bot.seeds` (at least 3 per class) and no quest cheat, When it plays from the Lobby to the victory screen, Then `main`, `main2`, `main3` and `sq1..sq5` are all `completed` (the bot talks to four NPCs, accepts five quests, makes trip T1 from floor 4 and trip T2 from floor 6, hands in at the stash keeper and the vendor, and the arcs complete in order on floors 3, 6 and at the verdict), at most two Lobby trips are made, game time to the boss stays within the R-006 range of 20 to 40 minutes, and with quests on each class median clear time stays inside the 25 % parity band of `test/balance-gate.test.js`; the shift of each class's median clear time against the same seeds with quests off differs between classes by at most 5 points.
+- **AC-R-259-4** `R7` `Unit` — Given the recorded runs (`run-a.json`, `run-class.json`, and the second pre-quest golden of CR7-02), When they are replayed after R7-4, Then the goldens change once, only because `state.quests` gains `sq4` and `sq5`: `hashStateWithout` (stripping `quests`, `player.pouch`, `quest.*` events) equals the unchanged pre-quest baselines; the test asserts that the first two runs never reach floor 3 (no arc reward is paid in them), and for any recorded run that does, the proof runs with `config.quests.arc` rewards set to zero; the new values are recorded with the reason in `docs/reviews/R7-4-core-notes.md`; same seed and inputs give equal hashes in Node and the browsers.
+- **AC-R-259-5** `R7` `Unit` — Given every string of `content.quests` after R7-4 (arc titles, blurbs, unlock and locked lines, step titles and lines, `sq4` and `sq5` titles, dialogue, next lines, item name and description), When scanned against `ip-denylist.txt` and `ip-denylist-brands.txt`, Then there are zero hits; the same scan test of AC-R-255-1 covers them without an edit; the six pre-existing step lines and the titles `main`, `sq1..sq3` are unchanged (customer item 7).
+
+### Coverage of the addendum
+
+| Requirement | ACs | Levels |
+|---|---|---|
+| R-257 (must) | 257-1..257-5 | Unit, E2E (257-5 partly visual review) |
+| R-258 (should) | 258-1..258-5 | Unit, E2E (258-1 dialogue) |
+| R-259 (must) | 259-1..259-5 | Unit, E2E (259-2 card) |
+
+15 ACs: 5 + 5 + 5; 10 test a must requirement and 5 a should requirement. Not covered here: a sixth Lobby character, new objective kinds, fast travel, per-floor balance numbers (the balance package R7-3 changes only `config.quests` values and floor tuning; the ACs assert relations, not values), art for the new quest items beyond the existing ground-entry look.
+
+### Questions for the facilitator (R7-4)
+
+- **QF-12-7** A sixth Lobby character for `sq5` or two quests from the vendor (default)? Either fits (`giver` is data); a new NPC changes the Lobby layout and the golden once more and needs art (about 250 lines and a package of its own).
+- **QF-12-8** Confirm the arc boundaries (floors 1 to 3, 4 to 6, 7 to 9 with boss and verdict), the two new quest titles, the four new step lines, the two new side quests and their texts, and that the last quest pays nothing at the verdict.

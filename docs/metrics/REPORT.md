@@ -18,7 +18,7 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R7 | 15 | 2939.7 | 405.6 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 72 rows, 11648.4 k subagent tokens. **Your messages logged:** 27.
+**Ledger total:** 73 rows, 11648.4 k subagent tokens. **Your messages logged:** 27.
 
 ## Round R3
 
@@ -130,6 +130,7 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | orchestrator | verify after R7-0 packages | – | – | done | tests: 900; e2e: 16/16; fps50: [54.5,53.3,51.8,58.1]; fps50Median: 53.9; load: 1.0-1.4; note: 5th bench run cut by the 30-min background limit |
 | reviewer | code review R7 | 246.0 | 8.9 | done | findings: {"blocking":1,"should":6,"nit":9} |
 | test-engineer | ADV-R7 | 444.4 | 70.3 | done | findings: {"blocker":0,"major":0,"minor":4,"trivial":2}; no_cheat_runs: 3/3 won with all quests (real input API) + 12 headless (11 all quests) |
+| architect | ARCH-R7-4 (3 main + 5 side quests) | – | – | done | acs: 15; packages: ["R7-4.1 core ~590","R7-4.2 ui/world ~420","R7-4.3 optional new NPC"] |
 
 ## Harness work
 

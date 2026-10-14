@@ -87,12 +87,16 @@ export function setQuestStep(state, id, n) {
   if (n === 1) {
     if (q.s === "active") return OK;
     state.quests[id] = { s: "active", p: 0 }; drop();
+    if (def.objective.type === "kill") questSystem.reviveInterns(state); // the interns of floors 1 and 2 must still be there to kill (CR7-01)
     emit(state, { type: "quest.accepted", id, title: def.title, next: nextStep(state, id) });
     return OK;
   }
-  if (n === 2 && q.s === "ready") return OK;
+  if (n === 2 && (q.s === "ready" || q.s === "completed")) return OK; // a completed quest is not made ready again (CR7-08)
   if (n === 3 && q.s === "completed") return OK;
   if (q.s !== "ready") {
+    // the world a legal save has when this quest is ready (ADV-R7-01: the schema ties the state to the play it needs)
+    if (def.objective.type === "kill") state.stats.kills = Math.max(state.stats.kills, goalOf(id));
+    else reach(state, def.objective.type === "item" ? questSystem.itemFloorOf(state.seed) : config.quests.elite.depth);
     state.quests[id] = { s: "ready", p: goalOf(id) };
     if (def.objective.type === "item" && !pouch.some((e) => e.quest === id)) {
       pouch.push({ id: pouchId(id), quest: id });

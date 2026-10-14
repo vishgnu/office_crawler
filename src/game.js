@@ -43,7 +43,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   const syncUi = () => { // the NPC window follows the core dialog; the drawers go away with the run
     const u = game.ui;
     if (!game.core) { u.left = null; u.inventory = false; u.tooltip = null; u.map = false; return; }
-    if (!game.core.ui.dialog) u.questNotice = null;
+    if (!game.core.ui.dialog || (u.questNotice && game.core.inventory.items.length < (u.questNoticeN ?? 0))) u.questNotice = null; // ADV-R7-06: the bag-full line goes once the hero has made room (fewer items than at the refusal)
     if (u.left === "npc" && !game.core.ui.dialog) { u.left = null; if (u.inventory) u.front = "inventory"; u.tooltip = null; }
   };
   const emitChange = () => {
@@ -73,7 +73,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (game.ui.left !== "journal") game.ui.badge.journal = true;
   });
   // R7: the bag-full line of a refused hand-in stays in the NPC window until the dialog closes or the quest is done
-  bus.on("quest.handInRefused", (ev) => { game.ui.questNotice = ev.id; });
+  bus.on("quest.handInRefused", (ev) => { game.ui.questNotice = ev.id; game.ui.questNoticeN = game.core?.inventory.items.length ?? 0; });
   bus.on("quest.completed", () => { game.ui.questNotice = null; });
   bus.on("dialog", () => { game.ui.questNotice = null; game.ui.left = "npc"; game.ui.inventory = true; game.ui.front = "left"; game.ui.vendorTab = "buy"; });
   // run summary for the death screen, derived from the event stream (the core keeps no kill counter)
@@ -103,7 +103,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     pointsHintSeen = true; game.toast(T.pointsHint);
   };
   bus.on("levelup", () => pointsHint());
-  const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null, slots: false, create: null, badge: { journal: false } }); game.inset = 0; storyBossSeen = false; pointsHintSeen = false; game.heldOrigin = null; };
+  const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null, slots: false, create: null, badge: { journal: false } }); game.inset = 0; storyBossSeen = false; pointsHintSeen = false; game.heldOrigin = null; game.toastReset?.(); };
   const resetRender = () => { game.run.kills = 0; game.prev.clear(); rs.facing.clear(); fx.reset(); game.acc = 0; game.hover = null; game.focus = null; };
   game.setBackdrop = () => { game.backdrop = newGame(game.titleSeed, { start: "town" }); resetRender(); };
   /** Start a run. opts.start: "town" (default: the Lobby, R-040) or "floor" (fixtures and tests that want floor 1). */
@@ -322,7 +322,26 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   const insetTarget = () => (game.core && !game.menu() ? cameraInset(game.w, game.h, { left: !!game.ui.left, right: game.ui.inventory }) : 0);
 
   /** Short message for the toast line and the live region (the UI layer shows it). */
-  game.toast = (text, ms) => { game.ui.toast = { text, id: (game.ui.toast?.id ?? 0) + 1, ...(ms ? { ms } : {}) }; emitChange(); };
+  // CR7-04 / ADV-R7-02: a quest line (and any line that waited its turn) keeps the lane for its whole time; later lines queue behind it (same text not queued twice)
+  // and are shown, and announced by the live region, one after the other. Plain lines still replace each other at once.
+  const tq = { q: [], timer: 0 };
+  const showToast = (text, ms, hold) => {
+    const now = performance.now();
+    game.ui.toast = { text, id: (game.ui.toast?.id ?? 0) + 1, ...(ms ? { ms } : {}) };
+    tq.until = hold ? now + (ms ?? 3200) : 0;
+    clearTimeout(tq.timer); tq.timer = 0;
+    if (hold) tq.timer = setTimeout(() => { tq.timer = 0; tq.until = 0; const n = tq.q.shift(); if (n) { showToast(n.text, n.ms, true); emitChange(); } }, ms ?? 3200);
+  };
+  game.toastReset = () => { tq.q.length = 0; clearTimeout(tq.timer); tq.timer = 0; tq.until = 0; };
+  game.toast = (text, ms, quest) => {
+    const busy = game.ui.toast && tq.until > performance.now();
+    if (busy) {
+      if (game.ui.toast.text !== text && !tq.q.some((n) => n.text === text) && tq.q.length < 4) tq.q.push({ text, ms });
+      return;
+    }
+    showToast(text, ms, !!ms || quest);
+    emitChange();
+  };
 
   /**
    * One key press. Panel keys (I, C, S/K) toggle drawers; Escape puts a held item back, then closes the drawers, then
@@ -362,7 +381,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     const cam = game.camera();
     base.ui = {
       ...(game.core ? game.core.ui : { notice: game.titleNotice }), menu,
-      panels: game.panels(), tracker: trackerOf(base.quests), badge: { journal: !!game.ui.badge.journal }, tooltip: game.ui.tooltip, toast: game.ui.toast?.text ?? null, inset: game.inset, fx: { gore: false, shake: game.shakeOn() ? 1 : 0, flash: game.options.reducedMotion ? 0 : 1 }, // no gore by default, none at all (AC-R-103-3)
+      panels: game.panels(), tracker: trackerOf(base.quests), badge: { journal: !!game.ui.badge.journal }, tooltip: game.ui.tooltip, toast: game.ui.toast?.text ?? null, inset: game.inset, fx: { gore: false, shake: game.shakeOn() ? 1 : 0, flash: game.reduced() ? 0 : 1 }, // no gore by default, none at all (AC-R-103-3)
       hud: game.core ? hudState(game.core, game.w, game.h, style, game.core.player.target ?? game.hover) : null,
       camera: cam ? { ox: cam.ox, oy: cam.oy, z: cam.z, w: cam.w, h: cam.h } : null,
       hover: game.hover,
@@ -426,7 +445,10 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   };
   /** Swap in a freshly built atlas (after a resize or devicePixelRatio change). */
   game.setAtlas = (a) => { game.atlas = a; game.atlasChanges++; };
-  game.shakeOn = () => !game.options.reducedMotion && game.options.screenShake !== false;
+  // ADV-R7-05: reduced motion is the option OR the OS setting (AC-R-254-3); the query is live, so a change of the OS setting applies at once
+  const osMotion = typeof matchMedia === "function" ? matchMedia("(prefers-reduced-motion: reduce)") : null;
+  game.reduced = () => !!game.options.reducedMotion || !!osMotion?.matches;
+  game.shakeOn = () => !game.reduced() && game.options.screenShake !== false;
   game.setHc = (on) => { game.hc = !!on; fx.hc = game.hc; };
   game.setShowLoot = (on) => { fx.showAllLoot = !!on; };
   game.setLowFx = (on) => { game.lowFx = !!on; fx.lowFx = game.lowFx; };
@@ -450,7 +472,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     const c = makeCamera(game.w, game.h, game.focus.x, game.focus.y, undefined, game.inset);
     c.ox += shake.x; c.oy += shake.y;
     game.cam = c;
-    env.lowFx = game.lowFx; env.hc = game.hc; env.reducedMotion = fx.reducedMotion = !!game.options.reducedMotion;
+    env.lowFx = game.lowFx; env.hc = game.hc; env.reducedMotion = fx.reducedMotion = game.reduced();
     lighting.ensure(c, game.lowFx, game.hc);
     const out = drawWorld(g, c, atlas, w, game.prev, game.alpha, fx, now, rs, env);
     lighting.draw(g, c, out.heroScreen, now);
@@ -461,7 +483,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
       labels.draw(g);
     }
     fx.draw(g, c, atlas, now, out.heroDir);
-    if (!game.options.reducedMotion) fx.drawHurt(g, game.w, game.h, now);
+    if (!game.reduced()) fx.drawHurt(g, game.w, game.h, now);
     if (game.core && game.core.scene === "floor") fx.drawLowHp(g, game.w, game.h, now, game.core.player.hp / Math.max(1, game.core.player.hpMax), bus);
     else if (fx.lowHp) fx.drawLowHp(g, game.w, game.h, now, 0, bus);
     if (game.core) {

@@ -61,7 +61,7 @@ function issueAttack(state, id) {
   if (!m || m.ai === "dead") return fail("no such living monster");
   if (state.player.hp <= 0) return fail("player is dead");
   const p = state.player;
-  p.target = id; p.path = []; p.goal = null; p.repathT = 0; p.pickup = null; p.stairs = null; p.interact = null; p.toPortal = false;
+  p.target = id; p.path = []; p.goal = null; p.repathT = 0; p.standT = 0; p.pickup = null; p.stairs = null; p.interact = null; p.toPortal = false;
   return OK;
 }
 
@@ -260,9 +260,9 @@ export function playerIntent(state) {
     issueMove(state, mouse.tile);
   }
 
-  if (!p.target) return;
+  if (!p.target) { p.standT = 0; return; } // no order, no stand count (CR7-14: a stale count must not make the next order retarget at once)
   const m = state.monsters.find((o) => o.id === p.target);
-  if (!m || m.ai === "dead") { p.target = null; return; }
+  if (!m || m.ai === "dead") { p.target = null; p.standT = 0; return; }
   if (p.repathT > 0) p.repathT--;
   if (!p.next && inBasicReach(state, ctx, p.tile, m.tile)) { p.path = []; p.standT = 0; return; } // in reach: stand and fight (melee: adjacent; toss / zap: in range with a clear line)
   if (p.next && inBasicReach(state, ctx, p.next, m.tile)) { p.path = []; return; }   // will be in reach after this step
@@ -271,9 +271,14 @@ export function playerIntent(state) {
   // other WAS orbit each other forever, round a ring of corridors or a prop cluster (the faster Printer Imp did this).
   const at = p.next ?? p.tile;
   // R7-3 (stall seen on floor 1): a hero that stands holding a target it cannot reach (the chaser's approach tiles are taken by others, or it
-  // stays on the far side of a corner) answers an adjacent attacker after retargetTicks, as a player would by clicking it; after holdMaxTicks it stops waiting.
-  if (p.next) p.standT = 0; else p.standT = (p.standT ?? 0) + 1; // a path that stays blocked (movement.js) is still standing
-  if (p.standT >= config.retargetTicks && !p.next) {
+  // stays on the far side of a corner) answers an attacker in reach after retargetTicks, as a player would by clicking it; after holdMaxTicks it stops waiting.
+  // A click is never replaced while it can still be carried out: the counter only runs while the hero stands (a step in progress resets it), a new order
+  // (issueAttack) starts it at 0, and nothing is replaced while the player holds the button down on the floor.
+  // Once the hold has run out (standT >= holdMaxTicks) the counter is kept through the steps that follow, so the hold does not come back after one step;
+  // it starts again with a new target or when the target is in reach.
+  if (p.next) { if (p.standT < config.holdMaxTicks) p.standT = 0; } else p.standT = (p.standT ?? 0) + 1; // a path that stays blocked (movement.js) is still standing
+  // The search costs a reach test per monster: it runs once when retargetTicks is reached and then every retargetEvery ticks while the hero stays blocked.
+  if (!p.next && p.standT >= config.retargetTicks && (p.standT - config.retargetTicks) % config.retargetEvery === 0 && !mouse.down) {
     const a = reachableAttacker(state, ctx, p, m);
     if (a) { p.target = a.id; p.goal = null; p.path = []; p.repathT = 0; p.standT = 0; return; }
   }

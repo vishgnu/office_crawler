@@ -252,6 +252,11 @@ export function createPanels(root, game) {
     root.classList.toggle("phone", D.phone);
     const u = game.ui, p = c.player, held = c.cursorItem;
     const leftOpen = !!u.left, rightOpen = u.inventory;
+    { // ADV-R7-04: the dock button that had focus when a drawer opened; on the phone the dock is hidden while a drawer is open, so the re-render drops focus to <body> and the opener must be remembered here
+      const a = doc.activeElement;
+      if (a && a !== doc.body && el.hud.contains(a) && a.dataset?.fk) view.hudFk = a.dataset.fk;
+      else if (a && a !== doc.body && !el.left.contains(a) && !el.right.contains(a)) view.hudFk = null;
+    }
     if (view.respecAsk && (u.left !== "skills" || c.scene !== "town")) view.respecAsk = false; // the confirmation never outlives the panel or the Lobby
     root.classList.toggle("open-left", leftOpen); root.classList.toggle("open-right", rightOpen);
     const frontLeft = leftOpen && (u.front === "left" || !rightOpen);
@@ -276,6 +281,13 @@ export function createPanels(root, game) {
       }
     } else { view.sigs.left = ""; view.stats = {}; }
     syncJournalFocus(leftOpen && u.left === "journal");
+    if ((leftOpen || rightOpen) !== !!view.drawerWas) { // all drawers closed: focus goes back to the opener, not <body> (phone: the dock is visible again only now)
+      view.drawerWas = leftOpen || rightOpen;
+      if (!view.drawerWas && view.hudFk && (!doc.activeElement || doc.activeElement === doc.body) && !menu) {
+        const t = el.hud.querySelector(`[data-fk="${CSS.escape(view.hudFk)}"]`);
+        if (t && !t.disabled) t.focus({ preventScroll: true });
+      }
+    }
     syncNpcFocus(leftOpen && u.left === "npc" && !!c.ui.dialog);
     syncTracker(c, D, leftOpen, rightOpen, menu);
     syncGhost();

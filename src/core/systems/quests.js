@@ -6,9 +6,9 @@ import { emit } from "../events.js";
 import { createRng } from "../../rng.js";
 import { hash32 } from "../hash.js";
 import { buildGrid } from "../grid.js";
+import { generateFloor } from "../gen/floor.js";
 import { spawnMonster } from "../state.js";
 import { rollItem, rollPotion } from "../items/roll.js";
-import { checkReqs } from "../items/equipment.js";
 import { autoplace } from "../items/inventory.js";
 import { mint, giveGold, affixTagOf } from "./loot.js";
 import { gainXp } from "./progression.js";
@@ -102,8 +102,31 @@ export function questAccept(state, id) {
   if (q.s === "completed") return fail("already done");
   if (q.s !== "available") return fail("not available");
   state.quests[id] = { s: "active", p: 0 };
+  if (quests[id].objective.type === "kill") reviveInterns(state);
   emit(state, { type: "quest.accepted", id, title: def.title, next: nextStep(state, id) });
   return OK;
+}
+
+/**
+ * CR7-01: floors keep their killed spawns for the whole session, and only kills after Accept count, so a player who cleared floors 1 and 2 before
+ * accepting sq1 could never reach the count. On Accept, if fewer zombie interns are alive on the kill floors than the quest still needs, the killed
+ * intern spawns come back, floor by floor and in spawn order (no rng, no spawn of anything new; a run that never accepts is untouched). The floors
+ * are parked while the hero is in the Lobby; the floor the hero stands on (never the case at the giver) counts its living interns as they are.
+ */
+export function reviveInterns(state) {
+  const k = config.quests.kill, need = k.count - state.quests.sq1.p;
+  const rows = [];
+  let alive = 0;
+  for (const d of k.depths) {
+    if (d === state.depth) { alive += state.monsters.filter((m) => m.type === k.monster && !m.summoned && m.ai !== "dead").length; continue; }
+    const parked = state.floors[d], floor = parked?.floor ?? generateFloor(state.seed, d), killed = new Set(parked?.killed ?? []);
+    floor.spawns.forEach((s, i) => { if (s.type !== k.monster) return; if (killed.has(i)) rows.push({ parked, i }); else alive++; });
+  }
+  for (const r of rows) {
+    if (alive >= need) break;
+    r.parked.killed = r.parked.killed.filter((x) => x !== r.i);
+    alive++;
+  }
 }
 
 /** Input questPin { id }: "main" or a side quest that is not completed. Pinning the pinned quest again is a no-op. */
@@ -194,22 +217,47 @@ export function takeQuestEntry(state, entry) {
   return { ok: true };
 }
 
-/** The reward of a side quest as data: gold, xp, gear (rolled, 0 or 1 item) and potions. No state is touched (the gear stream is derived). */
+const MIN_RARITY = "magic", MAX_RARITY = "rare";
+
+/**
+ * The one source of the reward numbers (CR7-05): the payout (rewardOf), the NPC window and the journal all read this. Pure on config and content.
+ * { gold, xp, potions (a count), gear: { slot, slots, minRarity } | null }: `slots` are the slots the gear can come from, `slot` is that slot when
+ * there is only one (weapon) and the kind "armour" otherwise. The main quest has no reward (null).
+ */
+export function rewardSummary(id) {
+  const def = quests[id];
+  if (!def || def.kind !== "side") return null;
+  const c = config.quests, qc = c[id], ref = qc.refDepth;
+  return {
+    gold: def.reward.gold ? qc.gold.base + qc.gold.perDepth * ref : 0,
+    xp: def.reward.xp ? qc.xp.base + qc.xp.perDepth * ref : 0,
+    potions: def.reward.potions && qc.potions ? qc.potions : 0,
+    gear: def.reward.gear ? { slot: qc.slots.length === 1 ? qc.slots[0] : "armour", slots: [...qc.slots], minRarity: MIN_RARITY } : null,
+  };
+}
+
+/** What wearing an item takes, as one number (level first, then the attribute points): the tie-break of the reward roll. */
+const reqCost = (it) => Object.entries(it.reqs ?? {}).reduce((n, [k, v]) => n + (k === "level" ? v * 100 : v), 0);
+
+/**
+ * The reward of a side quest as data: gold, xp, gear (rolled, 0 or 1 item) and potions. No state is touched (the gear stream is derived).
+ * CR7-06: the gear depends on the seed and the hero's class (affix tag) only, never on level, attributes or inventory: rewardRerolls candidates are
+ * rolled from the seed stream at the quest's fixed item level and the one that asks the least of its wearer is paid (level first, then attribute
+ * points; the first of equals), so a respec or a level-up cannot fish for another reward and a refused-then-retried hand-in pays the same item.
+ */
 export function rewardOf(state, id) {
-  const def = quests[id], c = config.quests, qc = c[id], ref = qc.refDepth, ilvl = c.gearFloor * config.ilvlPerDepth;
-  const out = { gold: 0, xp: 0, gear: null, potions: [] };
-  if (def.reward.gold) out.gold = qc.gold.base + qc.gold.perDepth * ref;
-  if (def.reward.xp) out.xp = qc.xp.base + qc.xp.perDepth * ref;
-  if (def.reward.gear) {
+  const def = quests[id], c = config.quests, qc = c[id], ilvl = c.gearFloor * config.ilvlPerDepth, sum = rewardSummary(id);
+  const out = { gold: sum.gold, xp: sum.xp, gear: null, potions: [] };
+  if (sum.gear) {
     const rng = questRng(state.seed, def.salt, 4, 0), tries = Math.max(1, c.rewardRerolls);
     for (let i = 0; i < tries; i++) {
-      out.gear = rollItem(rng, { depth: c.gearFloor, ilvl, minRarity: "magic", maxRarity: "rare", slot: rng.pick(qc.slots), affixTag: affixTagOf(state) });
-      if (checkReqs(state.player, out.gear).ok) break; // a reward the hero cannot wear is a bad reward; after the last try the last roll stands
+      const it = rollItem(rng, { depth: c.gearFloor, ilvl, minRarity: sum.gear.minRarity, maxRarity: MAX_RARITY, slot: rng.pick(qc.slots), affixTag: affixTagOf(state) });
+      if (!out.gear || reqCost(it) < reqCost(out.gear)) out.gear = it;
     }
   }
-  if (def.reward.potions && qc.potions) {
+  if (sum.potions) {
     const rng = questRng(state.seed, def.salt, 5, 0);
-    for (let i = 0; i < qc.potions; i++) out.potions.push(rollPotion(rng, ilvl));
+    for (let i = 0; i < sum.potions; i++) out.potions.push(rollPotion(rng, ilvl));
   }
   return out;
 }
