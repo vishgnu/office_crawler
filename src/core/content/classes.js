@@ -34,7 +34,7 @@ export const classes = [
     id: "it-wizard", name: "IT Wizard", role: "caster",
     blurbKey: "classItBlurb", figureKey: "hero.it-wizard",
     attrs: { grit: 6, agility: 10, stamina: 8, focus: 20 },
-    derived: { powerAttr: "focus", damagePerGrit: { min: 0.5, max: 0.5 }, hpPerLevel: 8, mpPerLevel: 7, hpPerStamina: 3, mpPerFocus: 2, unarmed: { min: 1, max: 2 } },
+    derived: { powerAttr: "focus", damagePerGrit: { min: 0.5, max: 0.5 }, hpPerLevel: 9, mpPerLevel: 7, hpPerStamina: 3, mpPerFocus: 2, unarmed: { min: 1, max: 2 } },
     basic: "zap",
     startKit: { weapon: "usb-staff", healthPotions: 2, manaPotions: 1, extra: [] },
     signature: "server-overheat",
