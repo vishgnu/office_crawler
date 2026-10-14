@@ -84,13 +84,40 @@ export function warmFrames(atlas, core, budgetMs = 1.5) {
     for (const anim of WARM_ORDER) for (let d = 0; d < DIRS; d++) for (let f = 0; f < PLAYER_ANIMS[anim]; f++) hk.push(keys.plr(cls, anim, d, f));
     w.queue.splice(w.i, 0, ...hk);
   }
-  if (w.i >= w.queue.length) { if (w.i) { w.queue.length = 0; w.i = 0; } return true; }
+  if (w.i >= w.queue.length) { if (w.i) { w.queue.length = 0; w.i = 0; } return warmAhead(atlas, core, w); }
   const t0 = performance.now();
   while (w.i < w.queue.length) {
     const k = w.queue[w.i++];
     if (atlas.isDrawn?.(k) === false) { atlas.get(k); if (performance.now() - t0 >= budgetMs) break; }
   }
-  return w.i >= w.queue.length;
+  if (globalThis.__atlasStats) globalThis.__atlasStats.warmLeft = w.queue.length - w.i + 1;
+  return false;
+}
+
+/**
+ * Warm the next floor ahead (STUTTER-R7). The monster types of a floor are every type whose minDepth is at most the depth (gen/population.js), so the
+ * set of floor depth+1 is known while the hero is still on floor depth. Once the current floor's frames are drawn, idle and walk frames of those types
+ * (attack after) are drawn at AHEAD_BUDGET_MS a frame, so most first-use draws are done long before the stairs are taken and the new floor opens with a
+ * warm atlas. Drawing a sprite earlier changes nothing on screen. Returns true when nothing is left to warm.
+ */
+const AHEAD_BUDGET_MS = 0.7;
+function warmAhead(atlas, core, w) {
+  const depth = core.depth | 0;
+  if (depth < 1 || globalThis.__noAhead) return true;
+  if (w.aheadDepth !== depth) {
+    w.aheadDepth = depth; w.ahead = []; w.ai = 0;
+    for (const anim of WARM_ORDER) for (const t of Object.keys(content.monsters)) {
+      if (!(content.monsters[t].minDepth <= depth + 1)) continue;
+      for (let dir = 0; dir < DIRS; dir++) for (let f = 0; f < ANIMS[anim]; f++) w.ahead.push(keys.mon(t, anim, dir, f));
+    }
+  }
+  const q = w.ahead, t0 = performance.now();
+  while (w.ai < q.length) {
+    const k = q[w.ai++];
+    if (atlas.isDrawn?.(k) === false) { atlas.get(k); if (performance.now() - t0 >= AHEAD_BUDGET_MS) break; }
+  }
+  if (globalThis.__atlasStats) globalThis.__atlasStats.warmLeft = q.length - w.ai;
+  return w.ai >= q.length;
 }
 
 function allyFigs(atlas, id) {
