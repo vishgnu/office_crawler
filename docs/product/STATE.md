@@ -18,8 +18,7 @@ Gate authority for this project is delegated to `customer-proxy` while the user 
 
 ## Waiting for the real customer
 - **AMBIENT_LIFT**: you answered "no need": remove the +12 % lift (darker look) or keep it? Unchanged until you say.
-- **Harness circle 2** (harness/docs/product/circles/circle-02.md): 7 questions, details given in chat 2026-10-14.
-- **Portal-overview variant pick** (harness).
+- **Portal-overview variant pick** (harness; may fold into the final harness version).
 - Review `proxy-log.md` whenever you are back.
 
 ## Decided by the real customer (2026-10-14)

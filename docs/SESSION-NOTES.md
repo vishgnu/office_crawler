@@ -21,6 +21,8 @@ _Last updated 2026-10-14T13:13:44Z. Keep this block current after every step; th
 2. R6 class balance (parity ±25 %, Sales Rep weakest; casters scale from weapon/Grit, which is a design flaw) + polish.
 3. R7–8 flawless gameplay → R9–10 lighting (use the `fx.lights` hook) → R11–12 overall test & polish → harness-reviewer post-mortem.
 
+**END-OF-PROJECT TASK (user, 2026-10-14):** when the game is done: harness-reviewer post-mortem, then a NEW HARNESS VERSION that folds in circle-2 answers (harness/docs/product/circles/circle-02.md) and everything learned; update ALL harness files and ALL generated HTML (both portals, REPORT.md, STATUS, README, CHANGELOG, benchmarks re-run) with the latest data. The user then cleans up the repos and continues with the harness separately.
+
 **Standing rules:** record user messages verbatim (00-brief.md + metrics/human-log.jsonl); ledger row per hand-back
 (`docs/metrics/ledger.jsonl`); commit and push after every step; file ownership per parallel package; run the suite yourself
 before calling a package done; never route around permission refusals; harness learnings → `harness/learnings/`.
@@ -223,3 +225,4 @@ Each round also improves the harness (learnings → agent definitions/rules), as
 - 2026-10-14T15:38:01Z Benchmark B1 on 0.5.0 done: 290k tokens, 6.5 agent-min; ACs 14/15 (adversary refuted implementer's a11y claim), visual 29/40 (gate pass), 4 adversarial findings. Results in harness/benchmarks/results.md + runs/B1-0.5.0/SUMMARY.md.
 - 2026-10-14T15:46:04Z UI-R7Q 0.6 done: NPC quest dialogue (offer/accept/ready/hand-in/bagFull), quest toasts, slot card line, perf().npcMarkers, e2e r7quest 54 checks. Orchestrator viewed dialog-offer shot: good. All R7-0 packages done → orchestrator verify + 5 bench.
 - 2026-10-14T15:57:09Z Customer decisions recorded (00-brief, STATE): sound/respec/gate/names kept, file:// note added to play/README, pace → spread across floors (R7-3), quests → 3 main + 5 side (R7-4). AMBIENT_LIFT 'no need' ambiguous → asked.
+- 2026-10-14T16:03:53Z Harness circle 2 closed by the user (answers recorded in circle-02.md); end-of-project task added to RESUME block: post-mortem → new harness version, update all harness files + HTML with latest data.
