@@ -1,7 +1,7 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
-_Last updated 2026-10-14T08:07:37Z. Keep this block current after every step; the log below is history._
+_Last updated 2026-10-14T08:26:24Z. Keep this block current after every step; the log below is history._
 
-**Where we are:** R5 + G fix round DONE and verified by orchestrator (668 tests x3, e2e 13/13, fps50 43.9, atlas 4.78 s of 5 s). ADV round 2 verified all fixes. **In flight:** G3 visual re-review (`docs/reviews/G3-visual-progress.md`, target 34) and proxy acceptance (`docs/reviews/R5-acceptance-progress.md`). Next: harness-retro R5 (round-05.json; candidate learnings: reviewer key map Digit1 vs F1; contract field the core can't satisfy (deepest); file:// storage race in automation → serve e2e over https; in-flight SendMessage worked; usage tokens are cumulative on resumed agents → ledger deltas). Then R6 (class balance + polish incl. take-over banner at 720, atlas time).
+**Where we are:** Rounds 4, 5 and G ACCEPTED by proxy with follow-ups (`docs/reviews/R5-acceptance.md`); G gate passed by proxy at 34/33 (real customer may overrule, in STATE.md). play/ + both portals rebuilt. **In flight:** harness-retro R5+G (`docs/reviews/R5-retro-progress.md`) → round-05.json, round-G.json, L-025+, E1 result. **Next:** R6 = class balance (SR weakest, ±25 % parity, caster scaling flaw, bigger bot set) + polish must-fix in this order: N5 slot Close clipped at 720, N6 take-over pushes title off, N1 pale/faceless figures, N3 beams through hero, N4, N2 slam lifetime, tree connectors + tier-2 cut, select polish, mana check Power Surge/Packet Filter, atlas time (4.78 of 5 s).
 
 **In flight (check the files, not memory):**
 - ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
@@ -25,7 +25,7 @@ _Last updated 2026-10-14T08:07:37Z. Keep this block current after every step; th
 (`docs/metrics/ledger.jsonl`); commit and push after every step; file ownership per parallel package; run the suite yourself
 before calling a package done; never route around permission refusals; harness learnings → `harness/learnings/`.
 
-**Waiting for the customer:** sound kit by ear, respec rule, AMBIENT_LIFT +12 %, harness circle 2, portal-overview pick.
+**Waiting for the customer:** sound kit by ear, respec rule, AMBIENT_LIFT +12 %, G gate overrule?, file:// save risk note?, harness circle 2, portal-overview pick.
 (Decided: IP closeness OK, names approved.)
 
 ---
