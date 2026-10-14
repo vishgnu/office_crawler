@@ -90,3 +90,17 @@ One line per decision by `customer-proxy`. The real customer can overrule any of
 - 2026-10-14 | circle-02 Q6 (5 save slots) | default as written: Options "Save slots" plus title/pause, confirmations, migrate old save to slot 1, 400 KB cap, stash per character | high
 - 2026-10-14 | circle-02 Q7 (balance) | A: 20-40 min per class, parity band 25%, bot gate with fixed seeds; B fallback | medium
 - 2026-10-14 | circle-02 brand | final class names and game title ESCALATE (not delegated); working names proceed | n/a
+- 2026-10-14 | spec-questions-02 QF-11-1 (final class names, rescan) | ESCALATE (brand); names stay working strings | n/a
+- 2026-10-14 | spec-questions-02 QF-11-2 (denylists) | correction: both denylists exist, AC-R-233-1 not vacuous; owner architect | high
+- 2026-10-14 | spec-questions-02 QF-11-3 (legacy Clerk skills) | refund as points; redistribution applies to tree content only | medium
+- 2026-10-14 | spec-questions-02 QF-11-5 (resume point) | same as QF-09-2: floor entry on a floor, else town | medium
+- 2026-10-14 | spec-questions-02 QF-11-7 (attributes on migration) | kept as spent; only skill points refunded | high
+- 2026-10-14 | spec-questions-02 QF-11-8 (cooldowns) | none for all three classes | high
+- 2026-10-14 | spec-questions-02 QF-11-9 (skill panel key) | S and K both; no conflict with mouse/F1-F4/1-4 | medium
+- 2026-10-14 | spec-questions-02 QF-11-4, QF-11-6 | owner: architect, not answered | n/a
+- 2026-10-14 | spec-questions-02 ADR-0005 respec rule | keep free unlimited town respec (circle-02 Q3); real customer should decide, one config value | low
+- 2026-10-14 | spec-questions-02 ADR-0005 signature skill | learned free at level 1, 29-point rule unchanged | medium
+- 2026-10-14 | spec-questions-02 ADR-0005 synergies | not in R4/R5; R6 only if room | medium
+- 2026-10-14 | spec-questions-02 ADR-0005 skill names Firewall/Fire Drill | Packet Filter / Evacuation Drill stand; ESCALATE confirmation (IP/brand) | n/a
+- 2026-10-14 | spec-questions-02 ADR-0006 second tab | read-only message, best effort | medium
+- 2026-10-14 | spec-questions-02 ADR-0006 delete undo copy | accept; one undo copy until next write, "Delete forever" clears it | medium

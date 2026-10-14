@@ -16,6 +16,9 @@ Gate authority for this project is delegated to `customer-proxy` while the user 
 "Delegation record"). All proxy decisions: `proxy-log.md`.
 
 ## Waiting for the real customer
+- **Class names and game title** (brand): working names Facilities Manager / Sales Rep / IT Wizard, title "Office Crawler".
+- **Respec rule** (proxy chose free respec in town at LOW confidence; "stay close to the original" may mean no respec).
+- **Skill names** "Packet Filter" / "Evacuation Drill" (safe-default renames, kept away from a genre skill name). Confirm or overturn.
 - **Listen and pick the sound kit**: open docs/product/variants/sound-direction/{A,B,C}.html, play the ambients and SFX (about 2 minutes). Agents cannot judge sound by ear.
 - Review `proxy-log.md` whenever you are back.
 - Answer or confirm Q1 (legal/IP) in `circles/circle-01.md`.
