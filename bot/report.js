@@ -46,7 +46,7 @@ export function finish(view, mem, rec, maxTicks) {
     if (mem.done) { rec.result = "cleared"; rec.clearTick = view.tick; }
     else if (view.tick >= maxTicks) rec.result = "timeout";
   }
-  return { seed: rec.seed, result: rec.result, deathDepths: rec.deathDepths ?? [], dmg: rec.dmg, casts: rec.casts, ticks: rec.tick, kills: rec.kills, total: rec.total, ttk: rec.ttk, stuck: mem.stuck, waitGaveUp: mem.waitGaveUp, failedMoves: mem.failedMoves, hpMin: rec.hpMin, boss: { ...rec.boss, hpMin: rec.boss.hpMin === Infinity ? null : rec.boss.hpMin, fightTicks: rec.boss.killed !== null && rec.boss.engaged !== null ? rec.boss.killed - rec.boss.engaged : null }, victory: rec.victory ?? null, depth: view.deepestDepth ?? 1, level: rec.maxLevel, deaths: rec.deaths + (rec.result === "died" ? 1 : 0), gold: view.player.gold - (rec.gold0 ?? 0), worn: Object.values(view.equipment ?? {}).filter(Boolean).length, loot: (view.groundItems ?? []).length };
+  return { seed: rec.seed, result: rec.result, deathDepths: rec.deathDepths ?? [], dmg: rec.dmg, casts: rec.casts, ticks: rec.tick, kills: rec.kills, total: rec.total, ttk: rec.ttk, stuck: mem.stuck, waitGaveUp: mem.waitGaveUp, watchdogFired: mem.watchdogFired ?? 0, watchdogQuiet: mem.watchdogQuiet ?? 0, watchdogLog: mem.watchdogLog ?? [], failedMoves: mem.failedMoves, hpMin: rec.hpMin, boss: { ...rec.boss, hpMin: rec.boss.hpMin === Infinity ? null : rec.boss.hpMin, fightTicks: rec.boss.killed !== null && rec.boss.engaged !== null ? rec.boss.killed - rec.boss.engaged : null }, victory: rec.victory ?? null, depth: view.deepestDepth ?? 1, level: rec.maxLevel, deaths: rec.deaths + (rec.result === "died" ? 1 : 0), gold: view.player.gold - (rec.gold0 ?? 0), worn: Object.values(view.equipment ?? {}).filter(Boolean).length, loot: (view.groundItems ?? []).length };
 }
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
@@ -59,7 +59,7 @@ export function summarise(runs) {
     runs: runs.length, won: count("won"), bossFightSecMean: +mean(runs.filter((r) => r.boss?.fightTicks).map((r) => r.boss.fightTicks / TICKS_PER_SECOND)).toFixed(1), bossHpMinMean: +mean(runs.filter((r) => r.boss?.hpMin != null).map((r) => r.boss.hpMin)).toFixed(1), bossArenaDeaths: runs.reduce((a, r) => a + (r.boss?.deathsInArena ?? 0), 0), cleared: count("cleared"), died: count("died"), timeout: count("timeout"),
     kills: runs.reduce((a, r) => a + r.kills, 0), monsters: runs.reduce((a, r) => a + (r.total ?? 0), 0),
     ttkMeanSec: +(mean(ttk) / TICKS_PER_SECOND).toFixed(2), ttkMaxSec: +(Math.max(0, ...ttk) / TICKS_PER_SECOND).toFixed(2),
-    stuckEvents: runs.reduce((a, r) => a + r.stuck, 0), waitGaveUp: runs.reduce((a, r) => a + r.waitGaveUp, 0), failedMoves: runs.reduce((a, r) => a + r.failedMoves, 0),
+    stuckEvents: runs.reduce((a, r) => a + r.stuck, 0), waitGaveUp: runs.reduce((a, r) => a + r.waitGaveUp, 0), watchdogFired: runs.reduce((a, r) => a + (r.watchdogFired ?? 0), 0), watchdogQuiet: runs.reduce((a, r) => a + (r.watchdogQuiet ?? 0), 0), failedMoves: runs.reduce((a, r) => a + r.failedMoves, 0),
     meanDepth: +mean(runs.map((r) => r.depth ?? 1)).toFixed(2), maxDepth: Math.max(1, ...runs.map((r) => r.depth ?? 1)), meanLevel: +mean(runs.map((r) => r.level ?? 1)).toFixed(1), deaths: runs.reduce((a, r) => a + (r.deaths ?? 0), 0),
     meanRunSec: +(mean(runs.map((r) => r.ticks)) / TICKS_PER_SECOND).toFixed(1),
   };

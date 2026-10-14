@@ -17,7 +17,7 @@ const prevKey = (n) => `${slotKey(n)}.prev`;
 const LEGACY_BACKUPS = [config.saveBackupKey, `${config.saveBackupKey}.1`, `${config.saveBackupKey}.2`];
 const validSlot = (n) => Number.isInteger(n) && n >= 1 && n <= config.slotCount;
 const fail = (error, extra = {}) => ({ ok: false, error, ...extra });
-const NOTICES = ["no-active-slot", "pre-switch-save-failed", "migration-failed"]; // status.notice keys (ui/text.js)
+const NOTICES = ["no-active-slot", "pre-switch-save-failed", "migration-failed", "attributes-refunded"]; // status.notice keys (ui/text.js)
 const REASONS = { parse: "parse", checksum: "checksum", schema: "schema", size: "size", format: "schema", "no-migration": "schema" };
 
 /** 32-bit checksum over the slot text (cheap: a 400 KB text hashes in a few ms). Detects that index and slot disagree. */
@@ -268,7 +268,7 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
       }
       if (e.state === "ok" && (e.bytes !== text.length || e.sum !== textSum(text))) { idx.slots[n - 1] = entryFromText(n, text, now(), e); writeIndex(idx); } // repair rule b
       const r = deserialize(text);
-      if (r.ok) return { ok: true, state: r.state, notes: r.notes ?? [], slot: n };
+      if (r.ok) { if ((r.notes ?? []).some((x) => x.from === 2)) setNotice("attributes-refunded"); return { ok: true, state: r.state, notes: r.notes ?? [], slot: n }; }
       if (r.reason === "newer") { idx.slots[n - 1] = { n, state: "newer" }; writeIndex(idx); tell("saveTooNewSlot"); return fail("newer"); }
       // damaged: keep the text for export, clear the slot, mark it bad
       const kept = putRoom(badKey(n), text, idx);
@@ -382,6 +382,7 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
       idx.slots[n - 1] = entryFromText(n, out, now(), null);
       writeIndex(idx);
       tell("slotImported");
+      if ((r.notes ?? []).some((x) => x.from === 2)) setNotice("attributes-refunded");
       return { ok: true, notes: r.notes ?? [] };
     },
 
@@ -409,6 +410,7 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
             idx.slots[0] = entryFromText(1, out, now(), null); idx.last = idx.last ?? 1;
             const n = (r.notes ?? []).find((x) => x.from === 1);
             if (n) { migrated = { from: 1, refundedPoints: n.refundedPoints }; tell("slotMigrated", migrated); }
+            if ((r.notes ?? []).some((x) => x.from === 2)) setNotice("attributes-refunded");
           }
         } else if (r.reason === "newer") { idx.slots[0] = { n: 1, state: "newer" }; tell("saveTooNewSlot"); }
         else {

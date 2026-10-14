@@ -156,7 +156,7 @@ export const config = {
   },
 
   // Save and load (S3-3, R-090..R-092). One slot; options are stored apart from the save.
-  saveVersion: 2,                    // ADR-0006: 2 adds the character name, stats.playTicks and the class trees
+  saveVersion: 3,                    // ADR-0006: 2 adds the character name, stats.playTicks and the class trees; 3 refunds attribute points of classes whose power attribute changed (R6)
   saveKey: "office-crawler.save",
   saveBackupKey: "office-crawler.save.corrupt",
   optionsKey: "office-crawler.options",

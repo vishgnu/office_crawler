@@ -1,0 +1,585 @@
+{
+ "format": "office-crawler-save",
+ "version": 2,
+ "savedAtTick": 0,
+ "seed": 77,
+ "class": "facilities-manager",
+ "name": "R5 Hero",
+ "resume": {
+  "depth": 0
+ },
+ "deepestDepth": 1,
+ "bossDefeated": false,
+ "bossUnlocked": false,
+ "townVisit": 0,
+ "player": {
+  "level": 14,
+  "xp": 5824,
+  "attrs": {
+   "grit": 81,
+   "agility": 8,
+   "stamina": 14,
+   "focus": 6
+  },
+  "attrPoints": 0,
+  "skillPoints": 13,
+  "skills": {
+   "pallet-slam": 1
+  },
+  "skillBar": {
+   "primary": "strike",
+   "secondary": "pallet-slam",
+   "hotkeys": [
+    "pallet-slam",
+    null,
+    null,
+    null
+   ],
+   "selected": 0
+  },
+  "gold": 50,
+  "respecsUsed": 0
+ },
+ "inventory": {
+  "w": 10,
+  "h": 4,
+  "items": [
+   {
+    "base": "ruler-rapier",
+    "name": "Brilliant Ruler Rapier",
+    "baseName": "Ruler Rapier",
+    "kind": "gear",
+    "rarity": "magic",
+    "ilvl": 15,
+    "slot": "weapon",
+    "w": 1,
+    "h": 3,
+    "reqs": {
+     "level": 1
+    },
+    "affixes": [
+     {
+      "id": "mana-t3",
+      "group": "mana",
+      "kind": "prefix",
+      "stat": "mpMax",
+      "name": "Brilliant",
+      "tier": 3,
+      "value": 19,
+      "range": [
+       13,
+       20
+      ]
+     }
+    ],
+    "damage": {
+     "min": 1,
+     "max": 3
+    },
+    "id": "i4",
+    "x": 0,
+    "y": 0
+   },
+   {
+    "base": "steel-toe-boots",
+    "name": "Streamlined Fiasco",
+    "baseName": "Steel-Toe Boots",
+    "kind": "gear",
+    "rarity": "rare",
+    "ilvl": 18,
+    "slot": "feet",
+    "w": 2,
+    "h": 2,
+    "reqs": {
+     "level": 11,
+     "stamina": 17
+    },
+    "affixes": [
+     {
+      "id": "health-t3",
+      "group": "health",
+      "kind": "prefix",
+      "stat": "hpMax",
+      "name": "Stalwart",
+      "tier": 3,
+      "value": 25,
+      "range": [
+       21,
+       35
+      ]
+     },
+     {
+      "id": "agility-t3",
+      "group": "agility",
+      "kind": "suffix",
+      "stat": "agility",
+      "name": "of the Sprinter",
+      "tier": 3,
+      "value": 5,
+      "range": [
+       5,
+       6
+      ]
+     },
+     {
+      "id": "focus-t1",
+      "group": "focus",
+      "kind": "suffix",
+      "stat": "focus",
+      "name": "of the Deadline",
+      "tier": 1,
+      "value": 2,
+      "range": [
+       1,
+       2
+      ]
+     },
+     {
+      "id": "defense-t2",
+      "group": "defense",
+      "kind": "prefix",
+      "stat": "defense",
+      "name": "Reinforced",
+      "tier": 2,
+      "value": 5,
+      "range": [
+       5,
+       9
+      ]
+     }
+    ],
+    "defense": 7,
+    "id": "i5",
+    "x": 1,
+    "y": 0
+   },
+   {
+    "base": "blazer",
+    "name": "Fortified Blazer",
+    "baseName": "Blazer",
+    "kind": "gear",
+    "rarity": "magic",
+    "ilvl": 21,
+    "slot": "body",
+    "w": 2,
+    "h": 3,
+    "reqs": {
+     "level": 5,
+     "stamina": 13
+    },
+    "affixes": [
+     {
+      "id": "defense-t3",
+      "group": "defense",
+      "kind": "prefix",
+      "stat": "defense",
+      "name": "Fortified",
+      "tier": 3,
+      "value": 14,
+      "range": [
+       10,
+       16
+      ]
+     }
+    ],
+    "defense": 7,
+    "id": "i6",
+    "x": 3,
+    "y": 0
+   },
+   {
+    "base": "steel-toe-boots",
+    "name": "Outsourced Bonus",
+    "baseName": "Steel-Toe Boots",
+    "kind": "gear",
+    "rarity": "rare",
+    "ilvl": 15,
+    "slot": "feet",
+    "w": 2,
+    "h": 2,
+    "reqs": {
+     "level": 11,
+     "stamina": 17
+    },
+    "affixes": [
+     {
+      "id": "defense-t3",
+      "group": "defense",
+      "kind": "prefix",
+      "stat": "defense",
+      "name": "Fortified",
+      "tier": 3,
+      "value": 12,
+      "range": [
+       10,
+       16
+      ]
+     },
+     {
+      "id": "mana-t3",
+      "group": "mana",
+      "kind": "prefix",
+      "stat": "mpMax",
+      "name": "Brilliant",
+      "tier": 3,
+      "value": 16,
+      "range": [
+       13,
+       20
+      ]
+     },
+     {
+      "id": "resist-fire-t1",
+      "group": "resist-fire",
+      "kind": "suffix",
+      "stat": "resist.fire",
+      "name": "of the Sprinkler",
+      "tier": 1,
+      "value": 5,
+      "range": [
+       5,
+       10
+      ]
+     },
+     {
+      "id": "agility-t3",
+      "group": "agility",
+      "kind": "suffix",
+      "stat": "agility",
+      "name": "of the Sprinter",
+      "tier": 3,
+      "value": 5,
+      "range": [
+       5,
+       6
+      ]
+     },
+     {
+      "id": "resist-shock-t3",
+      "group": "resist-shock",
+      "kind": "suffix",
+      "stat": "resist.shock",
+      "name": "of the Fuse Box",
+      "tier": 3,
+      "value": 20,
+      "range": [
+       19,
+       26
+      ]
+     }
+    ],
+    "defense": 7,
+    "id": "i7",
+    "x": 5,
+    "y": 0
+   },
+   {
+    "base": "lanyard",
+    "name": "Lanyard of the Courier",
+    "baseName": "Lanyard",
+    "kind": "gear",
+    "rarity": "magic",
+    "ilvl": 18,
+    "slot": "amulet",
+    "w": 1,
+    "h": 2,
+    "reqs": {
+     "level": 5
+    },
+    "affixes": [
+     {
+      "id": "agility-t1",
+      "group": "agility",
+      "kind": "suffix",
+      "stat": "agility",
+      "name": "of the Courier",
+      "tier": 1,
+      "value": 1,
+      "range": [
+       1,
+       2
+      ]
+     }
+    ],
+    "id": "i8",
+    "x": 7,
+    "y": 0
+   },
+   {
+    "base": "access-badge",
+    "name": "Cross-Functional Standup",
+    "baseName": "Access Badge",
+    "kind": "gear",
+    "rarity": "rare",
+    "ilvl": 21,
+    "slot": "amulet",
+    "w": 1,
+    "h": 2,
+    "reqs": {
+     "level": 13
+    },
+    "affixes": [
+     {
+      "id": "damage-t3",
+      "group": "damage",
+      "kind": "prefix",
+      "stat": "damage",
+      "name": "Vicious",
+      "tier": 3,
+      "value": 6,
+      "range": [
+       5,
+       7
+      ]
+     },
+     {
+      "id": "resist-shock-t4",
+      "group": "resist-shock",
+      "kind": "suffix",
+      "stat": "resist.shock",
+      "name": "of the Lightning Rod",
+      "tier": 4,
+      "value": 33,
+      "range": [
+       27,
+       35
+      ]
+     },
+     {
+      "id": "focus-t4",
+      "group": "focus",
+      "kind": "suffix",
+      "stat": "focus",
+      "name": "of the Zen Master",
+      "tier": 4,
+      "value": 8,
+      "range": [
+       7,
+       9
+      ]
+     },
+     {
+      "id": "agility-t4",
+      "group": "agility",
+      "kind": "suffix",
+      "stat": "agility",
+      "name": "of the Acrobat",
+      "tier": 4,
+      "value": 7,
+      "range": [
+       7,
+       9
+      ]
+     },
+     {
+      "id": "health-t4",
+      "group": "health",
+      "kind": "prefix",
+      "stat": "hpMax",
+      "name": "Indomitable",
+      "tier": 4,
+      "value": 50,
+      "range": [
+       36,
+       55
+      ]
+     }
+    ],
+    "id": "i9",
+    "x": 8,
+    "y": 0
+   },
+   {
+    "base": "cable-tie-belt",
+    "name": "Fortified Cable Tie Belt",
+    "baseName": "Cable Tie Belt",
+    "kind": "gear",
+    "rarity": "magic",
+    "ilvl": 15,
+    "slot": "belt",
+    "w": 2,
+    "h": 1,
+    "reqs": {
+     "level": 1
+    },
+    "affixes": [
+     {
+      "id": "defense-t3",
+      "group": "defense",
+      "kind": "prefix",
+      "stat": "defense",
+      "name": "Fortified",
+      "tier": 3,
+      "value": 14,
+      "range": [
+       10,
+       16
+      ]
+     }
+    ],
+    "defense": 1,
+    "id": "i10",
+    "x": 1,
+    "y": 2
+   },
+   {
+    "base": "tool-belt",
+    "name": "Redundant Bonus",
+    "baseName": "Tool Belt",
+    "kind": "gear",
+    "rarity": "rare",
+    "ilvl": 18,
+    "slot": "belt",
+    "w": 2,
+    "h": 1,
+    "reqs": {
+     "level": 12,
+     "stamina": 16
+    },
+    "affixes": [
+     {
+      "id": "resist-fire-t2",
+      "group": "resist-fire",
+      "kind": "suffix",
+      "stat": "resist.fire",
+      "name": "of the Fire Drill",
+      "tier": 2,
+      "value": 14,
+      "range": [
+       11,
+       18
+      ]
+     },
+     {
+      "id": "resist-cold-t3",
+      "group": "resist-cold",
+      "kind": "suffix",
+      "stat": "resist.cold",
+      "name": "of the Thermostat",
+      "tier": 3,
+      "value": 24,
+      "range": [
+       19,
+       26
+      ]
+     },
+     {
+      "id": "agility-t2",
+      "group": "agility",
+      "kind": "suffix",
+      "stat": "agility",
+      "name": "of Quick Errands",
+      "tier": 2,
+      "value": 4,
+      "range": [
+       3,
+       4
+      ]
+     }
+    ],
+    "defense": 5,
+    "id": "i11",
+    "x": 5,
+    "y": 2
+   }
+  ]
+ },
+ "equipment": {
+  "head": null,
+  "body": null,
+  "hands": null,
+  "feet": null,
+  "belt": null,
+  "weapon": {
+   "base": "pipe-wrench",
+   "name": "Pipe Wrench",
+   "baseName": "Pipe Wrench",
+   "kind": "gear",
+   "rarity": "normal",
+   "ilvl": 1,
+   "slot": "weapon",
+   "w": 1,
+   "h": 3,
+   "reqs": {
+    "level": 1
+   },
+   "affixes": [],
+   "damage": {
+    "min": 3,
+    "max": 6
+   },
+   "id": "i1"
+  },
+  "offhand": null,
+  "ring1": null,
+  "ring2": null,
+  "amulet": null
+ },
+ "belt": [
+  {
+   "base": "lukewarm-coffee",
+   "name": "Lukewarm Coffee",
+   "baseName": "Lukewarm Coffee",
+   "kind": "potion",
+   "rarity": "normal",
+   "ilvl": 1,
+   "slot": "potion",
+   "w": 1,
+   "h": 1,
+   "reqs": {},
+   "affixes": [],
+   "restores": "hp",
+   "restore": 25,
+   "id": "i2"
+  },
+  {
+   "base": "lukewarm-coffee",
+   "name": "Lukewarm Coffee",
+   "baseName": "Lukewarm Coffee",
+   "kind": "potion",
+   "rarity": "normal",
+   "ilvl": 1,
+   "slot": "potion",
+   "w": 1,
+   "h": 1,
+   "reqs": {},
+   "affixes": [],
+   "restores": "hp",
+   "restore": 25,
+   "id": "i3"
+  },
+  null,
+  null
+ ],
+ "stash": {
+  "w": 10,
+  "h": 8,
+  "items": []
+ },
+ "cursorItem": null,
+ "uniquesFound": [],
+ "nextItemId": 12,
+ "rng": {
+  "world": {
+   "s": 3549489927
+  },
+  "combat": {
+   "s": 576035572
+  },
+  "ai": {
+   "s": 3452588930
+  },
+  "loot": {
+   "s": 2589592399
+  }
+ },
+ "stats": {
+  "kills": 0,
+  "deaths": 0,
+  "bossAttempts": 0,
+  "playTicks": 0
+ },
+ "explored": {},
+ "options": {},
+ "checksum": "dfc78c27f14c558d"
+}

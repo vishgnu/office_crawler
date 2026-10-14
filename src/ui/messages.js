@@ -9,8 +9,17 @@ const findItem = (state, id) => state.cursorItem?.id === id ? state.cursorItem
   : state.inventory.items.find((i) => i.id === id) ?? Object.values(state.equipment).find((i) => i?.id === id)
   ?? state.vendor?.stock.find((e) => e.item.id === id)?.item ?? null;
 
+// CR6-07: a refused cast (core event castRefused { skill, reason }) gets one short line; holding a key repeats the refusal every tick, so the same line is shown at most once per second.
+const THROTTLE_MS = 1000, lastShown = new Map();
+const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+function throttled(key) { const t = now(), last = lastShown.get(key); if (last !== undefined && t - last < THROTTLE_MS && t >= last) return true; lastShown.set(key, t); return false; }
+
 export function messageFor(ev, state) {
-  switch (ev.type) {
+  switch (ev.type ?? ev.t) {
+    case "castRefused": { // guarded: older cores never send it; an unknown reason has no line
+      const text = T.castRefused[ev.reason];
+      return text && !throttled(ev.reason === "no-mana" ? "mana" : "cast:" + ev.reason) ? text : null;
+    }
     case "reqNotMet": { const it = findItem(state, ev.id); return (it && unmetReason(state.player, it)) || T.msgReqs; }
     case "wrongSlot": return T.wrongSlot;
     case "slotBlocked": return T.offhandBlocked;
@@ -19,7 +28,7 @@ export function messageFor(ev, state) {
     case "cannotAfford": return `${T.msgAfford} (${ev.price} ${T.gold})`;
     case "placeRejected": return ev.reason === "outOfBounds" ? T.outOfBounds : ev.reason === "blocked" ? T.blocked : T.wrongSlot;
     case "stairsLocked": return S.stairsLocked;
-    case "noMana": return T.notEnoughMana;
+    case "noMana": return throttled("mana") ? null : T.notEnoughMana;
     case "levelup": return `${T.msgLevel} ${ev.level}.`;
     case "skillLearned": return `${T.msgLearn} ${content.skills[ev.skill]?.name ?? ev.skill} (${T.skillLevel} ${ev.level}).`;
     case "buy": return `${T.msgBuy} ${ev.name} (${ev.price} ${T.gold}).`;

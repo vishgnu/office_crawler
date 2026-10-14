@@ -1,0 +1,625 @@
+{
+ "format": "office-crawler-save",
+ "version": 2,
+ "savedAtTick": 0,
+ "seed": 77,
+ "class": "sales-rep",
+ "name": "R5 Hero",
+ "resume": {
+  "depth": 0
+ },
+ "deepestDepth": 1,
+ "bossDefeated": false,
+ "bossUnlocked": false,
+ "townVisit": 0,
+ "player": {
+  "level": 14,
+  "xp": 5824,
+  "attrs": {
+   "grit": 58,
+   "agility": 16,
+   "stamina": 25,
+   "focus": 10
+  },
+  "attrPoints": 0,
+  "skillPoints": 13,
+  "skills": {
+   "stapler-throw": 1
+  },
+  "skillBar": {
+   "primary": "toss",
+   "secondary": "stapler-throw",
+   "hotkeys": [
+    "stapler-throw",
+    null,
+    null,
+    null
+   ],
+   "selected": 0
+  },
+  "gold": 50,
+  "respecsUsed": 0
+ },
+ "inventory": {
+  "w": 10,
+  "h": 4,
+  "items": [
+   {
+    "base": "keyboard-sword",
+    "name": "Keyboard Sword of the Sprinter",
+    "baseName": "Keyboard Sword",
+    "kind": "gear",
+    "rarity": "magic",
+    "ilvl": 15,
+    "slot": "weapon",
+    "w": 1,
+    "h": 3,
+    "reqs": {
+     "level": 5,
+     "grit": 14
+    },
+    "affixes": [
+     {
+      "id": "agility-t3",
+      "group": "agility",
+      "kind": "suffix",
+      "stat": "agility",
+      "name": "of the Sprinter",
+      "tier": 3,
+      "value": 5,
+      "range": [
+       5,
+       6
+      ]
+     },
+     {
+      "id": "resist-fire-t2",
+      "group": "resist-fire",
+      "kind": "suffix",
+      "stat": "resist.fire",
+      "name": "of the Fire Drill",
+      "tier": 2,
+      "value": 15,
+      "range": [
+       11,
+       18
+      ]
+     }
+    ],
+    "damage": {
+     "min": 4,
+     "max": 8
+    },
+    "id": "i4",
+    "x": 0,
+    "y": 0
+   },
+   {
+    "base": "clipboard-shield",
+    "name": "Overdue Handoff",
+    "baseName": "Clipboard Shield",
+    "kind": "gear",
+    "rarity": "rare",
+    "ilvl": 18,
+    "slot": "offhand",
+    "w": 2,
+    "h": 2,
+    "reqs": {
+     "level": 1
+    },
+    "affixes": [
+     {
+      "id": "grit-t3",
+      "group": "grit",
+      "kind": "suffix",
+      "stat": "grit",
+      "name": "of the Powerhouse",
+      "tier": 3,
+      "value": 5,
+      "range": [
+       5,
+       6
+      ]
+     },
+     {
+      "id": "resist-acid-t3",
+      "group": "resist-acid",
+      "kind": "suffix",
+      "stat": "resist.acid",
+      "name": "of the Fume Hood",
+      "tier": 3,
+      "value": 23,
+      "range": [
+       19,
+       26
+      ]
+     },
+     {
+      "id": "resist-cold-t1",
+      "group": "resist-cold",
+      "kind": "suffix",
+      "stat": "resist.cold",
+      "name": "of the Thermos",
+      "tier": 1,
+      "value": 8,
+      "range": [
+       5,
+       10
+      ]
+     },
+     {
+      "id": "mana-t1",
+      "group": "mana",
+      "kind": "prefix",
+      "stat": "mpMax",
+      "name": "Alert",
+      "tier": 1,
+      "value": 3,
+      "range": [
+       3,
+       6
+      ]
+     }
+    ],
+    "defense": 3,
+    "id": "i5",
+    "x": 1,
+    "y": 0
+   },
+   {
+    "base": "id-card",
+    "name": "ID Card of the Acrobat",
+    "baseName": "ID Card",
+    "kind": "gear",
+    "rarity": "magic",
+    "ilvl": 21,
+    "slot": "amulet",
+    "w": 1,
+    "h": 2,
+    "reqs": {
+     "level": 1
+    },
+    "affixes": [
+     {
+      "id": "agility-t4",
+      "group": "agility",
+      "kind": "suffix",
+      "stat": "agility",
+      "name": "of the Acrobat",
+      "tier": 4,
+      "value": 8,
+      "range": [
+       7,
+       9
+      ]
+     },
+     {
+      "id": "sales-branch-t3",
+      "group": "sales-branch",
+      "kind": "suffix",
+      "stat": "skillLevel.branch.pitch",
+      "name": "of the Elevator Speech",
+      "tier": 3,
+      "value": 3,
+      "range": [
+       3,
+       4
+      ],
+      "class": "sales"
+     }
+    ],
+    "id": "i6",
+    "x": 3,
+    "y": 0
+   },
+   {
+    "base": "id-card",
+    "name": "Overdue Deadline",
+    "baseName": "ID Card",
+    "kind": "gear",
+    "rarity": "rare",
+    "ilvl": 15,
+    "slot": "amulet",
+    "w": 1,
+    "h": 2,
+    "reqs": {
+     "level": 1
+    },
+    "affixes": [
+     {
+      "id": "resist-acid-t2",
+      "group": "resist-acid",
+      "kind": "suffix",
+      "stat": "resist.acid",
+      "name": "of the Spill Kit",
+      "tier": 2,
+      "value": 17,
+      "range": [
+       11,
+       18
+      ]
+     },
+     {
+      "id": "stamina-t3",
+      "group": "stamina",
+      "kind": "suffix",
+      "stat": "stamina",
+      "name": "of the Night Owl",
+      "tier": 3,
+      "value": 6,
+      "range": [
+       5,
+       6
+      ]
+     },
+     {
+      "id": "agility-t2",
+      "group": "agility",
+      "kind": "suffix",
+      "stat": "agility",
+      "name": "of Quick Errands",
+      "tier": 2,
+      "value": 3,
+      "range": [
+       3,
+       4
+      ]
+     },
+     {
+      "id": "mana-t3",
+      "group": "mana",
+      "kind": "prefix",
+      "stat": "mpMax",
+      "name": "Brilliant",
+      "tier": 3,
+      "value": 16,
+      "range": [
+       13,
+       20
+      ]
+     },
+     {
+      "id": "health-t2",
+      "group": "health",
+      "kind": "prefix",
+      "stat": "hpMax",
+      "name": "Robust",
+      "tier": 2,
+      "value": 11,
+      "range": [
+       11,
+       20
+      ]
+     }
+    ],
+    "id": "i7",
+    "x": 4,
+    "y": 0
+   },
+   {
+    "base": "blazer",
+    "name": "Blazer of Quick Errands",
+    "baseName": "Blazer",
+    "kind": "gear",
+    "rarity": "magic",
+    "ilvl": 18,
+    "slot": "body",
+    "w": 2,
+    "h": 3,
+    "reqs": {
+     "level": 5,
+     "stamina": 13
+    },
+    "affixes": [
+     {
+      "id": "agility-t2",
+      "group": "agility",
+      "kind": "suffix",
+      "stat": "agility",
+      "name": "of Quick Errands",
+      "tier": 2,
+      "value": 4,
+      "range": [
+       3,
+       4
+      ]
+     }
+    ],
+    "defense": 7,
+    "id": "i8",
+    "x": 5,
+    "y": 0
+   },
+   {
+    "base": "clipboard-shield",
+    "name": "Offsite Handoff",
+    "baseName": "Clipboard Shield",
+    "kind": "gear",
+    "rarity": "rare",
+    "ilvl": 21,
+    "slot": "offhand",
+    "w": 2,
+    "h": 2,
+    "reqs": {
+     "level": 1
+    },
+    "affixes": [
+     {
+      "id": "mana-t4",
+      "group": "mana",
+      "kind": "prefix",
+      "stat": "mpMax",
+      "name": "Visionary",
+      "tier": 4,
+      "value": 23,
+      "range": [
+       21,
+       32
+      ]
+     },
+     {
+      "id": "resist-shock-t3",
+      "group": "resist-shock",
+      "kind": "suffix",
+      "stat": "resist.shock",
+      "name": "of the Fuse Box",
+      "tier": 3,
+      "value": 26,
+      "range": [
+       19,
+       26
+      ]
+     },
+     {
+      "id": "resist-acid-t4",
+      "group": "resist-acid",
+      "kind": "suffix",
+      "stat": "resist.acid",
+      "name": "of the Clean Room",
+      "tier": 4,
+      "value": 31,
+      "range": [
+       27,
+       35
+      ]
+     },
+     {
+      "id": "resist-fire-t4",
+      "group": "resist-fire",
+      "kind": "suffix",
+      "stat": "resist.fire",
+      "name": "of the Asbestos Wall",
+      "tier": 4,
+      "value": 32,
+      "range": [
+       27,
+       35
+      ]
+     }
+    ],
+    "defense": 3,
+    "id": "i9",
+    "x": 7,
+    "y": 0
+   },
+   {
+    "base": "headset",
+    "name": "Headset of the Thermostat",
+    "baseName": "Headset",
+    "kind": "gear",
+    "rarity": "magic",
+    "ilvl": 15,
+    "slot": "head",
+    "w": 2,
+    "h": 1,
+    "reqs": {
+     "level": 8,
+     "focus": 14
+    },
+    "affixes": [
+     {
+      "id": "resist-cold-t3",
+      "group": "resist-cold",
+      "kind": "suffix",
+      "stat": "resist.cold",
+      "name": "of the Thermostat",
+      "tier": 3,
+      "value": 25,
+      "range": [
+       19,
+       26
+      ]
+     },
+     {
+      "id": "focus-t1",
+      "group": "focus",
+      "kind": "suffix",
+      "stat": "focus",
+      "name": "of the Deadline",
+      "tier": 1,
+      "value": 1,
+      "range": [
+       1,
+       2
+      ]
+     }
+    ],
+    "defense": 3,
+    "id": "i10",
+    "x": 1,
+    "y": 2
+   },
+   {
+    "base": "headset",
+    "name": "Outsourced Memo",
+    "baseName": "Headset",
+    "kind": "gear",
+    "rarity": "rare",
+    "ilvl": 18,
+    "slot": "head",
+    "w": 2,
+    "h": 1,
+    "reqs": {
+     "level": 8,
+     "focus": 14
+    },
+    "affixes": [
+     {
+      "id": "mana-t3",
+      "group": "mana",
+      "kind": "prefix",
+      "stat": "mpMax",
+      "name": "Brilliant",
+      "tier": 3,
+      "value": 19,
+      "range": [
+       13,
+       20
+      ]
+     },
+     {
+      "id": "resist-shock-t3",
+      "group": "resist-shock",
+      "kind": "suffix",
+      "stat": "resist.shock",
+      "name": "of the Fuse Box",
+      "tier": 3,
+      "value": 19,
+      "range": [
+       19,
+       26
+      ]
+     },
+     {
+      "id": "health-t2",
+      "group": "health",
+      "kind": "prefix",
+      "stat": "hpMax",
+      "name": "Robust",
+      "tier": 2,
+      "value": 17,
+      "range": [
+       11,
+       20
+      ]
+     },
+     {
+      "id": "stamina-t2",
+      "group": "stamina",
+      "kind": "suffix",
+      "stat": "stamina",
+      "name": "of Long Shifts",
+      "tier": 2,
+      "value": 3,
+      "range": [
+       3,
+       4
+      ]
+     }
+    ],
+    "defense": 3,
+    "id": "i11",
+    "x": 3,
+    "y": 2
+   }
+  ]
+ },
+ "equipment": {
+  "head": null,
+  "body": null,
+  "hands": null,
+  "feet": null,
+  "belt": null,
+  "weapon": {
+   "base": "letter-opener",
+   "name": "Letter Opener",
+   "baseName": "Letter Opener",
+   "kind": "gear",
+   "rarity": "normal",
+   "ilvl": 1,
+   "slot": "weapon",
+   "w": 1,
+   "h": 2,
+   "reqs": {
+    "level": 1
+   },
+   "affixes": [],
+   "damage": {
+    "min": 1,
+    "max": 4
+   },
+   "id": "i1"
+  },
+  "offhand": null,
+  "ring1": null,
+  "ring2": null,
+  "amulet": null
+ },
+ "belt": [
+  {
+   "base": "lukewarm-coffee",
+   "name": "Lukewarm Coffee",
+   "baseName": "Lukewarm Coffee",
+   "kind": "potion",
+   "rarity": "normal",
+   "ilvl": 1,
+   "slot": "potion",
+   "w": 1,
+   "h": 1,
+   "reqs": {},
+   "affixes": [],
+   "restores": "hp",
+   "restore": 25,
+   "id": "i2"
+  },
+  {
+   "base": "lukewarm-coffee",
+   "name": "Lukewarm Coffee",
+   "baseName": "Lukewarm Coffee",
+   "kind": "potion",
+   "rarity": "normal",
+   "ilvl": 1,
+   "slot": "potion",
+   "w": 1,
+   "h": 1,
+   "reqs": {},
+   "affixes": [],
+   "restores": "hp",
+   "restore": 25,
+   "id": "i3"
+  },
+  null,
+  null
+ ],
+ "stash": {
+  "w": 10,
+  "h": 8,
+  "items": []
+ },
+ "cursorItem": null,
+ "uniquesFound": [],
+ "nextItemId": 12,
+ "rng": {
+  "world": {
+   "s": 3549489927
+  },
+  "combat": {
+   "s": 576035572
+  },
+  "ai": {
+   "s": 3452588930
+  },
+  "loot": {
+   "s": 2589592399
+  }
+ },
+ "stats": {
+  "kills": 0,
+  "deaths": 0,
+  "bossAttempts": 0,
+  "playTicks": 0
+ },
+ "explored": {},
+ "options": {},
+ "checksum": "076de234dda15fca"
+}

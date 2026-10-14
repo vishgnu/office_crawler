@@ -15,7 +15,7 @@ test("the fixture is a real version 1 Clerk save (class clerk, level 12, three l
   assert.deepEqual(j.player.skills, { "dress-code": 1, mute: 1, "stapler-throw": 2 });
   assert.equal(j.player.skillPoints, 7); assert.equal(j.stash.items.length, 1); assert.equal(j.inventory.items.length, 2); // the stapler mace and the starting rapier assert.ok(j.equipment.body); assert.ok(j.belt[0]);
   assert.equal(j.checksum, checksumOf(j));
-  assert.equal(config.saveVersion, 2); assert.ok(config.saveVersion > j.version);
+  assert.ok(config.saveVersion >= 2); assert.ok(config.saveVersion > j.version);
 });
 
 test("AC-R-225-1 v1 to v2: class becomes facilities-manager, every spent point is refunded, the signature is free, the bar resets, everything else is kept", () => {
@@ -76,7 +76,7 @@ test("corrupt, hostile and newer v1 / v2 saves fail with a reason and never thro
     "truncated": [v1text.slice(0, 500), "parse"],
     "garbage": ["][", "parse"],
     "checksum": [JSON.stringify({ ...v1(), checksum: "0000000000000000" }), "checksum"],
-    "newer": [JSON.stringify({ ...v1(), version: 3 }), "newer"],
+    "newer": [JSON.stringify({ ...v1(), version: config.saveVersion + 1 }), "newer"],
   };
   for (const [name, [text, reason]] of Object.entries(cases)) { const r = deserialize(text); assert.equal(r.ok, false, name); assert.equal(r.reason, reason, name); }
   // content problems behind a valid checksum are schema failures
@@ -106,14 +106,14 @@ test("AC-NFR-D06-1 deserialize never throws on 20 mutated copies of a v2 save; e
       else assert.ok(["checksum", "schema", "newer", "format", "no-migration", "parse"].includes(r.reason), `mutation ${i}: ${r.reason}`);
     }
   }
-  assert.ok(j.version === 2);
+  assert.ok(j.version === config.saveVersion);
 });
 
 test("v2 save content: the name, respecsUsed and playTicks are part of the documented schema and round trip", () => {
   const s = newGame(2, { class: "sales-rep", name: "Round Trip", start: "town" });
   s.player.respecsUsed = 2; s.stats.playTicks = 1234; s.player.aura = null;
   const j = JSON.parse(serialize(s));
-  assert.equal(j.version, 2); assert.equal(j.name, "Round Trip"); assert.equal(j.player.respecsUsed, 2); assert.equal(j.stats.playTicks, 1234);
+  assert.equal(j.version, config.saveVersion); assert.equal(j.name, "Round Trip"); assert.equal(j.player.respecsUsed, 2); assert.equal(j.stats.playTicks, 1234);
   for (const k of ["buffs", "absorb", "aura", "dash"]) assert.ok(!(k in j.player), `${k} is not saved (mid-floor state)`);
   assert.ok(!("allies" in j) && !("zones" in j));
   const r = deserialize(serialize(s));

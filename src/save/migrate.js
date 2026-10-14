@@ -47,11 +47,28 @@ export const MIGRATIONS = {
       skillBar: { primary: cls.basic, secondary: cls.signature, hotkeys: [cls.signature, null, null, null], selected: 0 }, respecsUsed: 0 };
     return out;
   },
+  /**
+   * Version 2 to 3 (ADR-0006 amendment, R6 ADV-R6-05): in R5 Grit was the only damage attribute of every class; since R6 a class names its own power
+   * attribute (Sales Rep Agility, IT Wizard Focus). For a class whose power attribute is not Grit, every attribute point allocated beyond the class's
+   * start values goes back into `attrPoints` and the attributes return to the start values (the player re-spends them; nothing else changes).
+   * The Facilities Manager (power attribute Grit) is only re-stamped. A malformed attribute table is left as it is (the schema check rejects it).
+   */
+  2(d) {
+    if (d.version >= 3) return d;
+    const out = { ...d, version: 3 }, cls = classById(d.class), p = d.player && typeof d.player === "object" ? d.player : null;
+    if (!cls || !p || !(cls.derived?.powerAttr && cls.derived.powerAttr !== "grit")) return out;
+    const a = p.attrs, names = ["grit", "agility", "stamina", "focus"];
+    if (!a || typeof a !== "object" || Array.isArray(a) || !names.every((k) => Number.isInteger(a[k]) && a[k] >= 0) || !Number.isInteger(p.attrPoints)) return out;
+    let refund = 0; const attrs = { ...a };
+    for (const k of names) { const extra = Math.max(0, a[k] - (cls.attrs[k] ?? 0)); refund += extra; attrs[k] = a[k] - extra; }
+    if (refund > 0) out.player = { ...p, attrs, attrPoints: p.attrPoints + refund };
+    return out;
+  },
 };
 
 /**
  * Bring a parsed save up to `target`. Returns { ok: true, data, notes } or { ok: false, reason: "no-migration", from }.
- * `notes` lists what the player should be told once: { from: 1, refundedPoints: n } for the Clerk migration.
+ * `notes` lists what the player should be told once: { from: 1, refundedPoints: n } for the Clerk migration and { from: 2, attributePointsRefunded: n } (only when n > 0) for the power-attribute migration.
  */
 export function migrate(data, target) {
   let d = data, v = d.version;
@@ -63,6 +80,7 @@ export function migrate(data, target) {
     d = step(structuredClone(d));
     if (d.version !== v + 1) return { ok: false, reason: "no-migration", from: v };
     if (v === 1) notes.push({ from: 1, refundedPoints: (d.player?.skillPoints ?? 0) - (before.player?.skillPoints ?? 0) });
+    if (v === 2) { const n = (d.player?.attrPoints ?? 0) - (before.player?.attrPoints ?? 0); if (n > 0) notes.push({ from: 2, attributePointsRefunded: n }); }
     v = d.version;
   }
   return { ok: true, data: d, notes };

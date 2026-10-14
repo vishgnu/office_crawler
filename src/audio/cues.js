@@ -168,6 +168,7 @@ export const SILENT_EVENTS = {
   projectileEnd: "the hit / miss cue already sounded; a wall impact is too quiet to matter",
   drop: "a ground item appearing is silent; the pickup cue sounds",
   noPath: "pathing failure is a UI toast, not a sound",
+  castRefused: "a UI toast (castRefused.<reason>); the noMana event already carries the reject sound",
   "ui:lowhp": "state change only; ui:heartbeat carries the pulses",
   dotTick: "damage over time already shows as floaters; a tick every half second would be noise",
   zoneEnd: "a zone fading out is silent; its start and trigger sound",

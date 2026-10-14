@@ -15,8 +15,8 @@ import { canPlace } from "../core/items/inventory.js";
 import { classById } from "../core/content/classes.js";
 import { validateName } from "../core/name.js";
 import { slotKeys, rarityOrder, bases } from "../core/content/items.js";
-import { affixes as affixDefs } from "../core/content/affixes.js";
-import { uniques as uniqueDefs } from "../core/content/uniques.js";
+import { affixes as affixDefs, affixById } from "../core/content/affixes.js";
+import { uniques as uniqueDefs, uniqueById } from "../core/content/uniques.js";
 import { skills as skillDefs } from "../core/content/skills.js";
 import { migrate } from "./migrate.js";
 
@@ -88,18 +88,48 @@ const AFFIX_KEYS = ["id", "group", "kind", "stat", "name", "tier", "value", "ran
 const MAX_TEXT = 64, MAX_NUM = 1e6;
 /** Ids that can reach markup or storage keys (item ids, affix ids, unique ids ...): letters, digits, underscore, hyphen (CR-02). */
 export const SAFE_ID = /^[A-Za-z0-9_-]{1,32}$/;
+const AFFIX_ID = /^[A-Za-z0-9_.-]{1,40}$/; // SAFE_ID plus the dot of stat keys (resist.fire); found by the generator sweep in test/save-v3.test.js: four uniques could not be saved before
 const safeId = (v) => typeof v === "string" && SAFE_ID.test(v);
 const str = (v, max = MAX_TEXT) => typeof v === "string" && v.length <= max;
 const num = (v, lo = -MAX_NUM, hi = MAX_NUM) => typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi;
 
 function affixOk(a) {
   if (!hasOnly(a, AFFIX_KEYS) || !str(a.stat) || !STAT_IDS.has(a.stat) || !num(a.value)) return false;
-  for (const k of ["id", "group", "kind", "class"]) if (a[k] !== undefined && !safeId(a[k])) return false;
+  for (const k of ["id", "group"]) if (a[k] !== undefined && !(typeof a[k] === "string" && AFFIX_ID.test(a[k]))) return false; // a unique's affix id and group carry the stat key ("unique-resist.fire")
+  for (const k of ["kind", "class"]) if (a[k] !== undefined && !safeId(a[k])) return false;
   if (a.name !== undefined && !str(a.name)) return false;
   if (a.tier !== undefined && !isInt(a.tier, 0, 99)) return false;
   // The generator always rolls a range, and the value lies inside it: a missing range or a value outside it is a forged affix (ADV-R5-12, -14).
   if (!(Array.isArray(a.range) && a.range.length === 2 && a.range.every((n) => num(n)) && a.range[0] <= a.range[1])) return false;
   if (a.value < a.range[0] || a.value > a.range[1]) return false;
+  return true;
+}
+
+/**
+ * What the generator can roll (ADR-0006 amendment, ADV-R6-01): affixes come from the affix tables (id, stat, kind, tier and range as in the table, the value
+ * inside it, the tier unlocked at the item level, the group allowed on the base's slot, one per group, prefix and suffix limits) and the number fits the rarity;
+ * a unique carries exactly its fixed affixes; weapon damage and defence, when present, are the base's.
+ */
+function rollableOk(it) {
+  const base = bases[it.base], affs = it.affixes ?? [];
+  if (it.unique !== undefined || it.rarity === "unique") {
+    const def = it.unique !== undefined ? uniqueById[it.unique] : null;
+    if (!def || it.rarity !== "unique" || def.base !== it.base || affs.length !== def.affixes.length) return false;
+    if (!def.affixes.every((d, i) => affs[i].id === d.id && affs[i].stat === d.stat && affs[i].value === d.value)) return false;
+  } else {
+    const max = it.rarity === "magic" ? config.magicAffixes[1] : it.rarity === "rare" ? config.rareAffixes[1] : 0;
+    if (affs.length > max) return false;
+    const groups = new Set(), kinds = { prefix: 0, suffix: 0 };
+    for (const a of affs) {
+      const def = typeof a.id === "string" && own(affixById, a.id) ? affixById[a.id] : null;
+      if (!def || a.stat !== def.stat || (a.kind ?? def.kind) !== def.kind || (a.group ?? def.group) !== def.group || (a.tier ?? def.tier) !== def.tier) return false;
+      if (!Number.isInteger(a.value) || a.value < def.range[0] || a.value > def.range[1] || a.range[0] !== def.range[0] || a.range[1] !== def.range[1]) return false;
+      if (def.minIlvl > (it.ilvl ?? 0) || !def.types.includes(base.slot) || groups.has(def.group) || ++kinds[def.kind] > (def.kind === "prefix" ? config.maxPrefixes : config.maxSuffixes)) return false;
+      groups.add(def.group);
+    }
+  }
+  if (it.damage !== undefined && !(base.damage && it.damage.min === base.damage.min && it.damage.max === base.damage.max)) return false; // a missing field only means less
+  if (it.defense !== undefined && it.defense !== base.defense) return false;
   return true;
 }
 
@@ -117,6 +147,7 @@ function itemOk(it, { placed }) {
   if (!isInt(it.w, 1, 6) || !isInt(it.h, 1, 6)) return false;
   if (placed && (!isInt(it.x, 0, 99) || !isInt(it.y, 0, 99))) return false;
   if (!Array.isArray(it.affixes ?? []) || (it.affixes ?? []).length > 12 || (it.affixes ?? []).some((a) => !affixOk(a))) return false;
+  if (it.kind === "gear" && !rollableOk(it)) return false;
   if (it.damage !== undefined && !(hasOnly(it.damage, ["min", "max"]) && num(it.damage.min, 0) && num(it.damage.max, 0))) return false;
   if (it.defense !== undefined && !num(it.defense, 0)) return false;
   if (it.restore !== undefined && !num(it.restore, 0)) return false;
@@ -151,6 +182,10 @@ export function schemaProblem(d) {
   if (!isInt(p.level, 1, config.levelCap) || !isInt(p.xp, 0, config.xpPastCap) || !isInt(p.attrPoints, 0, 1000) || !isInt(p.skillPoints, 0, 1000) || !isInt(p.gold, 0, 1e9) || !isInt(p.respecsUsed, 0, 1e6)) return "bad player numbers";
   if (!hasOnly(p.attrs, ATTRS) || ATTRS.some((a) => !isInt(p.attrs[a], 0, 1000))) return "bad attributes";
   const cls = classById(d.class);
+  // The attribute invariant (ADV-R6-01, as the skill one below): what the hero has in attributes and unspent points never exceeds the class's start values plus
+  // the points the level has granted. Attributes feed damage, so a forged total is a forged hero.
+  const baseAttrs = ATTRS.reduce((n, a) => n + (cls.attrs[a] ?? 0), 0);
+  if (ATTRS.reduce((n, a) => n + p.attrs[a], 0) + p.attrPoints > baseAttrs + (p.level - 1) * config.attrPointsPerLevel) return "bad attribute points";
   if (!isObj(p.skills) || Object.entries(p.skills).some(([id, l]) => !own(skillDefs, id) || skillDefs[id].class !== d.class || skillDefs[id].kind === "basic" || !isInt(l, 0, Math.min(skillDefs[id].maxLevel, config.skillMaxLevel)))) return "bad skills";
   if (!(p.skills[cls.signature] >= 1)) return "bad skills";
   // The point invariant of AC-R-205-1 and the tree rules (ADR-0005 section 2): level gate and prerequisites hold for every learned skill, and the

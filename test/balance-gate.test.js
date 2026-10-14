@@ -19,6 +19,7 @@ test(`each class clears floor ${DEPTH} and reaches level ${LEVEL} within ${TICKS
       assert.ok(r.depth >= DEPTH && r.level >= LEVEL, `${c.id} seed ${seed}: depth ${r.depth}, level ${r.level}`);
       assert.ok(r.deaths <= DEATHS, `${c.id} seed ${seed}: ${r.deaths} deaths`);
       assert.equal(r.stuck, 0, `${c.id} seed ${seed}: stuck events`);
+      assert.equal(r.watchdogFired, 0, `${c.id} seed ${seed}: the no-xp watchdog gave up on a hunted monster ${r.watchdogFired} times (a chase defect in the core, or a bot defect: investigate, do not raise the limit)`);
       times.push(r.ticks);
     }
     med[c.id] = median(times);

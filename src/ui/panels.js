@@ -18,7 +18,21 @@ const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
 const SLOT_LABEL = { head: T.slotHead, amulet: T.slotAmulet, weapon: T.slotWeapon, body: T.slotBody, offhand: T.slotOffhand, hands: T.slotHands, belt: T.slotBelt, feet: T.slotFeet, ring1: T.slotRing1, ring2: T.slotRing2 };
 const DOLL = { head: [3, 1, 2, 2], amulet: [5, 1, 1, 1], weapon: [1, 2, 2, 3], body: [3, 3, 2, 3], offhand: [6, 2, 2, 3], hands: [1, 5, 2, 2], belt: [3, 6, 2, 1], feet: [6, 5, 2, 2], ring1: [5, 5, 1, 1], ring2: [5, 6, 1, 1] };
-const ATTR_HINT = { grit: T.raisesDamage, agility: T.raisesDefense, stamina: T.raisesHealth, focus: T.raisesMana };
+const ATTR_BASE = { grit: "", agility: T.raisesDefense, stamina: T.raisesHealth, focus: T.raisesMana };
+const fmt = (n) => String(Math.round(n * 100) / 100);
+/** Hint and tooltip of one attribute for the player's class (CR6-01). The power attribute (class data derived.powerAttr, else config.derived.powerAttr) raises damage; the others do not. */
+export function attrHint(classId, k) {
+  const d = { ...config.derived, ...(classById(classId)?.derived ?? {}) }, power = d.powerAttr ?? "grit", dmg = d.damagePerGrit ?? { min: 1, max: 1 };
+  const parts = [];
+  const per = dmg.min === dmg.max ? fmt(dmg.min) : `${fmt(dmg.min)}–${fmt(dmg.max)}`;
+  if (k === power) parts.push(`${T.attrDamageTip.replace("{free}", d.gritFree).replace("{n}", per)}`);
+  if (k === "agility") parts.push(T.attrAgilityTip.replace("{d}", fmt(d.defensePerAgility)).replace("{a}", fmt(d.attackRatingPerAgility)));
+  if (k === "stamina") parts.push(T.attrStaminaTip.replace("{n}", fmt(d.hpPerStamina)));
+  if (k === "focus") parts.push(T.attrFocusTip.replace("{n}", fmt(d.mpPerFocus)));
+  const base = ATTR_BASE[k];
+  const text = k === power ? (base ? T.raisesDamageAnd.replace("{x}", base.replace(/^raises /, "")) : T.raisesDamage) : (k === "grit" ? T.gritNoDamage : base);
+  return { text, tip: parts.join(" ") };
+}
 const RESISTS = [["fire", T.resistFire], ["cold", T.resistCold], ["shock", T.resistShock], ["acid", T.resistAcid]];
 // ---- pure markup builders (exported so a unit test can feed them hostile ids and names, CR-02) ----
 export const escHtml = esc;
@@ -110,8 +124,8 @@ export function createPanels(root, game) {
     h += `<div class="xpl" title="${esc(T.xpTotal)}: ${num(xpv.total)}"><span>${esc(T.experience)}</span><span data-stat="xp" data-testid="xp-label" data-total="${Number(xpv.total) || 0}">${xpv.capped ? esc(T.xpMax) : `${num(xpv.into)} / ${num(xpv.span)} ${esc(T.xpToLevel)} ${p.level + 1} (${pct}%)`}</span></div><div class="xpb2" role="img" title="${esc(T.xpTotal)}: ${num(xpv.total)}" aria-label="${esc(T.experience)} ${pct}%, ${esc(T.xpTotal)} ${num(xpv.total)}"><i style="width:${pct}%"></i></div>`;
     h += `<section class="sc-attr"><h3>${esc(T.attributes)} <em>${esc(T.pointsToSpend)}: <b data-stat="attrPoints">${pts}</b></em></h3>`;
     for (const k of T.attrOrder) {
-      const own = p.attrs[k], tot = p.attrsTotal?.[k] ?? own, bonus = tot - own;
-      h += `<div class="attr"><div class="an"><b>${esc(T.statAttr[k])}</b><small>${esc(ATTR_HINT[k])}</small></div><div class="av"><span data-stat="${k}">${tot}</span>${bonus ? ` <small>(${own} +${bonus} ${esc(T.gearWord)})</small>` : ""}</div>`;
+      const own = p.attrs[k], tot = p.attrsTotal?.[k] ?? own, bonus = tot - own, hint = attrHint(p.class, k);
+      h += `<div class="attr"><div class="an" title="${esc(hint.tip)}"><b>${esc(T.statAttr[k])}</b><small>${esc(hint.text)}</small></div><div class="av"><span data-stat="${k}">${tot}</span>${bonus ? ` <small>(${own} +${bonus} ${esc(T.gearWord)})</small>` : ""}</div>`;
       h += `<button class="plus" type="button" data-testid="alloc-${k}" data-alloc="${k}" data-fk="p.${k}" ${pts < 1 ? "disabled" : ""} aria-label="${esc(T.addPoint)} ${esc(T.statAttr[k])}. ${pts} ${esc(T.left)}">+</button></div>`;
     }
     h += `<p class="apv" data-testid="alloc-preview">${esc(pts ? T.previewHint : T.previewNone)}</p></section>`;
@@ -196,14 +210,21 @@ export function createPanels(root, game) {
   }
 
   // ------------------------------------------------------------ rendering driver
-  const restoreFocus = (fk) => { if (fk) root.querySelector(`[data-fk="${CSS.escape(fk)}"]`)?.focus({ preventScroll: true }); };
+  // ADV-R6-04: a disabled or vanished target (a Learn button that just maxed out or ran out of points, Respec after a respec) hands focus to the node's own button, else the panel's close button
+  const restoreFocus = (fk, scope = root) => {
+    if (!fk) return;
+    const find = (k) => scope.querySelector(`[data-fk="${CSS.escape(k)}"]`);
+    let t = find(fk);
+    if (!t || t.disabled) t = (fk.startsWith("l.") ? find("n." + fk.slice(2)) : null) ?? (t?.closest?.(".drawer") ?? scope).querySelector?.("[data-close]") ?? null;
+    t?.focus({ preventScroll: true });
+  };
   function renderInto(node, html) {
     const fk = root.contains(doc.activeElement) && node.contains(doc.activeElement) ? doc.activeElement.dataset.fk : null;
     const body = node.querySelector(".pb"), top = body ? body.scrollTop : 0;
     node.innerHTML = html;
     const nb = node.querySelector(".pb");
     if (nb) nb.scrollTop = top;
-    restoreFocus(fk);
+    restoreFocus(fk, node);
   }
   function flashChanged() {
     const nodes = root.querySelectorAll("#pleft [data-stat]");
@@ -257,8 +278,8 @@ export function createPanels(root, game) {
   // ------------------------------------------------------------ toast + live region
   function syncToast() {
     const t = game.ui.toast;
-    if (!t || t.id === view.toastId) return;
-    view.toastId = t.id;
+    if (!t || t === view.toastObj) return; // by identity: game.toast restarts its ids at 1 after the timer cleared the last one, which could equal the id shown before
+    view.toastObj = t; view.toastId = t.id;
     el.toast.textContent = t.text; el.toast.hidden = false;
     el.live.textContent = ""; el.live.textContent = t.text;
     clearTimeout(view.toastTimer);
@@ -485,7 +506,16 @@ export function createPanels(root, game) {
 
   /** Open or close the respec confirmation inside the Skills panel and put focus where it belongs. */
   function askRespec(on, focusFk) { view.respecAsk = on; view.sigs.left = ""; sync(); restoreFocus(focusFk); }
-  doc.addEventListener("keydown", (e) => { if (e.code === "Escape" && view.respecAsk) { e.preventDefault(); e.stopImmediatePropagation(); askRespec(false, "rs"); } }, true); // Esc closes the confirmation first, not the panel
+  doc.addEventListener("keydown", (e) => {
+    if (!view.respecAsk) return;
+    if (e.code === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); askRespec(false, "rs"); } // Esc closes the confirmation first, not the panel
+    else if (e.code === "Tab") { // the confirmation is modal: Tab and Shift+Tab cycle inside it (CR6-08)
+      const btns = [...root.querySelectorAll(".rs-confirm button")];
+      if (!btns.length) return;
+      const i = btns.indexOf(doc.activeElement), next = e.shiftKey ? (i <= 0 ? btns.length - 1 : i - 1) : (i < 0 || i === btns.length - 1 ? 0 : i + 1);
+      e.preventDefault(); btns[next].focus({ preventScroll: true });
+    }
+  }, true);
 
   root.addEventListener("click", (e) => {
     const b = e.target.closest("button");
@@ -497,11 +527,12 @@ export function createPanels(root, game) {
     else if (d.alloc) game.input({ t: "allocate", attr: d.alloc });
     else if (d.learn) { const r = game.input({ t: "learnSkill", id: d.learn }); if (!r.ok && T.trLearnFail[r.error]) game.toast(T.trLearnFail[r.error]); }
     else if (d.respecNo) { askRespec(false, "rs"); }
-    else if (d.respecYes) { askRespec(false, "rs"); const r = game.input({ t: "respec" }); game.toast(r.ok ? T.trRespecDone : T.trRespecFail[r.error] ?? T.trResetNone); }
+    else if (d.respecYes) { askRespec(false, "rs"); const r = game.input({ t: "respec" }); game.toast(r.ok ? T.trRespecDone : T.trRespecFail[r.error ?? r.reason] ?? T.trResetNone); }
     else if (d.respec) { // R6: a respec that gives points back asks first (names the points); with nothing learned it just runs
-      const tv = treeView(core());
-      if (tv.respec.available && tv.branches.some((br) => br.nodes.some((n) => n.level - (n.signature ? 1 : 0) > 0))) askRespec(true, "rs.no");
-      else { const r = game.input({ t: "respec" }); game.toast(r.ok ? T.trRespecDone : T.trRespecFail[r.error] ?? T.trResetNone); }
+      const tv = treeView(core()), some = tv.branches.some((br) => br.nodes.some((n) => n.level - (n.signature ? 1 : 0) > 0));
+      if (tv.respec.available && some) askRespec(true, "rs.no");
+      else if (!some && (tv.respec.mode === "gold" || tv.respec.mode === "once")) game.toast(T.trRespecFail["nothing-to-respec"]); // never charge for nothing (ADV-R6-02)
+      else { const r = game.input({ t: "respec" }); game.toast(r.ok ? T.trRespecDone : T.trRespecFail[r.error ?? r.reason] ?? T.trResetNone); }
     }
     else if (d.aura) { const r = game.input({ t: "toggleAura", id: d.aura }); if (!r.ok) game.toast(T.trAuraFail[r.error] ?? T.trAuraFail["no-mana"]); }
     else if (d.assign) game.input({ t: "assignSkill", slot: Number(d.slot), id: core().player.skillBar.hotkeys[Number(d.slot)] === d.assign ? null : d.assign });

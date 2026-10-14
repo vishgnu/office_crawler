@@ -608,13 +608,14 @@ html.hc .tnode { border-color: #fff; }
 .tree .tnodes { grid-template-columns: 20px repeat(3, minmax(0, 1fr)); column-gap: var(--gx); row-gap: var(--gy); align-items: stretch; }
 .tree .tl { grid-column: 1; grid-row: var(--row); writing-mode: vertical-rl; transform: rotate(180deg); font-size: 14px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--mut); text-align: center; border-right: 2px solid var(--rim); padding: 0 2px 0 0; }
 .tree .tnode { grid-column: calc(var(--col) + 2); grid-row: var(--row); gap: 3px; padding: 4px 5px 5px; }
-.tree .tn-main { grid-template-columns: 30px minmax(0, 1fr); grid-template-areas: "ic name" "lv lv" "st st"; gap: 1px 5px; min-height: 0; }
+.tree .tn-main { grid-template-columns: 30px minmax(0, 1fr); grid-template-areas: "ic name" "lv lv" "st st" "lock lock" "req req"; gap: 1px 5px; min-height: 0; }
 .tree .tn-ic { width: 30px; height: 30px; border-radius: 6px; padding: 1px; }
 .tree .tn-ic .mk { width: 13px; height: 13px; line-height: 13px; font-size: 14px; right: -4px; bottom: -5px; }
 .tree .tn-name { font-size: 14px; line-height: 1.05; }
 .tree .tn-lv { gap: 3px; flex-wrap: nowrap; white-space: nowrap; }
 .tree .tn-st { margin-top: 0; font-size: 14px; line-height: 1.1; }
-.tree .tn-req { display: none; }
+.tree .tn-req, .tree .tn-lock { display: block; font-size: 14px; line-height: 1.1; color: #b4abe0; overflow-wrap: anywhere; }
+.tree .tn-req { grid-area: req; } .tree .tn-lock { grid-area: lock; color: #ffd98a; }
 .tree .tnode .learn { min-height: 30px; margin-top: 1px; }
 .tree .tnode .sassign { margin-top: 0; }
 .tree .tnode .sassign .mini { min-height: 28px; }
@@ -622,7 +623,7 @@ html.hc .tnode { border-color: #fff; }
 .tree .lk { position: absolute; left: 0; right: 0; top: -2px; height: 0; pointer-events: none; --lc: #6b5fb0; }
 .tree .lk.ok, .tree .kd.ok { --lc: #6dd6a8; }
 .tree .lk::before { content: ""; position: absolute; left: calc(50% - 1.5px); width: 3px; top: calc(-0.5 * var(--gy)); height: calc(0.5 * var(--gy)); background: var(--lc); }
-.tree .lk.l::after, .tree .lk.r::after { content: ""; position: absolute; height: 3px; top: calc(-0.5 * var(--gy) - 1.5px); background: var(--lc); width: calc(var(--span) * (100% + var(--gx)) + 1.5px); }
+.tree .lk.l::after, .tree .lk.r::after { content: ""; position: absolute; height: 3px; top: calc(-0.5 * var(--gy) - 1.5px); background: var(--lc); width: calc(var(--span) * (100% + var(--gx) + 4px) + 1.5px); } /* 100% is the padding box: add the two 2px borders back so each column step is card width + gap (ADV-R6-03) */
 .tree .lk.l::after { right: calc(50% - 1.5px); }
 .tree .lk.r::after { left: calc(50% - 1.5px); }
 .tree .kd { position: absolute; left: calc(50% - 1.5px); width: 3px; top: calc(100% + 2px); height: calc(0.5 * var(--gy)); background: var(--lc, #6b5fb0); pointer-events: none; --lc: #6b5fb0; }
@@ -642,13 +643,14 @@ html.hc .tnode { border-color: #fff; }
 #ui.phone .tree .tnode { grid-column: 1; grid-row: auto; }
 #ui.phone .tree .lk, #ui.phone .tree .kd { display: none; }
 #ui.phone .tree .tn-req { display: block; grid-area: req; font-size: 14px; color: #b4abe0; }
-#ui.phone .tree .tn-main { grid-template-areas: "ic name" "lv lv" "st st" "req req"; }
+#ui.phone .tree .tn-lock { grid-area: lock; }
+#ui.phone .tree .tn-main { grid-template-areas: "ic name" "lv lv" "st st" "lock lock" "req req"; }
 .tree .basic-h { margin-top: 4px; }
 .tree .sk-note { margin: 1px 0; }
 .tree .tr-head { margin-bottom: 2px; }
 @media (max-height: 800px) { .tree .basic-h { display: none; } .tree .srow { margin-top: 4px; } }
 /* phone: compact cards, level and state share a line, Learn and F1-F4 share a row (44 px touch targets kept) */
-#ui.phone .tree .tn-main { grid-template-columns: 30px auto minmax(0, 1fr); grid-template-areas: "ic name name" "ic lv st" "req req req"; align-items: center; }
+#ui.phone .tree .tn-main { grid-template-columns: 30px auto minmax(0, 1fr); grid-template-areas: "ic name name" "ic lv st" "lock lock lock" "req req req"; align-items: center; }
 #ui.phone .tree .tn-st { padding-left: 4px; }
 #ui.phone .tree .tnode { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 6px; align-items: center; }
 #ui.phone .tree .tnode > .tn-main { grid-column: 1 / -1; }

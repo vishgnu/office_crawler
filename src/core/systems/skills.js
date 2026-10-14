@@ -9,6 +9,9 @@ import { toggleAura } from "./progression.js";
 
 const fail = (error) => ({ ok: false, error });
 const OK = { ok: true };
+// R6 fix: a refused cast tells the UI why (text keys castRefused.<reason>). Only reasons the core has; `t` mirrors `type` for the UI contract.
+const REFUSED = { "no direction": "no-direction", "needs a target tile": "no-target" };
+const refused = (state, skill, reason) => emit(state, { type: "castRefused", t: "castRefused", skill, reason });
 
 export const skillLevel = (state, id) => (skills[id]?.kind === "basic" ? 1 : state.player.skills[id] ?? 0);
 export { effLevel };
@@ -33,10 +36,10 @@ export function castSkill(state, id, tile) {
   if (def.kind === "aura") { const r = toggleAura(state, id); return r.ok ? OK : fail(r.error); }
   if (p.castT > 0) return fail("busy casting"); // one cast at a time: a double click does not spend mana twice
   const level = effLevel(state, def), cost = castCost(state, def, level);
-  if (p.mp < cost) { emit(state, { type: "noMana", skill: id, cost }); return fail("not enough mana"); }
+  if (p.mp < cost) { emit(state, { type: "noMana", skill: id, cost }); refused(state, id, "no-mana"); return fail("not enough mana"); }
   const to = tile && Number.isInteger(tile.x) && Number.isInteger(tile.y) ? tile : null;
   const bad = precheck(state, def, to);
-  if (bad) return fail(bad);
+  if (bad) { const reason = REFUSED[bad]; if (reason) refused(state, id, reason); return fail(bad); }
 
   if (def.archetype !== "projectile" && to && (to.x !== p.tile.x || to.y !== p.tile.y)) {
     const from = posOf(p), dx = to.x - from.x, dy = to.y - from.y, len = Math.sqrt(dx * dx + dy * dy);

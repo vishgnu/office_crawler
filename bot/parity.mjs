@@ -9,6 +9,8 @@ import { runOne } from "./run-headless.mjs";
 
 const median = (a) => { const b = [...a].sort((x, y) => x - y); return b.length ? (b.length % 2 ? b[(b.length - 1) / 2] : (b[b.length / 2 - 1] + b[b.length / 2]) / 2) : null; };
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+/** Most no-xp watchdog give-ups (bot/policy.js, mem.watchdogFired) a whole parity run may show before it is red: each one is a hunted monster that never arrived, i.e. a possible chase bug in the core (CR6-05). */
+export const WATCHDOG_MAX = 2;
 const f1 = (v) => (v === null || v === undefined ? "n/a" : (+v).toFixed(1));
 
 /** Pure: per-class summary, band verdicts and damage share from run results ({ [classId]: run[] }). */
@@ -21,7 +23,8 @@ export function parity(byClass) {
     const share = Object.entries(dmg).map(([k, v]) => [k, v / (total || 1)]).sort((a, b) => b[1] - a[1]);
     const BASIC = new Set(["basic-melee", "toss", "zap"]), tree = share.filter(([k]) => !BASIC.has(k)), treeTotal = tree.reduce((a, [, v]) => a + v, 0);
     const dd = {}; for (const r of runs) for (const d of r.deathDepths ?? []) dd[d] = (dd[d] ?? 0) + 1;
-    rows[id] = { deathsByDepth: dd, basicShare: share.filter(([k]) => BASIC.has(k)).reduce((a, [, v]) => a + v, 0), topTree: tree[0]?.[0] ?? null, topTreeShare: treeTotal ? tree[0][1] / treeTotal : 0, runs: runs.length, won: won.length, medianMin: median(min), minMin: min.length ? Math.min(...min) : null, maxMin: min.length ? Math.max(...min) : null, medianDeaths: median(runs.map((r) => r.deaths ?? 0)), meanDeaths: mean(runs.map((r) => r.deaths ?? 0)), medianLevel: median(runs.map((r) => r.level ?? 1)), share };
+    const wd = runs.map((r) => ({ seed: r.seed, n: r.watchdogFired ?? 0, log: r.watchdogLog ?? [] })).filter((x) => x.n > 0);
+    rows[id] = { watchdogQuiet: runs.reduce((a, r) => a + (r.watchdogQuiet ?? 0), 0), watchdog: wd.reduce((a, x) => a + x.n, 0), watchdogSeeds: wd.map((x) => `${x.seed}${x.n > 1 ? `x${x.n}` : ""}`), watchdogLog: wd.flatMap((x) => x.log.map((l) => `seed ${x.seed} depth ${l.depth} tick ${l.tick} hero ${l.hero} awake ${l.awake.join(" ") || "-"}`)), deathsByDepth: dd, basicShare: share.filter(([k]) => BASIC.has(k)).reduce((a, [, v]) => a + v, 0), topTree: tree[0]?.[0] ?? null, topTreeShare: treeTotal ? tree[0][1] / treeTotal : 0, runs: runs.length, won: won.length, medianMin: median(min), minMin: min.length ? Math.min(...min) : null, maxMin: min.length ? Math.max(...min) : null, medianDeaths: median(runs.map((r) => r.deaths ?? 0)), meanDeaths: mean(runs.map((r) => r.deaths ?? 0)), medianLevel: median(runs.map((r) => r.level ?? 1)), share };
   }
   const ids = Object.keys(rows), mT = median(ids.map((i) => rows[i].medianMin).filter((v) => v !== null)), mD = median(ids.map((i) => rows[i].medianDeaths));
   for (const id of ids) {
@@ -31,7 +34,8 @@ export function parity(byClass) {
     r.inWindow = r.medianMin !== null && r.medianMin >= 20 && r.medianMin <= 40; r.noDominant = r.topTreeShare <= 0.5;
     r.pass = r.inTime && r.inDeaths && r.inWindow && r.noDominant;
   }
-  return { rows, medianMin: mT, medianDeaths: mD };
+  const watchdogQuiet = ids.reduce((a, i) => a + rows[i].watchdogQuiet, 0), watchdog = ids.reduce((a, i) => a + rows[i].watchdog, 0);
+  return { rows, medianMin: mT, medianDeaths: mD, watchdog, watchdogQuiet, watchdogOk: watchdog <= WATCHDOG_MAX };
 }
 
 export function print(p, byClass) {
@@ -41,6 +45,8 @@ export function print(p, byClass) {
   for (const [id, r] of Object.entries(p.rows)) out.push(`- ${id}: ` + r.share.filter(([, s]) => s >= 0.01).map(([k, s]) => `${k} ${(s * 100).toFixed(0)} %`).join(", "));
   out.push("", "Deaths by depth (all runs; 9 = boss arena):");
   for (const [id, r] of Object.entries(p.rows)) out.push(`- ${id}: ` + Object.entries(r.deathsByDepth).map(([d, n]) => `d${d} ${n}`).join(", "));
+  out.push("", `Bot no-xp watchdog give-ups (a hunted monster never arrived; not the same as the 240-tick wait give-up; allowed in total: ${WATCHDOG_MAX}): ${p.watchdog} ${p.watchdogOk ? "(ok)" : "(OVER THE LIMIT: look for a core chase or pathing defect on these seeds)"}; quiet minutes without xp and nothing awake (exploring, informational): ${p.watchdogQuiet}`);
+  for (const [id, r] of Object.entries(p.rows)) if (r.watchdog) out.push(`- ${id}: ${r.watchdog} (seeds ${r.watchdogSeeds.join(", ")})`, ...r.watchdogLog.slice(0, 8).map((l) => `  - ${l}`));
   return out.join("\n");
 }
 
@@ -50,7 +56,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.send(runOne(+seed, +maxTicks, { depth: 9, respawn: true, maxDeaths: 12, class: id }));
     process.exit(0);
   }
-  if (process.argv[2] === "--read") { const byClass = JSON.parse(readFileSync(process.argv[3], "utf8")); console.log(print(parity(byClass), byClass)); process.exit(0); }
+  if (process.argv[2] === "--read") { const byClass = JSON.parse(readFileSync(process.argv[3], "utf8")); const p = parity(byClass); console.log(print(p, byClass)); process.exit(p.watchdogOk ? 0 : 1); }
   const n = Number(process.argv[2] ?? 12), maxTicks = Number(process.argv[3] ?? 150000), outFile = process.argv[4];
   const jobs = [];
   for (let s = 1; s <= n; s++) for (const c of classes) jobs.push({ id: c.id, seed: s });
@@ -69,5 +75,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   });
   for (const r of Object.values(byClass)) r.sort((a, b) => a.seed - b.seed);
   if (outFile) writeFileSync(outFile, JSON.stringify(byClass));
-  console.log(print(parity(byClass), byClass));
+  const p = parity(byClass);
+  console.log(print(p, byClass));
+  if (!p.watchdogOk) process.exitCode = 1; // the band verdict stays informational (R6-balance.md); a watchdog over the limit is a red run (CR6-05)
 }

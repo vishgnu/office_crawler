@@ -43,7 +43,7 @@ const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
 /** profile: { reckless } - a reckless bot never waits for chasers; it walks into packs (shows how deadly the floor is). */
 export function createBotMemory(profile = {}) {
-  return { profile, depth: -1, shopped: false, sold: false, rooms: null, goal: null, lastKey: "", lastMoveTick: 0, stuck: 0, decisions: 0, failedMoves: 0, lootTries: {}, lootSkip: new Set(), noEquip: new Set(), waitSince: -1, waitGaveUp: 0, done: false, skip: new Set() };
+  return { profile, depth: -1, shopped: false, sold: false, rooms: null, goal: null, lastKey: "", lastMoveTick: 0, stuck: 0, decisions: 0, failedMoves: 0, lootTries: {}, lootSkip: new Set(), noEquip: new Set(), waitSince: -1, waitGaveUp: 0, watchdogFired: 0, watchdogQuiet: 0, watchdogLog: [], done: false, skip: new Set() };
 }
 
 /** Record the outcome of a command the runner executed (a refused move makes the bot try another room). */
@@ -317,7 +317,12 @@ export function decide(view, mem) {
   const live = view.monsters.filter((m) => m.ai !== "dead");
   // watchdog (R6): a hero that keeps changing tile but gains no xp for a minute (a chaser that never arrives next to a sleeper it wants to hunt made it dither forever) writes the awake monsters off
   if (!mem.prog || mem.prog.xp !== p.xp || mem.prog.depth !== view.depth) mem.prog = { xp: p.xp, depth: view.depth, t };
-  else if (view.depth < CORE.bossDepth && t - mem.prog.t > BOT.noProgressTicks) { for (const m of live) if (m.ai !== "idle") mem.skip.add(m.id); mem.waitSince = -1; mem.waitGaveUp++; mem.prog.t = t; }
+  else if (view.depth < CORE.bossDepth && t - mem.prog.t > BOT.noProgressTicks) {
+    const awake = live.filter((m) => m.ai !== "idle"); // own counters (CR6-05): `watchdogFired` = it really wrote off awake monsters that never arrived (parity report lists every one, the balance gate caps it, it must not hide a chase bug); `watchdogQuiet` = a minute without xp with nothing awake (exploring a cleared floor), reported only
+    if (awake.length) { for (const m of awake) mem.skip.add(m.id); mem.waitSince = -1; mem.watchdogFired++; if (mem.watchdogLog.length < 20) mem.watchdogLog.push({ depth: view.depth, tick: t, awake: awake.map((m) => `${m.type}@${m.tile.x},${m.tile.y}:${m.ai}`).slice(0, 4), hero: `${p.tile.x},${p.tile.y}` }); }
+    else mem.watchdogQuiet++;
+    mem.prog.t = t;
+  }
   const busy = !!(p.next || p.path.length || p.target || p.pickup);
   // potions: drink coffee from the belt when health is low
   if (view.belt && p.hp > 0 && p.hp < p.hpMax * (classOf(p).bot.potionHp ?? BOT.drinkBelow)) {

@@ -205,7 +205,7 @@ test("R6-compat: an R5 save of a caster or ranged hero whose points sit in Grit 
   }
 });
 
-test("ADV-R6-05: an R5 save with 65 attribute points in Grit (the R5 bot weighting and the only damage source of casters then) is not migrated, refunded or announced after the formula change", { todo: "ADV-R6-05" }, () => {
+test("ADV-R6-05: an R5 save with 65 attribute points in Grit (the R5 bot weighting and the only damage source of casters then) is not migrated, refunded or announced after the formula change", () => {
   for (const cls of ["it-wizard", "sales-rep"]) {
     const s = hero(cls); setLevel(s, 14); s.player.attrs.grit += 65; s.player.attrPoints = 0; applyDerived(s);
     const sv = toSave(s), r = deserialize(sealed(sv));
@@ -215,7 +215,7 @@ test("ADV-R6-05: an R5 save with 65 attribute points in Grit (the R5 bot weighti
 });
 
 // ---------------------------------------------------------------- hostile input made more valuable by R6 (attribute totals feed damage now)
-test("ADV-R6-01: a save claims 1000 in every attribute at level 1: the importer accepts it and the hero one-shots floor bosses", { todo: "ADV-R6-01" }, () => {
+test("ADV-R6-01: a save claims 1000 in every attribute at level 1: the importer accepts it and the hero one-shots floor bosses", () => {
   for (const id of CLASSES) {
     const s = toSave(hero(id));
     for (const k of ATTRS) s.player.attrs[k] = 1000;
@@ -225,7 +225,7 @@ test("ADV-R6-01: a save claims 1000 in every attribute at level 1: the importer 
   }
 });
 
-test("ADV-R6-01b: a forged affix (value equal to its own made-up range) is accepted for any stat value", { todo: "ADV-R6-01" }, () => {
+test("ADV-R6-01b: a forged affix (value equal to its own made-up range) is accepted for any stat value", () => {
   const s = toSave(hero("it-wizard"));
   s.equipment.weapon.affixes = [{ stat: "focus", value: 900, range: [900, 900] }];
   const r = deserialize(sealed(s));
@@ -260,14 +260,14 @@ test("R6-respec: mode gold charges the price once per respec, refuses without en
   });
 });
 
-test("ADV-R6-02: a respec with nothing to give back still costs gold (mode gold) or the one allowed respec (mode once)", { todo: "ADV-R6-02" }, () => {
+test("ADV-R6-02: a respec with nothing to give back still costs gold (mode gold) or the one allowed respec (mode once)", () => {
   inMode("gold", { goldBase: 50, goldPerLevel: 10 }, () => {
     const s = hero("it-wizard"); setLevel(s, 16); s.player.gold = 1000;
     const before = s.player.gold; respec(s);
     assert.equal(s.player.gold, before, "gold was taken for returning 0 points");
   });
 });
-test("ADV-R6-02b: mode once: a respec of an empty tree uses up the only respec", { todo: "ADV-R6-02" }, () => {
+test("ADV-R6-02b: mode once: a respec of an empty tree uses up the only respec", () => {
   inMode("once", {}, () => {
     const s = hero("it-wizard"); setLevel(s, 16); respec(s);
     learnSkill(s, "server-overheat"); learnSkill(s, "power-surge");

@@ -230,3 +230,10 @@ skill hit    = round((rng(skill.min, skill.max) + floor(mean(damage) * weaponSha
 **Bot side.** The class `bot.attrWeights` follow the power attribute (IT Wizard: stamina, focus, agility; no Grit). Saves are unaffected: `attrs` already hold all four attributes; a loaded character is re-derived by `applyDerived`.
 
 **Numbers tuned with it** (all in data, listed with old and new values in `docs/reviews/R6-balance.md`): class growth and power rates, skill curves of a few skills, `config.scaling`, `config.xpCurve`.
+
+## Amendment 2026-10-14 (R6 fix round: respec with nothing to refund, refused casts)
+
+Source: `docs/reviews/R6-adversarial.md` ADV-R6-02, `docs/reviews/R6-code-review.md` CR6-07.
+
+- **Respec with nothing to refund (section 8).** In the modes `gold` and `once` a respec that would return 0 points is refused with `{ ok: false, error: "nothing-to-respec", reason: "nothing-to-respec" }`: no gold is charged and the single respec of mode `once` stays available. `respecCheck` returns the same code so a UI can disable the button. Mode `free` is unchanged (a respec of an empty tree is allowed and harmless). Order of the checks: respec-off, dead, not-in-town, respec-used, nothing-to-respec, no-gold.
+- **Refused casts say why.** `castSkill` emits `{ type: "castRefused", t: "castRefused", skill, reason }` (`t` mirrors `type` for readers that follow the command naming) for the refusals the player can act on: `no-direction` (a projectile or dash aimed at the hero's own tile or at nothing usable), `no-target` (no target tile given) and `no-mana` (together with the existing `noMana` event). `cooldown` and `silenced` do not exist in the core (there are no cooldowns, QF-06-5, and the hero cannot be silenced), `busy casting` is not reported (it would fire on every double click) and `out of range` / `no line of sight` are not reported yet. The audio table lists the event as silent (the UI shows a toast).
