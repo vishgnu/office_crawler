@@ -14,6 +14,37 @@ function el(tag, cls, text) {
 }
 const fmtTime = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 
+
+/** Title backdrop art (inline SVG, no assets): the office tower at night with most floors dark, a lit lobby glow and the hero's silhouette. `wide` = landscape layout (tower right, hero left), otherwise portrait (tower above the card, hero below it). */
+function titleArt(wide) {
+  const W = wide ? 1200 : 600, H = wide ? 720 : 1200, tx = wide ? 930 : 300, tw = wide ? 190 : 170, ty = wide ? 70 : 60, hx = wide ? 150 : 300, gy = wide ? 690 : 1130;
+  const cols = 6, rows = Math.floor((gy - ty - 40) / 34);
+  let win = "";
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const lit = (r * 7 + c * 13 + (r > rows - 4 ? 3 : 0)) % 11 === 0 || (r >= rows - 2 && (c + r) % 2 === 0); // only the lowest floors still have light
+    win += `<rect x="${tx - tw / 2 + 12 + c * ((tw - 24) / cols)}" y="${ty + 28 + r * 34}" width="${(tw - 24) / cols - 8}" height="20" rx="2" fill="${lit ? "#ffd98a" : "#141a33"}" ${lit ? 'opacity=".9"' : ""}/>`;
+  }
+  let stars = "";
+  for (let i = 0; i < 40; i++) stars += `<circle cx="${(i * 137) % W}" cy="${(i * 71) % (H * 0.45)}" r="${i % 5 === 0 ? 1.6 : 1}" fill="#cfd8ff" opacity="${0.35 + (i % 4) * 0.12}"/>`;
+  const side = (x, w, h, k) => `<rect x="${x}" y="${gy - h}" width="${w}" height="${h}" fill="${k}"/>`;
+  return `<svg class="art ${wide ? "wide" : "tall"}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+<defs><linearGradient id="sky${wide ? "w" : "t"}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1030"/><stop offset=".6" stop-color="#1d1a45"/><stop offset="1" stop-color="#3a2150"/></linearGradient>
+<radialGradient id="glow${wide ? "w" : "t"}" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd29a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd29a" stop-opacity="0"/></radialGradient></defs>
+<rect width="${W}" height="${H}" fill="url(#sky${wide ? "w" : "t"})"/>${stars}
+<circle cx="${wide ? 560 : 120}" cy="${wide ? 110 : 140}" r="34" fill="#f4f0ff" opacity=".85"/><circle cx="${wide ? 574 : 134}" cy="${wide ? 102 : 132}" r="30" fill="#1d1a45"/>
+${side(tx - tw / 2 - 150, 120, 220, "#171a3a")}${side(tx - tw / 2 - 40, 60, 330, "#1a1e40")}${side(tx + tw / 2 + 20, 110, 260, "#171a3a")}${side(tx + tw / 2 + 140, 90, 180, "#1a1e40")}
+<rect x="${tx - tw / 2}" y="${ty}" width="${tw}" height="${gy - ty}" fill="#232851" stroke="#0a0d20" stroke-width="4"/>
+<rect x="${tx - tw / 2 - 10}" y="${ty - 12}" width="${tw + 20}" height="16" fill="#2c3263" stroke="#0a0d20" stroke-width="3"/>
+<rect x="${tx - 3}" y="${ty - 70}" width="6" height="60" fill="#0a0d20"/><circle cx="${tx}" cy="${ty - 74}" r="6" fill="#ff4a52"/>
+${win}
+<ellipse cx="${hx}" cy="${gy}" rx="190" ry="34" fill="url(#glow${wide ? "w" : "t"})"/>
+<rect x="0" y="${gy}" width="${W}" height="${H - gy + 2}" fill="#0b0d1e"/>
+<g fill="#0a0c18" stroke="#9aa6d8" stroke-width="2.5" stroke-linejoin="round"><ellipse cx="${hx}" cy="${gy}" rx="42" ry="9" fill="#000" stroke="none" opacity=".6"/>
+<path d="M${hx - 30} ${gy - 4} L${hx - 26} ${gy - 78} Q${hx - 24} ${gy - 100} ${hx} ${gy - 102} Q${hx + 24} ${gy - 100} ${hx + 26} ${gy - 78} L${hx + 30} ${gy - 4} Z"/>
+<circle cx="${hx}" cy="${gy - 126}" r="22"/><path d="M${hx - 22} ${gy - 130} Q${hx - 26} ${gy - 154} ${hx} ${gy - 154} Q${hx + 26} ${gy - 154} ${hx + 22} ${gy - 130}" fill="none"/><path d="M${hx - 20} ${gy - 128} Q${hx - 34} ${gy - 122} ${hx - 24} ${gy - 106}" fill="none"/></g>
+</svg>`;
+}
+
 export function createScreens(root, h) {
   let current = null, sub = null, last = null, active = null;
   const click = () => h.emit?.("ui:click");
@@ -43,7 +74,8 @@ export function createScreens(root, h) {
       if (sub === "import") return buildImport(info);
       if (sub === "confirm-import") return confirmBox(T.confirmImportTitle, T.confirmImportText, T.importGo, () => { const t = pendingImport; pendingImport = null; h.importText(t); }, "confirm-import");
       const s = el("section", "screen title"), box = el("div", "panel");
-      box.append(el("h1", "", S.gameTitle), el("p", "tagline", S.tagline));
+      const art = el("div", "title-art"); art.innerHTML = titleArt(true) + titleArt(false); s.append(art);
+      box.append(el("h1", "", S.gameTitle), el("p", "tagline", S.tagline), el("p", "goal", T.titleGoal));
       if (info.notice) { const n = el("p", "notice-line", info.notice); n.setAttribute("role", "status"); n.dataset.testid = "title-notice"; box.append(n); }
       const cont = button(T.continueGame, "continue", () => h.continueGame());
       cont.disabled = !info.hasSave;

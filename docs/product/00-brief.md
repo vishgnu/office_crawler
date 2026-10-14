@@ -43,3 +43,13 @@ so the harness gets tested and improved on a real project.
 Read as: "generate all you need, we want to have nice sound and graphics as well, generate what you need."
 **Status: agreed (real customer, not proxy).** Graphics and sound must be good quality, and the team
 generates all assets itself (procedural or code-drawn art, synthesised audio). Nothing comes from third parties.
+
+## Third briefing (user, 2026-10-14, verbatim)
+
+> Ok we are going a good direction, add 3 more rounds of work. I want to have 3 player classes with skill trees. Also,
+> make a visually appealing character selection screen . Add a save with 5 slots to the options menu, keep improving
+> the ganes and the tool as before
+
+**Status: agreed (real customer).** Overrides the proxy's earlier answer to circle 1 Q4 ("one save slot"): the game now has
+**5 save slots**, reachable from the options menu (and, for usability, from the title/character screen). New scope:
+3 player classes, each with a skill tree; a visually appealing character-selection screen; 3 more rounds of work on both the game and the harness.

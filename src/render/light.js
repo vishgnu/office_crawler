@@ -5,7 +5,7 @@
 // The mask is re-baked only when the viewport, zoom or mode changes, never per frame.
 export const MAX_LIGHTS = 4;
 export const HERO_RADIUS = 5.6; // tiles
-const THEME_RADIUS = { executive: 1.5 }; // the boss arena is lit more widely: the fight must be readable across the whole boardroom
+const THEME_RADIUS = { executive: 1.5, basement: 1.2 }; // the boss arena is lit more widely: the fight must be readable across the whole boardroom
 const POOL = {
   monitor: { r: 2.1, lift: 22 }, fluor: { r: 3.6, lift: 0 }, lamp: { r: 2.7, lift: 14 },
   warm: { r: 4.2, lift: 0 },   // Lobby ceiling lamp
@@ -70,6 +70,9 @@ export function createLighting(style) {
   const L = {
     lights: Array.from({ length: MAX_LIGHTS }, () => ({ kind: "", x: 0, y: 0, a: 0, colour: "", r: 0, d2: 0 })), n: 0,
     hero: { x: 0, y: 0 }, lowFx: false, hc: false, theme: "open-plan", stats: { rebakes: 0 },
+
+    /** The hero's light radius in tiles for the current theme. */
+    radius() { return HERO_RADIUS * (THEME_RADIUS[L.theme] ?? 1); },
 
     /** (Re)bake the darkness mask if the viewport, zoom or mode changed. */
     ensure(cam, lowFx, hc) {

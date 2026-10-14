@@ -69,7 +69,7 @@ export function createLabels(style) {
       const z = cam.z;
       // 1. visible, live candidates; full plates go to the target, the hovered monster and the nearest 2 others (plate discipline)
       for (const a of actors) {
-        if (a.dead) continue;
+        if (a.dead || a.hid) continue;
         const head = style.dims[a.type]?.head ?? 50;
         if (a.npc && a.d > 8) continue;
         if ((!a.npc && a.d > 7) || a.sy - head * z < 6 || a.sy > cam.h + 140 || a.sx < -40 || a.sx > cam.w + 40) continue;

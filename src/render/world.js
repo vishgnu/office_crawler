@@ -229,7 +229,11 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
     light.sample(pos.x + 0.5, pos.y + 0.5, LS);
     shade = LS.shade;
     if (!env.lowFx) { tint = LS.tint; tintA = Math.min(LS.tintA, 0.1); } // capped so the imp's red eyes and rim stay saturated
-    if (shade >= 0.6 && !tint && !dying && !champ && !boss) return null;
+    // Final polish: a monster inside a reasonable radius of the hero, or one that is awake and hunting, is never dimmed or hidden by the dark.
+    const hd = Math.hypot(pos.x - light.hero.x, pos.y - light.hero.y), hr = light.radius(), hunting = a.ai === "chase" || a.ai === "attack" || a.ai === "notice" || a.ai === "stagger" || a.ai === "flee" || a.ai === "windup";
+    const near = hd <= hr * 0.85 || (hunting && hd <= hr * 1.1); // inside the lit disc (the mask itself fades beyond it, so no black blobs at the edge)
+    if (near) { shade = Math.min(shade, 0.12); tintA = Math.min(tintA, 0.04); }
+    else if (shade >= 0.6 && !tint && !dying && !champ && !boss) return null;
     if (boss) { shade = Math.min(shade, 0.12); tint = ""; tintA = 0; } // the boss is never lost in the dark and keeps its own colours (its aura is the light)
   }
   // contact shadow on the ground, under everything that stands there
@@ -387,7 +391,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
   F.figs = figureTable(atlas); F.shadowE = atlas.get(keys.fx("shadow"));
   lerpPos(hero, hp);
   const mons = core.monsters, nm = mons.length, npcs = core.floor.npcs ?? [], na = nm + npcs.length;
-  const slot = (i) => actorOut[i] ?? (actorOut[i] = { id: "", type: "", name: "", sub: "", ai: "", hp: 0, hpMax: 0, dead: false, champ: false, npc: false, boss: false, lit: "", x: 0, y: 0, sx: 0, sy: 0, d: 0, pr: 0 });
+  const slot = (i) => actorOut[i] ?? (actorOut[i] = { id: "", type: "", name: "", sub: "", ai: "", hp: 0, hpMax: 0, dead: false, champ: false, npc: false, boss: false, hid: false, lit: "", x: 0, y: 0, sx: 0, sy: 0, d: 0, pr: 0 });
   for (let i = 0; i < nm; i++) {
     const m = mons[i], o = slot(i);
     lerpPos(m, posB);
@@ -412,8 +416,9 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
   out.heroItem = addActor(hero, true, hp, heroDir, pt.x, pt.y);
   for (let i = 0; i < nm; i++) {
     const m = mons[i], o = actorOut[i];
+    o.hid = false;
     if (o.sx < -margin || o.sx > cam.w + margin || o.sy < -margin || o.sy > yMax) continue;
-    addActor(m, false, o, faceFor(m, false, core, rs), o.sx, o.sy);
+    if (!addActor(m, false, o, faceFor(m, false, core, rs), o.sx, o.sy)) o.hid = true; // lost in the dark: no sprite, so no plate or pip floating alone
   }
   for (let i = 0; i < npcs.length; i++) addNpc(npcs[i], actorOut[nm + i], margin, yMax);
 
@@ -463,7 +468,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
       const x = hero.tile.x + GHOST_DELTAS[k], y = hero.tile.y + GHOST_DELTAS[k + 1];
       if (x < fw && y < fh && c.blocked[y * fw + x]) hidden = true;
     }
-    if (hidden) { const hi = out.heroItem; g.globalAlpha = 0.35; blit(g, hi.e, hi.x, hi.y, z); g.globalAlpha = 1; }
+    if (hidden) { const hi = out.heroItem; g.globalAlpha = 0.55; blit(g, hi.e, hi.x, hi.y, z); g.globalAlpha = 1; }
   }
   pruneFacing(core, rs);
   return out;

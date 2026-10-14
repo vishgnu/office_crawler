@@ -4,7 +4,13 @@ canvas { display: block; position: fixed; inset: 0; touch-action: none; user-sel
 #overlay { position: fixed; inset: 0; pointer-events: none; }
 #overlay.loading { display: grid; place-items: center; font-size: 20px; color: #9aa6c0; }
 .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; pointer-events: auto; text-align: center; padding: 16px; box-sizing: border-box; animation: fade-in 0.45s ease-out both; }
-.screen.title { background: radial-gradient(ellipse at center, rgba(7, 8, 12, 0.4), rgba(7, 8, 12, 0.75)); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+.screen.title { background: radial-gradient(ellipse at center, rgba(7, 8, 12, 0.15), rgba(7, 8, 12, 0.55)); }
+.title-art { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.title-art .art { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.92; }
+.title-art .tall { display: none; }
+@media (max-aspect-ratio: 1/1) { .title-art .wide { display: none; } .title-art .tall { display: block; } }
+.screen.title:not(.confirm) .panel { position: relative; z-index: 1; }
+.goal { margin: -6px 0 10px; max-width: 46ch; color: #ffe8a8; font-size: calc(16px * var(--ts, 1)); font-style: italic; line-height: 1.35; }
 .screen.title .panel { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 28px 40px 22px; max-width: min(94vw, 860px); box-sizing: border-box; background: rgba(7, 8, 12, 0.72); border: 2px solid #2b3550; border-radius: 14px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55); }
 .screen.pause { background: rgba(7, 8, 12, 0.72); }
 /* By design the death screen is fully present (and swallows clicks) during its 0.5 s fade-in delay: the player sees the final frame, and stray clicks cannot hit Restart by accident. */
@@ -147,9 +153,9 @@ h2 { margin: 0 0 8px; font-size: calc(clamp(26px, 4.5vw, 44px) * var(--ts, 1)); 
 .fh h2{margin:0;font-size:19px;color:var(--ink)}
 .fh p{margin:0;color:var(--inkm);font-size:14px}
 .stamp{display:none}
-.sheet h3{margin:8px 0 3px;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--red);border-bottom:2px solid var(--red);display:flex;justify-content:space-between;align-items:baseline}
+.sheet h3{flex-wrap:wrap;gap:0 12px;margin:8px 0 3px;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--red);border-bottom:2px solid var(--red);display:flex;justify-content:space-between;align-items:baseline}
 .sheet h3 em{font-style:normal;letter-spacing:0;text-transform:none;color:var(--ink);font-size:14px}
-.xpl{display:flex;justify-content:space-between;font-size:14px;margin-top:8px}
+.xpl{display:flex;justify-content:space-between;flex-wrap:wrap;gap:0 12px;font-size:14px;margin-top:8px}
 .xpb2{height:14px;border:3px solid var(--ol);border-radius:8px;background:#cfc3a2;overflow:hidden;margin-top:3px}
 .xpb2 i{display:block;height:100%;background:repeating-linear-gradient(90deg,#d99a00 0 14px,#b57d00 14px 16px)}
 .sc-attr{order:1}.sc-blk{order:2}.sc-der{order:3}
@@ -312,6 +318,8 @@ button.plus:disabled{background:var(--disabled-bg);color:var(--disabled-fg);bord
 /* high contrast: black panels, white text and rims (colour tokens are set with a space so test/ui-contrast.test.js keeps reading the normal ones) */
 html.hc { --panel: #000000; --panel2: #000000; --panel3: #000000; --rim: #ffffff; --txt: #ffffff; --mut: #ffffff; --ol: #000000; --btn: #000000; --btn2: #1c1c1c; --focus: #ffff00; }
 html.hc #ui .sheet { background: #ffffff; --ink: #000000; --inkm: #000000; color: #000000; }
+html.hc .hbtn[aria-pressed=true] { background: #ffff00; color: #000; box-shadow: inset 0 0 0 2px #000; }
+html.hc .hbtn[aria-pressed=true] .bdg { background: #000; color: #ffff00; }
 html.hc .btn { background: #000; border-color: #fff; box-shadow: none; }
 html.hc .btn:hover, html.hc .btn:focus-visible { background: #1c1c1c; outline-color: #ffff00; }
 html.hc .screen.title .panel, html.hc .screen.victory .vic, html.hc .screen.story-screen .vic, html.hc .screen.options .opt-panel { background: #000; border-color: #fff; }

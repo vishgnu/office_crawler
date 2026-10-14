@@ -31,7 +31,9 @@ const CONFETTI = ["#ffd24a", "#e0363f", "#56b4e9", "#6fe08a", "#ffffff", "#ff9ac
 const hash01 = (n) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
 
 // ---- loot visuals ----
-const MAX_PLATES = 10;
+const MAX_PLATES = 6; // visible loot labels at once (Alt shows up to 2x)
+const LOOT_GAP = 5; // minimum gap between stacked loot labels, px
+const RARITY_RANK = { unique: 4, rare: 3, magic: 2 };
 const PLATE_NEAR = 5, PLATE_FAR = 10;
 const plateCache = new Map();
 const rarityColour = (P, gi) => (gi.rarity && P.rarity[gi.rarity]) || gi.color || "#d6d3cb";
@@ -125,6 +127,7 @@ export function stackRows(list, rows = [], tickMs = TICK_MS) {
   return rows;
 }
 
+const gapRect = (r) => ({ x: r.x - LOOT_GAP / 2, y: r.y - LOOT_GAP / 2, w: r.w + LOOT_GAP, h: r.h + LOOT_GAP });
 const rectHit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 /** Does the segment (x1,y1)-(x2,y2) touch rect r? (sampled; leader lines are short) */
 export function segHitsRect(sg, r, pad = 2) {
@@ -614,21 +617,24 @@ export function createFx(style) {
       if (!vis || vis.length === 0 || !heroRect || !core.groundItems?.length) return;
       const placed = fx.platesPlaced, size = fx.lootSize, fs = fx.lootFs, dpr = fx.lootDpr, hc = fx.lootHc, SAFE = 8;
       let plates = 0;
+      // most valuable first (the hovered entry before all), so the cap never drops a rare for a pile of commons
+      vis.sort((a, b) => (b.gi.id === fx.hoverLootId) - (a.gi.id === fx.hoverLootId) || (RARITY_RANK[b.gi.rarity] ?? 0) - (RARITY_RANK[a.gi.rarity] ?? 0) || a.d - b.d);
       for (let i = 0; i < vis.length; i++) {
         const { gi, x, my, colour, d } = vis[i];
-        // full plates: near the hero, rare+ in sight, the hovered entry (fx.hoverLootId) and everything while Alt is held (fx.showAllLoot, set by the shell)
-        const show = fx.showAllLoot || gi.id === fx.hoverLootId || d <= PLATE_NEAR || ((gi.rarity === "rare" || gi.rarity === "unique") && d <= PLATE_FAR);
-        if (!show || plates >= (fx.showAllLoot ? 3 * MAX_PLATES : MAX_PLATES)) continue;
+        // labels: common items (and gold) only on hover or while Alt is held (genre convention); magic near the hero; rare / unique in sight
+        const rank = RARITY_RANK[gi.rarity] ?? 0;
+        const show = fx.showAllLoot || gi.id === fx.hoverLootId || (!gi.gold && ((rank === 2 && d <= PLATE_NEAR) || (rank >= 3 && d <= PLATE_FAR)));
+        if (!show || plates >= (fx.showAllLoot ? 2 * MAX_PLATES : MAX_PLATES)) continue;
         const sp = plateSprite(P, gi.label, gi.rarity ?? "normal", gi.border === "none" ? "plain" : gi.border ?? "plain", colour, fs, hc, dpr);
         const r = { x: Math.round(Math.min(cam.w - SAFE - sp.w, Math.max(SAFE, x - sp.w / 2))), y: Math.round(my - size / 2 - 4 - sp.h), w: sp.w, h: sp.h };
-        if (r.x < heroRect.x + heroRect.w && heroRect.x < r.x + r.w && r.y < heroRect.y + heroRect.h && heroRect.y < r.y + r.h) r.y = Math.round(heroRect.y - r.h - 2);
+        if (r.x < heroRect.x + heroRect.w && heroRect.x < r.x + r.w && r.y < heroRect.y + heroRect.h && heroRect.y < r.y + r.h) r.y = Math.round(heroRect.y - r.h - LOOT_GAP);
         let ok = false;
         const y0 = r.y;
         for (let k = 0; k < 7 && !ok; k++) {
           ok = r.y > SAFE && r.y + r.h < cam.h - SAFE;
-          for (let j = 0; j < placed.length && ok; j++) if (rectHit(r, placed[j])) ok = false;
+          for (let j = 0; j < placed.length && ok; j++) if (rectHit(gapRect(r), placed[j])) ok = false;
           if (ok && fx.blocked(r)) ok = false;
-          if (!ok) r.y = k === 3 ? Math.round(my + size / 2 + 4) : k > 3 ? r.y + r.h + 2 : r.y - (r.h + 2); // up three times, then below the marker, then further down
+          if (!ok) r.y = k === 3 ? Math.round(my + size / 2 + 4) : k > 3 ? r.y + r.h + LOOT_GAP : r.y - (r.h + LOOT_GAP); // up three times, then below the marker, then further down
         }
         if (!ok) { r.y = y0; continue; }
         placed.push({ x: r.x, y: r.y, w: r.w, h: r.h });

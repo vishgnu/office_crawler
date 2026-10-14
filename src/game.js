@@ -90,7 +90,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   bus.on("levelup", () => pointsHint());
   const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null }); game.inset = 0; storyBossSeen = false; pointsHintSeen = false; game.heldOrigin = null; };
   const resetRender = () => { game.run.kills = 0; game.prev.clear(); rs.facing.clear(); fx.reset(); game.acc = 0; game.hover = null; game.focus = null; };
-  game.setBackdrop = () => { game.backdrop = newGame(game.titleSeed); resetRender(); };
+  game.setBackdrop = () => { game.backdrop = newGame(game.titleSeed, { start: "town" }); resetRender(); };
   /** Start a run. opts.start: "town" (default: the Lobby, R-040) or "floor" (fixtures and tests that want floor 1). */
   game.newGame = (s = game.titleSeed, opts = {}) => {
     game.titleSeed = Number(s) >>> 0;

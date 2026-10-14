@@ -37,10 +37,10 @@ export const palette = {
       dark: "rgba(14,8,26,0.55)",
     },
     basement: {
-      floors: { corridor: ["#1f2a36", "#273542"], server: ["#1b2d3d", "#24404f"], archive: ["#2a2d3a", "#33374a"], boiler: ["#2b2724", "#38322d"], storage: ["#242b36", "#2d3644"] },
+      floors: { corridor: ["#2b3a49", "#354757"], server: ["#243b50", "#2e5066"], archive: ["#363a4c", "#41465c"], boiler: ["#38322d", "#473f38"], storage: ["#303a48", "#3b4859"] },
       floorEdge: "rgba(120,200,255,0.17)",
       wall: { top: "#34414d", left: "#566878", right: "#3f4e5c", band: "#2b3640", base: "#1d252d", trim: "#6a7886", trimDark: "#47525d", rim: "#bfe4ff" },
-      dark: "rgba(3,7,18,0.92)",
+      dark: "rgba(8,14,32,0.88)",
     },
     // The Executive Suite (S3): plush wine carpet, mahogany panelling with gold trim, glass walls onto a city at night. Moody, the climactic room.
     executive: {

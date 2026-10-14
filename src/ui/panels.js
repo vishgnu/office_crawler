@@ -314,7 +314,9 @@ export function createPanels(root, game) {
     el.tip.innerHTML = tipHtml(d, cmp, price);
     el.tip.hidden = false;
     el.tip.style.left = "0px"; el.tip.style.top = "0px"; el.tip.style.maxHeight = "";
-    const D = drawerLayout(game.w, game.h), w = el.tip.offsetWidth, h = el.tip.offsetHeight;
+    // the tip follows the text size through CSS zoom: measure in viewport px and convert back for left/top/max-height
+    const ts = parseFloat(document.documentElement.style.getPropertyValue("--ts")) || 1, tr = el.tip.getBoundingClientRect();
+    const D = drawerLayout(game.w, game.h), w = Math.round(tr.width), h = Math.round(tr.height);
     const panelNode = anchor.closest(".drawer"), itemNode = kind === "inv" && anchor.matches(".cell") ? root.querySelector(`.item[data-item="${CSS.escape(it.id)}"]`) : null, anchorRect = rectOf(itemNode ?? anchor);
     const drawers = [el.left, el.right].filter((n) => n.classList.contains("open")).map(rectOf);
     let pos;
@@ -326,8 +328,9 @@ export function createPanels(root, game) {
       el.tip.style.right = ""; el.tip.style.width = "";
       pos = placeTip({ w, h, anchor: anchorRect, panel: panelNode ? rectOf(panelNode) : null, side: panelNode === el.left ? "left" : "right", drawers, hero: heroRect(), bounds: { left: 8, top: 8, right: game.w - 8, bottom: D.hudTop - 8 - (el.toast.hidden ? 0 : 52) }, keepClear: [...root.querySelectorAll(".plus,.dock .hbtn")].map(rectOf) });
     }
-    el.tip.style.left = pos.x + "px"; el.tip.style.top = pos.y + "px";
-    el.tip.style.maxHeight = Math.max(80, D.hudTop - 16) + "px";
+    el.tip.style.left = pos.x / ts + "px"; el.tip.style.top = pos.y / ts + "px";
+    el.tip.style.maxHeight = Math.max(80, D.hudTop - 16) / ts + "px";
+    el.tip.style.overflowY = "auto";
     view.hoverKey = key;
     game.ui.tooltip = { key, ...d, compare: cmp, rect: { x: pos.x, y: pos.y, w, h: pos.h } };
   }

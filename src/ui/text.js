@@ -28,6 +28,7 @@ export const T = {
   notice: "Notice",
   // employee file
   fileTitle: "Employee File", jobTitle: "Junior Associate", fileDesk: "Open-plan floor", probation: "PROBATION", experience: "Experience", xpTotal: "Total experience", xpOf: "of", xpToLevel: "to level", xpMax: "Max level",
+  titleGoal: "Find out why the floors went dark \u2014 and who\u2019s responsible.",
   attributes: "Attributes", pointsToSpend: "Points to spend", derived: "Derived stats", unusable: "Gear you cannot use yet", unusableNone: "None. Everything in the drawer fits you.",
   raisesDamage: "raises damage", raisesDefense: "raises defense and aim", raisesHealth: "raises health", raisesMana: "raises mana", gearWord: "gear",
   previewHint: "Hover or focus a + to preview its effect.", previewNone: "No points left. Level up to earn more.", addPoint: "Add one point to", left: "left", unlocks: "Unlocks",

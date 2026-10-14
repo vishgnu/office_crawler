@@ -78,3 +78,11 @@ Running log for the orchestrator (main Claude session). Update after every step.
 - [iter 3] Final visual review: 31/40 iterate (S1 30, S2 29). CRASH found (drawImpact negative radius under stepped ticks) + first-run issues → sent to FINAL-FIX. Remaining for the POLISH agent after FINAL-FIX: hc + text 1.5 bugs (white-on-white menu buttons, File labels run together, tooltip overflow), basement visibility/ghost monsters, loot labels piling on the hero, title-screen art + goal line.
 - [iter 3] CONTAINER RESTART killed FINAL-FIX mid-run. The partial changes in the working tree were green (427 tests) and committed as WIP; FINAL-FIX relaunched to resume (inspect the diff first). Learning L-15: long agent runs need resumable checkpoints (WIP commits + a 'done so far' note).
 - [iter 3] FINAL-FIX resumed and done: B1 save on quit, B2 story frame, crash clamp, first-run (rapier worn, Strike on F1, points prompt), audio suspend, save safety + hostile-save tests, reduced motion, CI template. Orchestrator verified: 427 tests, e2e OK. Next: POLISH (hc/text-size bugs, basement visibility, loot-label pile, title art) → final visual check → proxy final acceptance → morning summary.
+
+## Rounds 4–6 (user, 2026-10-14): 3 classes + skill trees, character-select screen, 5 save slots in options; keep improving game + harness
+| Round | Game | Harness |
+|---|---|---|
+| 4 | Circle 2 (classes, trees, slots) → proxy; class-concept + character-select variants → visual review → pick; spec + plan; CORE: class system, skill trees, 5-slot storage | Improve from rounds 1–3 learnings (e.g. a test-engineer for adversarial e2e, L-08) |
+| 5 | RENDER: 3 class figures + skill-tree UI + character-select screen + slot UI (options + title); reviews | Fix what round 4 shows |
+| 6 | Balance per class (bot per class), polish, final reviews, proxy acceptance, summary | Retrospective, metrics, harness summary |
+- [r4] Started. POLISH agent from iteration 3 still running (render/ui).
