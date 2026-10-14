@@ -686,7 +686,7 @@ if (sec("fix2")) {
       await g.page.reload(); await g.page.waitForFunction(() => window.__app?.getState().scene === "title");
       await g.page.click(T("continue")); await g.page.waitForTimeout(200);
       const p2 = (await g.state()).player;
-      check(`[R6-fix] ${cls}: after reload the same hero loads with no second refund and no notice`, p2.attrPoints === p.attrPoints && JSON.stringify(p2.attrs) === JSON.stringify(p.attrs) && (await g.app("slots.view")).status.notice === null, [p2.attrPoints, p.attrPoints]);
+      check(`[R6-fix] ${cls}: after reload the same hero loads with no second refund and no notice`, p2.attrPoints === p.attrPoints && JSON.stringify(p2.attrs) === JSON.stringify(p.attrs) && (await g.app("slots.view")).status.notice === null, [p2.attrPoints, p.attrPoints, p2.attrs, p.attrs, (await g.app("slots.view")).status]);
       // spending the refunded points in the Employee File puts them in the power attribute and adds damage
       const d0 = (await g.state()).player.damage.max;
       await g.page.keyboard.press("KeyC"); await g.page.waitForTimeout(120);
@@ -718,7 +718,7 @@ if (sec("fix2")) {
   // refused casts: no toast spam
   {
     const g = await hero({}, CL.it, "Mana"); await g.app("cheat.teleportFloor", 1); await g.app("step", 5);
-    await g.page.evaluate(() => { window.__toasts = []; const t = document.querySelector('[data-testid="toast"]'); new MutationObserver(() => { const x = t.innerText.trim(); if (x && window.__toasts.at(-1)?.x !== x || (x && performance.now() - (window.__toasts.at(-1)?.t ?? 0) > 400)) window.__toasts.push({ x, t: performance.now() }); }).observe(t, { childList: true, characterData: true, subtree: true }); });
+    await g.page.evaluate(() => { window.__toasts = []; const t = document.querySelector('[data-testid="toast"]'); new MutationObserver(() => { const x = t.innerText.trim(); if (x) window.__toasts.push({ x, t: performance.now() }); }).observe(t, { childList: true, characterData: true, subtree: true, attributes: true }); });
     await g.app("input", { t: "assignSkill", slot: 0, id: "server-overheat" }).catch(() => {});
     await g.app("cheat.setHp", 1).catch(() => {});
     // drain the mana, then press the cast key 120 times over about 2.4 s
@@ -728,8 +728,10 @@ if (sec("fix2")) {
     await g.page.evaluate(() => { window.__toasts.length = 0; });
     let drained = (await g.state()).player.mp;
     for (let i = 0; i < 120; i++) { await g.app("input", { t: "cast", skill: st0.player.skillBar.hotkeys[0] ?? st0.player.skillBar.secondary, tile }); await g.app("step", 1); if (i % 5 === 0) await g.page.waitForTimeout(20); }
-    const toasts = await g.page.evaluate(() => window.__toasts.map((x) => x.x));
-    check("[R6-fix] [CR6-07] 120 refused casts over about 2.4 s show a short reason a few times at most (not 120), and say what is wrong", toasts.length >= 1 && toasts.length <= 4 && toasts.every((x) => /mana|direction|target/i.test(x)), { drained, toasts: toasts.slice(0, 6), n: toasts.length });
+    const tt = await g.page.evaluate(() => window.__toasts.map((x) => ({ x: x.x, t: Math.round(x.t) })));
+    const gaps = tt.slice(1).map((e, i) => e.t - tt[i].t).filter((d) => d > 5); // mutations of one toast (text + class) come within a few ms
+    const span = tt.length ? (tt.at(-1).t - tt[0].t) / 1000 : 0;
+    check("[R6-fix] [CR6-07] 120 refused casts: the reason is shown at most about once a second (distinct shows are at least 0.9 s apart) and it says what is wrong", tt.length >= 1 && gaps.every((d) => d >= 900 || d <= 400 && false) && tt.every((e) => /mana|direction|target/i.test(e.x)), { drained, span, gaps: gaps.slice(0, 8), n: tt.length });
     // a cast without a tile (a key press with the mouse off the map) says so once
     await g.app("input", { t: "cast", skill: st0.player.skillBar.hotkeys[0], tile: null }); await g.app("step", 1);
     check("[R6-fix] no page error", g.errors.length === 0, g.errors);
