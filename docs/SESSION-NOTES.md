@@ -1,7 +1,7 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
-_Last updated 2026-10-14T09:30:30Z. Keep this block current after every step; the log below is history._
+_Last updated 2026-10-14T12:36:19Z. Keep this block current after every step; the log below is history._
 
-**Where we are:** R6 packages done (BAL-R6, UI-R6, WORLD-R6) + harness PORTAL-H1 done. Orchestrator verify: 686 tests green, e2e 12/13 (adv-r5 respec), bench fps50 46.2/38.5 (one FAIL vs 40). **In flight:** PERF-R6 fps headroom (`docs/reviews/R6-perf-progress.md`), ADV-R6 (fixes adv-r5 respec first; `R6-adversarial-progress.md`), code review R6 (`R6-code-review-progress.md`). Then fix round, quiet bench (5 runs), visual review, proxy acceptance (+ feel note: monster scaling/xp curve changed), retro R6 (candidate learnings: stop looping agents; bench variance needs 5 runs + p99). Then R7 (R7-0 quest journal first), R8 (R8-0 gear visuals), R8-T, R9-10 lighting, R11-12.
+**Where we are:** R6 built, fixed and VERIFIED GREEN by orchestrator (770 tests x3, e2e 14/14, fps50 median 52.9 of 5 quiet runs, atlas ~0.45 s). play/ + portals rebuilt. **In flight:** R6 visual review (`docs/reviews/R6-visual-progress.md`) and proxy acceptance (`R6-acceptance-progress.md`). Then retro R6 (round-06.json; learnings: looping agents after hand-back → stop; agent ran git checkout; bench needs 5 runs + p99; coverage probe prose-dependence; human-log gap; fixtures invalidated by stricter validation → adversary updates). Then R7: R7-0 quest journal, R7-1 AI never reaches hero, R7-2 floor-entry stutter, flawless gameplay; R8: R8-0 gear visuals; R8-T; R9-10 lighting; R11-12.
 
 **In flight (check the files, not memory):**
 - ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
