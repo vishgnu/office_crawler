@@ -126,3 +126,59 @@ What held up (all tested, all green): five-slot isolation and byte-identical nei
 ## Coverage against the attack areas
 
 Save slots (5 slots, index key, corrupt/oversized/newer JSON, quota, hostile import, delete/undo/replace races, two tabs, migration, autosave to the active slot): covered in `test/adv-r5-save.test.js` and `e2e/adv-r5.mjs`. Skill trees (prerequisites, points, respec only in the Lobby, F1 to F4, aura, level edges, determinism): `test/adv-r5-core.test.js` and the tree block of the e2e. Character select (keyboard only, Esc/focus, double Start, 390 px): e2e. Class parity via bots: report above. Pause/rename/quit/resume: e2e. Rendering with each class and skill: e2e (all active and aura skills of the three classes at level 30 with monsters in view, real frames, zero page errors).
+
+---
+
+## Round 2 (after the fix round: SAVE-FIX, UI-FIX, WORLD-FIX)
+
+Files: `test/adv-r5b-save.test.js` (17 cases, 1 todo ADV-R5-12 and 1 todo ADV-R5-14), `e2e/adv-r5.mjs` (extended; 150 checks pass, 2 expected failures), screenshots `docs/shots/adv-r5b-takeover.jpg`, `docs/shots/adv-r5b-load-confirm.jpg` (both viewed). `test/adv-r5-save.test.js` and `adv-r5-core.test.js` were left to SAVE-FIX; all their former todo cases now pass.
+
+### Round 1 findings: status
+
+| id | status | evidence |
+|---|---|---|
+| ADV-R5-01 | fixed | e2e: slot texts without an index are found; a played slot 1 survives a kept legacy backup; node: retry flag keeps slots 2-5 visible |
+| ADV-R5-02 | fixed | e2e: stale owner (60 s old beat) is taken over by Continue and New game; live owner blocks with a banner and Take over |
+| ADV-R5-03 | fixed | node: restorePrev leaves newer slots and live characters alone |
+| ADV-R5-04 | fixed | node: 20 illegal skill, point and bar cases rejected, legal edges accepted |
+| ADV-R5-05 | fixed | node: xpNext 146 fresh and after load |
+| ADV-R5-06 | fixed | e2e: blocked storage is announced |
+| ADV-R5-07 | fixed | e2e: delete, import-replace, load and take-over dialogs take focus, trap Tab, Esc closes only the dialog, focus returns |
+| ADV-R5-08 | fixed | e2e: load confirmation names both characters, Cancel keeps the game |
+| ADV-R5-09 | fixed | e2e/node: rename refused with another-tab; death-screen rename survives autosave |
+| ADV-R5-10 | fixed | combining marks accepted |
+| ADV-R5-11 | fixed | e2e: Esc during the elevator creates nothing |
+
+### Re-attack results (all green unless listed under new findings)
+
+- Heartbeat and stale timing (node, injected clock): two live tabs refused on every write path (create, load, delete, rename, import, copy, restore) over 20 beat periods; boundary at exactly 15 s is still live, +1 ms is stale; a tab opened before the last beat needs Take over (no silent takeover); a frozen background tab (20 s without beats) is displaced and, when it thaws, cannot write, beat or steal the lock back; takeOver while the old owner is still beating makes the old owner lose its next write and beat; legacy string owners and nine kinds of junk owner values (NaN, null, wrong types, arrays) read as stale and never crash; a beat in the future (clock set back, tampered index) was a lock-out for as long as the offset (found and fixed within this round, now covered in node and in the browser).
+- Heartbeat in a real browser: the playing tab refreshes `beat` on its own about every 5 s without any save; the second tab sees `owner: "other"`, shows the banner, Take over asks first (focus on Cancel, Tab trapped, Esc closes and returns focus), and afterwards the displaced tab's save is refused and does not touch the new owner's slot.
+- Hostile import against the id regex: 12 sinks (item id, equipment id, affix id/group/kind/class, slot, unique, effect, restores, reqs key, uniquesFound) x 20 unsafe values (quotes, angle brackets, backtick, ampersand, trailing/leading newline, Arabic-Indic digit, bidi override, 33 characters, empty, null, objects, arrays): all rejected. No bypass found. Free-text fields (`name`, `baseName`, `flavour`, affix `name`) are still accepted (64/200 characters) by design.
+- XSS in the browser: a sealed save with `<img src=x onerror=...>` and `"><svg onload=...>` in item name, base name, flavour and affix name on the weapon, an inventory item, a stash item and a belt potion, plus a tampered index entry (name, class and level fields): Load dialog, inventory, character sheet, every tooltip (all `[data-tip]` hovered) and the pause slot list show the text as text; no script ran, no element was injected. The one page error there is ADV-R5-14, not an injection.
+- Skill-bar and skill rules in the schema: passive, unlearned, foreign-class, basic attack and non-basic primary all rejected; stale `secondary` re-derived; `__proto__`, `constructor`, `toString`, numbers, objects as bar entries rejected.
+- Migration retry flag: a failed slot-1 write keeps slots 2-5 visible with `pendingMigration`, the notice `migration-failed` shows, the next boot migrates only while slot 1 is empty; a character the player started in slot 1 in between is never replaced; a hand-set flag on a played slot 1 changes nothing; deleting slot 1 does not resurrect the legacy save; an index lost entirely with a played slot 1 does not replace it.
+- Replace then undo then redo (node): the replaced character returns, the replacement becomes the redo copy; in the UI the replace-undo restores the old character (this was red in the first pass of this round, green after SAVE-FIX landed).
+- Esc during the elevator: nothing is created. Focus traps in the new dialogs: green (see ADV-R5-07 row).
+- Every single-affix hostile save with a positive or zero value, on all 20 stats and 3 classes, loads without a throw and with finite stats.
+
+### New findings
+
+#### ADV-R5-12 (minor) A sealed save with a negative hpMax or stamina affix leaves the hero alive in town with negative health
+- Repro (node): `toSave(newGame(...))`, `equipment.weapon.affixes = [{ stat: "hpMax", value: -100 }]` (or `stamina`), re-seal, `deserialize`: accepted; after 30 ticks `player.hp === player.hpMax === -34` (facilities manager), scene `town`. Same in the browser (Continue, HUD shows negative health). The schema only bounds `value` to +-1e6; no affix definition allows a negative value.
+- Expected: reject affix values outside the definition's range (or at least below 0 for these stats), or clamp `hpMax >= 1` in `applyDerived`.
+- Suspect: `src/save/format.js` `affixOk` (`num(a.value)` with the default lower bound -1e6), `src/core/items/derive.js` (no floor on hpMax).
+- Tests: node `ADV-R5-12` (todo), e2e `XFAIL ADV-R5-12`.
+
+#### ADV-R5-14 (minor) An affix without `range` is accepted but throws in the tooltip and in the price
+- Repro: import a sealed save whose item has `affixes: [{ stat: "defense", value: 5 }]` (`range` is optional in the schema). Hover the item: uncaught `TypeError: Cannot read properties of undefined (reading '1')`, the tooltip does not appear. `sellValue(item)` and `buyPrice(item)` throw the same way, so selling or buying it would throw as well (vendor path not reached in my probe, the functions throw on their own).
+- Expected: either `range` is required (two numbers) in `affixOk`, or `price.js` tolerates a missing range.
+- Suspect: `src/core/items/price.js:11` (`a.range[1]`), `src/save/format.js` `affixOk` (`a.range !== undefined && ...`).
+- Tests: node `ADV-R5-14` (todo), e2e `XFAIL ADV-R5-14` (page error seen in Chromium).
+
+#### ADV-R5-13 (minor, fixed during this round) A beat in the future locked other tabs out
+- Found with an owner beat three days ahead (clock set back or tampered index): `status.owner` stayed `other` for days. SAVE-FIX landed `Math.abs(now() - beat)` and `beat > now()` takeover while I was testing; confirmed in node and in the browser. Listed so the regression stays covered (node test is a plain test now, e2e check is a plain check).
+
+### Observations (no id)
+- A frozen background tab is displaced silently after 15 s without a beat: Chrome throttles timers in hidden tabs (to once per minute after about five minutes), so a tab the player merely left in the background can lose the lock to a newer tab, and its unsaved progress is then refused. The displaced tab does show the banner when the player returns, and the flush on `visibilitychange: hidden` writes before the throttling starts, so the loss window is only the progress made while the tab was visible but timers were frozen (rare). Worth a manual check on a real mobile browser.
+- The two-store race (tab B takes over between A's slot write and A's index write, A then writes its stale index copy) cannot be reproduced reliably with synchronous localStorage; not tested.
+- At 1280x720 the title card with the take-over banner and its confirmation open pushes the game title above the visible area (`adv-r5b-takeover.jpg`); the page is not blocked and the dialog is complete.

@@ -3,6 +3,9 @@
 // and never fails the script. Screenshots: docs/shots/adv-r5-*.jpg (JPEG, below 300 KB).
 import { mkdirSync, statSync, writeFileSync, readFileSync } from "node:fs";
 import { launch, open, check, finish, startNew, DIST } from "./helpers.mjs";
+import { toSave, checksumOf } from "../src/save/index.js";
+import { newGame } from "../src/core/state.js";
+import { canonical } from "../src/core/hash.js";
 
 const browser = await launch();
 const T = (id) => `[data-testid="${id}"]`;
@@ -37,7 +40,7 @@ async function seeded(data, { query = "test=1&seed=1&start=floor", viewport = { 
   await context.addInitScript((d) => { if (localStorage.getItem("advseed")) return; localStorage.setItem("advseed", "1"); for (const [k, v] of Object.entries(d)) localStorage.setItem(k, v); }, data);
   const page = await context.newPage();
   const errors = [];
-  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("pageerror", (e) => errors.push(e.message + " @ " + String(e.stack).split("\n").slice(1, 3).join(" | ")));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   await page.goto(`${DIST}?${query}`);
   await goTitle(page);
@@ -131,7 +134,7 @@ const texts = {};
   check("Continue opens the migrated character with the refunded points and only the free signature", p.class === CL.fm && p.skillPoints === JSON.parse(V1).player.skillPoints + 4 && Object.keys(p.skills).join() === "pallet-slam", p);
   await toTitle(g);
   const text = await lsRaw(g.page, "office-crawler.slot.1");
-  await g.page.reload(); await goTitle(g.page);
+  await g.page.reload(); await goTitle(g.page); await g.page.waitForTimeout(400);
   check("a second boot does not migrate again (slot text unchanged, no notice)", (await lsRaw(g.page, "office-crawler.slot.1")) === text && (await g.page.locator(T("title-notice")).count()) === 0);
   await g.context.close();
   for (const [what, legacy] of [["truncated", V1.slice(0, 300)], ["garbage", "\u0000\u0001garbage"], ["newer", JSON.stringify({ ...JSON.parse(V1), version: 9 })]]) {
@@ -268,7 +271,8 @@ const texts = {};
   await g.page.evaluate(() => window.dispatchEvent(new PageTransitionEvent("pagehide", { persisted: true })));
   const idx = await lsJson(g.page, "office-crawler.slots");
   check("pagehide flushes the game into its slot and releases the active slot and owner", idx.active === null && idx.owner === null && (await lsJson(g.page, "office-crawler.slot.1")).player.gold === 300, idx);
-  await g.page.evaluate(() => document.dispatchEvent(new Event("visibilitychange"))); // the bfcache restore path
+  await g.page.evaluate(() => window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }))); // the bfcache restore path
+  await g.page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
   await g.app("cheat.giveGold", 5);
   check("after a restore the autosave works again (active slot re-acquired)", (await g.app("save.write")).ok === true);
   await g.page.reload(); await goTitle(g.page);
@@ -421,9 +425,13 @@ const texts = {};
   await g.app("pause");
   await g.page.click(T("pause-slots"));
   await g.page.click(T("slot-load-1"));
-  const dlg = await g.page.locator(T("slot-confirm-title")).count();
+  const dlg = await g.page.locator(T("slot-load-confirm-title")).count();
   const s = await g.state();
-  fixed("loading another character from the pause menu warns (names the characters, can be cancelled) before it leaves the running game", dlg > 0 && s.player.name === "Run Two", "ADV-R5-08", { dialogs: dlg, nowPlaying: s.player.name });
+  fixed("loading another character from the pause menu warns (names the characters) before it leaves the running game", dlg > 0 && s.player.name === "Run Two" && /Run One/.test(await g.page.locator(T("slot-load-confirm-title")).innerText()) && /Run Two/.test(await g.page.locator(T("slot-load-confirm-text")).innerText()), "ADV-R5-08", { dialogs: dlg, nowPlaying: s.player.name });
+  check("the load confirmation takes focus and Tab stays inside it", await g.page.evaluate(() => !!document.activeElement?.closest('[role="alertdialog"]')) && await (async () => { const r = []; for (let i = 0; i < 6; i++) { await g.page.keyboard.press("Tab"); r.push(await g.page.evaluate(() => !!document.activeElement?.closest('[role="alertdialog"]'))); } return r.every(Boolean); })());
+  await g.page.click(T("slot-load-confirm-no"));
+  check("Cancel keeps the running game and gives focus back to the Load button", (await g.state()).player.name === "Run Two" && (await focusId(g.page)) === "slot-load-1", await focusId(g.page));
+  await g.page.click(T("slot-load-1")); await g.page.click(T("slot-load-confirm-yes"));
   check("Run Two's progress was saved before the switch (gold 550 in slot 2)", (await lsJson(g.page, "office-crawler.slot.2")).player.gold === 550);
   check("the active slot is now 1 and slot 2's text is not touched by autosaves of slot 1", (await lsJson(g.page, "office-crawler.slots")).active === 1);
   await g.app("step", 30);
@@ -526,6 +534,115 @@ const texts = {};
   await g.page.click(T("load-game")); await g.page.click(T("slot-delete-1")); await g.page.click(T("slot-confirm-yes"));
   check("deleting the only character leaves the options (mute) untouched", (await lsJson(g.page, "office-crawler.options")).muted === true);
   check("no page error", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+
+
+// ================================================================ ROUND 2 (after the fix round)
+// ---------------------------------------------------------------- XSS: every free-text field that can reach markup, plus a tampered index
+{
+  const X = "<img src=x onerror=window.__xss=1>", Y = '"><svg onload=window.__xss=2>';
+  const s = toSave(newGame(5, { class: CL.sr, name: "Hostile", start: "town", wearStartKit: true }));
+  const w = s.equipment.weapon;
+  Object.assign(w, { name: X, baseName: Y, flavour: X, affixes: [{ stat: "defense", value: 1, range: [1, 5], name: Y }] });
+  s.inventory.items.push({ ...structuredClone(w), id: "i90", x: 0, y: 0, name: Y, flavour: Y });
+  s.stash.items.push({ ...structuredClone(w), id: "i91", x: 0, y: 0, name: X });
+  s.belt[0] = { id: "i92", base: "lukewarm-coffee", baseName: Y, name: X, kind: "potion", rarity: "normal", w: 1, h: 1, restore: 25, restores: "hp", slot: "potion", affixes: [] };
+  const text = canonical({ ...s, checksum: checksumOf(s) });
+  const seed = await buildSeed({ "office-crawler.slot.1": text });
+  const idx = JSON.parse(seed["office-crawler.slots"]);
+  idx.slots[0].name = X; idx.slots[0].class = Y; idx.slots[0].level = X; // a tampered index entry
+  seed["office-crawler.slots"] = JSON.stringify(idx);
+  const g = await seeded(seed);
+  const inj = () => g.page.evaluate(() => ({ x: window.__xss ?? null, nodes: document.querySelectorAll('img[src="x"],[onerror],[onload],svg[onload]').length }));
+  await g.page.click(T("load-game")); await g.page.waitForTimeout(100);
+  check("tampered index entry: no script ran and no element was injected in the Load dialog or the title", JSON.stringify(await inj()) === '{"x":null,"nodes":0}', await inj());
+  await g.page.keyboard.press("Escape");
+  const idx2 = JSON.parse(await lsRaw(g.page, "office-crawler.slots"));
+  await g.page.evaluate(() => { const i = JSON.parse(localStorage.getItem("office-crawler.slots")); i.slots[0] = { n: 1, state: "ok", name: "Hostile", class: "sales-rep", level: 1, depth: 0, deepest: 1, playSec: 0, lastPlayed: 1, bytes: 1, sum: 1 }; localStorage.setItem("office-crawler.slots", JSON.stringify(i)); });
+  void idx2;
+  await g.page.reload(); await goTitle(g.page);
+  await g.page.click(T("continue")).catch(() => {}); await g.page.waitForTimeout(150);
+  const st = await g.state();
+  check("hostile item text: the character loads (text fields are allowed, length-capped)", st.scene === "town" && st.player.name === "Hostile", st.scene);
+  await g.page.keyboard.press("KeyI"); await g.page.keyboard.press("KeyC"); await g.page.waitForTimeout(150);
+  const n = await g.page.evaluate(async () => {
+    let c = 0; window.__tips = [];
+    for (const el of document.querySelectorAll("[data-tip]")) { el.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })); c++; window.__tips.push(document.querySelector(".tip")?.textContent ?? ""); await new Promise((r) => setTimeout(r, 15)); }
+    return c;
+  });
+  check("hovering every item shows tooltips (equipment, inventory, belt)", n >= 3, n);
+  check("hostile item names, base names, flavour and affix names in tooltips and slots are escaped: no script, no injected element", JSON.stringify(await inj()) === '{"x":null,"nodes":0}', await inj());
+  check("the escaped text is visible as text in at least one tooltip", await g.page.evaluate(() => window.__tips.some((t) => t.includes("<img src=x") || t.includes("<svg"))));
+  await g.app("cheat.giveItem", {});
+  await g.app("save.write");
+  await g.app("ui.close", "inventory"); await g.app("ui.close", "character");
+  await g.app("pause");
+  await g.page.click(T("pause-slots")); await g.page.waitForTimeout(100);
+  check("Save slots from the pause menu with the hostile character: still no injection", JSON.stringify(await inj()) === '{"x":null,"nodes":0}', await inj());
+  check("no page error", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+
+// ---------------------------------------------------------------- dialogs: Esc closes only the confirmation, import confirm traps focus; load confirm cancel
+{
+  const g = await lobby();
+  await startNew(g.page, { name: "Dlg", cls: CL.sr }); await g.app("save.write");
+  await toTitle(g);
+  await g.page.click(T("load-game"));
+  await g.page.click(T("slot-delete-1"));
+  await g.page.keyboard.press("Escape");
+  check("Esc in the delete confirmation closes only the confirmation (the slot list stays, the slot stays)", (await g.page.locator(T("slot-confirm-title")).count()) === 0 && (await g.state()).ui.menu === "slots" && (await states(g)) === "ok,empty,empty,empty,empty", (await g.state()).ui.menu);
+  check("and focus goes back to the Delete button", (await focusId(g.page)) === "slot-delete-1", await focusId(g.page));
+  writeFileSync("/tmp/adv-r5b-one.json", texts.one);
+  await g.page.click(T("slot-import-1"));
+  await g.page.setInputFiles(T("import-file"), "/tmp/adv-r5b-one.json"); await g.page.waitForTimeout(200);
+  const r = []; for (let i = 0; i < 6; i++) { await g.page.keyboard.press("Tab"); r.push(await g.page.evaluate(() => !!document.activeElement?.closest('[role="alertdialog"]'))); }
+  check("the import-replace confirmation traps Tab", r.every(Boolean), r);
+  await g.page.keyboard.press("Escape");
+  check("Esc cancels the import-replace: slot 1 unchanged", (await lsJson(g.page, "office-crawler.slot.1")).name === "Dlg" && (await g.page.locator(T("slot-confirm-title")).count()) === 0);
+  check("no page error", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+
+// ---------------------------------------------------------------- clock skew: an owner beat in the future (ADV-R5-13); Take over is the way out
+{
+  const g = await lobby();
+  await startNew(g.page, { name: "Skew" }); await g.app("save.write");
+  await toTitle(g);
+  await g.page.evaluate(() => { const i = JSON.parse(localStorage.getItem("office-crawler.slots")); i.owner = { id: "gone", beat: Date.now() + 3 * 86400000 }; localStorage.setItem("office-crawler.slots", JSON.stringify(i)); sessionStorage.clear(); });
+  await g.page.reload(); await goTitle(g.page);
+  await g.page.click(T("continue")); await g.page.waitForTimeout(150);
+  fixed("an owner beat three days in the future is treated as stale (clock set back or tampered index)", (await g.state()).scene === "town", "ADV-R5-13", (await g.app("slots.view")).status);
+  check("whatever the status says, 'Take over saves' is offered and works as the way out", await (async () => { if ((await g.state()).scene === "town") return true; await g.page.click(T("take-over-saves")); await g.page.click(T("take-over-yes")); await g.page.click(T("continue")); await g.page.waitForTimeout(150); return (await g.state()).scene === "town"; })());
+  await g.context.close();
+}
+
+// ---------------------------------------------------------------- hostile import: an affix without `range` breaks the tooltip and the price (ADV-R5-14)
+{
+  const s = toSave(newGame(5, { class: CL.fm, name: "NoRange", start: "town", wearStartKit: true }));
+  s.inventory.items.push({ ...structuredClone(s.equipment.weapon), id: "i90", x: 0, y: 0, affixes: [{ stat: "defense", value: 5 }] });
+  const text = canonical({ ...s, checksum: checksumOf(s) });
+  const g = await seeded(await buildSeed({ "office-crawler.slot.1": text }));
+  await g.page.click(T("continue")).catch(() => {}); await g.page.waitForTimeout(150);
+  if ((await g.state()).scene === "town") {
+    await g.page.keyboard.press("KeyI"); await g.page.waitForTimeout(100);
+    await g.page.evaluate(() => { for (const el of document.querySelectorAll("[data-tip]")) el.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })); });
+    await g.page.waitForTimeout(100);
+  }
+  xfail("an imported item whose affix has no range can be hovered without a page error (rejected at import or priced safely)", (await g.state()).scene !== "town" || g.errors.length === 0, "ADV-R5-14", g.errors.slice(0, 1));
+  await g.context.close();
+}
+
+// ---------------------------------------------------------------- hostile import: negative hpMax/stamina affix (ADV-R5-12)
+{
+  const s = toSave(newGame(5, { class: CL.fm, name: "Negative", start: "town", wearStartKit: true }));
+  s.equipment.weapon.affixes = [{ stat: "hpMax", value: -100 }];
+  const text = canonical({ ...s, checksum: checksumOf(s) });
+  const g = await seeded(await buildSeed({ "office-crawler.slot.1": text }));
+  await g.page.click(T("continue")).catch(() => {}); await g.page.waitForTimeout(150);
+  const st = await g.state();
+  xfail("an imported item with a -100 hpMax affix does not leave the hero with negative health (rejected or clamped)", st.scene !== "town" ? true : st.player.hp >= 1 && st.player.hpMax >= 1, "ADV-R5-12", st.player && { hp: st.player.hp, hpMax: st.player.hpMax });
   await g.context.close();
 }
 

@@ -34,7 +34,7 @@ test("ADV-R5-12 an imported item with a negative hpMax or stamina affix must not
   assert.deepEqual(bad, []);
 });
 
-test("ADV-R5-13 an owner beat in the future (clock set back, or a tampered index) must not lock other tabs out until that time", { todo: "ADV-R5-13" }, () => {
+test("ADV-R5-13 an owner beat in the future (clock set back, or a tampered index) must not lock other tabs out until that time (fixed in round 2)", () => {
   const ad = createMemoryAdapter(), clk = { t: T0 };
   const a = rig(ad, "A", clk);
   a.session.createCharacter({ slot: 1, class: "sales-rep", name: "One" });
@@ -303,4 +303,13 @@ test("rename, delete and import are guarded by the owner lock; the displaced tab
   const before = ad.getItem("office-crawler.slot.1");
   assert.equal(b.session.renameSlot({ slot: 1, name: "Nope" }).error, "another-tab");
   assert.equal(ad.getItem("office-crawler.slot.1"), before);
+});
+
+test("ADV-R5-14 an affix without `range` is accepted by the schema but makes sellValue/buyPrice (and the item tooltip) throw", { todo: "ADV-R5-14" }, () => {
+  const s = toSave(mk());
+  s.inventory.items.push({ ...structuredClone(s.equipment.weapon), id: "i90", x: 0, y: 0, affixes: [{ stat: "defense", value: 5 }] });
+  const r = deserialize(reseal(s));
+  if (!r.ok) return; // rejecting the save is a valid fix
+  const it = r.state.inventory.items.find((i) => i.id === "i90");
+  assert.doesNotThrow(() => { core.sellValue(it); core.buyPrice(it); });
 });
