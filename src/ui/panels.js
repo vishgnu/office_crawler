@@ -59,10 +59,10 @@ export function createPanels(root, game) {
   // ------------------------------------------------------------ item markup
   const itemBox = (it, { fill = false, pos = null, cls = "" } = {}) => {
     const warn = unmetOf(it) ? '<span class="warn" aria-hidden="true">!</span>' : "";
-    const style = pos ? ` style="--x:${pos.x};--y:${pos.y};--w:${it.w};--h:${it.h}"` : "";
-    return `<span class="item r-${it.rarity}${fill ? " fill" : ""}${cls ? " " + cls : ""}" data-item="${esc(it.id)}"${style}>${itemIcon(it)}<span class="rm">${rarityMark(it.rarity, 11)}</span>${warn}</span>`;
+    const style = pos ? ` style="--x:${Number(pos.x) || 0};--y:${Number(pos.y) || 0};--w:${Number(it.w) || 1};--h:${Number(it.h) || 1}"` : "";
+    return `<span class="item r-${esc(it.rarity)}${fill ? " fill" : ""}${cls ? " " + cls : ""}" data-item="${esc(it.id)}"${style}>${itemIcon(it)}<span class="rm">${rarityMark(it.rarity, 11)}</span>${warn}</span>`;
   };
-  const nameLine = (it, size = 13) => `<span class="l-${it.rarity}">${rarityMark(it.rarity, size)} ${esc(it.name)}</span>`;
+  const nameLine = (it, size = 13) => `<span class="l-${esc(it.rarity)}">${rarityMark(it.rarity, size)} ${esc(it.name)}</span>`;
   const legend = () => `<ul class="legend" aria-label="${esc(T.rarityKey)}"><li class="lh">${esc(T.rarityKey)}</li>${["normal", "magic", "rare", "unique"].map((r) =>
     `<li class="l-${r}"><span class="swatch r-${r}"></span>${rarityMark(r, 14)}<span>${esc(rarityName(r))}</span></li>`).join("")}</ul>`;
 
@@ -73,12 +73,12 @@ export function createPanels(root, game) {
     h += `<div class="dollrow"><div class="doll" role="group" aria-label="${esc(T.equipment)}">`;
     for (const k of Object.keys(DOLL)) {
       const d = DOLL[k], it = c.equipment[k], ghost = held && origin?.kind === "slot" && origin.k === k ? held : null;
-      h += `<button class="slot${ghost ? " ghosted" : ""}" type="button" data-testid="slot-${k}" data-slot="${k}" data-fk="s.${k}" ${it ? `data-tip="eq:${k}"` : ""} style="grid-column:${d[0]}/span ${d[2]};grid-row:${d[1]}/span ${d[3]}" aria-label="${esc(SLOT_LABEL[k])}: ${it ? esc(itemLabel(it)) : T.empty}">${it ? itemBox(it, { fill: true }) : ghost ? itemBox(ghost, { fill: true, cls: "dim" }) : `<span class="lb">${esc(SLOT_LABEL[k])}</span>`}</button>`;
+      h += `<button class="slot${ghost ? " ghosted" : ""}" type="button" data-testid="slot-${k}" data-slot="${k}" data-fk="s.${k}" ${it ? `data-tip="eq:${esc(k)}"` : ""} style="grid-column:${d[0]}/span ${d[2]};grid-row:${d[1]}/span ${d[3]}" aria-label="${esc(SLOT_LABEL[k])}: ${it ? esc(itemLabel(it)) : T.empty}">${it ? itemBox(it, { fill: true }) : ghost ? itemBox(ghost, { fill: true, cls: "dim" }) : `<span class="lb">${esc(SLOT_LABEL[k])}</span>`}</button>`;
     }
     h += `</div><div class="side">${legend()}<div class="beltbox"><h4>${esc(T.belt)} <kbd>${esc(keyLabel(c.options?.keys?.belt1 ?? DEFAULT_KEYS.belt1))}</kbd>–<kbd>${esc(keyLabel(c.options?.keys?.belt4 ?? DEFAULT_KEYS.belt4))}</kbd></h4><div class="bgrid" role="group" aria-label="${esc(T.beltKeys)}">`;
     c.belt.forEach((it, i) => {
       const ghost = held && origin?.kind === "belt" && origin.i === i ? held : null;
-      h += `<button class="bslot" type="button" data-testid="bslot-${i}" data-belt="${i}" data-fk="b.${i}" ${it ? `data-tip="belt:${i}"` : ""} aria-label="${esc(T.belt)} ${i + 1}: ${it ? esc(it.name) : T.empty}">${it ? itemBox(it, { fill: true }) : ghost ? itemBox(ghost, { fill: true, cls: "dim" }) : `<span class="lb">${i + 1}</span>`}</button>`;
+      h += `<button class="bslot" type="button" data-testid="bslot-${i}" data-belt="${i}" data-fk="b.${i}" ${it ? `data-tip="belt:${Number(i)}"` : ""} aria-label="${esc(T.belt)} ${i + 1}: ${it ? esc(it.name) : T.empty}">${it ? itemBox(it, { fill: true }) : ghost ? itemBox(ghost, { fill: true, cls: "dim" }) : `<span class="lb">${i + 1}</span>`}</button>`;
     });
     h += `</div></div><p class="keyhint">${esc(T.dragHint)}</p></div></div>`;
     // grid: 40 cell buttons under an absolutely positioned item layer
@@ -102,7 +102,7 @@ export function createPanels(root, game) {
     let h = `<div class="ph"><h2>${esc(T.fileTitle)}</h2>${closeBtn("character", T.closeCharacter)}</div><div class="pb"><div class="sheet" data-testid="employee-file">${tabsHtml("character")}`;
     h += `<div class="fh"><div class="photo"><canvas width="112" height="112" data-bust="${esc(p.class)}" aria-hidden="true"></canvas></div>`;
     h += `<div><h2 data-testid="file-name">${esc(p.name ?? "")}</h2><p data-testid="file-class">${esc(classById(p.class)?.name ?? "")} · <span data-stat="level">${esc(T.level)} ${p.level}</span></p><p>${esc(c.floor.name)}</p></div><div class="stamp" aria-hidden="true">${esc(T.probation)}</div></div>`;
-    h += `<div class="xpl" title="${esc(T.xpTotal)}: ${num(xpv.total)}"><span>${esc(T.experience)}</span><span data-stat="xp" data-testid="xp-label" data-total="${xpv.total}">${xpv.capped ? esc(T.xpMax) : `${num(xpv.into)} / ${num(xpv.span)} ${esc(T.xpToLevel)} ${p.level + 1} (${pct}%)`}</span></div><div class="xpb2" role="img" title="${esc(T.xpTotal)}: ${num(xpv.total)}" aria-label="${esc(T.experience)} ${pct}%, ${esc(T.xpTotal)} ${num(xpv.total)}"><i style="width:${pct}%"></i></div>`;
+    h += `<div class="xpl" title="${esc(T.xpTotal)}: ${num(xpv.total)}"><span>${esc(T.experience)}</span><span data-stat="xp" data-testid="xp-label" data-total="${Number(xpv.total) || 0}">${xpv.capped ? esc(T.xpMax) : `${num(xpv.into)} / ${num(xpv.span)} ${esc(T.xpToLevel)} ${p.level + 1} (${pct}%)`}</span></div><div class="xpb2" role="img" title="${esc(T.xpTotal)}: ${num(xpv.total)}" aria-label="${esc(T.experience)} ${pct}%, ${esc(T.xpTotal)} ${num(xpv.total)}"><i style="width:${pct}%"></i></div>`;
     h += `<section class="sc-attr"><h3>${esc(T.attributes)} <em>${esc(T.pointsToSpend)}: <b data-stat="attrPoints">${pts}</b></em></h3>`;
     for (const k of T.attrOrder) {
       const own = p.attrs[k], tot = p.attrsTotal?.[k] ?? own, bonus = tot - own;
@@ -125,7 +125,7 @@ export function createPanels(root, game) {
   const renderSkills = (c) => renderTree(c).replace("@TABS@", tabsHtml("skills"));
 
   // ------------------------------------------------------------ NPC windows
-  const rowItem = (it, tipKey, right) => `<li class="row" data-tip="${tipKey}"><span class="ricon" style="--rw:${it.w};--rh:${it.h}">${itemIcon(it)}</span><span class="rname">${nameLine(it, 14)}<small>${esc(describeItem(it, core().player).main[0]?.text ?? "")}</small></span>${right}</li>`;
+  const rowItem = (it, tipKey, right) => `<li class="row" data-tip="${esc(tipKey)}"><span class="ricon" style="--rw:${Number(it.w) || 1};--rh:${Number(it.h) || 1}">${itemIcon(it)}</span><span class="rname">${nameLine(it, 14)}<small>${esc(describeItem(it, core().player).main[0]?.text ?? "")}</small></span>${right}</li>`;
   function renderNpc(c) {
     const d = c.ui.dialog;
     if (!d) return "";
@@ -174,7 +174,7 @@ export function createPanels(root, game) {
     h += `</div><div class="hgroup" role="group" aria-label="${esc(T.beltKeys)}">`;
     for (let i = 0; i < 4; i++) {
       const it = c.belt[i];
-      h += `<button class="hb${it ? "" : " none"}" type="button" data-testid="hud-belt-${i}" data-use-belt="${i}" data-fk="h.b.${i}" ${it ? `data-tip="belt:${i}"` : ""} style="${ctl(L.belt[i])}" aria-label="${it ? `${esc(kl(`belt${i + 1}`))}: ${esc(T.drink)} ${esc(it.name)}` : `${esc(kl(`belt${i + 1}`))}: ${esc(T.beltEmpty)}`}"><span class="kb">${esc(kl(`belt${i + 1}`))}</span>${it ? itemIcon(it) : ""}</button>`;
+      h += `<button class="hb${it ? "" : " none"}" type="button" data-testid="hud-belt-${i}" data-use-belt="${i}" data-fk="h.b.${i}" ${it ? `data-tip="belt:${Number(i)}"` : ""} style="${ctl(L.belt[i])}" aria-label="${it ? `${esc(kl(`belt${i + 1}`))}: ${esc(T.drink)} ${esc(it.name)}` : `${esc(kl(`belt${i + 1}`))}: ${esc(T.beltEmpty)}`}"><span class="kb">${esc(kl(`belt${i + 1}`))}</span>${it ? itemIcon(it) : ""}</button>`;
     }
     h += `</div>`;
     const xr = L.xp, xt = xpProgress(p);
@@ -266,18 +266,18 @@ export function createPanels(root, game) {
   };
   const rectOf = (n) => { const r = n.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
   function tipHtml(d, cmp, extra) {
-    let h = `<div class="tn l-${d.rarity}">${rarityMark(d.rarity, 15)}<span>${esc(d.name)}</span></div><div class="tk">${esc(d.rarityName)} · ${esc(d.base)} · ${d.size} ${esc(T.cells)}</div>`;
+    let h = `<div class="tn l-${esc(d.rarity)}">${rarityMark(d.rarity, 15)}<span>${esc(d.name)}</span></div><div class="tk">${esc(d.rarityName)} · ${esc(d.base)} · ${esc(d.size)} ${esc(T.cells)}</div>`;
     for (const m of d.main) h += `<div class="tb">${esc(m.text)}</div>`;
-    for (const a of d.affixes) h += `<div class="ta l-${d.rarity}">${esc(a.text)}</div>`;
+    for (const a of d.affixes) h += `<div class="ta l-${esc(d.rarity)}">${esc(a.text)}</div>`;
     if (d.twoHanded) h += `<div class="tk">${esc(T.twoHanded)}</div>`;
     if (d.reqs.length) h += `<div class="tr">${d.reqs.map((r) => `<span class="${r.ok ? "yes" : "no"}">${r.ok ? "✓" : "✗"} ${esc(r.detail)}</span>`).join("")}</div>`;
     if (d.flavour) h += `<div class="tf">“${esc(d.flavour)}”</div>`;
     if (extra) h += `<div class="tv">${esc(extra)}</div>`;
     if (cmp) {
       h += `<div class="cmp"><h4>${esc(T.compareTitle)}</h4>`;
-      h += cmp.equipped ? `<div class="cn l-${cmp.equipped.rarity}">${rarityMark(cmp.equipped.rarity, 13)}<span>${esc(cmp.equipped.name)}</span></div>` : `<div class="cn">${esc(T.nothingEquipped)}</div>`;
+      h += cmp.equipped ? `<div class="cn l-${esc(cmp.equipped.rarity)}">${rarityMark(cmp.equipped.rarity, 13)}<span>${esc(cmp.equipped.name)}</span></div>` : `<div class="cn">${esc(T.nothingEquipped)}</div>`;
       h += `<div class="dl">${cmp.deltas.map((x) => `<div class="df ${x.delta > 0 ? "up" : "dn"}">${arrow(x.delta > 0)}<span>${x.delta > 0 ? "+" : "−"}${Math.abs(x.delta)} ${esc(x.label)}</span></div>`).join("")}</div>`;
-      h += `<div class="vd ${cmp.verdict}">${esc(cmp.verdictText)}</div>${d.unmet ? `<div class="vd dn">${esc(T.cannotEquipYet)}</div>` : ""}</div>`;
+      h += `<div class="vd ${esc(cmp.verdict)}">${esc(cmp.verdictText)}</div>${d.unmet ? `<div class="vd dn">${esc(T.cannotEquipYet)}</div>` : ""}</div>`;
     }
     return h;
   }
@@ -291,7 +291,7 @@ export function createPanels(root, game) {
     const d = describeItem(it, c.player);
     const cmp = kind === "inv" || kind === "vendor" || kind === "stash" ? compareToEquipped(c, it) : null;
     const price = kind === "vendor" ? `${T.price}: ${buyPrice(it)} ${T.gold}` : `${T.sellsFor} ${sellValue(it)} ${T.gold}`;
-    el.tip.className = `tip r-${it.rarity}`;
+    el.tip.className = `tip r-${String(it.rarity).replace(/[^a-z-]/g, "")}`;
     el.tip.innerHTML = tipHtml(d, cmp, price);
     el.tip.hidden = false;
     el.tip.style.left = "0px"; el.tip.style.top = "0px"; el.tip.style.maxHeight = "";

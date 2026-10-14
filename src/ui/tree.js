@@ -37,24 +37,24 @@ function nodeHtml(n, c, bar) {
   const lock = n.lockReason ?? (n.state === "no-points" ? T.trStateNoPoints : STATE_WORD[n.state]);
   const verb = learned ? T.upgrade : T.learn;
   const label = `${n.name}. ${T.trLevelOf} ${n.level} / ${n.maxLevel}. ${STATE_WORD[n.state]}${n.lockReason ? `. ${n.lockReason}` : ""}${n.signature ? `. ${T.trSignature}` : ""}`;
-  let h = `<li class="tnode st-${n.state}${n.signature ? " sig" : ""}${n.assigned !== null ? " bar" : ""}" data-testid="skill-${n.id}" data-state="${n.state}" data-tier="${n.tier}" style="--col:${n.col}">`;
-  h += `<button type="button" class="tn-main" data-tip="node:${n.id}" data-fk="n.${n.id}" data-testid="node-${n.id}" aria-label="${esc(label)}"><span class="tn-ic">${skillIcon(n.iconKey)}${learned ? '<em class="mk" aria-hidden="true">✓</em>' : ""}</span>`;
-  h += `<span class="tn-name">${esc(n.name)}</span><span class="tn-lv"><span class="pp" aria-hidden="true">${pips(n)}</span><span data-testid="level-${n.id}">${n.level}</span>/${n.maxLevel}</span>`;
+  let h = `<li class="tnode st-${n.state}${n.signature ? " sig" : ""}${n.assigned !== null ? " bar" : ""}" data-testid="skill-${esc(n.id)}" data-state="${esc(n.state)}" data-tier="${Number(n.tier)}" style="--col:${Number(n.col) || 0}">`;
+  h += `<button type="button" class="tn-main" data-tip="node:${esc(n.id)}" data-fk="n.${esc(n.id)}" data-testid="node-${esc(n.id)}" aria-label="${esc(label)}"><span class="tn-ic">${skillIcon(n.iconKey)}${learned ? '<em class="mk" aria-hidden="true">✓</em>' : ""}</span>`;
+  h += `<span class="tn-name">${esc(n.name)}</span><span class="tn-lv"><span class="pp" aria-hidden="true">${pips(n)}</span><span data-testid="level-${esc(n.id)}">${n.level}</span>/${n.maxLevel}</span>`;
   h += `<span class="tn-st">${esc(lock)}</span></button>`;
   if (n.kind !== "passive" || n.maxLevel > 0) {
-    h += `<button class="learn" type="button" data-testid="learn-${n.id}" data-learn="${n.id}" data-fk="l.${n.id}" ${canLearn ? "" : "disabled"} aria-label="${esc(verb)} ${esc(n.name)}${n.state === "maxed" ? ", " + esc(T.maxed) : ""}">${esc(n.state === "maxed" ? T.maxed : verb)}</button>`;
+    h += `<button class="learn" type="button" data-testid="learn-${esc(n.id)}" data-learn="${esc(n.id)}" data-fk="l.${esc(n.id)}" ${canLearn ? "" : "disabled"} aria-label="${esc(verb)} ${esc(n.name)}${n.state === "maxed" ? ", " + esc(T.maxed) : ""}">${esc(n.state === "maxed" ? T.maxed : verb)}</button>`;
   }
   if (n.kind === "active" && learned) {
     h += `<div class="sassign" role="group" aria-label="${esc(T.assignTo)} ${esc(n.name)}"><span class="sr">${esc(T.assignTo)}</span>`;
     for (let i = 0; i < bar.hotkeys.length; i++) {
       const on = bar.hotkeys[i] === n.id;
-      h += `<button class="mini key${on ? " on" : ""}" type="button" data-testid="assign-${n.id}-${i}" data-assign="${n.id}" data-slot="${i}" data-fk="a.${n.id}.${i}" aria-pressed="${on}" aria-label="${esc(T.assignTo)} F${i + 1}: ${esc(n.name)}${on ? ", " + esc(T.assigned) : ""}">F${i + 1}</button>`;
+      h += `<button class="mini key${on ? " on" : ""}" type="button" data-testid="assign-${esc(n.id)}-${i}" data-assign="${esc(n.id)}" data-slot="${i}" data-fk="a.${esc(n.id)}.${i}" aria-pressed="${on}" aria-label="${esc(T.assignTo)} F${i + 1}: ${esc(n.name)}${on ? ", " + esc(T.assigned) : ""}">F${i + 1}</button>`;
     }
     h += `</div>`;
   }
   if (n.kind === "aura" && learned) {
     const on = p.aura === n.id;
-    h += `<button class="mini aura${on ? " on" : ""}" type="button" data-testid="aura-${n.id}" data-aura="${n.id}" data-fk="au.${n.id}" aria-pressed="${on}">${esc(on ? T.trAuraOn : T.trAuraOff)}</button>`;
+    h += `<button class="mini aura${on ? " on" : ""}" type="button" data-testid="aura-${esc(n.id)}" data-aura="${esc(n.id)}" data-fk="au.${esc(n.id)}" aria-pressed="${on}">${esc(on ? T.trAuraOn : T.trAuraOff)}</button>`;
   }
   return h + `</li>`;
 }
@@ -69,16 +69,16 @@ export function renderTree(c) {
   h += `<p class="sk-note" data-testid="respec-note">${esc(v.respec.available ? T.trResetHint : (v.respec.reason === "not-in-town" ? T.trResetNone : T.trRespecFail[v.respec.reason] ?? T.trResetNone))}</p>`;
   h += `<p class="sk-note">${esc(T.trSelectNote)}</p>`;
   if (basic) {
-    h += `<h3>${esc(T.basicAttack)}</h3><ul class="slist"><li class="srow" data-testid="skill-${basic.id}"><div class="sic">${skillIcon(basic.id)}</div><div class="sbody"><div class="sname"><b>${esc(basic.name)}</b></div><div class="stext">${esc(S[basic.textKey] ?? "")}</div></div><span></span>`;
+    h += `<h3>${esc(T.basicAttack)}</h3><ul class="slist"><li class="srow" data-testid="skill-${esc(basic.id)}"><div class="sic">${skillIcon(basic.id)}</div><div class="sbody"><div class="sname"><b>${esc(basic.name)}</b></div><div class="stext">${esc(S[basic.textKey] ?? "")}</div></div><span></span>`;
     h += `<div class="sassign" role="group" aria-label="${esc(T.assignTo)} ${esc(basic.name)}"><span>${esc(T.assignTo)}</span>`;
-    for (let i = 0; i < bar.hotkeys.length; i++) { const on = bar.hotkeys[i] === basic.id; h += `<button class="mini key${on ? " on" : ""}" type="button" data-testid="assign-${basic.id}-${i}" data-assign="${basic.id}" data-slot="${i}" data-fk="a.${basic.id}.${i}" aria-pressed="${on}" aria-label="${esc(T.assignTo)} F${i + 1}: ${esc(basic.name)}${on ? ", " + esc(T.assigned) : ""}">F${i + 1}</button>`; }
+    for (let i = 0; i < bar.hotkeys.length; i++) { const on = bar.hotkeys[i] === basic.id; h += `<button class="mini key${on ? " on" : ""}" type="button" data-testid="assign-${esc(basic.id)}-${i}" data-assign="${esc(basic.id)}" data-slot="${i}" data-fk="a.${esc(basic.id)}.${i}" aria-pressed="${on}" aria-label="${esc(T.assignTo)} F${i + 1}: ${esc(basic.name)}${on ? ", " + esc(T.assigned) : ""}">F${i + 1}</button>`; }
     h += `</div></li></ul>`;
   }
   for (const b of v.branches) {
-    h += `<section class="branch" data-testid="branch-${b.id}" aria-label="${esc(b.name)}"><h3><span class="bic">${skillIcon(b.iconKey)}</span>${esc(b.name)} <em>${esc(T.trBranchSpent)}: ${b.spent}</em></h3>`;
+    h += `<section class="branch" data-testid="branch-${esc(b.id)}" aria-label="${esc(b.name)}"><h3><span class="bic">${skillIcon(b.iconKey)}</span>${esc(b.name)} <em>${esc(T.trBranchSpent)}: ${b.spent}</em></h3>`;
     const tiers = [...new Set(b.nodes.map((n) => n.tier))].sort((a, z) => a - z);
     for (const t of tiers) {
-      h += `<div class="tier"><span class="tl">${esc(T.trTier)} ${t}</span><ul class="tnodes">${b.nodes.filter((n) => n.tier === t).sort((a, z) => a.col - z.col).map((n) => nodeHtml(n, c, bar)).join("")}</ul></div>`;
+      h += `<div class="tier"><span class="tl">${esc(T.trTier)} ${Number(t)}</span><ul class="tnodes">${b.nodes.filter((n) => n.tier === t).sort((a, z) => a.col - z.col).map((n) => nodeHtml(n, c, bar)).join("")}</ul></div>`;
     }
     h += `</section>`;
   }
