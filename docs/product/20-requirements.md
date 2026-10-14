@@ -12,7 +12,7 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 
 ## Summary
 
-79 requirements: 68 MVP, 11 later. The count is above the 35-60 target because each HUD panel, slot type and testability hook is listed separately; the Spec phase may merge them.
+108 requirements: 97 MVP, 11 later (79 from circle 1 plus 29 in area M added 2026-10-14; R-010, R-014, R-017, R-018, R-074, R-092 and R-093 are superseded or promoted by area M, see its header). The count is above the 35-60 target because each HUD panel, slot type and testability hook is listed separately; the Spec phase may merge them.
 
 | Area | MVP | Later |
 |---|---|---|
@@ -28,6 +28,7 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 | J Office theme and tone | 5 | 0 |
 | K Tech | 4 | 0 |
 | L Testability | 4 | 0 |
+| M Classes, skill trees, save slots (added 2026-10-14) | 29 | 0 |
 
 ---
 
@@ -77,6 +78,7 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 ## B. Character
 
 ### R-010 Selectable character class
+- SUPERSEDED 2026-10-14 by R-200..R-215 (3 classes, customer's third briefing).
 - Priority: must | Scope: MVP
 - Source: genre; circle-01 Q3
 - Status: draft | Provenance: INFERRED
@@ -101,6 +103,7 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 - Notes: kills give experience; each level raises base health/mana, grants 5 attribute points to spend and 1 skill point. MVP level cap: 30 (draft number, see circle-01 Q3). Level-up restores health and mana.
 
 ### R-014 Skills: learn and upgrade with skill points
+- SUPERSEDED in structure 2026-10-14 by R-202..R-205 (per-class trees).
 - Priority: must | Scope: MVP
 - Source: genre
 - Status: draft | Provenance: INFERRED
@@ -118,11 +121,13 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 - Status: draft | Provenance: INFERRED
 
 ### R-017 Multiple classes with distinct skill sets
+- PROMOTED to MVP 2026-10-14: see R-200..R-208.
 - Priority: should | Scope: LATER
 - Source: genre; circle-01 Q3
 - Status: draft | Provenance: INFERRED
 
 ### R-018 Respec (reset skill/attribute points)
+- PARTLY PROMOTED 2026-10-14: skill respec is R-209; attribute respec stays LATER.
 - Priority: could | Scope: LATER
 - Source: ASSUMED
 - Status: draft | Provenance: ASSUMED
@@ -356,6 +361,7 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 - Status: draft | Provenance: INFERRED
 
 ### R-074 Skill panel
+- BECOMES the skill-tree panel 2026-10-14: R-206.
 - Priority: must | Scope: MVP
 - Source: genre
 - Status: draft | Provenance: INFERRED
@@ -416,12 +422,14 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 - Notes: the current floor mid-state is not saved in MVP (resume in town / floor entry). Open: Q4.
 
 ### R-092 Single character slot (MVP), export/import of save as a file
+- SUPERSEDED 2026-10-14 by R-220 (5 slots, customer's third briefing); export/import continues as R-226.
 - Priority: should | Scope: MVP
 - Source: ASSUMED
 - Status: draft | Provenance: ASSUMED
 - Notes: export/import protects against browser data loss (NFR-D). Multiple character slots LATER.
 
 ### R-093 Multiple character slots
+- PROMOTED to MVP 2026-10-14: see R-220..R-227.
 - Priority: could | Scope: LATER
 - Source: genre
 
@@ -504,3 +512,230 @@ Date: 2026-10-13. Owner: requirements-facilitator.
 - Priority: should | Scope: MVP
 - Source: ASSUMED
 - Status: draft | Provenance: ASSUMED
+
+---
+
+## M. Classes, skill trees and save slots (added 2026-10-14, circle 2)
+
+Source of this area: the **third briefing** in `00-brief.md` (user, 2026-10-14, verbatim: "I want to have 3 player classes with skill trees. Also, make a visually appealing character selection screen. Add a save with 5 slots to the options menu"). Status `agreed` is used only where those words cover the item; everything else is `draft` with a proposed default in `circles/circle-02.md`.
+Genre convention used for the drafts (INFERRED): three classes in a melee/heavy, ranged/agile and caster split; each class has its own tree of three branches (tabs); about ten skills per class; prerequisites and level gates; one skill point per level; a character-creation step with name and class.
+
+**Supersedes (customer words win; no open conflict, the brief already records the override):**
+- R-010 ("MVP default: 1 playable class") and circle-01 Q3 "1 class" (PROXY): now 3 classes (R-200).
+- R-017 (multiple classes, LATER): promoted to MVP via R-200..R-208.
+- R-014 ("1 basic attack + 4 active skills + 2 passives", "list" per QF-06-7 "list, no prerequisites"): replaced by per-class trees with prerequisites (R-202..R-205). The existing `clerk` content (Strike, Stapler Throw, Reply-All, Coffee Break, Mute, Dress Code, Hustle) is a design input, not a final class (see R-225).
+- R-018 (respec, LATER): promoted, see R-209.
+- R-092 ("single character slot") and circle-01 Q4 "one save slot" (PROXY): now 5 slots (R-220). R-093 (multiple slots, LATER): promoted and merged into R-220..R-227.
+- R-074 (skill panel): becomes the skill-tree panel (R-206). QF-06-1 ("no class screen for one class") and QF-09-4 ("delete character keeps options") stay valid in spirit; see R-221.
+- Open tension (not a conflict): R-013 gives 1 skill point per level and a level cap of 30, i.e. 29 points, while a class has about 10 skills with several levels each. The tree is therefore a "choose a build" tree, not "learn everything". Confirmed as default in Q2.
+
+### Classes
+
+### R-200 Three playable classes
+- Priority: must | Scope: MVP
+- Source: brief third briefing ("3 player classes")
+- Status: agreed (number: 3); concepts, names and roles draft (circle-02 Q1) | Provenance: OBSERVED (brief) / INFERRED (genre)
+- Notes: working roles: melee/heavy, ranged/agile, caster. Names are original office re-expressions, never the original's class names (R-102, NFR-L01). Final names ESCALATE for the brand check, as for the single class (QF-06-1).
+- Testable as: `classes.length === 3`; each id is distinct; each is selectable at creation and playable from floor 1 to the boss.
+
+### R-201 Class identity: attributes, growth, basic attack and weapon affinity
+- Priority: must | Scope: MVP
+- Source: genre (INFERRED); circle-02 Q4
+- Status: draft | Provenance: INFERRED
+- Notes: each class has its own starting values for the four primary attributes (R-011), per-level health/mana growth, a distinct basic attack (R-021/R-022) and a starting weapon. Numbers live in `config`/content (QF-05-7), not in code paths.
+- Testable as: unit test that the three classes differ in starting attributes, growth and basic attack; a new character of each class has its own starting kit.
+
+### R-202 Per-class skill tree with three branches
+- Priority: must | Scope: MVP
+- Source: brief ("skill trees"); genre for the structure
+- Status: agreed (a skill tree per class); structure of 3 branches draft (circle-02 Q2) | Provenance: OBSERVED / INFERRED
+- Notes: each class has its own tree shown as 3 tabs (branches). Skills are not shared between classes; a character only sees and can learn skills of its own class.
+- Testable as: each class's tree has exactly 3 branches; no skill id appears in two classes' trees.
+
+### R-203 Tree size and content
+- Priority: must | Scope: MVP
+- Source: genre; circle-02 Q2
+- Status: draft | Provenance: INFERRED
+- Notes: about 10 learnable skills per class (for example 3 + 3 + 4 across the branches) in addition to the free basic attack. Mix of active skills (mana cost, no cooldown, QF-06-5) and passives. Every skill has a name, original text and levels 1..N that scale (AC-R-014-5 pattern). Skill names are original and office-flavoured; the existing 6 skills are reused or renamed into the trees.
+- Testable as: data check: 3 classes x about 10 skills, every skill has text, max level and per-level values; each branch has at least one active skill.
+
+### R-204 Prerequisites and tier gates
+- Priority: must | Scope: MVP
+- Source: genre; circle-02 Q2
+- Status: draft | Provenance: INFERRED
+- Notes: a skill can require (a) a character level and (b) one earlier skill in the same branch at level 1 or higher. The tree is a directed acyclic graph with 3 tiers per branch. Locked skills show why they are locked (UI, R-206).
+- Testable as: unit test: learning a skill with an unmet prerequisite is rejected and no point is spent; tree data has no cycles and every prerequisite exists.
+
+### R-205 Skill points, levels and spending rules
+- Priority: must | Scope: MVP
+- Source: R-013 (1 point per level); genre
+- Status: draft | Provenance: INFERRED
+- Notes: 1 skill point per character level (R-013), spent on a learnable skill to raise it by one level up to its max (default 5, single-level for some passives and the capstone). No negative points, no spending without a point, points cannot be spent on another class's skill. Points are never lost on level-up while unspent.
+- Testable as: unit test of point accounting over levels 1-30: spent plus unspent equals levels gained; max level enforced.
+
+### R-206 Skill-tree panel
+- Priority: must | Scope: MVP
+- Source: brief ("skill trees"); R-074 (replaced); circle-02 Q2/Q3
+- Status: draft | Provenance: INFERRED
+- Notes: panel opened with the skill key (S and K, QF-06-3 answer); 3 tabs, nodes with icons and prerequisite lines, state shown by shape and text, not by colour alone (NFR-A03): locked, available, learned, maxed. Hover tooltip with text, current and next level values, mana cost and the reason when locked. Shows points left. Keyboard operable (NFR-A01). Readable at 1280x720 and 390 px wide in the compact layout used for the phone review shots.
+- Testable as: E2E: open the panel, 3 tabs present, learn a skill with a click, point counter decreases, tooltip text non-empty; a11y check that state is also in text.
+
+### R-207 Learned skills feed the skill bar
+- Priority: must | Scope: MVP
+- Source: R-015; genre
+- Status: draft | Provenance: INFERRED
+- Notes: active skills the character has learned can be assigned to the left/right-click skill and to F1-F4 (QF-01-4); passives apply automatically; unlearned skills cannot be assigned. A respec (R-209) clears assignments of removed skills.
+- Testable as: unit and E2E: assigning an unlearned skill is rejected; after learning it can be assigned and used in combat.
+
+### R-208 Skill synergies
+- Priority: could | Scope: MVP
+- Source: genre; circle-02 Q2
+- Status: draft | Provenance: INFERRED
+- Notes: optional: a passive or skill grants a bonus to a named related skill per level. Included only if effort allows in the 3 rounds; the tree must work without it.
+- Testable as: if implemented: bonus appears in the tooltip and in damage numbers.
+
+### R-209 Respec of skill points
+- Priority: should | Scope: MVP
+- Source: R-018 (promoted); circle-02 Q3
+- Status: draft | Provenance: ASSUMED
+- Notes: proposed default: unlimited free skill respec in town; attribute respec stays LATER. Needed because three classes and short runs invite trying builds.
+- Testable as: unit test: respec returns all spent points and clears learned skills and bar slots; allowed only in town.
+
+### Character creation and selection
+
+### R-210 Character creation: name and class
+- Priority: must | Scope: MVP
+- Source: brief ("character selection screen"); genre
+- Status: draft (selection agreed, name entry draft; circle-02 Q5) | Provenance: INFERRED
+- Notes: new game = choose an empty slot, choose a class, enter a name, confirm. The chosen class and name are stored in the slot.
+- Testable as: E2E: creating a character with class X and name Y yields `getState().player.class === X` and the name on the slot preview.
+
+### R-211 Character name rules
+- Priority: should | Scope: MVP
+- Source: ASSUMED; circle-02 Q5
+- Status: draft | Provenance: ASSUMED
+- Notes: default: 1-16 characters, letters, digits, space, hyphen and apostrophe; trimmed; not empty; same names allowed across slots (slots are identified by number); a random office-style name suggestion button. Names are stored text only; never evaluated as markup (NFR-S01). English only (NFR-A06).
+- Testable as: unit test of the validator with empty, too long, markup and unicode cases; E2E: invalid name disables "Begin".
+
+### R-212 Visually appealing character-selection screen
+- Priority: must | Scope: MVP
+- Source: brief ("visually appealing character selection screen")
+- Status: agreed (intent); concrete design draft (circle-02 Q5) | Provenance: OBSERVED (brief)
+- Notes: "visually appealing" is subjective, so it is gated by independent visual review (as QF-07-1, QF-02-5 and the earlier variant picks): produce 2-3 variants, review with screenshots at desktop and phone width, the real customer may overrule. Everything is generated by the team in code (R-102, ADR-0004); no third-party art.
+- Testable as: visual review pass recorded in `docs/product/variants/` or a review file; plus automatic checks in R-214.
+
+### R-213 Selection screen content
+- Priority: must | Scope: MVP
+- Source: circle-02 Q5; genre
+- Status: draft | Provenance: INFERRED
+- Notes: shows all 3 classes side by side or as a carousel; the selected class has a large animated character built from the same rig and style as in-game (idle loop, attack demo on hover or click), class name, role tag, a short original blurb, starting stat bars, and a preview of the three skill branches; a name field and a Begin button; a Back button. Background uses the art direction (lighting model and palette, `variants/art-direction/decision.md`).
+- Testable as: E2E: each class card shows name, blurb, stats, skill preview and an animated preview that changes over frames (canvas differs between two frames).
+
+### R-214 Selection screen interaction, accessibility and performance
+- Priority: must | Scope: MVP
+- Source: NFR-A01, NFR-A05, NFR-P01
+- Status: draft | Provenance: INFERRED
+- Notes: operable by mouse and keyboard (arrows, Enter, Esc); class never conveyed by colour alone; reduced-motion option stops the demo animation and the background drift; no flashing; holds 60 fps on the reference laptop; works from 1024 px width up (NFR-B02) and degrades to a stacked layout on phone width in the review shots.
+- Testable as: E2E: full keyboard path from title to a started game; reduced-motion flag leaves the preview static; frame-time check in the perf script.
+
+### R-215 Flow: title, slot, class screen, game
+- Priority: must | Scope: MVP
+- Source: R-076; brief; circle-02 Q6
+- Status: draft | Provenance: INFERRED
+- Notes: title offers Continue (last used slot) and New game; New game and Load go through the slot list; an empty slot leads to the class screen, an occupied slot to Load or, for New game, to an overwrite confirmation (R-221). Replaces the single "Continue/New game" logic of AC-R-090-5 and AC-R-092-4.
+- Testable as: E2E for the flows: new in empty slot, continue, load from list, new over an occupied slot with confirm and cancel.
+
+### Save slots
+
+### R-220 Five save slots
+- Priority: must | Scope: MVP
+- Source: brief ("a save with 5 slots", agreed; overrides circle-01 Q4)
+- Status: agreed | Provenance: OBSERVED (brief)
+- Notes: exactly 5 character slots, numbered 1-5; each holds one character with its own progress, inventory, equipment, belt, skills, deepest floor and boss flag.
+- Testable as: storage inspection: 5 slot entries at most, addressable by number; a game in slot 3 never changes slots 1, 2, 4, 5.
+
+### R-221 Slot operations: create, load, overwrite, delete, rename
+- Priority: must | Scope: MVP
+- Source: circle-02 Q6; genre; brief for the existence of slots
+- Status: draft | Provenance: INFERRED
+- Notes: create (empty slot, via R-210), load, overwrite (creating a new character in an occupied slot, with a clear confirmation naming the character that will be lost), delete (confirmation; slot becomes empty; options are untouched, QF-09-4), rename (the character name, R-211). All destructive actions are confirmed and cancellable. Optional: a copy-to-slot action (could).
+- Testable as: E2E per operation, including cancel paths and "no change to other slots".
+
+### R-222 Slot preview
+- Priority: must | Scope: MVP
+- Source: circle-02 Q6; genre
+- Status: draft | Provenance: INFERRED
+- Notes: each slot card shows: slot number, character name, class (name and icon), level, deepest floor (depth), play time (hh:mm), last played (local date and time), and an empty-slot state. A corrupt slot is shown as such with Export and Delete (R-227). Play time is accumulated game time, not wall clock while paused.
+- Testable as: unit test of the preview projection from a saved character; E2E: card text matches the loaded state.
+
+### R-223 Where the slots are reached
+- Priority: must | Scope: MVP
+- Source: brief ("to the options menu", agreed); circle-02 Q6 for the title
+- Status: agreed (options menu); title and pause access draft | Provenance: OBSERVED (brief) / INFERRED
+- Notes: the slot manager is a section of the Options menu (R-076) from both the title screen and the pause menu. The title's New game / Continue (R-215) use the same slot list. In-game, load and overwrite while playing are available from the pause menu and ask for confirmation, since unsaved floor progress is lost (R-091).
+- Testable as: E2E: slot manager reachable from Options on title and in game.
+
+### R-224 Autosave targets the active slot only
+- Priority: must | Scope: MVP
+- Source: R-091 (extended); circle-02 Q6
+- Status: draft | Provenance: INFERRED
+- Notes: autosave rules of R-091 are unchanged but write to the slot of the running character. Last-used slot is remembered for Continue. Writes are coalesced; storage keys never grow beyond 5 slots plus options (extends AC-R-091-5).
+- Testable as: E2E: 100 saves in slot 2 leave slots 1, 3, 4, 5 byte-identical.
+
+### R-225 Migration of existing single-slot saves into slot 1
+- Priority: must | Scope: MVP
+- Source: circle-02 Q1 and Q6; NFR-D03
+- Status: draft | Provenance: INFERRED
+- Notes: on first load of the new version, a v1 save (single key, class `clerk`) is converted into slot 1; the old key is kept as a one-time backup (QF-09-6) until the player deletes it. Save version is bumped and the migration is idempotent. The legacy class maps to one of the new classes (default: the melee/heavy class, circle-02 Q1) and the learned legacy skills are refunded as free skill points rather than guessed into the new tree. Attributes, items, stash, gold, depth and boss flag are preserved. If slot 1 already holds a new-format save, the old save goes to the first empty slot, else stays as backup with a notice.
+- Testable as: unit test with a synthetic v1 fixture (QF-09-5): after migration slot 1 deep-equals the v1 character on preserved fields; running migration twice changes nothing; corrupt v1 falls back to a fresh start and keeps the bad data for export.
+
+### R-226 Per-slot export/import and options scope
+- Priority: should | Scope: MVP
+- Source: R-092 (adapted); NFR-D02
+- Status: draft | Provenance: ASSUMED
+- Notes: export and import work on one slot at a time (import asks which slot and confirms before overwrite). Options (volume, keys, audio kit) are global, not per slot.
+- Testable as: E2E: export slot 2, import into slot 4, both previews equal.
+
+### R-227 Slot failure handling
+- Priority: must | Scope: MVP
+- Source: NFR-D03, AC-R-090-6 (extended)
+- Status: draft | Provenance: INFERRED
+- Notes: a corrupt or too-new slot never crashes the game and never affects other slots; a write failure or quota exceeded for one slot shows a notice and keeps the last good data of that slot.
+- Testable as: E2E: corrupt slot 3 only: title loads, slot 3 shows the corrupt state, the others work.
+
+### Balance, content and testing
+
+### R-230 Per-class balance targets
+- Priority: must | Scope: MVP
+- Source: R-006, Q7 (20-40 min run); circle-02 Q7
+- Status: draft | Provenance: INFERRED
+- Notes: each class reaches the end boss with a competent bot or player in 20-40 minutes; class parity band (default: median clear time and death count of any class within 25% of the three-class median); no skill is strictly dominant in its tree and no branch is unusable. Values live in one config module (QF-05-7) and are tuned by playtest bots.
+- Testable as: release-gate bot runs (QF-01-5 style) per class with fixed seeds; report with the parity numbers.
+
+### R-231 Items shared across classes
+- Priority: should | Scope: MVP
+- Source: circle-02 Q4
+- Status: draft | Provenance: ASSUMED
+- Notes: default: every item can be equipped by every class subject to level and attribute requirements (R-054); class flavour comes from attributes, skills and a small set of class-tagged affixes that roll only for that class's skills.
+- Testable as: unit test: item requirement check is class-independent; class-tagged affixes never roll for other classes.
+
+### R-232 Distinct look and feel per class in play
+- Priority: should | Scope: MVP
+- Source: genre; art direction decision
+- Status: draft | Provenance: INFERRED
+- Notes: three readable silhouettes and palettes at gameplay scale (rig variants in the Style interface, ADR-0002 section 7), class-specific skill effects and cues (audio kit stays global). Reviewed by the visual reviewer.
+- Testable as: visual review plus atlas test: each class has all animation keys the renderer needs.
+
+### R-233 Original names for classes and skills
+- Priority: must | Scope: MVP
+- Source: claim G2; R-102; NFR-L01, NFR-L05
+- Status: draft | Provenance: INFERRED
+- Notes: class and skill names, blurbs and tooltips pass the denylist scan (`ip-denylist.txt`) and contain no real brand, company or person. Final class names go to the real customer for confirmation (ESCALATE, as QF-06-1).
+- Testable as: legal test scans all class and skill strings.
+
+### R-234 Testability for classes, trees and slots
+- Priority: must | Scope: MVP
+- Source: R-121, R-123; ADR-0003
+- Status: draft | Provenance: INFERRED
+- Notes: in test mode the hook can create a character of a class, read the tree and learned skills, learn/respec skills, and run slot operations against a fake storage; cheats can set level and skill points. The headless bot gets one policy per class. Determinism (R-120, NFR-Q01) holds for every class.
+- Testable as: hook E2E and unit tests listed above; replay hash per class.

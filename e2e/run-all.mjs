@@ -1,6 +1,6 @@
 // Runs every e2e script in sequence; non-zero exit if any fails. `npm run e2e` builds first.
 import { spawnSync } from "node:child_process";
-const scripts = ["audio", "smoke", "hook", "render", "combat", "input", "replay", "realtime", "ui", "s3ui"];
+const scripts = ["audio", "smoke", "hook", "render", "combat", "input", "replay", "realtime", "ui", "s3ui", "polish"];
 let bad = 0;
 for (const s of scripts) {
   console.log(`\n=== e2e/${s}.mjs ===`);

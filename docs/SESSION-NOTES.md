@@ -86,3 +86,4 @@ Running log for the orchestrator (main Claude session). Update after every step.
 | 5 | RENDER: 3 class figures + skill-tree UI + character-select screen + slot UI (options + title); reviews | Fix what round 4 shows |
 | 6 | Balance per class (bot per class), polish, final reviews, proxy acceptance, summary | Retrospective, metrics, harness summary |
 - [r4] Started. POLISH agent from iteration 3 still running (render/ui).
+- [r4] Circle 2: R-200..R-234 (29 reqs), readiness 11/20, 7 questions (default classes: Facilities Manager melee / Sales Rep ranged / IT Wizard caster; 3 branches × ~10 skills; free respec in town; 5 slots; per-class balance within 25%). Proxy answering. Next in parallel: prototyper (class concepts + character-select variants), spec-writer (ACs for area M, ≤40/slice per L-03), architect (tree schema, slot layout).

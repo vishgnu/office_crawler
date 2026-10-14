@@ -127,3 +127,23 @@ Date: 2026-10-13. All items are `draft`. No NFR comes from the user's words; pro
 ### NFR-Q02 No crash on invalid state
 - Errors are caught at the game loop; the game shows an error screen with a way to export the save.
 - Provenance: ASSUMED | Priority: should | Status: draft
+
+## Classes, skill trees and save slots (added 2026-10-14, circle 2)
+
+All draft; none comes from the user's words except the existence of 5 slots.
+
+### NFR-D05 Five-slot storage budget
+- Five slots plus options plus one legacy backup fit in browser local storage (commonly about 5 MB per origin). The per-slot soft cap of QF-09-1 (1 MB) cannot hold for all five; proposed: per-slot soft cap 400 KB, total under 2.5 MB, measured with a worst-case character (full inventory, stash, level 30). A failing write for one slot never damages another (R-227). Writes are coalesced (R-224).
+- Provenance: INFERRED | Priority: must | Status: draft
+
+### NFR-D06 Save version bump and migration
+- The slot format has its own version; the v1 single-slot save migrates into slot 1 (R-225) without data loss on preserved fields; migration is idempotent and tested with a synthetic fixture (QF-09-5). Extends NFR-D03.
+- Provenance: INFERRED | Priority: must | Status: draft
+
+### NFR-P06 Selection screen performance
+- The animated class-selection screen holds 60 fps on the reference laptop (NFR-P01) and does not leak memory when switching classes 200 times.
+- Provenance: ASSUMED | Priority: should | Status: draft
+
+### NFR-A07 Selection screen and tree accessibility
+- Class selection, name entry, slot list and skill tree are fully keyboard-operable, never rely on colour alone (NFR-A03), honour reduced motion (NFR-A05) and meet NFR-A04 contrast and text size.
+- Provenance: INFERRED (extends NFR-A01..A05) | Priority: must | Status: draft
