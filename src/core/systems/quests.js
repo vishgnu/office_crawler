@@ -3,9 +3,18 @@
 // the derived state before and after and emits the cue events. Events whose type starts with "quest." are ignored (no re-entrancy).
 import { config } from "../config.js";
 import { emit } from "../events.js";
+import { createRng } from "../../rng.js";
+import { hash32 } from "../hash.js";
+import { buildGrid } from "../grid.js";
+import { spawnMonster } from "../state.js";
+import { rollItem, rollPotion } from "../items/roll.js";
+import { checkReqs } from "../items/equipment.js";
+import { autoplace } from "../items/inventory.js";
+import { mint, giveGold, affixTagOf } from "./loot.js";
+import { gainXp } from "./progression.js";
 import { quests, sideIds } from "../content/quests.js";
 import { npcs } from "../content/npcs.js";
-import { mainStep, MAIN_STEPS, goalOf, nextStep } from "./questview.js";
+import { mainStep, MAIN_STEPS, goalOf, nextStep, stateOf } from "./questview.js";
 
 const fail = (error) => ({ ok: false, error });
 const OK = { ok: true };
@@ -73,16 +82,22 @@ export function storyRead(state, id) {
   return OK;
 }
 
+/** The dialog gate of accept and hand-in: the giver's dialog is open and the hero is in reach. Returns an error string or null. */
+function giverGate(state, def) {
+  const d = state.ui.dialog;
+  if (!d || state.depth !== 0) return "no dialog";
+  if (d.npc !== def.giver || !npcs[d.npc]) return "wrong npc";
+  const npc = (state.floor.npcs ?? []).find((n) => n.id === d.npc);
+  return !npc || cheb(state.player.tile, npc.tile) > config.interactRange ? "no dialog" : null;
+}
+
 /** Input questAccept { id }: needs the giver's dialog open. Decline is closeDialog (no state change). */
 export function questAccept(state, id) {
   if (typeof id !== "string") return fail("bad id");
   const def = quests[id];
   if (!def || def.kind !== "side" || !state.quests) return fail("unknown quest");
-  const d = state.ui.dialog;
-  if (!d || state.depth !== 0) return fail("no dialog");
-  if (d.npc !== def.giver || !npcs[d.npc]) return fail("wrong npc");
-  const npc = (state.floor.npcs ?? []).find((n) => n.id === d.npc);
-  if (!npc || cheb(state.player.tile, npc.tile) > config.interactRange) return fail("no dialog");
+  const gate = giverGate(state, def);
+  if (gate) return fail(gate);
   const q = state.quests[id];
   if (q.s === "completed") return fail("already done");
   if (q.s !== "available") return fail("not available");
@@ -100,4 +115,138 @@ export function questPin(state, id) {
   state.quests.pinned = id;
   emit(state, { type: "quest.pinned", id });
   return OK;
+}
+
+// ---- R7-0.2: stateless quest stream, generator hooks, pouch, atomic hand-in, rewards (ADR-0007 sections 6 to 8) ----
+
+/** Derived random stream of a quest: no state, no cursor (ADR-0007 section 6). purpose: 1 item floor, 2 item tile, 3 elite tile, 4 reward gear, 5 reward potions. */
+export const questRng = (seed, salt, purpose, depth) => createRng(hash32(seed, 0x51535400 + salt, purpose, depth));
+
+const tkey = (t) => `${t.x},${t.y}`;
+
+/**
+ * A walkable tile for a quest object: not an avoided tile, not the entry or exit, farther than config.safeRadius from the entry, in a room
+ * that is neither the entry room nor the exit room (30 random tries, then a scan of those rooms, then any walkable tile that passes the same
+ * tests). Pure on the floor; every walkable tile of a generated floor is reachable from the stairs (validateFloor). null only if nothing fits.
+ */
+export function questSpot(floor, rng, avoid = []) {
+  const grid = buildGrid(floor), bad = new Set(avoid.map(tkey));
+  if (floor.entry) bad.add(tkey(floor.entry));
+  if (floor.exit) bad.add(tkey(floor.exit));
+  const inRoom = (r, t) => t.x >= r.x && t.x < r.x + r.w && t.y >= r.y && t.y < r.y + r.h;
+  const rooms = (floor.rooms ?? []).filter((r) => !(floor.entry && inRoom(r, floor.entry)) && !(floor.exit && inRoom(r, floor.exit)));
+  const far = (t) => !floor.entry || Math.max(Math.abs(t.x - floor.entry.x), Math.abs(t.y - floor.entry.y)) > config.safeRadius;
+  const ok = (t) => grid.walkable(t.x, t.y) && !bad.has(tkey(t)) && far(t);
+  if (rooms.length) {
+    for (let i = 0; i < 30; i++) {
+      const r = rooms[rng.int(0, rooms.length - 1)], t = { x: rng.int(r.x, r.x + r.w - 1), y: rng.int(r.y, r.y + r.h - 1) };
+      if (ok(t)) return t;
+    }
+    for (const r of rooms) for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (ok({ x, y })) return { x, y };
+  }
+  for (let y = 0; y < floor.h; y++) for (let x = 0; x < floor.w; x++) if (ok({ x, y })) return { x, y };
+  return null;
+}
+
+/** The floor (3 or 4) that holds the quest item of this game: stateless, the same on every visit and after a reload. */
+export const itemFloorOf = (seed) => config.quests.item.floors[questRng(seed, quests.sq2.salt, 1, 0).int(0, config.quests.item.floors.length - 1)];
+
+/**
+ * Called once from enterFloor after the floor and its monsters exist: puts the quest item (sq2 active, not yet found) and the named elite
+ * (sq3 active, not yet killed) on the floor. Does nothing, draws nothing and spawns nothing unless a quest is active, and never touches
+ * state.rng, so a run that never accepts a quest is bit-identical.
+ */
+export function placeQuestObjects(state) {
+  const qs = state.quests, f = state.floor;
+  if (!qs || state.depth <= 0 || state.depth >= config.bossDepth || f.custom) return;
+  const sq2 = qs.sq2, sq3 = qs.sq3;
+  const wantItem = sq2.s === "active" && sq2.p === 0 && !state.player.pouch.some((e) => e.quest === "sq2") && state.depth === itemFloorOf(state.seed) && !state.groundItems.some((g) => g.quest === "sq2");
+  const wantElite = sq3.s === "active" && state.depth === config.quests.elite.depth && !state.monsters.some((m) => m.quest === "sq3" && m.ai !== "dead");
+  if (!wantItem && !wantElite) return;
+  const used = [...f.spawns.map((s) => s.tile), state.player.tile, ...state.groundItems.map((g) => g.tile), ...state.monsters.map((m) => m.tile)];
+  if (wantItem) {
+    const tile = questSpot(f, questRng(state.seed, quests.sq2.salt, 2, state.depth), used);
+    if (tile) {
+      state.groundItems.push({ id: "qi-sq2", quest: "sq2", label: quests.sq2.item.name, rarity: "normal", mark: "!", border: "none", color: "#f0e442", keep: true, tile });
+      used.push(tile);
+    }
+  }
+  if (wantElite) {
+    const e = config.quests.elite, rng = questRng(state.seed, quests.sq3.salt, 3, state.depth), avoid = [...used];
+    for (let i = 0; i < 12; i++) {
+      const tile = questSpot(f, rng, avoid);
+      if (!tile) break;
+      if (spawnMonster(state, e.type, tile, null, { tier: "champion", mods: [], level: e.level, name: quests.sq3.elite.name, hpMult: e.hpMult, quest: "sq3" })) break;
+      avoid.push(tile);
+    }
+  }
+}
+
+/** takeGround's quest branch: the item goes to the pouch, never the bag, so a full bag cannot block it. */
+export function takeQuestEntry(state, entry) {
+  const id = entry.quest, q = state.quests?.[id], i = state.groundItems.indexOf(entry);
+  state.groundItems.splice(i, 1);
+  if (!q || q.s !== "active" || state.player.pouch.some((e) => e.quest === id)) return { ok: true }; // a stale entry just disappears
+  state.player.pouch.push({ id: entry.id, quest: id });
+  state.quests[id] = { s: "ready", p: 1 };
+  emit(state, { type: "quest.item", id: entry.id, quest: id, name: entry.label });
+  emit(state, { type: "quest.step", id, title: quests[id].title, next: nextStep(state, id) });
+  return { ok: true };
+}
+
+/** The reward of a side quest as data: gold, xp, gear (rolled, 0 or 1 item) and potions. No state is touched (the gear stream is derived). */
+export function rewardOf(state, id) {
+  const def = quests[id], c = config.quests, qc = c[id], ref = qc.refDepth, ilvl = c.gearFloor * config.ilvlPerDepth;
+  const out = { gold: 0, xp: 0, gear: null, potions: [] };
+  if (def.reward.gold) out.gold = qc.gold.base + qc.gold.perDepth * ref;
+  if (def.reward.xp) out.xp = qc.xp.base + qc.xp.perDepth * ref;
+  if (def.reward.gear) {
+    const rng = questRng(state.seed, def.salt, 4, 0), tries = Math.max(1, c.rewardRerolls);
+    for (let i = 0; i < tries; i++) {
+      out.gear = rollItem(rng, { depth: c.gearFloor, ilvl, minRarity: "magic", maxRarity: "rare", slot: rng.pick(qc.slots), affixTag: affixTagOf(state) });
+      if (checkReqs(state.player, out.gear).ok) break; // a reward the hero cannot wear is a bad reward; after the last try the last roll stands
+    }
+  }
+  if (def.reward.potions && qc.potions) {
+    const rng = questRng(state.seed, def.salt, 5, 0);
+    for (let i = 0; i < qc.potions; i++) out.potions.push(rollPotion(rng, ilvl));
+  }
+  return out;
+}
+
+/** Hand a ready quest in, atomically (no dialog gate; the input command and the completeQuest cheat share it). */
+export function handInQuest(state, id) {
+  const def = quests[id], q = state.quests?.[id];
+  if (!def || def.kind !== "side" || !q) return fail("unknown quest");
+  if (q.s === "completed") return fail("already done");
+  if (q.s !== "ready") return fail("not ready");
+  const pouchEntry = def.objective.type === "item" ? state.player.pouch.find((e) => e.quest === id) : null;
+  if (def.objective.type === "item" && !pouchEntry) return fail("not ready");
+  const r = rewardOf(state, id), items = [...(r.gear ? [r.gear] : []), ...r.potions];
+  const dry = structuredClone(state.inventory); // dry run on a copy of the bag with the real autoplace order (gear first, then potions)
+  if (!items.every((it) => autoplace(dry, structuredClone(it)))) {
+    emit(state, { type: "quest.handInRefused", id, reason: "bagFull" });
+    return { ok: false, error: "bagFull", reason: "bagFull" };
+  }
+  giveGold(state, r.gold);
+  gainXp(state, r.xp);
+  for (const it of items) { mint(state, it); autoplace(state.inventory, it); }
+  state.player.pouch = state.player.pouch.filter((e) => e.quest !== id);
+  state.quests[id] = { s: "completed", p: q.p };
+  emit(state, { type: "quest.completed", id, title: def.title, rewards: { gold: r.gold, xp: r.xp, items: items.map((it) => it.name) } });
+  if (state.quests.pinned === id) {
+    const open = sideIds.find((o) => o !== id && (state.quests[o].s === "active" || state.quests[o].s === "ready"));
+    state.quests.pinned = stateOf(state, "main") === "active" || !open ? "main" : open;
+    emit(state, { type: "quest.pinned", id: state.quests.pinned });
+  }
+  return OK;
+}
+
+/** Input questHandIn { id }: needs the giver's dialog open (same gate as accept). Refused with bagFull when the whole reward does not fit. */
+export function questHandIn(state, id) {
+  if (typeof id !== "string") return fail("bad id");
+  const def = quests[id];
+  if (!def || def.kind !== "side" || !state.quests) return fail("unknown quest");
+  const gate = giverGate(state, def);
+  return gate ? fail(gate) : handInQuest(state, id);
 }

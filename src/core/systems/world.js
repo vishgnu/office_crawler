@@ -11,6 +11,7 @@ import { npcs } from "../content/npcs.js";
 import { STAIRS_UP } from "../tiles.js";
 import { closeVendor, openVendor } from "./vendors.js";
 import { initFloorMap } from "./explore.js";
+import { placeQuestObjects } from "./quests.js";
 export { vendorInReach } from "./vendors.js";
 
 const fail = (error) => ({ ok: false, error });
@@ -67,6 +68,7 @@ export function enterFloor(state, depth, { at = "entry", from = state.depth, til
   floor.spawns.forEach((s, i) => { if (s.tier === "boss" && state.bossDefeated) killed.add(i); }); // a defeated boss stays dead (also after a reload)
   floor.spawns.forEach((s, i) => { if (!killed.has(i) && !spawnMonster(state, s.type, s.tile, s.packId, { ...s, spawn: i })) state.blockedSpawns.push(i); });
   initFloorMap(state);
+  placeQuestObjects(state); // quest item and named elite of accepted quests (ADR-0007 section 7); nothing without an accepted quest
   emit(state, { type: "floorEnter", depth, from });
   emit(state, { type: "autosave", reason: depth === 0 ? "town" : "floor", depth }); // the shell writes the save (src/save)
   return OK;

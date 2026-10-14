@@ -53,6 +53,7 @@ export { generateFloor } from "./gen/floor.js";
 export { findPath } from "./pathfind.js";
 export { advance } from "./clock.js";
 export { hashState, hashStateWithout };
+export { placeQuestObjects, questSpot, questRng, questHandIn, handInQuest } from "./systems/quests.js";
 export { questView, nextStep, npcMarker, mapMarkers } from "./systems/questview.js";
 
 export const content = { monsters, bosses, championMods, skills, skillTrees, npcs, themes, props, strings, story, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops, quests, questIds, sideIds };

@@ -5,6 +5,7 @@ import { emit } from "../events.js";
 import { getCtx } from "../ctx.js";
 import { rollItem, rollPotion } from "../items/roll.js";
 import { classById } from "../content/classes.js";
+import { takeQuestEntry } from "./quests.js";
 
 /** The class tag of the current character (loot is rolled for the character that plays). */
 export const affixTagOf = (state) => classById(state.player?.class)?.affixTag ?? null;
@@ -146,6 +147,7 @@ export function giveGold(state, n) {
 export function takeGround(state, entry) {
   const i = state.groundItems.indexOf(entry);
   if (i < 0) return { ok: false, error: "gone" };
+  if (entry.quest) return takeQuestEntry(state, entry); // quest item: into the pouch, never the bag (ADR-0007 section 8)
   if (entry.gold) {
     state.groundItems.splice(i, 1);
     state.player.gold += entry.gold;
@@ -172,7 +174,7 @@ export function releaseCursor(state) {
 export function pickups(state) {
   const p = state.player;
   if (p.hp <= 0) return;
-  for (const g of state.groundItems.filter((e) => e.gold && e.tile.x === p.tile.x && e.tile.y === p.tile.y)) takeGround(state, g);
+  for (const g of state.groundItems.filter((e) => (e.gold || e.quest) && e.tile.x === p.tile.x && e.tile.y === p.tile.y)) takeGround(state, g);
   if (!p.pickup) return;
   const entry = state.groundItems.find((e) => e.id === p.pickup);
   if (!entry) { p.pickup = null; return; }

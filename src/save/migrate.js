@@ -64,6 +64,25 @@ export const MIGRATIONS = {
     if (refund > 0) out.player = { ...p, attrs, attrPoints: p.attrPoints + refund };
     return out;
   },
+  /**
+   * Version 3 to 4 (ADR-0006 amendment "R7 quests", ADR-0007): adds the `quests` block derived from fields every v3 save has. No reward is granted
+   * and nothing else is read or changed. `deepestDepth` is 1 from the first tick, so "has left the Lobby" is read from `explored[1]`, `resume.depth` or
+   * `stats.kills`. Pure; a version 4 input is returned unchanged; malformed input yields a block the schema check then judges (never throws).
+   */
+  3(d) {
+    if (d.version >= 4) return d;
+    const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+    const deepest = Number.isInteger(d.deepestDepth) ? d.deepestDepth : 1;
+    const left = isObj(d.explored) && d.explored[1] !== undefined || (Number.isInteger(d.resume?.depth) && d.resume.depth >= 1) || (typeof d.stats?.kills === "number" && d.stats.kills > 0);
+    const depth = deepest >= 2 ? deepest : left ? 1 : 0, defeated = d.bossDefeated === true;
+    return {
+      ...d, version: 4,
+      quests: {
+        main: { m: { memo: depth >= 1, depth, unlocked: d.bossUnlocked === true || defeated, defeated, verdict: false } },
+        sq1: { s: "available", p: 0 }, sq2: { s: "available", p: 0 }, sq3: { s: "available", p: 0 }, pinned: "main", pouch: [],
+      },
+    };
+  },
 };
 
 /**

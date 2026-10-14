@@ -19,7 +19,7 @@ import { allocate, learnSkill, assignSkill, selectSkill, respec, toggleAura } fr
 import { inBasicReach } from "./basic.js";
 import { validateName } from "../name.js";
 import { keepPlaying } from "./boss.js";
-import { questAccept, questPin, storyRead } from "./quests.js";
+import { questAccept, questPin, storyRead, questHandIn } from "./quests.js";
 import { enterFloor, useStairs, stairsAt, interact, npcAt, closeDialog, heal, respawn, usePortal, portalAt } from "./world.js";
 
 const fail = (error) => ({ ok: false, error });
@@ -134,6 +134,7 @@ function itemCommand(state, input) {
     case "closeDialog": closeDialog(state); return OK;
     case "questAccept": return done(questAccept(state, input.id));
     case "questPin": return done(questPin(state, input.id));
+    case "questHandIn": return questHandIn(state, input.id);
     default: return null;
   }
 }

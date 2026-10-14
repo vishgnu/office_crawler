@@ -18,15 +18,21 @@ import { slotKeys, slotAccepts, rarityOrder, bases } from "../core/content/items
 import { affixes as affixDefs, affixById } from "../core/content/affixes.js";
 import { uniques as uniqueDefs, uniqueById } from "../core/content/uniques.js";
 import { skills as skillDefs } from "../core/content/skills.js";
+import { quests as questDefs, sideIds, newQuestState } from "../core/content/quests.js";
+import { goalOf } from "../core/systems/questview.js";
 import { migrate } from "./migrate.js";
 
 export const SAVE_FORMAT = "office-crawler-save";
 /** The documented schema: exactly these top-level keys (plus `checksum`) and no others (AC-R-090-2). */
 export const SAVE_KEYS = ["format", "version", "savedAtTick", "seed", "class", "name", "resume", "deepestDepth", "bossDefeated", "bossUnlocked", "townVisit",
-  "player", "inventory", "equipment", "belt", "stash", "cursorItem", "uniquesFound", "nextItemId", "rng", "stats", "explored", "options"];
+  "player", "inventory", "equipment", "belt", "stash", "cursorItem", "uniquesFound", "nextItemId", "rng", "stats", "explored", "quests", "options"];
 export const PLAYER_KEYS = ["level", "xp", "attrs", "attrPoints", "skillPoints", "skills", "skillBar", "gold", "respecsUsed"];
 const STATS_KEYS = ["kills", "deaths", "bossAttempts", "playTicks"];
 const ATTRS = ["grit", "agility", "stamina", "focus"];
+const SIDE_STATES = ["available", "active", "ready", "completed"];
+const MAIN_FLAGS = ["memo", "unlocked", "defeated", "verdict"];
+/** The pouch entry id of an item quest (ADR-0007 section 8): `qi-<quest id>`. */
+export const pouchIdOf = (questId) => `qi-${questId}`;
 
 const fail = (reason, message) => ({ ok: false, reason, message });
 const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -62,7 +68,9 @@ export function toSave(state) {
     resume: { depth: resumeDepth }, deepestDepth: state.deepestDepth, bossDefeated: !!state.bossDefeated, bossUnlocked: !!state.bossUnlocked, townVisit: state.townVisit ?? 0,
     player: { level: p.level, xp: p.xp, attrs: { ...p.attrs }, attrPoints: p.attrPoints, skillPoints: p.skillPoints, skills: { ...p.skills }, skillBar: clone(p.skillBar), gold: p.gold, respecsUsed: p.respecsUsed ?? 0 },
     inventory: clone(state.inventory), equipment: clone(state.equipment), belt: clone(state.belt), stash: clone(state.stash), cursorItem: clone(state.cursorItem ?? null),
-    uniquesFound: [...state.uniquesFound], nextItemId: state.nextItemId, rng: clone(state.rng), stats: { ...state.stats }, explored, options: {}, // options are global and not part of a slot (ADR-0006 section 3, CR-04)
+    uniquesFound: [...state.uniquesFound], nextItemId: state.nextItemId, rng: clone(state.rng), stats: { ...state.stats }, explored,
+    quests: { ...clone(state.quests ?? newQuestState()), pouch: clone(p.pouch ?? []) }, // the pouch travels inside the quest block (ADR-0006 amendment, R7)
+    options: {}, // options are global and not part of a slot (ADR-0006 section 3, CR-04)
   };
 }
 
@@ -182,6 +190,34 @@ function gridOk(g, w, h, ids) {
   return true;
 }
 
+/**
+ * The quest block (ADR-0006 amendment "R7 quests", point 3): exactly what play can produce. The milestones only grow and stay inside the world flags,
+ * a side quest's progress fits its state, the pinned quest is not completed, and the pouch holds the item of a quest if and only if it is `ready`.
+ */
+function questsProblem(d) {
+  const q = d.quests;
+  if (!hasOnly(q, ["main", ...sideIds, "pinned", "pouch"]) || ["main", ...sideIds, "pinned", "pouch"].some((k) => !(k in q))) return "bad quests";
+  const m = q.main?.m;
+  if (!hasOnly(q.main, ["m"]) || !hasOnly(m, ["depth", ...MAIN_FLAGS]) || [...MAIN_FLAGS, "depth"].some((k) => !(k in m))) return "bad quest milestones";
+  if (MAIN_FLAGS.some((k) => typeof m[k] !== "boolean") || !isInt(m.depth, 0, config.bossDepth)) return "bad quest milestones";
+  if (m.depth > d.deepestDepth || (m.unlocked && !(d.bossUnlocked || d.bossDefeated)) || (m.defeated && !d.bossDefeated) || (m.verdict && !m.defeated)) return "bad quest milestones";
+  for (const id of sideIds) {
+    const e = q[id];
+    if (!hasOnly(e, ["s", "p"]) || !("s" in e) || !("p" in e) || !SIDE_STATES.includes(e.s)) return "bad side quest";
+    const goal = goalOf(id);
+    if (!isInt(e.p, 0, goal) || (e.s === "available" && e.p !== 0) || (e.s === "active" && e.p >= goal) || ((e.s === "ready" || e.s === "completed") && e.p !== goal)) return "bad side quest";
+  }
+  if (typeof q.pinned !== "string" || !(q.pinned === "main" || (sideIds.includes(q.pinned) && q[q.pinned].s !== "completed"))) return "bad pinned quest";
+  if (!Array.isArray(q.pouch) || q.pouch.length > sideIds.length) return "bad pouch";
+  const held = new Set();
+  for (const e of q.pouch) {
+    if (!hasOnly(e, ["id", "quest"]) || !safeId(e.id) || !sideIds.includes(e.quest) || questDefs[e.quest].objective.type !== "item" || e.id !== pouchIdOf(e.quest) || held.has(e.quest)) return "bad pouch";
+    held.add(e.quest);
+  }
+  for (const id of sideIds) if (held.has(id) !== (q[id].s === "ready" && questDefs[id].objective.type === "item")) return "bad pouch"; // the pouch holds the item exactly while its quest is ready
+  return null;
+}
+
 /** Check a current-version save against the schema. Returns null when fine, else a message naming the problem. */
 export function schemaProblem(d) {
   if (!isObj(d)) return "not an object";
@@ -241,6 +277,8 @@ export function schemaProblem(d) {
     if (!isInt(Number(k), 1, config.bossDepth) || !hasOnly(e, ["size", "runs"]) || !isInt(e.size, 1, 10000) || !Array.isArray(e.runs) || e.runs.length > e.size + 1) return "bad explored map";
     if (e.runs.some((r) => !isInt(r, 0)) || e.runs.reduce((a, b) => a + b, 0) !== e.size) return "bad explored map";
   }
+  const qp = questsProblem(d);
+  if (qp) return qp;
   if (!isObj(d.options)) return "bad options";
   return null;
 }
@@ -279,6 +317,8 @@ export function loadSave(save) {
   syncBar(p.skillBar); // secondary follows hotkeys[selected]
   state.deepestDepth = save.deepestDepth; state.bossDefeated = save.bossDefeated; state.bossUnlocked = save.bossUnlocked; state.townVisit = save.townVisit;
   state.tick = save.savedAtTick;
+  state.quests = { main: clone(save.quests.main), pinned: save.quests.pinned, ...Object.fromEntries(sideIds.map((id) => [id, clone(save.quests[id])])) }; // before the resume entry: the placement hook of a quest floor reads it
+  p.pouch = clone(save.quests.pouch);
   for (const [d, e] of Object.entries(save.explored)) state.floors[d] = { killed: [], groundItems: [], explored: rleDecode(e.runs, e.size) };
   applyDerived(state, { fill: true });
   if (config.resumeAt === "floorEntry" && save.resume.depth > 0) enterFloor(state, save.resume.depth, { at: "entry", from: 0 });

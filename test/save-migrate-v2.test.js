@@ -62,7 +62,7 @@ test("AC-R-225-2 the migration is idempotent: a version 2 save passes through MI
   assert.deepEqual(once.data, m.data); assert.deepEqual(once.notes, []);
   const out = canonical({ ...m.data, checksum: checksumOf(m.data) });
   assert.equal(deserialize(out).ok, true);
-  assert.equal(schemaProblem(m.data), null);
+  assert.equal(schemaProblem(migrate(m.data, config.saveVersion).data), null); // a version 2 save is complete once it has been brought to the current version
 });
 
 test("version 0 saves still upgrade through 0 to 1 to 2 (the chain), ending as a Facilities Manager", () => {

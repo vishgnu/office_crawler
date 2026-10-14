@@ -66,6 +66,7 @@ function makeMonster(state, type, tile, packId, opts = {}) {
       if (mod.defenseMult) defense = Math.round(defense * mod.defenseMult);
       if (mod.speedMult) speed = speed * mod.speedMult;
     }
+    if (opts.hpMult) hp = Math.round(hp * opts.hpMult); // a named quest elite (ADR-0007 section 7)
   }
   if (tier === "boss") { // the end boss: sturdier and harder hitting than a normal monster of its level (config.boss)
     hp = Math.round(hp * config.boss.hpMult); damage = Math.round(damage * config.boss.damageMult);
@@ -73,7 +74,8 @@ function makeMonster(state, type, tile, packId, opts = {}) {
   return {
     id: `m${state.nextId++}`, type, behaviour: def.behaviour, tier, level: st.level,
     ...(tier === "boss" ? { boss: newBossState() } : {}),
-    ...(tier === "champion" ? { mods, name: championName(type, mods) } : {}),
+    ...(tier === "champion" ? { mods, name: opts.name ?? championName(type, mods) } : {}),
+    ...(opts.quest ? { quest: opts.quest } : {}),
     ...(opts.spawn !== undefined ? { spawn: opts.spawn } : {}),
     tile: { ...tile }, next: null, moveT: 0, moveTotal: 0,
     hp, hpMax: hp, damage, defense, attackRating: st.attackRating, xp, speed,

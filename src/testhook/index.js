@@ -1,5 +1,6 @@
 // window.__app (ADR-0003, S1 subset). Installed only with ?test=1. A thin adapter: no game logic here.
 import { slotsHook, characterHook, treeHook } from "../save/hook.js";
+import { setQuestStep, completeQuest } from "../core/cheats.js";
 
 const isObj = (v) => v !== null && typeof v === "object";
 const fail = (error) => ({ ok: false, error });
@@ -24,6 +25,27 @@ export function installTestHook(game, extras = {}, win = window) {
   };
 
   const tree = treeHook(() => game.core);
+  // Quest cheats run on the core state. With game.cheat.setQuestStep / completeQuest present (the shell's wrapper dispatches the new events to audio and UI) they are used;
+  // otherwise the core function runs directly and the state is right but the cue events are not dispatched.
+  const questCheat = (name, ...args) => {
+    if (!game.core) return fail("no game running");
+    if (typeof game.cheat?.[name] === "function") return game.cheat[name](...args);
+    const r = (name === "setQuestStep" ? setQuestStep : completeQuest)(game.core, ...args);
+    game.render(performance.now());
+    return r;
+  };
+  const questId = (id) => typeof id === "string" && id.length > 0;
+  const questInput = (t, id) => (!game.core ? fail("no game running") : !questId(id) ? fail("bad id") : game.input({ t, id }));
+  const quests = {
+    state: () => (game.core ? game.getState().quests ?? null : null),
+    talk: (npcId) => (!game.core ? fail("no game running") : questId(npcId) ? game.input({ t: "interact", id: npcId }) : fail("bad id")),
+    accept: (id) => questInput("questAccept", id),
+    // the hand-in input arrives with the core's R7-0.2; until then the core answers "unknown input"
+    handIn: (id) => questInput("questHandIn", id),
+    pin: (id) => questInput("questPin", id),
+    setStep: (id, n) => (questId(id) ? questCheat("setQuestStep", id, n) : fail("bad id")),
+    readVerdict: () => (game.core ? game.input({ t: "storyRead", id: "victory" }) : fail("no game running")),
+  };
   const api = {
     describe: () => describe(),
     getState: () => game.getState(),
@@ -68,7 +90,9 @@ export function installTestHook(game, extras = {}, win = window) {
       giveGold: (n) => game.cheat.giveGold(n),
       spawnItem: (opts, tile) => game.cheat.spawnItem(isObj(opts) ? opts : {}, tileArg(tile) ?? undefined),
       giveItem: (opts) => game.cheat.giveItem(isObj(opts) ? opts : {}),
+      completeQuest: (id) => (questId(id) ? questCheat("completeQuest", id) : fail("bad id")),
     },
+    quests,
     ui: {
       open: (name) => game.openPanel(name),
       close: (name) => game.closePanel(name),
@@ -108,7 +132,7 @@ export function installTestHook(game, extras = {}, win = window) {
     pause: "Toggle pause like Escape; returns paused.",
     input: "Apply a raw input command (what DOM handlers emit).",
     cmd: "Agent commands: moveTo(tile), attack(id).",
-    cheat: "Debug cheats: spawnMonster(type, tile), setLevel(n), setHp(n), damageMonster(id, n) (class-independent true damage), teleportFloor(depth), giveGold(n), spawnItem(opts, tile), giveItem(opts) (spawn + pick up).",
+    cheat: "Debug cheats: spawnMonster(type, tile), setLevel(n), setHp(n), damageMonster(id, n) (class-independent true damage), teleportFloor(depth), giveGold(n), spawnItem(opts, tile), giveItem(opts) (spawn + pick up), completeQuest(id).",
     ui: "Panels: open(name), close(name), toggle(name) with name inventory | character | skills (same as the I, C, S keys).",
     pick: "pick(x, y): what a click at this canvas point means ({ tile, monsterId }), through the camera that is on screen.",
     audio: "audio.getState() -> {kit, unlocked, ctxState, master, sfx, ambient, muted, effectiveGain, ambientId, cueLog[]}; clearCueLog(), setVolume(channel, v), setMuted(b), setKit(id).",
@@ -117,6 +141,7 @@ export function installTestHook(game, extras = {}, win = window) {
     slots: "Slots: list() index, raw(n), keys(), fail(on), view() = game.slots, open(), close(), run({t:'deleteSlot'|'renameSlot'|'importSlot'|'exportSlot'|'loadSlot'|'continue'|...}).",
     character: "Character: create({slot, class, name}) starts a new character in a slot, cards() class cards, openCreate({slot}), closeCreate().",
     tree: "Skill tree: get() treeView of the running game, learn(id), respec().",
+    quests: "Quests: state() = snapshot.quests, talk(npcId) (interact), accept(id), handIn(id), pin(id), setStep(id, n) (main 1..6 forward only; side 0 available, 1 active, 2 ready, 3 completed via hand-in), readVerdict(); cheat.completeQuest(id).",
     perf: "Frame and simulation timing, atlas completeness, fx flags, nameplate rects.",
   };
   function describe() {

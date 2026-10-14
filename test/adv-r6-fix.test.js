@@ -188,7 +188,7 @@ test("v2 to v3: the Facilities Manager is only re-stamped (attributes and points
 test("v2 to v3 is idempotent: a migrated save loads, re-saves as version 3 and loads again with no second refund and no note", () => {
   const c = CLASSES.find((x) => x.id === "sales-rep"); const s = hero(c.id); setLevel(s, 14); s.player.attrs.grit += 65; s.player.attrPoints = 0; applyDerived(s);
   const r1 = loadV2(asV2(s)); assert.ok(r1.ok);
-  const t = sealed(toSave(r1.state)); assert.equal(JSON.parse(t).version, 3);
+  const t = sealed(toSave(r1.state)); assert.equal(JSON.parse(t).version, config.saveVersion);
   const r2 = deserialize(t); assert.ok(r2.ok); assert.equal(r2.notes?.length ?? 0, 0);
   assert.deepEqual(r2.state.player.attrs, r1.state.player.attrs); assert.equal(r2.state.player.attrPoints, r1.state.player.attrPoints);
 });

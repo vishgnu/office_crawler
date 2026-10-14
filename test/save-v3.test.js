@@ -35,12 +35,12 @@ test("v2 to v3: an R5 IT Wizard and Sales Rep get every attribute point beyond t
     assert.deepEqual(p.attrs, cls(id).attrs, `${id}: attributes back to the class start`);
     assert.equal(p.attrPoints, ps);
     assert.deepEqual(r.notes, [{ from: 2, attributePointsRefunded: ps, attr: cls(id).derived.powerAttr }]);
-    assert.equal(r.save.version, 3);
+    assert.equal(r.save.version, config.saveVersion);
     assert.deepEqual([p.level, p.xp, p.gold, p.skillPoints, p.skills], [old.player.level, old.player.xp, old.player.gold, old.player.skillPoints, old.player.skills]);
     assert.deepEqual(r.state.inventory.items.map((i) => i.id), old.inventory.items.map((i) => i.id), "gear kept");
     const again = deserialize(serialize(r.state));          // saved as version 3: loads again without a note or a second refund
     assert.equal(again.ok, true); assert.deepEqual(again.notes, []); assert.equal(again.state.player.attrPoints, ps);
-    assert.equal(JSON.parse(serialize(r.state)).version, 3);
+    assert.equal(JSON.parse(serialize(r.state)).version, config.saveVersion);
   }
 });
 
@@ -52,7 +52,7 @@ test("v2 to v3: the Facilities Manager (power attribute Grit) keeps its attribut
 
 test("v2 to v3: a Clerk save (version 1) still migrates through 1 to 2 to 3 and gets no attribute note (it becomes a Facilities Manager)", () => {
   const r = deserialize(readFileSync(new URL("./fixtures/save-v1.json", import.meta.url), "utf8"));
-  assert.equal(r.ok, true, r.message); assert.equal(r.save.version, 3);
+  assert.equal(r.ok, true, r.message); assert.equal(r.save.version, config.saveVersion);
   assert.deepEqual(r.notes.map((n) => n.from), [1]);
 });
 

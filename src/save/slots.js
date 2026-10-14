@@ -9,6 +9,8 @@ import { canonical } from "../core/hash.js";
 import { validateName } from "../core/name.js";
 import { serialize, deserialize, check, checksumOf } from "./format.js";
 import { createAdapter } from "./storage.js";
+import { mainStep, MAIN_STEPS } from "../core/systems/questview.js";
+import { sideIds } from "../core/content/quests.js";
 
 const PREFIX = "office-crawler.";
 const slotKey = (n) => `${config.slotKeyPrefix}${n}`;
@@ -42,12 +44,19 @@ function validIndex(x) {
   return true;
 }
 
+/** The slot card's quest fields (ADR-0006 amendment point 6) from a quest block (state.quests or the save's `quests`): mainStep 1..6, mainDone, sidesDone. */
+function questFields(q) {
+  const step = mainStep(q.main.m);
+  return { mainStep: Math.min(step, MAIN_STEPS), mainDone: step > MAIN_STEPS, sidesDone: sideIds.filter((id) => q[id].s === "completed").length };
+}
+
 /** The index entry for a running state (metadata only; lastPlayed comes from the injected clock). */
 function entryFromState(n, state, text, now) {
   return {
     n, state: "ok", name: state.player.name, class: state.player.class, level: state.player.level,
     depth: state.scene === "floor" ? state.depth : 0, deepest: state.deepestDepth, playSec: Math.floor((state.stats?.playTicks ?? 0) / config.tickHz),
     lastPlayed: now, bytes: text.length, sum: textSum(text), boss: !!state.bossDefeated,
+    ...(state.quests ? questFields(state.quests) : {}),
   };
 }
 /** The index entry for a stored text (parse, migrate, validate). */
@@ -59,7 +68,7 @@ function entryFromText(n, text, now, prev) {
   const r = check(raw);
   if (!r.ok) return r.reason === "newer" ? { n, state: "newer" } : { n, state: "bad", reason: REASONS[r.reason] ?? "schema", lastPlayed: prev?.lastPlayed ?? now, bytes };
   const s = r.save;
-  return { n, state: "ok", name: s.name, class: s.class, level: s.player.level, depth: s.resume.depth, deepest: s.deepestDepth, playSec: Math.floor((s.stats.playTicks ?? 0) / config.tickHz), lastPlayed: prev?.state === "ok" ? prev.lastPlayed : now, bytes, sum, boss: s.bossDefeated };
+  return { n, state: "ok", name: s.name, class: s.class, level: s.player.level, depth: s.resume.depth, deepest: s.deepestDepth, playSec: Math.floor((s.stats.playTicks ?? 0) / config.tickHz), lastPlayed: prev?.state === "ok" ? prev.lastPlayed : now, bytes, sum, boss: s.bossDefeated, ...questFields(s.quests) };
 }
 
 const safeName = (name) => (String(name ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "character");
@@ -394,9 +403,21 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
      * slot write fails, the index is stored with the flag (slots 2 to 5 stay visible), `status.notice` says "migration-failed", and the next
      * boot tries again.
      */
+    /**
+     * Once at boot (called first by migrateLegacy): an index written by an R5 or R6 build has `ok` entries without the quest fields; rebuild it from
+     * the slot texts, which keeps `active`, `last`, `owner` and each `lastPlayed`. Costs five parses, once.
+     */
+    upgradeIndex() {
+      const idx = readIndex();
+      if (!idx || !idx.slots.some((e) => e.state === "ok" && !Number.isInteger(e.mainStep))) return { ok: true, skipped: true };
+      const w = writeIndex(rebuild(idx));
+      return w.ok ? { ok: true, upgraded: true } : fail("write-failed");
+    },
+
     migrateLegacy() {
+      const up = store.upgradeIndex();
       const stored = readIndex();
-      if (get(config.slotIndexKey) !== null && !stored?.pendingMigration) return { ok: true, skipped: true };
+      if (get(config.slotIndexKey) !== null && !stored?.pendingMigration) return { ok: true, skipped: true, ...(up.upgraded ? { upgraded: true } : {}) };
       const idx = stored ?? rebuild(null), legacy = get(config.saveKey);
       delete idx.pendingMigration;
       let migrated = null, failed = false;

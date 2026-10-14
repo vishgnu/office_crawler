@@ -1,6 +1,8 @@
 // Shared test helpers (no tests in this file). Fixtures are drawn as ASCII maps:
 // '#' wall, '.' floor, '@' player start (entry stairs), '>' exit stairs.
 import { newGame, step, spawnMonster } from "../src/core/index.js";
+import { toSave, checksumOf } from "../src/save/index.js";
+import { canonical } from "../src/core/hash.js";
 
 export function floorFromRows(rows) {
   const h = rows.length, w = rows[0].length, tiles = [];
@@ -63,3 +65,15 @@ export const OPEN = [
   "#..................#",
   "####################",
 ];
+
+/**
+ * The text a version 3 build would have written for this state (R7 fixtures are never typed by hand, L-038): the current `toSave` output with the quest block
+ * deleted, `version: 3` and the checksum re-sealed. Everything else the v3 schema checks is real.
+ */
+export function v3Text(state) {
+  const save = toSave(state);
+  delete save.quests; save.version = 3;
+  return canonical({ ...save, checksum: checksumOf(save) });
+}
+/** Re-seal a parsed save after a test changed it. */
+export const sealText = (save) => { const { checksum, ...rest } = save; return canonical({ ...rest, checksum: checksumOf(rest) }); };
