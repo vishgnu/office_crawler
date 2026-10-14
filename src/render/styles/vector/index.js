@@ -7,7 +7,7 @@ import { palette } from "./palette.js";
 import { setInkScale } from "../../draw/shapes.js";
 import { setTexRes } from "../../draw/textures.js";
 import { drawFloor, drawMarker, drawWall, WALL_W, WALL_CANVAS_H, WALL_CY } from "./tiles.js";
-import { drawProp, drawElevator, drawPortal, PORTAL_W, PORTAL_H, PORTAL_CX, PORTAL_CY, PROP_W, PROP_H, PROP_CX, PROP_CY } from "./props.js";
+import { drawProp, drawDecor, DECOR_IDS, drawElevator, drawPortal, PORTAL_W, PORTAL_H, PORTAL_CX, PORTAL_CY, PROP_W, PROP_H, PROP_CX, PROP_CY } from "./props.js";
 import { drawFigure, FIG_W, FIG_H, FIG_FX, FIG_FY, FIG_DIM, BOSS_W, BOSS_H, BOSS_FX, BOSS_FY } from "./characters.js";
 import { drawProjectile, drawLootItem, drawGold, drawMuted, drawFlee, drawSpark, drawPlus, PROJ_W, PROJ_H } from "./sprites.js";
 import { VESSEL_REF, VESSEL_SHAPES, VESSEL_PAD, drawVesselFrame, drawVesselLive, vesselFrameSize, drawSlot, drawIconStrike, drawIconPlus, drawAlert, drawPaper, drawShadow, drawSlash } from "./ui.js";
@@ -99,6 +99,7 @@ export const vector = {
       }
     });
     steps.push(() => {
+      for (const id of DECOR_IDS) atlas.add(keys.fx("decor-" + id), PROP_W, PROP_H, PROP_CX, PROP_CY, (g) => drawDecor(g, id));
       atlas.add(keys.fx("badge"), 14, 16, 7, 8, drawBadge);
       atlas.add(keys.fx("table"), TABLE_BOX.w, TABLE_BOX.h, TABLE_BOX.ox, TABLE_BOX.oy, drawBoardTable);
       atlas.add(keys.fx("chair"), 40, 50, 20, 40, drawChair);

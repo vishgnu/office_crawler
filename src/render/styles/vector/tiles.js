@@ -63,7 +63,7 @@ export const FLOOR_VARIANT_DEF = [
   { d: 0, hue: "warm", lum: 1, flip: 1 }, { d: 1, hue: "cool", lum: -1, flip: 1 }, { d: 2, hue: "warm", lum: -1 },
   { d: 0, hue: "cool", lum: 1 }, { d: 1, hue: "warm", lum: 1, flip: 1 }, { d: 2, hue: "cool", lum: -1, flip: 1 },
 ];
-const TONE = { warm: "rgba(255,150,90,0.09)", cool: "rgba(90,140,255,0.1)", light: "rgba(150,170,255,0.11)", dark: "rgba(2,0,14,0.2)" };
+const TONE = { warm: "rgba(255,150,90,0.06)", cool: "rgba(90,140,255,0.05)", light: "rgba(150,170,255,0.07)", dark: "rgba(2,0,14,0.16)" };
 
 export function drawFloor(g, kind, v, theme = "open-plan", sc = 1) {
   const T = themeOf(theme), floors = T ? T.floors : P.floors, def = FLOOR_VARIANT_DEF[v] ?? FLOOR_VARIANT_DEF[0], dv = def.d;
@@ -111,7 +111,7 @@ export function drawFloor(g, kind, v, theme = "open-plan", sc = 1) {
     g.restore();
   }
   // material texture: the pattern origin is the tile's top vertex, so the weave runs on across the seams of neighbouring tiles
-  g.save(); clipDiamond(g, cx, cy, hw, hh); fillTex(g, tex[0], "T", cx, cy - H / 2, tex[1]); g.restore();
+  g.save(); clipDiamond(g, cx, cy, hw, hh); fillTex(g, tex[0], "T", cx, cy - H / 2, tex[1] * 0.7); g.restore();
   g.restore(); // end of the mirrored drawing: the bevel keeps its light direction (up-left)
   // per-tile tone drift: some tiles a little lighter or darker, some warmer or cooler (hue, not only brightness)
   if (def.lum || def.hue) {

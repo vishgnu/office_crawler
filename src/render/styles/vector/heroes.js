@@ -150,21 +150,23 @@ export function hero(g, id, o) {
   if (front) {
     const ex = hx + fx * 3.2, ey = hy + 0.8;
     if (isFM) {
-      ellipse(g, ex - 3.2, ey, 1.3, 1.8, INK); ellipse(g, ex + 3.2, ey, 1.3, 1.8, INK);
+      ellipse(g, ex - 3.4, ey, 1.9, 2.6, INK); ellipse(g, ex + 3.4, ey, 1.9, 2.6, INK); ellipse(g, ex - 3.8, ey - 1, 0.6, 0.7, "rgba(255,255,255,0.85)"); ellipse(g, ex + 3, ey - 1, 0.6, 0.7, "rgba(255,255,255,0.85)");
       line(g, ex - 5.6, ey - 3.6, ex - 1.2, ey - 2.6, "#2b1d17", 1.7); line(g, ex + 1.2, ey - 2.6, ex + 5.6, ey - 3.6, "#2b1d17", 1.7);
       g.beginPath(); g.ellipse(hx + fx, hy + 3.4, hr * 0.95, hr * 0.7, 0, 0.1, Math.PI - 0.1); g.fillStyle = "#2b1d17"; g.fill(); g.lineWidth = ink(1.4); g.strokeStyle = INK; g.stroke(); // beard
       line(g, ex - 1.8, ey + 4.8, ex + 1.8, ey + 4.8, "#c98a5e", 1.2);
     } else if (isSR) {
-      ellipse(g, ex - 2.8, ey, 1.2, 1.7, INK); ellipse(g, ex + 2.8, ey, 1.2, 1.7, INK);
+      ellipse(g, ex - 3.1, ey, 1.8, 2.5, INK); ellipse(g, ex + 3.1, ey, 1.8, 2.5, INK); ellipse(g, ex - 3.5, ey - 1, 0.6, 0.7, "rgba(255,255,255,0.85)"); ellipse(g, ex + 2.7, ey - 1, 0.6, 0.7, "rgba(255,255,255,0.85)");
       line(g, ex - 5, ey - 3.4, ex - 1.4, ey - 3.8, "#8a6a28", 1.4); line(g, ex + 1.4, ey - 3.8, ex + 5, ey - 3.4, "#8a6a28", 1.4);
       g.beginPath(); g.moveTo(ex - 2, ey + 4.6); g.quadraticCurveTo(ex + 0.2, ey + 6.4, ex + 3.2, ey + 4.2); g.lineWidth = ink(1.3); g.strokeStyle = INK; g.stroke(); // grin
     } else {
       ellipse(g, ex - 3.3, ey, 3.6, 3.6, "rgba(196,236,255,0.85)", INK, 1.3); ellipse(g, ex + 3.5, ey, 3.6, 3.6, "rgba(196,236,255,0.85)", INK, 1.3);
       line(g, ex - 0.1, ey - 0.2, ex + 0.2, ey - 0.2, INK, 1.2);
-      ellipse(g, ex - 3.3, ey + 0.4, 1.2, 1.4, INK); ellipse(g, ex + 3.5, ey + 0.4, 1.2, 1.4, INK);
+      ellipse(g, ex - 3.3, ey + 0.4, 1.7, 2, INK); ellipse(g, ex + 3.5, ey + 0.4, 1.7, 2, INK);
       g.beginPath(); g.moveTo(ex - 2, ey + 5.4); g.quadraticCurveTo(ex + 0.4, ey + 6.6, ex + 2.6, ey + 5); g.lineWidth = ink(1.2); g.strokeStyle = INK; g.stroke();
     }
   }
+  g.save(); g.beginPath(); g.ellipse(hx, hy, hr, hr * 1.05, 0, 0, Math.PI * 2); g.clip(); // two-tone head: shadow side away from the light
+  g.fillStyle = "rgba(34,10,56,0.2)"; g.beginPath(); g.ellipse(hx + hr * 0.95, hy + hr * 0.1, hr * 0.9, hr * 1.3, 0, 0, Math.PI * 2); g.fill(); g.restore();
   // hair / hats
   if (isFM) {
     const top = front ? 0 : 1;

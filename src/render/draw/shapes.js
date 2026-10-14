@@ -1,4 +1,5 @@
 // Style-neutral drawing helpers (paths, colour maths, an isometric box). No game knowledge.
+import { fillTex } from "./textures.js";
 export const INK = "#0d0a1c";
 
 // Outline weight (G round, item 1): on-screen outline = clamp(2.0 * zoom, 1.6, 4.2) px. Sprites are baked in logical px, so the atlas build sets
@@ -61,6 +62,12 @@ export function box(g, cx, cy, b, c) {
   fillPoly(g, right, c.right, ink);
   fillPoly(g, left, c.left, ink);
   fillPoly(g, top, c.top, ink);
+  if (c.tex) { // material overlay (textures.js): top = flat iso plane, left / right = the two wall planes; origin at each face's top vertex
+    const [name, a] = c.tex;
+    poly(g, top); fillTex(g, name, "T", top[0][0], top[0][1], a);
+    poly(g, left); fillTex(g, name, "L", left[3][0], left[3][1], a);
+    poly(g, right); fillTex(g, name, "R", right[3][0], right[3][1], a);
+  }
   if (c.rim) {
     g.beginPath();
     const a = P(b.u0, b.v1, z1), t = P(b.u0, b.v0, z1);

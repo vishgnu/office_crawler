@@ -5,7 +5,7 @@ import { config, content } from "../core/index.js";
 import { statusFlags, drawStatus, SF } from "./draw/effects.js";
 import { keys, FLOOR_WEIGHTS, dirIndex, DIR_VEC, PLAYER_CLASS, heroType, ALLY_ANIMS, FLOOR_VARIANTS, WALL_VARIANTS, ANIMS, PLAYER_ANIMS, DIRS, NPC_FRAMES, bossType } from "./keys.js";
 import { project } from "../ui/camera.js";
-import { WALL, STAIRS_UP, STAIRS_DOWN, DOOR } from "../core/tiles.js";
+import { WALL, FLOOR, STAIRS_UP, STAIRS_DOWN, DOOR } from "../core/tiles.js";
 
 /** Float tile position of an actor (tile + progress towards `next`). Pass `out` to avoid an allocation. */
 export function actorPos(a, out = { x: 0, y: 0 }) {
@@ -83,6 +83,40 @@ function addBoardroomDecor(props, atlas) {
   for (const x of [9, 12, 23, 26]) add(x, 5, trophy, { dy: 13, dd: 0.12 });
 }
 
+/**
+ * Wall dressing (G round, item 11): a few large render-only silhouettes per room (coffee machine, water cooler / barrel, valve wheel, pallet / trophy case, podium),
+ * standing against a wall on a free floor tile of a room (never a corridor, a door, stairs or a tile with a prop). They never block. Chosen by tile hash, so a floor always looks the same.
+ */
+const DECOR = { "open-plan": ["coffee-machine", "water-cooler"], lobby: ["water-cooler", "coffee-machine"], basement: ["barrel", "valve-wheel", "pallet"], executive: ["trophy-case", "podium"] };
+function addWallDecor(floor, props, atlas, isWall, blocked, kindAt) {
+  const list = DECOR[floor.theme];
+  if (!list) return;
+  const { w, h, tiles } = floor, placed = props.map((p) => [p.x, p.y]);
+  for (const r of floor.rooms) {
+    if (r.kind === "corridor" || r.w < 4 || r.h < 4) continue;
+    const want = floor.theme === "executive" ? (r.kind === "boardroom" ? 3 : 0) : r.w * r.h >= 48 ? 2 : 1, cands = [];
+    for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) {
+      const i = y * w + x;
+      if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1 || tiles[i] !== FLOOR || blocked[i] || kindAt[i] !== r.kind) continue;
+      const side = isWall(x, y - 1) ? "N" : isWall(x - 1, y) ? "W" : "";
+      if (!side || (floor.theme === "executive" && floor.arena && y <= 6)) continue;
+      if (isWall(x, y - 1) && isWall(x - 1, y)) continue; // not in a corner
+      cands.push({ x, y, side, k: vhash(x * 7 + 3, y * 13 + 5) });
+    }
+    cands.sort((a, b) => a.k - b.k);
+    let n = 0;
+    for (const c of cands) {
+      if (n >= want) break;
+      if (placed.some(([px, py]) => Math.abs(px - c.x) + Math.abs(py - c.y) < 4)) continue; // spaced out, and clear of other props
+      if (floor.entry && Math.abs(floor.entry.x - c.x) + Math.abs(floor.entry.y - c.y) < 4) continue;
+      if (floor.exit && Math.abs(floor.exit.x - c.x) + Math.abs(floor.exit.y - c.y) < 4) continue;
+      const id = list[(c.k >>> 4) % list.length];
+      props.push({ x: c.x, y: c.y, blocks: false, e: atlas.get(keys.fx("decor-" + id)), dy: 0, dd: -0.15, dxs: c.side === "N" ? 14 : -14, dys: -7 }); // shifted onto the wall side of its tile
+      placed.push([c.x, c.y]); n++;
+    }
+  }
+}
+
 /** Per-floor lookup tables of atlas entries (built once per floor object and atlas). */
 function prepare(floor, atlas) {
   let c = caches.get(floor);
@@ -112,6 +146,7 @@ function prepare(floor, atlas) {
   }
   const props = floor.props.map((p) => { if (p.blocks) blocked[p.y * w + p.x] = 1; return { x: p.x, y: p.y, blocks: p.blocks, e: atlas.get(keys.prop(p.type)), dy: 0, dd: 0 }; });
   if (theme === "executive" && floor.arena) addBoardroomDecor(props, atlas);
+  addWallDecor(floor, props, atlas, isWall, blocked, kindAt);
   // The Lobby elevator is a tall doorframe standing on the exit tile (no tile can show it alone)
   if (theme === "lobby" && floor.exit) props.push({ x: floor.exit.x, y: floor.exit.y, blocks: false, e: atlas.get(keys.fx("elevator")), tall: true, dy: 0, dd: 0 });
   // light sources: a cyan pool on every monitor, rack LEDs and generator lamps in the basement, and a ceiling light over the middle of each room (warm in the Lobby, cold in the basement)
@@ -446,7 +481,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) continue;
     project(cam, p.x + 0.5, p.y + 0.5, pt);
     if (pt.x < -margin || pt.x > cam.w + margin || pt.y < -margin || pt.y > yMax) continue;
-    items.push(grab(p.x + p.y + 1 - (p.blocks ? 0 : 0.3) + p.dd, p.e, pt.x, pt.y - p.dy * z));
+    items.push(grab(p.x + p.y + 1 - (p.blocks ? 0 : 0.3) + p.dd, p.e, pt.x + (p.dxs ?? 0) * z, pt.y - p.dy * z + (p.dys ?? 0) * z));
   }
 
   // the Emergency Exit door: a lit prop standing on its tile (the floor it was opened on, and the Lobby spot)

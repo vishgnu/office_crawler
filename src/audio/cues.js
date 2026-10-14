@@ -19,7 +19,21 @@ export const MONSTER_VOICE = {
 const PAPER_MONSTERS = new Set(["printer-imp", "printer-demon", "consultant", "auditor", "temp-worker"]);
 const voiceOf = (type) => MONSTER_VOICE[type] ?? "Imp";
 
-export const SKILL_CUE = { "stapler-throw": "castStapler", "reply-all": "castReplyAll", "coffee-break": "castCoffee", mute: "castMute" };
+// Every cast skill has a cue built from the existing kit voices (no new kit sounds): SKILL_CUE is the main voice, SKILL_LAYER an optional
+// second voice [cue, gain, delay] that gives heavy, electric or cold skills their own character.
+export const SKILL_CUE = {
+  "stapler-throw": "castStapler", "reply-all": "castReplyAll", "coffee-break": "castCoffee", mute: "castMute",
+  "pallet-slam": "hitFlesh", "floor-buffer": "castReplyAll", "demolition-day": "hitFlesh", "fire-drill": "ding", lockout: "uiEquip", "dolly-charge": "swing",
+  "wet-floor": "uiOpen", "traffic-cone": "uiEquip",
+  "pen-volley": "castStapler", "card-fan": "castStapler", intern: "ding", "department-meeting": "ding", "hard-close": "hitFlesh",
+  "server-overheat": "castReplyAll", "power-surge": "castMute", "blue-screen": "castReplyAll", "cold-boot": "castMute", firewall: "uiEquip",
+  quarantine: "castMute", "restore-backup": "castCoffee", "turn-it-off": "castReplyAll",
+};
+export const SKILL_LAYER = {
+  "pallet-slam": ["deathZombie", 0.45, 0.03], "demolition-day": ["deathManager", 0.6, 0.05], "dolly-charge": ["hitFlesh", 0.6, 0.12], "hard-close": ["ding", 0.6, 0.08],
+  "server-overheat": ["hitPaper", 0.6, 0.05], "power-surge": ["hitPaper", 0.5, 0.04], "blue-screen": ["deathImp", 0.5, 0.06], firewall: ["castCoffee", 0.5, 0.05],
+  quarantine: ["uiEquip", 0.5, 0.06], "turn-it-off": ["castMute", 0.7, 0.1], "department-meeting": ["uiOpen", 0.6, 0.1], "traffic-cone": ["uiOpen", 0.5, 0.05],
+};
 const PICKUP_CUE = { normal: "pickupItem", magic: "pickupItem", rare: "pickupRare", unique: "pickupUnique" };
 
 /** Per-cue cooldown in seconds (default audioConfig.defaultCooldown). */
@@ -72,13 +86,36 @@ export const EVENT_MAP = {
   levelup: () => [d("levelUp", "levelUp")],
   skillLearned: () => [d("ding", "skillLearned", { gain: 0.8 })],
   // skills (cast always precedes burst / heal / projectile / muted, which therefore stay silent)
-  cast(ev) { const cue = SKILL_CUE[ev.skill]; return cue ? [d(cue, "cast", { tile: null })] : []; },
+  cast(ev) {
+    const cue = SKILL_CUE[ev.skill], layer = SKILL_LAYER[ev.skill];
+    return cue ? [d(cue, "cast", { tile: null }), ...(layer ? [d(layer[0], "cast", { tile: null, gain: layer[1], delay: layer[2] })] : [])] : [];
+  },
   projectile(ev, s) {
     if (ev.owner === "player") return [];                      // the cast cue covers the hero's own shots
     const pr = s?.projectiles?.find((p) => p.id === ev.id);
     const tile = pr?.pos ? { x: pr.pos.x, y: pr.pos.y } : tileOf(monsterOf(s, ev.owner));
     return [d("castStapler", "monsterShot", { tile, gain: 0.7 })];
   },
+  // R4 skill events (statuses, buffs, allies, zones, dashes, crits, triggers; docs/reviews/R4-core-notes.md render_needs)
+  status(ev, s) {
+    const tile = tileOf(monsterOf(s, ev.target)), cue = ev.kind === "stun" ? "hitFlesh" : ev.kind === "burn" ? "hitPaper" : ev.kind === "freeze" ? "uiEquip" : "castMute";
+    return [d(cue, "status", { tile, gain: ev.kind === "burn" ? 0.4 : 0.55, prio: 4 })];
+  },
+  crit(ev, s) { return [d("ding", "crit", { tile: tileOf(monsterOf(s, ev.target)), gain: 0.55, delay: 0.05, prio: 5 })]; },
+  absorb: () => [d("uiEquip", "absorb", { gain: 0.8, prio: 5 })],
+  buffStart: (ev) => [d(ev.stat === "hot" ? "castCoffee" : "ding", "buffStart", { gain: 0.5, prio: 4 })],
+  buffEnd: () => [d("uiOpen", "buffEnd", { gain: 0.35, prio: 2 })],
+  aura: (ev) => [d(ev.on ? "ding" : "uiOpen", ev.on ? "auraOn" : "auraOff", { gain: ev.on ? 0.7 : 0.5, prio: 4 })],
+  projectileChain: (ev) => [d("castMute", "chain", { tile: ev.to ? { x: ev.to.x, y: ev.to.y } : null, gain: 0.5, prio: 4 })],
+  summon: (ev) => [d("ding", "summon", { tile: ev.tile ? { x: ev.tile.x, y: ev.tile.y } : null, gain: 0.7, prio: 5 })],
+  allyHurt: () => [d("hurtImp", "allyHurt", { gain: 0.4, prio: 2 })],
+  allyDied: (ev) => (ev.reason === "slain" ? [d("deathImp", "allyDied", { gain: 0.6, prio: 4 })] : ev.reason === "expired" ? [d("uiOpen", "allyGone", { gain: 0.5, prio: 2 })] : []),
+  zoneStart: (ev) => [d(ev.kind === "trap" ? "uiOpen" : "castReplyAll", "zoneStart", { tile: ev.tile ? { x: ev.tile.x, y: ev.tile.y } : null, gain: 0.7, prio: 4 })],
+  zoneTrigger: () => [d("hitFlesh", "zoneTrigger", { gain: 0.7, prio: 5 }), d("castMute", "zoneTrigger", { gain: 0.5, delay: 0.04, prio: 4 })],
+  dash: () => [d("swing", "dash", { gain: 1, prio: 5 })],
+  trigger: (ev) => [d(ev.kind === "gold" ? "coin" : "ding", "trigger", { gain: 0.6, prio: 3 })],
+  renamed: click(0.8),
+  respec: () => [d("ding", "respec", { gain: 0.9, prio: 6 }), d("levelUp", "respec", { gain: 0.5, delay: 0.15, prio: 5 })],
   // items and money
   pickup: (ev) => [d(PICKUP_CUE[ev.rarity] ?? "pickupItem", "pickup")],
   gold: () => [d("coin", "gold")],
@@ -132,6 +169,8 @@ export const SILENT_EVENTS = {
   drop: "a ground item appearing is silent; the pickup cue sounds",
   noPath: "pathing failure is a UI toast, not a sound",
   "ui:lowhp": "state change only; ui:heartbeat carries the pulses",
+  dotTick: "damage over time already shows as floaters; a tick every half second would be noise",
+  zoneEnd: "a zone fading out is silent; its start and trigger sound",
   autosave: "a background save must not interrupt play; the title and options screens show save problems as text",
 };
 

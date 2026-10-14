@@ -1,0 +1,211 @@
+{
+  "project": "office-crawler",
+  "harnessVersion": "0.4.0",
+  "round": "R4",
+  "slice": "R4 core (classes, skill trees, 5 save slots) plus the overlapping round G prototyping, WORLD-R5 and the iteration-3 POLISH leftovers",
+  "elapsedMin": null,
+  "humanMin": null,
+  "humanMessages": 3,
+  "agents": [
+    {
+      "role": "implementer",
+      "pkg": "POLISH (iter-3 leftovers)",
+      "tokensK": 171.2,
+      "minutes": 15.7,
+      "status": "done"
+    },
+    {
+      "role": "requirements-facilitator",
+      "pkg": "circle-02",
+      "tokensK": 100.8,
+      "minutes": 2.8,
+      "status": "done"
+    },
+    {
+      "role": "customer-proxy",
+      "pkg": "circle-02 answers",
+      "tokensK": 64.7,
+      "minutes": 0.5,
+      "status": "done"
+    },
+    {
+      "role": "spec-writer",
+      "pkg": "11-classes-trees-slots",
+      "tokensK": 94.9,
+      "minutes": 1.9,
+      "status": "done"
+    },
+    {
+      "role": "architect",
+      "pkg": "ADR-0005/0006 + contract",
+      "tokensK": 151.5,
+      "minutes": 6.9,
+      "status": "done"
+    },
+    {
+      "role": "prototyper",
+      "pkg": "character-select A/B/C",
+      "tokensK": 186.4,
+      "minutes": 12.4,
+      "status": "done"
+    },
+    {
+      "role": "customer-proxy",
+      "pkg": "spec-questions-02",
+      "tokensK": 79.5,
+      "minutes": 0.7,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "character-select review",
+      "tokensK": 89.0,
+      "minutes": 2.3,
+      "status": "done"
+    },
+    {
+      "role": "customer-proxy",
+      "pkg": "character-select pick",
+      "tokensK": 70.0,
+      "minutes": 0.5,
+      "status": "done"
+    },
+    {
+      "role": "harness-retro",
+      "pkg": "baseline R1-R3",
+      "tokensK": 138.5,
+      "minutes": 4.8,
+      "status": "done"
+    },
+    {
+      "role": "prototyper",
+      "pkg": "C3 detail tile [round G]",
+      "tokensK": 285.4,
+      "minutes": 20.2,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "C3 appeal [round G]",
+      "tokensK": 82.4,
+      "minutes": 1.5,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "C3 craft [round G]",
+      "tokensK": 79.2,
+      "minutes": 2.0,
+      "status": "done"
+    },
+    {
+      "role": "customer-proxy",
+      "pkg": "C3 port decision [round G]",
+      "tokensK": 72.5,
+      "minutes": 0.6,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "WORLD-R5 class sprites + FX [round R5]",
+      "tokensK": 390.3,
+      "minutes": 30.8,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "CORE-R4",
+      "tokensK": 513.4,
+      "minutes": 47.1,
+      "status": "done"
+    }
+  ],
+  "inFlightAtRetro": [
+    "UI-R5 (wiring, character select A, tree panel, slots in Options, e2e fixes)",
+    "WORLD-G (C3 port)",
+    "harness-retro R4 (this run)"
+  ],
+  "totals": {
+    "tokensK": null,
+    "agentMinutes": null,
+    "recordedTokensK": 2569.7,
+    "recordedAgentMinutes": 150.7
+  },
+  "defects": {
+    "adversarial": null,
+    "codeReview": null,
+    "visualReview": 13,
+    "customer": null,
+    "escaped": null,
+    "orchestratorVerify": 2,
+    "byStage": {
+      "adversarial": "not run (null, not 0)",
+      "codeReview": "not run in this period (no R4 code review yet)",
+      "visualReview": "prototype stage only: character-select 5 top fixes for the picked variant A (review-r1.md) + C3 appeal 8 top changes (review-r3-appeal.md); the craft review adds 8 readability risks and an 11-step port plan, not counted",
+      "orchestratorVerify": "2 e2e scripts red after CORE-R4: ui.mjs (old single-class HUD assumptions) and s3ui.mjs (scripted boss kill fails, no victory; WORLD-R5 saw it hang over 10 min)",
+      "proxyOrCustomer": "0 defects; customer closed escalations (IP closeness, names) as decisions, not defects"
+    }
+  },
+  "quality": {
+    "unitTests": 559,
+    "e2eChecks": null,
+    "visualScore": null,
+    "fps50": 55.4,
+    "botWinRate": 0.944
+  },
+  "prototypeScores": {
+    "characterSelect": {
+      "A": 34,
+      "B": 28,
+      "C": 30
+    },
+    "detailTile": {
+      "C2": "28/29",
+      "C3": "31/31"
+    }
+  },
+  "rework": {
+    "fixRounds": 0,
+    "reverts": null
+  },
+  "incidents": [
+    "e2e ui.mjs and s3ui.mjs failed after CORE-R4 landed; found by the orchestrator's own e2e run, not by the core implementer, whose edit list excluded game.js, main.js and testhook (L-022)",
+    "s3ui.mjs hung for over 10 minutes during WORLD-R5 (reported in its hand-back); e2e/run-all.mjs has no per-script timeout, so one hang blocks the whole run (L-022)",
+    "Ownership clash on src/render/hud.js: WORLD-G had edited it when UI-R5 became its owner; avoided by telling WORLD-G, which restored hud.js byte-for-byte and moved the chrome to src/render/hudchrome.js (L-010, L-007)",
+    "Core and render named the same optional floater field differently: core emits dtype, WORLD-R5 notes read dmgType (R4-core-notes vs R5-world-notes); optional, nothing broke, but the contract did not cover event and floater fields (L-013)",
+    "Duplicate notifications: orchestrator-reported (task brief), no file evidence in this period; earlier R3 note: a finished CORE-FIX agent's background bot runs kept notifying",
+    "Adversarial test-engineer pass defined (L-008, playbook) but not scheduled for R4 core, R5 or G (L-021)",
+    "Prototype tiles were rendered larger than the game scale (hero about 200 px vs 100-135 px in game), so reviewers estimated 70 percent of C3 character detail would be lost (L-023)",
+    "CORE-R4 hand-off left session wiring (game.js, main.js, testhook) to the next package by design; no AC fell unowned so far (L-019 watch)",
+    "POLISH hand-back (iteration-3 leftovers) wrongly said earlier fixes were 'not done'; it started before the L-016 rule (L-016 recorded at baseline)"
+  ],
+  "learnings": [
+    "L-021",
+    "L-022",
+    "L-023",
+    "L-016",
+    "L-013",
+    "L-012",
+    "L-010",
+    "L-008",
+    "L-018",
+    "L-019",
+    "L-020"
+  ],
+  "sourceNotes": {
+    "elapsedMin": "Null: ledger rows carry no timestamps and git was off limits for this run. Agent minutes overlap (parallel packages), so their sum is not elapsed time.",
+    "humanMin": "Null: not measurable.",
+    "humanMessages": "3 = human-log.jsonl (question, ack, decision, 2026-10-14 02:44-02:47Z). The fourth and fifth briefings (rounds 7-12, round G) and the customer decisions are in 00-brief.md but have no UTC log; they are not added to the count.",
+    "agents": "docs/metrics/ledger.jsonl, 16 rows with round R4, G or R5 (the R3 FINAL-FIX-resume row belongs to round-03). The harness-retro baseline row is harness overhead, not product work. CORE-R4 (513.4k, 47.1 min) is the largest single package. UI-R5, WORLD-G and this retro are not in the ledger yet.",
+    "totals": "recordedTokensK 2569.7 and recordedAgentMinutes 150.7 are sums of the rows; the round is not finished so the true total is null.",
+    "defects.visualReview": "Counted from review-r1.md (5) and review-r3-appeal.md (8). They are prototype-stage findings, not in-game.",
+    "defects.escaped": "Undefined for a round without code review or acceptance; null.",
+    "unitTests": "559 (CORE-R4 hand-back, 3 runs green, 1 todo for audio cues); WORLD-R5 reported 558 before merge.",
+    "e2eChecks": "Null: two scripts were red after CORE-R4, no total recorded.",
+    "visualScore": "Null: no in-game visual review ran in this period. Prototype scores are under prototypeScores. Last in-game score: 31 (round 3).",
+    "fps50": "55.4 = WORLD-R5 bench. WORLD-G measured 59.5 baseline, atlas 3.2-3.7 s under load 4-6; POLISH reported 59.",
+    "botWinRate": "17/18 = 0.944: Facilities Manager 6/6, Sales Rep 5/6, IT Wizard 6/6 within the bot's 12-death cap (R4-core-progress.md). Playtime 27, 36, 27 min.",
+    "rework.fixRounds": "0 completed; the e2e repair is part of UI-R5, not yet returned.",
+    "rework.reverts": "Null: git not consulted."
+  }
+}

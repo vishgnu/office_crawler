@@ -28,7 +28,7 @@ test("every event type the core emits has a cue or a documented reason to be sil
   // S3 core events (boss, finale, autosave) that the audio package maps in the UI/audio slice (docs/reviews/S3-core-notes.md,
   // render_needs). They are emitted by the core now; delete an entry here when src/audio/cues.js maps it. Anything else must be mapped.
   // R4 core events (classes, skills, statuses; docs/reviews/R4-contract.md and R4-core-notes.md) wait for the R5 audio package in the same way.
-  const PENDING_AUDIO_S3 = new Set(["allyDied", "crit", "absorb", "buffEnd", "buffStart", "renamed", "respec", "aura", "projectileChain", "allyHurt", "status", "zoneStart", "zoneEnd", "zoneTrigger", "summon", "dash", "dotTick", "trigger"]);
+  const PENDING_AUDIO_S3 = new Set([]); // R5 audio mapped all 18 R4 event types
   for (const t of PENDING_AUDIO_S3) assert.ok(types.has(t), `${t} is listed as pending but the core no longer emits it`);
   const missing = [...types].filter((t) => !(t in EVENT_MAP) && !(t in SILENT_EVENTS) && !PENDING_AUDIO_S3.has(t));
   assert.deepEqual(missing, []);
@@ -64,16 +64,15 @@ test("cue ids are real sounds; the sound list matches the measured kits", () => 
   for (const ev of samples) for (const d of mapEvent(ev, s)) assert.ok(SFX_IDS.includes(d.cue), d.cue);
 });
 
-test("TODO(R5 audio): every new R4 active skill has a cast cue", { todo: "R5 audio package maps the 24 new skills" }, () => {
-  const missing = Object.values(content.skills).filter((sk) => sk.kind === "active" && !SKILL_CUE[sk.id]).map((sk) => sk.id);
+test("every new R4 skill that casts has a cast cue that is a real sound", () => {
+  const missing = Object.values(content.skills).filter((sk) => (sk.kind === "active" || sk.kind === "aura") && !SKILL_CUE[sk.id]).map((sk) => sk.id);
+  for (const cue of Object.values(SKILL_CUE)) assert.ok(SFX_IDS.includes(cue), cue);
   assert.deepEqual(missing, []);
 });
 
 test("every monster type and every active skill has a voice / cast cue", () => {
   for (const type of Object.keys(content.monsters)) assert.ok(MONSTER_VOICE[type], `monster ${type} has no voice`);
-  // The six skills of the retired Clerk keep their cues; the 24 new R4 skills get theirs in the R5 audio package (render_needs in R4-core-notes.md).
-  const LEGACY = ["stapler-throw", "reply-all", "coffee-break", "mute", "dress-code", "hustle"];
-  for (const sk of Object.values(content.skills ?? {})) if (sk.kind === "active" && LEGACY.includes(sk.id)) assert.ok(SKILL_CUE[sk.id], `skill ${sk.id} has no cast cue`);
+  for (const sk of Object.values(content.skills ?? {})) if (sk.kind === "active") assert.ok(SKILL_CUE[sk.id], `skill ${sk.id} has no cast cue`);
   const s = state();
   for (const type of Object.keys(content.monsters)) {
     s.monsters.push({ id: `x-${type}`, type, tile: { x: 11, y: 10 } });
