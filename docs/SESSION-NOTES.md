@@ -160,3 +160,4 @@ Each round also improves the harness (learnings → agent definitions/rules), as
 - [G] Craft review 31/40 (16/20 done, 4 partly, 9 label overlaps → L-018 recurring). G-FIX launched (render + core loot.js; not hud/ui). New learning L-024 (visual claims need 1x crop evidence) applied to implementer.md.
 - 2026-10-14T03:43:36Z G-FIX hand-back: faces 1.4x 2-tone, pool tint, far-half hue, label de-collision, loot off props. 569 tests, bench 47.1. Ledger row added. G re-review after UI-R5.
 - 2026-10-14T04:16:20Z UI-R5 hand-back (506.6k tokens, 68.5 min). Orchestrator re-run: npm test 574/0, npm run e2e 12/12 OK. Next ADV-R5.
+- 2026-10-14T04:21:13Z G2 visual review: G 33/32 (was 32/31, target 34) → iterate narrow; char select 33/30. Must-fix F1-F4 (in-game), F9-F12 (UI). Goes into the fix round with ADV-R5 + code review.

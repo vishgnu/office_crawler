@@ -1,1 +1,6 @@
 - 2026-10-14T04:17:01Z start: reading inputs, base c1be6f3..HEAD
+- read save/ layer (slots, format); next shell main.js/game.js, ui, core
+- read save/session/game/main; next ui innerHTML (panels, itemview), core, render, tests
+- npm test 574/574 pass; checking denylist, core, perf
+- core skimmed (progression, skillfx, allies, zones, statuses); next: tests quality scan, render hot path, ui charselect/screens/options/testhook, e2e
+- confirmed by experiment: stale owner lockout, hostile item id accepted; next render hot path
