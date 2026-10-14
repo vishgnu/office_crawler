@@ -1,6 +1,6 @@
 // WORLD debug scene (S2): drives the real renderer modules (style atlas, drawWorld, fx, lighting, labels) against hand-staged core states.
 // It does not use the game shell or the test hook, so it keeps working while the UI package changes. Bundled by e2e/world-shots.mjs.
-import { newGame, step, content, config, spawnMonster, teleportFloor, spawnItem, dropGold, setLevel, fireProjectile, castSkill, learnSkill } from "../src/core/index.js";
+import { newGame, step, applyInput, content, config, spawnMonster, teleportFloor, spawnItem, dropGold, setLevel, fireProjectile, castSkill, learnSkill } from "../src/core/index.js";
 import { getStyle } from "../src/render/style.js";
 import { drawWorld, actorPos } from "../src/render/world.js";
 import { createFx } from "../src/render/fx.js";
@@ -218,3 +218,70 @@ W.floor8Stairs = (unlocked) => {
   if (st) s.player.tile = { x: st.x, y: st.y + 2 };
   return { exit: st, bossStairs: s.floor.bossStairs };
 };
+
+// ---- R5 class fights: real core states (class heroes, real casts), staged around the hero ----
+// W.fight(cls): the hero stands in the basement with a ring of monsters at 3-5 tiles. W.skill(id): grants the skill and casts it at the nearest monster.
+// W.panel(i, cols, rows, [ox, oy]): copies the hero-centred crop of the current frame into cell i of a contact sheet; W.panelsShow() draws the sheet to the canvas.
+W.fight = (cls, o = {}) => {
+  const opt = { seed: 5, depth: 4, n: 5, types: ["temp-worker", "zombie-intern", "printer-imp", "middle-manager", "consultant", "temp-worker", "zombie-intern", "printer-imp"], r: [2.5, 4.5], ...o };
+  W.now = 1000; W.fx.reset(); W.rs.facing.clear();
+  const s = (W.core = newGame(opt.seed, { class: cls, start: "town" }));
+  teleportFloor(s, opt.depth);
+  s.monsters.length = 0; W.core.floor.spawns = [];
+  setLevel(s, 30);
+  s.player.hpMax = s.player.hp = 1e6; s.player.mpMax = s.player.mp = 1e5;
+  { // stand in the most open spot of the floor, so no wall hides the fight
+    const { w, h, tiles, props } = s.floor, blocked = new Set(props.filter((p) => p.blocks).map((p) => p.y * w + p.x));
+    const ok = (x, y) => x >= 0 && y >= 0 && x < w && y < h && (tiles[y * w + x] === 1 || tiles[y * w + x] === 3) && !blocked.has(y * w + x);
+    let best = null, bs = -1;
+    for (let y = 2; y < h - 2; y++) for (let x = 2; x < w - 2; x++) {
+      if (!ok(x, y)) continue;
+      let n = 0; for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) if (ok(x + dx, y + dy)) n++;
+      if (n > bs) { bs = n; best = { x, y }; }
+    }
+    if (best) s.player.tile = best;
+  }
+  const hero = s.player.tile;
+  const ring = free(s, hero, opt.r[1], opt.r[0]).filter((t) => t.x + t.y <= hero.x + hero.y + 1 || Math.abs(t.x - t.y - (hero.x - hero.y)) >= 3); // nothing right in front of the hero (it would fade him)
+  ring.sort((a, b) => Math.atan2(a.y - hero.y, a.x - hero.x) - Math.atan2(b.y - hero.y, b.x - hero.x));
+  const step = Math.max(1, Math.floor(ring.length / opt.n));
+  for (let i = 0; i < opt.n; i++) { const t = ring[(i * step + 2) % ring.length]; if (t) spawnMonster(s, opt.types[i % opt.types.length], t, null, { level: opt.depth }); }
+  for (const m of s.monsters) { m.hp = m.hpMax = 1e5; }
+  W.live = true; W.step(3);
+  return { class: s.player.class, hero: { ...hero }, monsters: s.monsters.length };
+};
+W.nearest = () => { const s = W.core, p = s.player.tile; return s.monsters.filter((m) => m.ai !== "dead").sort((a, b) => Math.hypot(a.tile.x - p.x, a.tile.y - p.y) - Math.hypot(b.tile.x - p.x, b.tile.y - p.y))[0]; };
+W.skill = (id, level = 3, at = null) => {
+  const s = W.core, p = s.player;
+  p.skills[id] = level; p.mp = p.mpMax;
+  const m = at ?? W.nearest();
+  const tile = m ? { ...(m.tile ?? m) } : { x: p.tile.x + 3, y: p.tile.y + 2 };
+  const r = castSkill(s, id, tile);
+  dispatch(0);
+  return { id, ok: r?.ok ?? r, error: r?.error ?? null, target: tile };
+};
+W.aura = (id, level = 3) => { const s = W.core; s.player.skills[id] = level; s.player.mp = s.player.mpMax; const r = applyInput(s, { t: "toggleAura", id }); dispatch(0); return r; };
+W.setStatus = (kinds) => { // stage statuses on the monsters, one kind per monster in order
+  const s = W.core, ms = s.monsters.filter((m) => m.ai !== "dead");
+  kinds.forEach((k, i) => {
+    const m = ms[i]; if (!m || !k) return;
+    for (const kk of [].concat(k)) {
+      if (kk === "stun" || kk === "mute" || kk === "freeze") { m.muteT = 600; m.statusKind = kk; }
+      else if (kk === "slow") { m.slowT = 600; m.slowMag = 30; } else if (kk === "weaken") { m.weakenT = 600; m.weakenMag = 30; } else if (kk === "burn") { m.burnT = 600; m.burnDmg = 1; }
+    }
+  });
+};
+W.crit = () => { const s = W.core, m = W.nearest(); if (!m) return; s.events.push({ type: "crit", target: m.id }); s.floaters.push({ value: 48, tile: { ...m.tile }, target: m.id, kind: "crit", dmgType: "physical", life: config.floaterTicks }); dispatch(0); };
+W.hold = () => { for (const m of W.core.monsters) { m.ai = "idle"; } };
+W.panelSheet = null;
+W.panel = (i, cols, rows, o = {}) => {
+  const main = document.getElementById("game"), { w, h } = W.size, cw = Math.floor(w / cols), ch = Math.floor(h / rows);
+  if (!W.panelSheet || W.panelSheet.cols !== cols || W.panelSheet.rows !== rows) { const c = document.createElement("canvas"); c.width = w; c.height = h; W.panelSheet = { c, cols, rows }; const g = c.getContext("2d"); g.fillStyle = "#07080c"; g.fillRect(0, 0, w, h); }
+  const g = W.panelSheet.c.getContext("2d"), sx = Math.round(w / 2 + (o.ox ?? 0) - cw / 2), sy = Math.round(h * 0.56 + (o.oy ?? 0) - ch / 2);
+  g.drawImage(main, sx, sy, cw, ch, (i % cols) * cw, Math.floor(i / cols) * ch, cw, ch);
+  g.strokeStyle = "#07080c"; g.lineWidth = 3; g.strokeRect((i % cols) * cw, Math.floor(i / cols) * ch, cw, ch);
+  return { sx, sy, cw, ch };
+};
+W.panelsShow = (k = 1) => { const main = document.getElementById("game"), g = main.getContext("2d"); g.fillStyle = "#07080c"; g.fillRect(0, 0, main.width, main.height); g.drawImage(W.panelSheet.c, 0, 0, Math.round(main.width * k), Math.round(main.height * k)); W.panelSheet = null; };
+W.render2 = () => { W.render(); };
+W.dumpEvents = () => W.core.events.map((e) => e.type).join(",");

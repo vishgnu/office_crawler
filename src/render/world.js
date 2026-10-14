@@ -2,6 +2,7 @@
 // positions, contact shadows, actors lit from the same light model as the darkness mask, and the
 // hero-behind-wall ghost. The per-frame path allocates nothing: scratch objects and arrays are pooled.
 import { config, content } from "../core/index.js";
+import { statusFlags, drawStatus, SF } from "./draw/effects.js";
 import { keys, dirIndex, DIR_VEC, PLAYER_CLASS, heroType, ALLY_ANIMS, FLOOR_VARIANTS, WALL_VARIANTS, ANIMS, PLAYER_ANIMS, DIRS, NPC_FRAMES, bossType } from "./keys.js";
 import { project } from "../ui/camera.js";
 import { WALL, STAIRS_UP, STAIRS_DOWN, DOOR } from "../core/tiles.js";
@@ -131,7 +132,7 @@ const out = { heroScreen: { x: 0, y: 0 }, heroDir: 0, actors: actorOut, heroItem
 let nPool = 0;
 const grab = (d, e, x, y) => {
   const it = pool[nPool++] ?? (pool[nPool - 1] = { d: 0, e: null, x: 0, y: 0, a: 1, actor: false, isPlayer: false, alert: false, shade: 0, tint: "", tintA: 0, flash: false, head: 0, hurt: false, dx: 0, dy: 0, icon: 0, champ: false, mute: false, npc: false, boss: false, summoned: false });
-  it.d = d; it.e = e; it.x = x; it.y = y; it.a = 1; it.actor = false; it.isPlayer = false; it.alert = false; it.shade = 0; it.tint = ""; it.tintA = 0; it.flash = false; it.dx = 0; it.dy = 0; it.icon = 0; it.champ = false; it.mute = false; it.npc = false; it.hurt = false; it.boss = false; it.summoned = false;
+  it.d = d; it.e = e; it.x = x; it.y = y; it.a = 1; it.actor = false; it.isPlayer = false; it.alert = false; it.shade = 0; it.tint = ""; it.tintA = 0; it.flash = false; it.dx = 0; it.dy = 0; it.icon = 0; it.champ = false; it.mute = false; it.npc = false; it.hurt = false; it.boss = false; it.summoned = false; it.sf = 0;
   return it;
 };
 const byDepth = (a, b) => a.d - b.d;
@@ -300,8 +301,9 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
   it.actor = true; it.isPlayer = isPlayer; it.a = alphaV; it.flash = flash; it.head = dm.head;
   it.shade = shade; it.tint = tint; it.tintA = tintA; it.champ = champ; it.boss = boss; it.summoned = !isPlayer && !!a.summoned && !dying;
   if (!isPlayer && !dying) {
-    it.icon = a.muteT > 0 ? ICON_MUTED : a.ai === "stagger" ? ICON_STAGGER : a.ai === "flee" ? ICON_FLEE : a.ai === "notice" ? ICON_ALERT : 0;
-    it.mute = a.muteT > 0;
+    const sf = statusFlags(a); it.sf = sf; // R5 statuses: stun / mute / freeze share muteT and differ by statusKind
+    it.icon = sf & SF.mute ? ICON_MUTED : a.ai === "stagger" ? ICON_STAGGER : a.ai === "flee" ? ICON_FLEE : a.ai === "notice" ? ICON_ALERT : 0;
+    it.mute = !!(sf & SF.mute);
     if (a.ai === "stagger") { // recoil away from the facing direction and shiver, easing out over the recovery
       const kk = Math.min(1, a.staggerT / config.hitRecoveryTicks), v = DIR_VEC[dir];
       it.dx = (-v[0] * 4 * kk + Math.sin(now * 0.075) * 1.8 * kk) * z; it.dy = -v[1] * 2 * kk * z;
@@ -435,6 +437,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     const e = gi.gold ? atlas.get(keys.loot(GOLD_SIZES[gi.gold < 25 ? 0 : gi.gold < 80 ? 1 : 2])) : atlas.get(keys.loot("item"));
     items.push(grab(gi.tile.x + gi.tile.y + 1 - 0.25, e, pt.x, pt.y));
   }
+  F.prev = prev; F.alpha = alpha; fx.heroType = heroType(core.player.class);
   fx.drawGround(g, cam, atlas, now); // cast runes, burst and heal rings: flat on the floor, under every actor
 
   // ---- actors: positions first (lights need them), then lit sprites ----
@@ -498,11 +501,14 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     if (it.hurt) { g.globalAlpha = 0.9 * it.a; blit(g, atlas.outline(it.e, "#ff2b3a", 2.2), x, y, z); g.globalAlpha = it.a; } // hurt: a red rim, the body stays readable
     blit(g, it.flash ? atlas.flash(it.e) : it.e, x, y, z);
     if (it.mute) { g.globalAlpha = 0.34 * it.a; blit(g, atlas.tint(it.e, "#7c88b8"), x, y, z); }
+    if (it.sf & SF.freeze) { g.globalAlpha = 0.5 * it.a; blit(g, atlas.tint(it.e, "#9fe4ff"), x, y, z); }
+    if (it.sf & SF.burn) { g.globalAlpha = (fx.reducedMotion ? 0.2 : 0.14 + 0.1 * Math.sin(now / 90 + x)) * it.a; blit(g, atlas.tint(it.e, "#ff7a1f"), x, y, z); }
     if (it.shade > 0) { g.globalAlpha = it.shade * it.a; blit(g, atlas.shade(it.e, "#070518"), x, y, z); }
     if (it.tintA > 0) { g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, z); }
     if (it.hurt) { g.globalAlpha = 0.14; blit(g, atlas.tint(it.e, "#ff1f2e"), x, y, z); }
     g.globalAlpha = 1;
     if (it.summoned) blit(g, atlas.get(keys.fx("badge")), x + 5 * z, y - 30 * z, z * 0.9); // temp badge pinned to the chest
+    if (it.sf) drawStatus(g, it.sf, x, y, it.head, z, now, fx.reducedMotion);
     if (it.icon) drawIcon(g, atlas, it, x, y, z, now);
   }
 

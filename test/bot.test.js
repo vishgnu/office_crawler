@@ -28,7 +28,7 @@ test("S1-6 bot: with nothing in sight it walks to the nearest unexplored room ce
 
 test("S1-6 bot: attacks the awake monster that is hitting the hero, and keeps its target (hysteresis)", () => {
   const s = gameOn(OPEN, [["zombie-intern", 2, 1], ["zombie-intern", 4, 1]]);
-  s.floor.rooms = [];
+  s.floor.rooms = []; s.player.mp = 0; // the class signature skill is free from level 1 now; this test is about choosing the melee target
   const [a, b] = s.monsters;
   a.ai = "attack"; chasing(b, { x: 3, y: 1 });
   const mem = createBotMemory();
@@ -138,33 +138,46 @@ test("S2 bot runs pick up loot and stay deterministic: seeds 1-5 clear, collect 
 });
 
 // ---- S2-3/S2-4: skills, points, floors ----
-import { newGame, setLevel, learnSkill, applyInput, config } from "../src/core/index.js";
+import { newGame, setLevel, applyDerived, applyInput, config, content } from "../src/core/index.js";
 
 const lit = (s) => { s.floor.rooms = []; s.inventory.items.length = 0; return s; };
 
-test("S2 bot: spends attribute points by weight and learns skills in the configured order", () => {
+test("S2 bot: spends attribute points by the class weights and learns skills in the class build order", () => {
   const s = lit(gameOn(OPEN, [["zombie-intern", 12, 4]]));
   setLevel(s, 3); // 10 attribute points, 2 skill points
+  const start = { ...s.player.attrs };
   const mem = createBotMemory();
   const seen = [];
   for (let i = 0; i < 12; i++) { const c = decide(s, mem); if (!c) break; assert.equal(applyInput(s, c).ok, true); seen.push(c); }
   assert.equal(s.player.attrPoints, 0); assert.equal(s.player.skillPoints, 0);
-  assert.deepEqual(seen.filter((c) => c.t === "learnSkill").map((c) => c.id), ["stapler-throw", "stapler-throw"].slice(0, 2));
-  assert.ok(s.player.attrs.stamina > 10 && s.player.attrs.grit > 10);
+  assert.deepEqual(seen.filter((c) => c.t === "learnSkill").map((c) => c.id), ["pallet-slam", "dress-code"]); // buildOrder: pallet-slam to 2, then dress-code
+  assert.ok(s.player.attrs.stamina > start.stamina && s.player.attrs.grit > start.grit);
 });
 
-test("S2 bot: Coffee Break when hurt, Reply-All on a crowd, Stapler Throw at range with a clear line, nothing without mana", () => {
-  const mk = (monsters) => { const s = lit(gameOn(OPEN, monsters)); setLevel(s, 10); for (const id of ["stapler-throw", "coffee-break", "reply-all", "mute"]) learnSkill(s, id); s.player.attrPoints = 0; s.player.skillPoints = 0; s.belt.fill(null); return s; };
+test("S2 bot: every class learns only skills the core accepts (class, gates, prerequisites) over a full level range", () => {
+  for (const cls of content.classes) {
+    const s = lit(gameOn(OPEN, [], 1, { class: cls.id })), mem = createBotMemory();
+    for (let level = 2; level <= 30; level++) {
+      setLevel(s, level);
+      for (let i = 0; i < 20; i++) { const c = decide(s, mem); if (!c) break; assert.equal(applyInput(s, c).ok, true, `${cls.id} ${JSON.stringify(c)}`); }
+    }
+    assert.equal(s.player.skillPoints, 0, cls.id + " spends every point it can");
+  }
+});
+
+test("S2 bot: Sales Rep casts Stapler Throw at range with a clear line, Reply-All on a crowd, nothing without mana; the Facilities Manager heals; the IT Wizard mutes when mobbed", () => {
+  const mk = (cls, monsters, ids) => { const s = lit(gameOn(OPEN, monsters, 1, { class: cls })); setLevel(s, 10); for (const id of ids) s.player.skills[id] = 1; applyDerived(s); s.player.mp = s.player.mpMax; s.player.attrPoints = 0; s.player.skillPoints = 0; s.belt.fill(null); return s; };
   const awake = (s) => s.monsters.forEach((m) => { m.ai = "chase"; });
-  let s = mk([["zombie-intern", 9, 1]]); awake(s);
+  const sales = ["intern", "reply-all", "pen-volley"];
+  let s = mk("sales-rep", [["zombie-intern", 9, 1]], []); awake(s);
   assert.deepEqual(decide(s, createBotMemory()), { t: "cast", skill: "stapler-throw", tile: { x: 9, y: 1 } });
   s.player.mp = 0;
   assert.notEqual(decide(s, createBotMemory())?.t, "cast");
-  s = mk([["zombie-intern", 5, 1]]); awake(s); s.player.hp = 3;
-  assert.equal(decide(s, createBotMemory()).skill, "coffee-break");
-  s = mk([["zombie-intern", 2, 1], ["zombie-intern", 2, 2], ["zombie-intern", 1, 3], ["zombie-intern", 3, 2]]); awake(s);
+  s = mk("sales-rep", [["zombie-intern", 2, 1], ["zombie-intern", 2, 2], ["zombie-intern", 1, 3], ["zombie-intern", 3, 2]], sales); awake(s);
   assert.equal(decide(s, createBotMemory()).skill, "reply-all");
-  s = mk([["zombie-intern", 2, 1], ["zombie-intern", 2, 2]]); s.monsters.forEach((m) => { m.ai = "attack"; }); s.player.hp = Math.floor(s.player.hpMax * 0.55);
+  s = mk("facilities-manager", [["zombie-intern", 5, 1]], ["dress-code", "coffee-break"]); awake(s); s.player.hp = 3;
+  assert.equal(decide(s, createBotMemory()).skill, "coffee-break");
+  s = mk("it-wizard", [["zombie-intern", 2, 1], ["zombie-intern", 2, 2]], ["mute"]); s.monsters.forEach((m) => { m.ai = "attack"; }); s.player.hp = Math.floor(s.player.hpMax * 0.55);
   assert.equal(decide(s, createBotMemory()).skill, "mute");
 });
 

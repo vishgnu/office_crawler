@@ -3,6 +3,7 @@
 // speed: 1 = player pace; ticks per tile = moveTicksPerTile / speed.
 // damage: base value, rolled as base +/- config.monsterDamageSpread. attackRating feeds hitChance.
 // cost: share of the floor population budget (R-034). pack: [min, max]; a type with max 1 is placed as a single.
+// optional resist: { fire|cold|shock|acid: 0..1 }, the share of that damage type a monster ignores (capped by config.resistCap; bosses lower).
 // ranged types: range (tiles) and projectile { kind, speed (tiles per tick) }. canFlee: weak swarmers flee once at low health.
 import { config } from "../config.js";
 
@@ -15,7 +16,7 @@ export const monsters = {
   "printer-imp": {
     id: "printer-imp", name: "Printer Imp", behaviour: "swarmer",
     hpBase: 8, damage: 2, defense: 8, attackRating: 30, xp: 5, speed: 1.2, sightRange: 10,
-    minDepth: 1, weight: 2, pack: [2, 3], cost: 1.5,
+    minDepth: 1, weight: 2, pack: [2, 3], cost: 1.5, resist: { fire: 0.25 },
   },
   "temp-worker": {
     id: "temp-worker", name: "Temp Worker", behaviour: "swarmer", canFlee: true,
@@ -36,7 +37,7 @@ export const monsters = {
   "vending-machine": {
     id: "vending-machine", name: "Vending Machine", behaviour: "elite",
     hpBase: 90, damage: 10, defense: 25, attackRating: 35, xp: 40, speed: 0.5, sightRange: 8,
-    minDepth: 4, weight: 1, pack: [1, 1], cost: 10,
+    minDepth: 4, weight: 1, pack: [1, 1], cost: 10, resist: { cold: 0.25, shock: 0.25 },
   },
   consultant: {
     id: "consultant", name: "Consultant", behaviour: "ranged", range: 8,
@@ -57,7 +58,7 @@ export const bosses = {
   "regional-director": {
     id: "regional-director", name: "The Regional Director", behaviour: "boss", boss: true,
     hpBase: 150, damage: 12, defense: 30, attackRating: 70, xp: 150, speed: 0.8, sightRange: 16,
-    minDepth: 99, weight: 0, pack: [1, 1], cost: 0,
+    minDepth: 99, weight: 0, pack: [1, 1], cost: 0, resist: { fire: 0.25, cold: 0.25 },
   },
 };
 export const allMonsters = { ...monsters, ...bosses };

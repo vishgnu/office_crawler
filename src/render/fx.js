@@ -10,6 +10,7 @@ import { project } from "../ui/camera.js";
 import { keys, PLAYER_CLASS } from "./keys.js";
 import { config, content } from "../core/index.js";
 import { actorPos } from "./world.js";
+import { createSkillFx, FLOAT_COL } from "./draw/effects.js";
 
 const S = content.strings;
 const TICK_MS = 1000 / config.tickHz;
@@ -23,11 +24,15 @@ const fontFor = (px) => (fonts[px] ??= `900 italic ${px}px ${SANS}`);
 const ease = (t) => 1 - (1 - t) * (1 - t) * (1 - t);
 const RUNE = { "stapler-throw": "#c9d2e4", "reply-all": "#ffb35a", "coffee-break": "#6fe08a", mute: "#c9a0ff" };
 const IMPACT_MS = 380;
+const TRAIL = { shard: "#bff2ff", bolt: "#6fe8ff", zap: "#6fe8ff", sealed: "#ff8a8a", pen: "#8fb0ff" }; // projectile kinds that leave a trail
+const MUZZLE = { toner: null, slide: "#5b8cff", pen: "#8fb0ff", card: "#ffd0e4", paper: "#f4ecd6", sealed: "#ff7a7a", shard: "#bff2ff", bolt: "#6fe8ff", zap: "#6fe8ff" };
 /** AC-NFR-A05-2: nothing flashes more than 3 times a second. The boss telegraph "hot" edge toggles every FLASH_HALF_MS (a flash is one on/off cycle). */
 export const FLASH_HALF_MS = 170;
 /** Low-HP pulse period in ms for a health ratio (below 0.3): 700 to 1150 ms. */
 export const lowHpPeriod = (ratio) => 700 + 900 * ratio / 0.3 * 0.5;
 const CONFETTI = ["#ffd24a", "#e0363f", "#56b4e9", "#6fe08a", "#ffffff", "#ff9acb", "#f0e442"];
+const INK_FX = "#0d0a1c";
+const ell0 = (g, x, y, rx, ry) => { g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); };
 const hash01 = (n) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
 
 // ---- loot visuals ----
@@ -142,23 +147,25 @@ export function createFx(style) {
   const rng = createRng(7), P = style.palette, pos = { x: 0, y: 0 }, shk = { x: 0, y: 0 }, pos2 = { x: 0, y: 0 };
   let hurtCanvas = null, hurtW = 0, hurtH = 0;
   const rows = [], fl = [], fr0 = { x: 0, y: 0, w: 0, h: 0 };
+  let sk = null;
   const fx = {
     parts: [], slashes: [], rings: [], impacts: [], pillars: [], proj: new Map(), flash: new Map(), // `flash` is unused (flashTicks is state-backed) and kept so older callers do not break
     core: null, alpha: 1, hc: false, showAllLoot: false, hoverLootId: null, // the shell may set these three (high contrast, Alt held, hovered ground entry)
     avoid: [], avoidSegs: [], // plate / pip rectangles and leader lines claimed by the nameplate pass this frame (set by the shell); loot plates and floaters keep clear of them
-    reducedMotion: false, hurtUntil: 0, lowHp: false, beat: -1, shakeUntil: 0, hitStopUntil: 0, deathAt: null, lowFx: false, victoryAt: -1e9,
+    reducedMotion: false, reducedFlash: false, heroType: PLAYER_CLASS, lights: [], hurtUntil: 0, lowHp: false, beat: -1, shakeUntil: 0, hitStopUntil: 0, deathAt: null, lowFx: false, victoryAt: -1e9,
     reset() {
       fx.parts.length = 0; fx.slashes.length = 0; fx.rings.length = 0; fx.impacts.length = 0; fx.pillars.length = 0; fx.proj.clear(); fx.flash.clear();
-      fx.hurtUntil = fx.shakeUntil = fx.hitStopUntil = 0; fx.deathAt = null; fx.victoryAt = -1e9; fx.lowHp = false; fx.beat = -1;
+      fx.hurtUntil = fx.shakeUntil = fx.hitStopUntil = 0; fx.deathAt = null; fx.victoryAt = -1e9; fx.lowHp = false; fx.beat = -1; sk.reset();
     },
     handle(ev, core, now) {
+      const consumed = sk.handle(ev, core, now); // R5 skill effects (draw/effects.js); true when a typed ring replaces the old burst ring
       const find = (id) => (id === "player" ? core.player : core.monsters.find((m) => m.id === id));
       const at = (a) => { actorPos(a, pos); return pos; };
       if (ev.type === "hit") {
         const t = find(ev.target);
         if (!t) return;
         const cx = at(t).x + 0.5, cy = pos.y + 0.5, toPlayer = ev.target === "player";
-        const head = style.dims[toPlayer ? PLAYER_CLASS : t.type]?.head ?? 50;
+        const head = style.dims[toPlayer ? fx.heroType : t.type]?.head ?? 50;
         if (toPlayer) { fx.hurtUntil = now + 260; fx.shakeUntil = now + 140; }
         else { fx.slashes.push({ x: cx, y: cy, head, born: now, skill: !!ev.skill }); fx.hitStopUntil = Math.max(fx.hitStopUntil, now + HIT_STOP_MS); }
         fx.burst(cx, cy, toPlayer ? 4 : 9, now);
@@ -172,8 +179,8 @@ export function createFx(style) {
         fx.rings.push({ kind: "rune", x: c.x + 0.5, y: c.y + 0.5, r0: 1.5, r1: 0.7, born: now, life: 420, colour: RUNE[ev.skill] ?? "#8ff3ff" });
       } else if (ev.type === "burst") {
         const x = ev.tile.x + 0.5, y = ev.tile.y + 0.5;
-        fx.rings.push({ kind: "burst", x, y, r0: Math.max(0.5, ev.radius * 0.25), r1: ev.radius, born: now, life: 480, colour: "#ffb35a" });
-        fx.burst(x, y, 16, now, { outward: ev.radius });
+        if (!consumed) fx.rings.push({ kind: "burst", x, y, r0: Math.max(0.5, ev.radius * 0.25), r1: ev.radius, born: now, life: 480, colour: "#ffb35a" });
+        fx.burst(x, y, consumed ? 12 : 16, now, consumed ? { outward: ev.radius, chip: sk.chipColour() } : { outward: ev.radius }); // typed bursts throw debris chips, not paper
         fx.shakeUntil = Math.max(fx.shakeUntil, now + 90);
       } else if (ev.type === "heal" || ev.type === "healed") {
         const c = at(core.player);
@@ -240,7 +247,7 @@ export function createFx(style) {
           vx: opts.outward ? Math.cos(a) * out * (0.6 + rng.next() * 0.5) : (rng.next() - 0.5) * 150,
           vy: opts.outward ? Math.sin(a) * out * 0.5 * (0.6 + rng.next() * 0.5) : 0,
           vz: opts.rise ? 40 + rng.next() * 50 : 70 + rng.next() * 100, z: opts.rise ? 4 + rng.next() * 14 : 20 + rng.next() * 12, grav: opts.rise ? -12 : 240,
-          rot: rng.next() * 6.28, spin: opts.rise ? 0 : (rng.next() - 0.5) * 14, sprite: opts.sprite ?? "paper", born: now, life: opts.rise ? 700 + rng.next() * 300 : 480 + rng.next() * 320,
+          rot: rng.next() * 6.28, spin: opts.rise ? 0 : (rng.next() - 0.5) * 14, sprite: opts.chip ? "chip" : opts.sprite ?? "paper", col: opts.chip, born: now, life: opts.rise ? 700 + rng.next() * 300 : 480 + rng.next() * 320,
         });
       }
     },
@@ -290,6 +297,7 @@ export function createFx(style) {
         }
         g.restore();
       }
+      sk.drawGround(g, cam, now); // R5: zones, aura, shield back, typed rings; also refreshes fx.lights
     },
 
     /** Draw floaters, projectiles, loot beams / markers / plates, slashes, impacts and particles (screen space, above the lit world). */
@@ -312,6 +320,7 @@ export function createFx(style) {
         g.save();
         g.translate(pos.x + (p.ox + p.vx * t) * z, pos.y - Math.max(0, zz) * z + (p.oy + p.vy * t) * z);
         g.rotate(p.rot + p.spin * t);
+        if (p.sprite === "chip") { const cs = 3.2 * z; g.fillStyle = p.col; g.fillRect(-cs / 2, -cs / 2, cs, cs * 0.7); g.lineWidth = Math.max(1, z * 0.6); g.strokeStyle = "#0d0a1c"; g.strokeRect(-cs / 2, -cs / 2, cs, cs * 0.7); g.restore(); continue; }
         const k = p.sprite === "paper" ? 0.85 : 1.1;
         g.drawImage(sp.img, -sp.ox * z * k, -sp.oy * z * (p.sprite === "paper" ? 0.6 : k), sp.w * z * k, sp.h * z * (p.sprite === "paper" ? 0.6 : k));
         g.restore();
@@ -335,6 +344,7 @@ export function createFx(style) {
       g.globalAlpha = 1;
       for (let i = 0; i < fx.impacts.length; i++) fx.drawImpact(g, cam, fx.impacts[i], now);
       for (let i = 0; i < fx.pillars.length; i++) fx.drawPillar(g, cam, fx.pillars[i], now);
+      sk.drawAir(g, cam, now, playerDir);
       if (core) fx.drawBossTelegraphs(g, cam, core, now);
       fx.drawConfetti(g, cam, now);
       if (core) { fx.drawLootPlates(g, cam, core, now); fx.drawFloaters(g, cam, core, now); } // ground labels sit above bursts and impacts, floaters above everything
@@ -474,13 +484,13 @@ export function createFx(style) {
         if (f.life <= 0) continue;
         const toPlayer = f.target === "player", miss = f.kind === "miss", heal = f.kind === "heal", e = ease(t);
         const mon = toPlayer ? null : core.monsters.find((m) => m.id === f.target);
-        const head = style.dims[toPlayer ? PLAYER_CLASS : mon?.type]?.head ?? 50;
+        const head = style.dims[toPlayer ? fx.heroType : mon?.type]?.head ?? 50;
         project(cam, f.tile.x + 0.5, f.tile.y + 0.5, pos);
-        const pop = 1 + 0.9 * Math.max(0, 1 - t / 0.14);
+        const pop = (1 + 0.9 * Math.max(0, 1 - t / 0.14)) * (f.kind === "crit" ? 1.35 : 1);
         const fs = Math.max(miss ? 15 : 30, Math.round((miss ? 10 : 21) * z * pop));
         // spawns above the head and clear of the nameplate, then drifts up (right for monsters, left for the hero); stacked rows sit higher
         const side = toPlayer ? -1 : 1, x = pos.x + side * Math.max((toPlayer ? 62 : 40) * z, 88) + side * 16 * e * z, y = pos.y - (head + 10 + 32 * e + rows[i] * 24) * z;
-        const text = miss ? S.miss : heal ? `+${f.value}` : String(f.value);
+        const text = miss ? S.miss : heal ? `+${f.value}` : f.kind === "crit" ? `${f.value}!` : String(f.value); // crit: a "!" so it never relies on size or colour alone
         g.font = fontFor(fs);
         // own lane: never on a nameplate, health pip, ground-item label or leader line; lift in steps, then try the other side
         const tw = g.measureText(text).width + 8, th = fs * 1.15, fr = fr0;
@@ -494,7 +504,8 @@ export function createFx(style) {
         g.globalAlpha = t < 0.65 ? 1 : Math.max(0, 1 - (t - 0.65) / 0.35);
         g.lineWidth = Math.max(4, fs * 0.32); g.strokeStyle = P.ink; g.strokeText(text, fxx, fy);
         if (!miss) { g.lineWidth = Math.max(2, fs * 0.12); g.strokeStyle = heal ? "#1f8a4a" : toPlayer ? "#e0363f" : "#ff6a2a"; g.strokeText(text, fxx, fy); }
-        g.fillStyle = miss ? "#c9c3ec" : heal ? "#c8ffd4" : toPlayer ? "#ffd0d4" : "#fff3a0"; g.fillText(text, fxx, fy);
+        const tc = !miss && !heal && !toPlayer ? FLOAT_COL[f.dmgType ?? f.damageType ?? f.type] : null; // per damage type (R5); undefined types keep the classic yellow
+        g.fillStyle = miss ? "#c9c3ec" : heal ? "#c8ffd4" : toPlayer ? "#ffd0d4" : tc ?? "#fff3a0"; g.fillText(text, fxx, fy);
       }
       g.globalAlpha = 1;
     },
@@ -514,11 +525,23 @@ export function createFx(style) {
         const e = atlas.get(keys.proj(pr.kind));
         if (!e) continue;
         const lift = (pr.kind === "toner" ? 18 : 16) * z;
+        if (TRAIL[pr.kind] && !pr.hostile) { // a fading trail of the last few steps behind the shot (screen space, follows the flight line)
+          const tc = TRAIL[pr.kind], step = Math.min(1.6, pr.speed * 3);
+          g.save(); g.lineCap = "round";
+          for (let s2 = 4; s2 >= 1; s2--) {
+            project(cam, wx - pr.dir.x * step * s2 + 0.5, wy - pr.dir.y * step * s2 + 0.5, pos2); project(cam, wx - pr.dir.x * step * (s2 - 1) + 0.5, wy - pr.dir.y * step * (s2 - 1) + 0.5, pos);
+            g.globalAlpha = 0.5 - s2 * 0.1; g.lineWidth = (7 - s2) * z * 0.8; g.strokeStyle = tc; g.beginPath(); g.moveTo(pos2.x, pos2.y - lift); g.lineTo(pos.x, pos.y - lift); g.stroke();
+          }
+          g.restore(); project(cam, wx + 0.5, wy + 0.5, pos);
+        }
         g.globalAlpha = 0.5; g.fillStyle = "#000"; g.beginPath(); g.ellipse(pos.x, pos.y, 8 * z, 3.6 * z, 0, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1;
         const ang = Math.atan2((pr.dir.x + pr.dir.y) * 16, (pr.dir.x - pr.dir.y) * 32);
         g.save(); g.translate(pos.x, pos.y - lift);
         if (pr.kind === "stapler") g.rotate(ang + Math.sin(now / 50) * 0.45);                 // tumbles
         else if (pr.kind === "slide") { g.rotate(ang); g.scale(1, 0.55 + 0.45 * Math.abs(Math.sin(now / 70 + pr.pos.x))); } // flutters
+        else if (pr.kind === "card") g.rotate(fx.reducedMotion ? ang : now / 55 + pr.pos.x * 3);                 // spins like a thrown card
+        else if (pr.kind === "paper") g.rotate(fx.reducedMotion ? ang : ang + now / 90);                           // a tumbling ball
+        else if (pr.kind === "bolt" || pr.kind === "zap" || pr.kind === "shard") { g.rotate(ang); if (!fx.reducedFlash && pr.kind !== "shard") g.scale(1 + 0.12 * Math.sin(now / 38), 1 + 0.12 * Math.sin(now / 31)); }
         else { g.rotate(ang); if (pr.hostile) { g.globalAlpha = 0.4 + 0.2 * Math.sin(now / 90); g.fillStyle = P.proj.tonerGlow; g.beginPath(); g.arc(0, 0, 11 * z, 0, 6.3); g.fill(); g.globalAlpha = 1; } }
         g.drawImage(e.img, -e.ox * z, -e.oy * z, e.w * z, e.h * z);
         g.restore();
@@ -534,7 +557,7 @@ export function createFx(style) {
       g.save(); g.globalAlpha = Math.max(0, 1 - k * k); g.lineJoin = "round"; g.lineCap = "round";
       if (im.mode === "muzzle") {
         const R = (5 + 5 * k) * z;
-        g.fillStyle = im.kind === "toner" ? P.proj.tonerGlow : im.kind === "slide" ? "#5b8cff" : "#e8eef8";
+        g.fillStyle = im.kind === "toner" ? P.proj.tonerGlow : MUZZLE[im.kind] ?? "#e8eef8";
         g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
         g.fillStyle = "#fff"; g.beginPath(); g.arc(cx, cy, R * 0.45, 0, Math.PI * 2); g.fill();
       } else if (im.kind === "toner") { // black ink splat with magenta rim and flying droplets
@@ -545,6 +568,17 @@ export function createFx(style) {
         g.closePath(); g.fill(); g.stroke();
         for (let a = 0; a < 7; a++) { const an = a * 0.9 + 0.3, d = R * (1.3 + k * 1.4); g.beginPath(); g.arc(cx + Math.cos(an) * d, cy + Math.sin(an) * d * 0.75 + k * 10 * z, (2.2 - k) * z, 0, Math.PI * 2); g.fill(); }
         if (im.mode === "wall" || im.mode === "range") { g.globalAlpha *= 0.5; g.beginPath(); g.ellipse(cx, cy + im.z * z, R * 1.3, R * 0.55, 0, 0, Math.PI * 2); g.fill(); }
+      } else if (im.kind === "shard" || im.kind === "bolt" || im.kind === "zap") { // ice burst / electric spark star
+        const ice = im.kind === "shard", n = ice ? 7 : 9, R0 = (4 + 5 * k) * z, R1 = (10 + 18 * ease(Math.min(1, k * 1.4))) * z;
+        for (let a = 0; a < n; a++) {
+          const an = a * (Math.PI * 2 / n) + 0.3, rr = R1 * (a & 1 ? 0.65 : 1);
+          if (ice) { g.beginPath(); g.moveTo(cx + Math.cos(an - 0.18) * R0, cy + Math.sin(an - 0.18) * R0 * 0.8); g.lineTo(cx + Math.cos(an) * rr, cy + Math.sin(an) * rr * 0.8); g.lineTo(cx + Math.cos(an + 0.18) * R0, cy + Math.sin(an + 0.18) * R0 * 0.8); g.closePath(); g.fillStyle = "#d8f8ff"; g.fill(); g.lineWidth = Math.max(1.2, 1.3 * z * 0.7); g.strokeStyle = INK_FX; g.stroke(); }
+          else { g.beginPath(); g.moveTo(cx + Math.cos(an) * R0, cy + Math.sin(an) * R0 * 0.8); g.lineTo(cx + Math.cos(an + 0.3) * (R0 + rr) * 0.5, cy + Math.sin(an + 0.3) * (R0 + rr) * 0.4); g.lineTo(cx + Math.cos(an) * rr, cy + Math.sin(an) * rr * 0.8); g.lineWidth = Math.max(1.6, 2 * z * 0.7); g.strokeStyle = a & 1 ? "#6fe8ff" : "#ffffff"; g.stroke(); }
+        }
+        if (ice) { ell0(g, cx, cy, R1 * 0.8, R1 * 0.45); g.lineWidth = Math.max(1.4, 1.6 * z * 0.7); g.strokeStyle = "#e4fbff"; g.stroke(); }
+        g.fillStyle = "#ffffff"; g.beginPath(); g.arc(cx, cy, (4 - 3 * k) * z, 0, Math.PI * 2); g.fill();
+      } else if (im.kind === "pen" || im.kind === "card" || im.kind === "paper" || im.kind === "sealed") { // a few paper flecks
+        for (let a = 0; a < 6; a++) { const an = a * 1.05 + 0.2, d = (4 + 14 * ease(Math.min(1, k * 1.3))) * z; g.save(); g.translate(cx + Math.cos(an) * d, cy + Math.sin(an) * d * 0.7 + k * 8 * z); g.rotate(an * 3 + k * 6); g.fillStyle = im.kind === "pen" ? "#8fb0ff" : im.kind === "sealed" ? "#ff9a9a" : "#fdf6e4"; g.fillRect(-2.2 * z, -1.5 * z, 4.4 * z, 3 * z); g.restore(); }
       } else if (im.kind === "stapler") { // metal sparks
         for (let a = 0; a < 9; a++) {
           const an = a * 0.7 + 0.2, d0 = (3 + 5 * k) * z, d1 = (8 + 16 * ease(Math.min(1, k * 1.4))) * z;
@@ -678,5 +712,8 @@ export function createFx(style) {
       g.globalAlpha = 1;
     },
   };
+  sk = createSkillFx(fx);
+  fx.sk = sk;
+  fx.lights = sk.lights; // light hook: [{ x, y, r, colour, intensity }] in tile units, refreshed by drawGround every frame (lighting rounds 9-10)
   return fx;
 }

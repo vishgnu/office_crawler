@@ -72,7 +72,7 @@ export const strings = {
   saveCorrupt: "The save is damaged. It was kept for export; you can start a new game.",
   // classes, branches and skills (R4, ADR-0005). Class and skill names are working names (R-233); names of skills live in the skill data.
   classFacilitiesBlurb: "Keeps the building standing. Swings heavy, shrugs off hits, and has a hand truck for emergencies.",
-  classSalesRepBlurb: "Never in the office, always in the way. Throws paper from a distance and hires help.",
+  classSalesBlurb: "Never in the office, always in the way. Throws paper from a distance and hires help.",
   classFacilitiesRole: "Melee", classSalesRole: "Ranged", classItRole: "Caster",
   classItBlurb: "Fixes things by breaking them harder. Fire, shock and ice from a safe distance.",
   branchMaintenance: "Maintenance", branchSafety: "Safety", branchLogistics: "Logistics",

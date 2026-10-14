@@ -2,8 +2,10 @@
 // clear or the hero is dead. Shared by the Node headless runner and the Playwright runner (which drives window.__app):
 // both call decide(view, mem) with a state-shaped view and execute the returned command through the same input path
 // (`applyInput` / `__app.cmd`). Commands: { t: "moveTo", tile } | { t: "attack", id } | null (keep the current order).
-import { hasLineOfSight } from "../src/core/los.js";
-import { skills as SKILLS } from "../src/core/content/skills.js";
+import { hasLineOfSight, rayClear } from "../src/core/los.js";
+import { skills as SKILLS, manaCost } from "../src/core/content/skills.js";
+import { classById, defaultClass } from "../src/core/content/classes.js";
+import { config as CORE } from "../src/core/config.js";
 
 export const BOT = {
   decideEvery: 6,       // ticks between decisions (10 Hz at 60 ticks/s)
@@ -16,16 +18,16 @@ export const BOT = {
   waitTicks: 240,       // give up waiting for a chaser that never arrives (blocked) after this long
   drinkBelow: 0.4,      // drink a health potion (belt) below this share of hpMax
   lootTries: 3,         // pickup orders per ground entry before the bot gives up on it
-  throwRange: 9,        // Stapler Throw at a target at least this close (and farther than 1 tile) with a clear line
-  burstCount: 3,        // Reply-All when this many awake monsters are within its radius
-  healBelow: 0.5,       // Coffee Break below this share of hpMax
-  muteBelow: 0.6,       // Mute when two or more attackers are on the hero and health is below this share
+  throwRange: 9,        // projectile skills at a target at least this close (and farther than 1 tile) with a clear line
+  burstCount: 3,        // a tier-1 area skill when this many awake monsters are within its radius
+  healBelow: 0.5,       // heal skills below this share of hpMax
+  muteBelow: 0.6,       // crowd control (Mute) when two or more attackers are on the hero and health is below this share
+  shieldBelow: 0.7,     // shields (Lockout, Packet Filter) when something is hitting the hero and health is below this share
   shopMinGold: 25,      // buy belt potions in town with at least this much gold
   gearShopGold: 400,    // visit the vendor for gear upgrades with at least this much gold
   potionReserve: 150,   // gold kept back for belt potions when buying gear
   sellAbove: 4,         // sell spare gear to the vendor when more than this many gear items are left in the inventory (keeps the bag from filling up)
-  // skill order: [skill, level wanted before moving on]; afterwards every skill is raised to its maximum in this order
-  learnOrder: [["stapler-throw", 2], ["dress-code", 2], ["coffee-break", 2], ["reply-all", 2], ["hustle", 2], ["mute", 2]],
+  // The skill build order, the cast priority and the potion thresholds come from the class (content/classes.js `bot`): one policy, three classes.
   restBelow: 0.95,      // on the cleared last floor, wait until health is at least this share before taking the lift to the boss
   restMaxTicks: 6000,   // ... but not longer than this
   dodgeMargin: 0.9,     // step this far outside a telegraphed circle (tiles); also covers the hero being mid-step
@@ -47,6 +49,7 @@ export function noteResult(mem, cmd, res) {
   if (cmd?.t === "pickup") { mem.lootTries[cmd.id] = (mem.lootTries[cmd.id] ?? 0) + 1; if (res && res.ok === false) mem.lootSkip.add(cmd.id); }
   if (cmd?.t === "equip" && res && res.ok === false) mem.noEquip.add(cmd.id);
   if (cmd?.t === "learnSkill" && res && res.ok === false) mem.noLearn = true;
+  if (cmd?.t === "toggleAura" && res && res.ok === false) mem.auraFail = (mem.auraFail ?? 0) + 1;
   if (cmd?.t === "toBelt" && res && res.ok === false) mem.beltFail = true;
   if (cmd?.t === "useStairs" && res && res.ok === false) mem.failedMoves++;
   if (cmd?.t === "buy" && res && res.ok === false) { if (cmd.gear) { mem.noBuy ??= new Set(); mem.noBuy.add(cmd.id); } else mem.shopped = true; }
@@ -94,18 +97,29 @@ function nearest(list, from) {
   return best ? { m: best, d: bd } : null;
 }
 
+const classOf = (p) => classById(p.class) ?? classById(defaultClass);
+
+/** Can the hero learn (or raise) this skill right now? Mirrors the core rules: class, level gate, prerequisites, maximum, points. */
+function learnable(p, def) {
+  if (!def || def.kind === "basic" || def.class !== p.class) return false;
+  const lv = p.skills?.[def.id] ?? 0;
+  if (lv >= Math.min(def.maxLevel, CORE.skillMaxLevel) || p.level < (def.reqLevel ?? 1)) return false;
+  return (def.requires ?? []).every((r) => (p.skills?.[r.id] ?? 0) >= r.level);
+}
+
 /** Spend attribute and skill points (free actions). Returns a command or null. */
 function spendPoints(view, mem) {
   const p = view.player;
   if (p.attrPoints > 0) {
     let best = null, bv = Infinity;
-    for (const [a, w] of Object.entries(BOT.attrWeights)) { const v = ((p.attrs[a] ?? 10) - 10) / w; if (v < bv) { bv = v; best = a; } }
+    const cls = classOf(p);
+    for (const [a, w] of Object.entries(cls.bot.attrWeights ?? BOT.attrWeights)) { const v = ((p.attrs[a] ?? 10) - (cls.attrs[a] ?? 10)) / w; if (v < bv) { bv = v; best = a; } } // points spent so far / weight
     return { t: "allocate", attr: best };
   }
   if (p.skillPoints > 0 && !mem.noLearn) {
-    const lvl = (id) => p.skills?.[id] ?? 0;
-    for (const [id, want] of BOT.learnOrder) if (lvl(id) < want) return { t: "learnSkill", id };
-    for (const [id] of BOT.learnOrder) if (lvl(id) < SKILLS[id].maxLevel) return { t: "learnSkill", id };
+    const cls = classOf(p), lvl = (id) => p.skills?.[id] ?? 0;
+    for (const [id, want] of cls.bot.buildOrder) if (lvl(id) < want && learnable(p, SKILLS[id])) return { t: "learnSkill", id };
+    for (const def of Object.values(SKILLS)) if (def.class === p.class && learnable(p, def)) return { t: "learnSkill", id: def.id }; // nothing on the list: raise whatever is open
   }
   return null;
 }
@@ -116,21 +130,50 @@ const gridOf = (view) => {
 };
 const dist = (a, b) => Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
 
-/** A skill to cast now, or null: heal when hurt, Mute when mobbed, Reply-All on a crowd, Stapler Throw at range. */
+/**
+ * A skill to cast now, or null. Generic over the class: heal when hurt, a shield when something hits the hero, Mute when mobbed, then the class
+ * priority list by archetype (area on a crowd, projectile and ground bursts at the target, summons while enemies are near, a trap in the way).
+ */
 function castSkill(view, mem, live, target) {
   const p = view.player;
   if (p.castT > 0 || !p.skills) return null;
-  const can = (id) => (p.skills[id] ?? 0) > 0 && p.mp >= SKILLS[id].mana(p.skills[id]);
-  const lvl = (id) => p.skills[id];
+  const cls = classOf(p), lvl = (id) => p.skills[id] ?? 0;
+  const can = (id) => lvl(id) > 0 && p.mp >= manaCost(SKILLS[id], lvl(id));
   const awake = live.filter((m) => m.ai !== "idle");
-  if (p.hp < p.hpMax * BOT.healBelow && can("coffee-break") && awake.length) return { t: "cast", skill: "coffee-break", tile: { ...p.tile } };
-  const near = (r) => awake.filter((m) => dist(m.tile, p.tile) <= r);
-  const attackers = awake.filter((m) => m.ai === "attack" && Math.max(Math.abs(m.tile.x - p.tile.x), Math.abs(m.tile.y - p.tile.y)) <= 1);
-  if (attackers.length >= 2 && p.hp < p.hpMax * BOT.muteBelow && can("mute") && near(SKILLS.mute.radius(lvl("mute"))).length >= 2) return { t: "cast", skill: "mute", tile: { ...p.tile } };
-  if (can("reply-all") && near(SKILLS["reply-all"].radius(lvl("reply-all"))).length >= BOT.burstCount) return { t: "cast", skill: "reply-all", tile: { ...p.tile } };
-  if (target && can("stapler-throw")) {
-    const d = dist(target.tile, p.tile);
-    if (d > 1.5 && d <= BOT.throwRange && hasLineOfSight(gridOf(view), p.tile.x, p.tile.y, target.tile.x, target.tile.y)) return { t: "cast", skill: "stapler-throw", tile: { ...target.tile } };
+  const near = (c, r) => awake.filter((m) => dist(m.tile, c) <= r);
+  const attackers = awake.filter((m) => m.ai === "attack" && cheb(m.tile, p.tile) <= 1);
+  const learned = Object.keys(p.skills).filter((id) => SKILLS[id] && p.skills[id] > 0);
+  // the aura (switched on once the mana is there)
+  for (const id of learned) if (SKILLS[id].kind === "aura" && p.aura !== id && (mem.auraFail ?? 0) < 3 && awake.length) return { t: "toggleAura", id };
+  const hurt = p.hp < p.hpMax * BOT.healBelow;
+  const order = [...cls.bot.priority.filter((id) => learned.includes(id)), ...learned.filter((id) => !cls.bot.priority.includes(id))];
+  const tgt = target && dist(target.tile, p.tile) <= BOT.throwRange ? target : null;
+  const los = (t) => hasLineOfSight(gridOf(view), p.tile.x, p.tile.y, t.x, t.y), flies = (t) => rayClear(gridOf(view), p.tile, t); // shots follow the straight ray
+  // heals and shields first
+  for (const id of learned) {
+    const def = SKILLS[id];
+    if (def.archetype === "self" && def.effects.some((e) => e.op === "heal" || e.op === "hot") && hurt && awake.length && can(id) && !(def.effects[0].op === "hot" && p.buffs?.some((b) => b.skill === id))) return { t: "cast", skill: id, tile: { ...p.tile } };
+    if (def.archetype === "buff" && !p.absorb && attackers.length && p.hp < p.hpMax * BOT.shieldBelow && can(id)) return { t: "cast", skill: id, tile: { ...p.tile } };
+  }
+  if (attackers.length >= 2 && p.hp < p.hpMax * BOT.muteBelow && can("mute") && near(p.tile, SKILLS.mute.delivery.radius[0] + (lvl("mute") - 1) * SKILLS.mute.delivery.radius[1]).length >= 2) return { t: "cast", skill: "mute", tile: { ...p.tile } };
+  for (const id of order) {
+    const def = SKILLS[id];
+    if (def.kind !== "active" || !can(id) || id === "mute" || def.archetype === "self" || def.archetype === "buff" || def.archetype === "dash") continue;
+    const lv = lvl(id), d = def.delivery;
+    if (def.archetype === "area" && d.at !== "target") {
+      const r = d.radius[0] + (d.radius[1] ?? 0) * (lv - 1), n = near(p.tile, r).length;
+      if (def.effects.some((e) => e.op === "status" && e.kind !== "slow") && !def.effects.some((e) => e.op === "damage")) continue; // pure crowd control is handled above
+      if (n >= (def.tier >= 2 ? 2 : 1) && (def.tier >= 2 || n >= 2 || attackers.length)) return { t: "cast", skill: id, tile: { ...p.tile } };
+    } else if (def.archetype === "area") { // a burst at the target
+      if (tgt && dist(tgt.tile, p.tile) <= (d.range ?? 9) && los(tgt.tile) && (def.tier < 3 || near(tgt.tile, 3).length >= 2)) return { t: "cast", skill: id, tile: { ...tgt.tile } };
+    } else if (def.archetype === "projectile") {
+      if (tgt) { const dd = dist(tgt.tile, p.tile); if (dd > 1.5 && dd <= Math.min(BOT.throwRange, d.range) && flies(tgt.tile)) return { t: "cast", skill: id, tile: { ...tgt.tile } }; }
+    } else if (def.archetype === "summon") {
+      const have = (view.allies ?? []).filter((a) => a.skill === id).length;
+      if (awake.length && have < Math.floor(d.count[0]) + Math.floor((d.max?.[1] ?? 0) * (lv - 1)) && near(p.tile, 9).length) return { t: "cast", skill: id, tile: { ...p.tile } };
+    } else if (def.archetype === "trap") {
+      if (tgt && !(view.zones ?? []).some((z) => z.skill === id && dist(z.tile, tgt.tile) < 3)) { const dd = dist(tgt.tile, p.tile); if (dd >= 2 && dd <= 7 && los(tgt.tile)) return { t: "cast", skill: id, tile: { ...tgt.tile } }; }
+    }
   }
   return null;
 }
@@ -245,8 +288,12 @@ export function decide(view, mem) {
   const live = view.monsters.filter((m) => m.ai !== "dead");
   const busy = !!(p.next || p.path.length || p.target || p.pickup);
   // potions: drink coffee from the belt when health is low
-  if (view.belt && p.hp > 0 && p.hp < p.hpMax * BOT.drinkBelow) {
+  if (view.belt && p.hp > 0 && p.hp < p.hpMax * (classOf(p).bot.potionHp ?? BOT.drinkBelow)) {
     const i = view.belt.findIndex((b) => b && b.restores === "hp");
+    if (i >= 0) return { t: "useBelt", index: i };
+  }
+  if (view.belt && p.hp > 0 && classOf(p).role !== "melee" && p.mp < p.mpMax * 0.15 && live.some((m) => m.ai !== "idle")) { // casters and throwers drink water when dry
+    const i = view.belt.findIndex((b) => b && b.restores === "mp");
     if (i >= 0) return { t: "useBelt", index: i };
   }
   if (!mem.profile.noDodge) { const d = dodge(view, mem, live); if (d) return d === HOLD ? null : d; }

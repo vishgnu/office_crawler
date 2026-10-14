@@ -25,6 +25,37 @@ export function drawProjectile(g, kind) {
     for (let i = 0; i < 3; i++) { const h = 3 + i * 2; fillPoly(g, [[-6 + i * 5, 5.4 - h], [-3 + i * 5, 5.4 - h], [-3 + i * 5, 5.4], [-6 + i * 5, 5.4]], i === 2 ? "#e0363f" : "#35a0e0", null); }
     line(g, -10, -7, 10, -7, "rgba(255,255,255,0.8)", 1);
   }
+  else if (kind === "pen") { // blue ballpoint, clip and nib
+    fillPoly(g, [[-11, -2.4], [7, -2.4], [11, 0], [7, 2.4], [-11, 2.4]], "#3b6cf0", INK, 1.3);
+    fillPoly(g, [[7, -2.4], [11, 0], [7, 2.4]], "#f4efe0", INK, 1);
+    line(g, -10, -1, 5, -1, "rgba(255,255,255,0.6)", 0.9); fillPoly(g, [[-11, -2.4], [-6, -2.4], [-6, -4.4], [-11, -4.4]], "#c4ccd8", INK, 0.9);
+    line(g, -12, 0, -18, 0, "rgba(143,176,255,0.45)", 1.2);
+  } else if (kind === "card") { // business card, white with a pink stripe
+    fillPoly(g, [[-7, -4.6], [7, -4.6], [7, 4.6], [-7, 4.6]], "#fdf6e4", INK, 1.3);
+    g.fillStyle = "#e0457b"; g.fillRect(-5.2, -2.6, 5, 1.8); g.fillRect(-5.2, 0.2, 9.6, 1.3); g.fillRect(-5.2, 2.2, 7, 1.1);
+    line(g, -7, -4.6, 7, -4.6, "rgba(255,255,255,0.9)", 0.9);
+  } else if (kind === "paper") { // crumpled sheet
+    g.beginPath(); for (let i = 0; i < 11; i++) { const a = (i / 11) * Math.PI * 2, r = i & 1 ? 5.2 : 7.2; g.lineTo(Math.cos(a) * r, Math.sin(a) * r * 0.9); } g.closePath();
+    g.fillStyle = "#f4efe0"; g.fill(); g.lineWidth = 1.3; g.strokeStyle = INK; g.stroke();
+    line(g, -3, -2, 2, 1, "rgba(13,10,28,0.45)", 0.9); line(g, -1, 3, 4, -2, "rgba(13,10,28,0.35)", 0.9);
+  } else if (kind === "sealed") { // envelope stamped shut with a red wax seal
+    fillPoly(g, [[-9, -6], [9, -6], [9, 6], [-9, 6]], "#fff3d8", INK, 1.4);
+    fillPoly(g, [[-9, -6], [9, -6], [0, 1]], "#f1dcae", INK, 1.1);
+    ellipse(g, 0, 1.4, 3.6, 3.6, "#e0363f", INK, 1.2); ellipse(g, -0.9, 0.5, 1.1, 1.1, "rgba(255,255,255,0.6)");
+    line(g, -12, 0, -18, 0, "rgba(255,120,120,0.45)", 1.4);
+  } else if (kind === "shard") { // ice crystal with a glow and a cold trail
+    ellipse(g, 0, 0, 11, 8, "rgba(143,228,255,0.28)");
+    fillPoly(g, [[-9, 0], [-2, -4.4], [11, 0], [-2, 4.4]], "#bff2ff", INK, 1.4);
+    fillPoly(g, [[-9, 0], [-2, -4.4], [11, 0]], "#eafcff", null);
+    line(g, -6, 0, 8, 0, "rgba(255,255,255,0.9)", 1); line(g, -14, -1.6, -20, -2.4, "rgba(191,242,255,0.5)", 1.4); line(g, -14, 1.6, -20, 2.4, "rgba(191,242,255,0.4)", 1.2);
+  } else if (kind === "bolt") { // cyan plasma orb
+    ellipse(g, 0, 0, 12, 10, "rgba(111,232,255,0.3)"); ellipse(g, 0, 0, 7, 7, "#6fe8ff", INK, 1.5); ellipse(g, 0, 0, 3.6, 3.6, "#ffffff");
+    for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2 + 0.3; line(g, Math.cos(a) * 8, Math.sin(a) * 8, Math.cos(a + 0.2) * 12, Math.sin(a + 0.2) * 12, "#bff7ff", 1.5); }
+    line(g, -10, 0, -18, 0, "rgba(111,232,255,0.5)", 1.6);
+  } else if (kind === "zap") { // short spark
+    fillPoly(g, [[-8, -1.5], [-2, -3.2], [-3, -0.6], [8, -2.4], [1, 1.2], [3, 0.9], [-9, 3]], "#bff7ff", INK, 1.2);
+    ellipse(g, 0, 0, 6, 5, "rgba(111,232,255,0.3)");
+  }
   g.restore();
 }
 

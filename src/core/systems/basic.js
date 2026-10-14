@@ -1,5 +1,5 @@
-// The class's basic attack (ADR-0005 section 3): melee walks adjacent, a projectile basic (toss, zap) stops in range with a clear line.
-import { hasLineOfSight } from "../los.js";
+// The class's basic attack (ADR-0005 section 3): melee walks adjacent, a projectile basic (toss, zap) stops in range with a clear flight line.
+import { rayClear } from "../los.js";
 import { isAdjacent } from "../grid.js";
 import { skills } from "../content/skills.js";
 
@@ -12,5 +12,5 @@ export function inBasicReach(state, ctx, from, tile) {
   const def = basicDef(state);
   if (def.archetype !== "projectile") return isAdjacent(ctx.grid, from, tile);
   const dx = tile.x - from.x, dy = tile.y - from.y, r = def.delivery.range - 0.5;
-  return dx * dx + dy * dy <= r * r && hasLineOfSight(ctx.grid, from.x, from.y, tile.x, tile.y);
+  return dx * dx + dy * dy <= r * r && rayClear(ctx.grid, from, tile);
 }

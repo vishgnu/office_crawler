@@ -70,21 +70,21 @@ function laptop(g, x, y, open, front, pulse) {
 
 /** Painters share one signature: (g, id, o) with o from characters.js pose(). */
 export function hero(g, id, o) {
-  const S = SPEC[id], { fx, fy, bob, swing, lunge, a } = o, front = fy > -0.2, sc = S.sc, wide = S.wide;
+  const K = SPEC[id], { fx, fy, bob, swing, lunge, a } = o, front = fy > -0.2, sc = K.sc, wide = K.wide;
   const isFM = id === "facilities-manager", isSR = id === "sales-rep", isIT = id === "it-wizard";
   const lx = fx * lunge * 5, ly = fy * lunge * 2.5, hunch = isIT ? 2.4 : 0;
-  const hipY = -S.legH * sc + bob * 0.4, shY = hipY - S.torsoH * sc + (isIT ? 2 : 0);
+  const hipY = -K.legH * sc + bob * 0.4, shY = hipY - K.torsoH * sc + (isIT ? 2 : 0);
   const side = fx >= 0 ? -1 : 1, pulse = 0.5 + 0.5 * Math.sin((o.f / o.n) * Math.PI * 2 * (o.anim === "idle" ? 1 : 2));
   const hw = 7.5 * sc * wide; // torso half width
   // legs
   for (const k of [-1, 1]) {
     const ph = swing * k, ftx = k * 3.8 * sc * (isFM ? 1.25 : 1) + fx * 6 * ph, fty = fy * 3 * ph - Math.max(0, ph) * 2;
-    limb(g, k * 3.6 * sc * (isFM ? 1.3 : 1) + lx * 0.2, hipY, ftx, fty - 1, k < 0 ? shade(S.pants, -0.25) : S.pants, (isFM ? 6.4 : isSR ? 4.4 : 5.2) * sc);
-    ellipse(g, ftx + fx * 1.4, fty, S.shoeW * sc, 2.5 * sc, S.shoe, INK, 1.3);
-    if (isIT) line(g, ftx - S.shoeW * 0.8 + fx * 1.4, fty + 1.9, ftx + S.shoeW * 0.8 + fx * 1.4, fty + 1.9, "#33e0ff", 1.3);
+    limb(g, k * 3.6 * sc * (isFM ? 1.3 : 1) + lx * 0.2, hipY, ftx, fty - 1, k < 0 ? shade(K.pants, -0.25) : K.pants, (isFM ? 6.4 : isSR ? 4.4 : 5.2) * sc);
+    ellipse(g, ftx + fx * 1.4, fty, K.shoeW * sc, 2.5 * sc, K.shoe, INK, 1.3);
+    if (isIT) line(g, ftx - K.shoeW * 0.8 + fx * 1.4, fty + 1.9, ftx + K.shoeW * 0.8 + fx * 1.4, fty + 1.9, "#33e0ff", 1.3);
   }
   // far arm behind the torso (IT: the laptop arm)
-  const sleeve = isFM ? S.shirt : isSR ? "#e0457b" : S.shirt;
+  const sleeve = isFM ? K.shirt : isSR ? "#e0457b" : K.shirt;
   const farTo = (x, y) => limb(g, side * (hw - 0.5) + lx, shY + 3, x, y, shade(sleeve, -0.2), isFM ? 5.6 : isSR ? 3.8 : 4.6);
   let farHand = null;
   if (isIT) farHand = [side * (hw + 5) + lx + fx * 2, hipY - 7 + swing * 1.2];
@@ -97,7 +97,7 @@ export function hero(g, id, o) {
   const half = (col) => fillPoly(g, [[lx + 1.5, shY + ly], [tr + lx, shY + ly], [tr - taper + lx * 0.5, hipY + 1], [lx * 0.7 + 1.5, hipY + 1]], col);
   const cx0 = lx + fx * 1.8;
   if (isFM) {
-    torso(S.shirt);
+    torso(K.shirt);
     const vt = shY + ly + 0.5, vb = hipY - 1;
     if (front) {
       fillPoly(g, [[tl + lx, vt], [cx0 - 2.4, vt], [cx0 - 3.2, vb], [tl - taper + lx * 0.5, vb]], "#ff8a1f", INK, 1.3);
@@ -117,36 +117,36 @@ export function hero(g, id, o) {
   } else if (isSR) {
     torso("#e0457b");
     if (front) {
-      fillPoly(g, [[cx0 - 4.4, shY + ly], [cx0 + 4.4, shY + ly], [cx0 + 0.3, hipY - 3]], S.shirt, INK, 1.1); // open collar
+      fillPoly(g, [[cx0 - 4.4, shY + ly], [cx0 + 4.4, shY + ly], [cx0 + 0.3, hipY - 3]], K.shirt, INK, 1.1); // open collar
       fillPoly(g, [[cx0 - 0.2, shY + ly + 1], [cx0 + 2.2, shY + ly + 3], [cx0 + 1.6, hipY - 6], [cx0 + 0.2, hipY - 3], [cx0 - 1.2, hipY - 6], [cx0 - 1.8, shY + ly + 3]], "#ffd23a", INK, 1); // tie
       fillPoly(g, [[tl + lx, shY + ly], [cx0 - 4.4, shY + ly], [cx0 + 0.3 - 2, hipY - 3], [tl + taper + lx * 0.5, hipY + 1]], "#c0346a", INK, 1.1); // lapel panels
       fillPoly(g, [[cx0 + 4.4, shY + ly], [tr + lx, shY + ly], [tr - taper + lx * 0.5, hipY + 1], [cx0 + 2.6, hipY - 3]], "#a82a5a", INK, 1.1);
-      rect(g, tr - 2.6 + lx, shY + ly + 8, 3.4, 2.6, S.shirt, INK, 0.8); // pocket square
+      rect(g, tr - 2.6 + lx, shY + ly + 8, 3.4, 2.6, K.shirt, INK, 0.8); // pocket square
     } else { line(g, cx0, shY + ly + 1, cx0, hipY, "#b02a5c", 1.3); half("rgba(20,10,50,0.16)"); }
     if (front) half("rgba(20,10,50,0.14)");
   } else {
     // IT hoodie: big body, kangaroo pocket, drawstrings
-    torso(S.shirt);
+    torso(K.shirt);
     half("rgba(20,10,50,0.2)");
-    fillPoly(g, [[tl + 1 + lx, hipY - 2], [tr - 1 + lx, hipY - 2], [tr - 3 + lx, hipY - 9], [tl + 3 + lx, hipY - 9]], shade(S.shirt, -0.28), INK, 1.1);
-    fillPoly(g, [[tl + lx - 0.5, hipY - 1], [tr + lx + 0.5, hipY - 1], [tr + lx + 0.5, hipY + 3.4], [tl + lx - 0.5, hipY + 3.4]], shade(S.shirt, -0.38), INK, 1.2);
+    fillPoly(g, [[tl + 1 + lx, hipY - 2], [tr - 1 + lx, hipY - 2], [tr - 3 + lx, hipY - 9], [tl + 3 + lx, hipY - 9]], shade(K.shirt, -0.28), INK, 1.1);
+    fillPoly(g, [[tl + lx - 0.5, hipY - 1], [tr + lx + 0.5, hipY - 1], [tr + lx + 0.5, hipY + 3.4], [tl + lx - 0.5, hipY + 3.4]], shade(K.shirt, -0.38), INK, 1.2);
     if (front) { line(g, cx0 - 2.6, shY + ly + 2, cx0 - 3, shY + ly + 10, "#ffe9b0", 1.5); line(g, cx0 + 2.6, shY + ly + 2, cx0 + 3, shY + ly + 10, "#ffe9b0", 1.5); }
     else { // hood bunched on the back
-      fillPoly(g, [[cx0 - 7, shY + ly + 1], [cx0 + 7, shY + ly + 1], [cx0 + 5, shY + ly + 13], [cx0, shY + ly + 16], [cx0 - 5, shY + ly + 13]], shade(S.shirt, -0.3), INK, 1.1);
+      fillPoly(g, [[cx0 - 7, shY + ly + 1], [cx0 + 7, shY + ly + 1], [cx0 + 5, shY + ly + 13], [cx0, shY + ly + 16], [cx0 - 5, shY + ly + 13]], shade(K.shirt, -0.3), INK, 1.1);
     }
   }
-  line(g, tl + lx + 1, shY + ly + 1.2, tr + lx - 1, shY + ly + 1.2, shade(isFM ? "#ff8a1f" : isSR ? "#e0457b" : S.shirt, 0.4), 1.2);
+  line(g, tl + lx + 1, shY + ly + 1.2, tr + lx - 1, shY + ly + 1.2, shade(isFM ? "#ff8a1f" : isSR ? "#e0457b" : K.shirt, 0.4), 1.2);
   // lanyard + badge for everyone but the FM (keys at the belt) -- IT cord pair
   // laptop (IT) is held on the far side, in front of the torso edge
   if (isIT) laptop(g, farHand[0] + (front ? side * 0 : 0), farHand[1] - 1, 1, front, pulse);
   // head
-  const hr = S.head, hx = lx + fx * 2.2 + fx * hunch, hy = shY - hr + 3 + ly + bob * 0.5 + fy * 0.8 + (isIT ? 3 : 0);
-  limb(g, lx + fx * 1.2, shY + 2 + ly, hx, hy + hr * 0.6, S.skin, isFM ? 6 : 4); // neck
+  const hr = K.head, hx = lx + fx * 2.2 + fx * hunch, hy = shY - hr + 3 + ly + bob * 0.5 + fy * 0.8 + (isIT ? 3 : 0);
+  limb(g, lx + fx * 1.2, shY + 2 + ly, hx, hy + hr * 0.6, K.skin, isFM ? 6 : 4); // neck
   if (isIT) { // hood bunched behind and around the head
-    ellipse(g, hx - fx * 1.5, hy + 1.4, hr + 3.6, hr + 2.2, shade(S.shirt, -0.3), INK, 1.5);
-    ellipse(g, hx - fx * 1.5 - 1, hy - 1.5, hr + 2, hr * 0.9, shade(S.shirt, -0.12), null);
+    ellipse(g, hx - fx * 1.5, hy + 1.4, hr + 3.6, hr + 2.2, shade(K.shirt, -0.3), INK, 1.5);
+    ellipse(g, hx - fx * 1.5 - 1, hy - 1.5, hr + 2, hr * 0.9, shade(K.shirt, -0.12), null);
   }
-  ellipse(g, hx, hy, hr, hr * 1.05, S.skin, INK, 1.8);
+  ellipse(g, hx, hy, hr, hr * 1.05, K.skin, INK, 1.8);
   if (front) {
     const ex = hx + fx * 3.2, ey = hy + 0.8;
     if (isFM) {
@@ -199,7 +199,7 @@ export function hero(g, id, o) {
       fillPoly(g, [[hx - hr * 0.8, hy - hr * 0.7], [hx - hr * 0.3, hy - hr * 1.5], [hx + hr * 0.2, hy - hr * 0.95], [hx + hr * 0.6, hy - hr * 1.4], [hx + hr * 0.85, hy - hr * 0.6]], "#2a1a40", INK, 1.2);
     }
   }
-  g.beginPath(); g.arc(hx, hy, hr - 1, Math.PI * 1.05, Math.PI * 1.55); g.lineWidth = 1.2; g.strokeStyle = shade(S.skin, 0.45); g.stroke(); // rim light
+  g.beginPath(); g.arc(hx, hy, hr - 1, Math.PI * 1.05, Math.PI * 1.55); g.lineWidth = 1.2; g.strokeStyle = shade(K.skin, 0.45); g.stroke(); // rim light
 
   // near arm + the class item
   const nx = -side * (hw - 0.5) + lx, ny = shY + 3 + ly;
@@ -208,7 +208,7 @@ export function hero(g, id, o) {
   const ahead = (k) => fx * k, adown = (k) => fy * k;
   if (isFM) {
     // wrench: idle shouldered, walk bobs, attack: raise, slam, recover; cast: overhead ground slam pose
-    if (o.anim === "cast") { hx3 = hxx + fx * 6; hy3 = shY - 4 - 8 * o.cast + ly; tx = hx3 + fx * 3 - side * 1; ty = hy3 - 14 - 3 * o.cast; }
+    if (o.anim === "cast") { hx3 = hxx + fx * 6; hy3 = shY - 2 - 5 * o.cast + ly; tx = hx3 + fx * 3 - side * 1; ty = hy3 - 12 - 2 * o.cast; }
     else if (o.anim === "attack") {
       if (a < 0.34) { const t = a / 0.34; tx = hxx + (-side) * 4 - fx * 3 * t; ty = hyy - 10 - 20 * t; }
       else if (a < 0.75) { const t = (a - 0.34) / 0.41; tx = hxx + fx * 20 * t - side * 2; ty = hyy - 30 + 31 * t + fy * 10 * t; }
@@ -240,12 +240,12 @@ export function hero(g, id, o) {
         rect(g, kx, ky, 5.4, 5, "#4c5280", INK, 1); ellipse(g, kx, ky, 1.2, 1.2, "#33e0ff");
       } else for (let q = 0; q < 3; q++) line(g, hx3 + fx * (4 + q * 3), hy3 - 2 - q, hx3 + fx * (9 + q * 3), hy3 - 3 - q * 1.5, "#bff7ff", 1.6);
     }
-    ellipse(g, hx3, hy3, 2.8, 2.8, S.skin, INK, 1.2);
-    if (o.anim === "idle" || o.anim === "walk") { ellipse(g, hx3, hy3 - 0.3, 2.8, 2.8, S.skin, INK, 1.2); }
+    ellipse(g, hx3, hy3, 2.8, 2.8, K.skin, INK, 1.2);
+    if (o.anim === "idle" || o.anim === "walk") { ellipse(g, hx3, hy3 - 0.3, 2.8, 2.8, K.skin, INK, 1.2); }
   }
-  if (!isFM) ellipse(g, hx3, hy3, isSR ? 2.5 : 2.8, isSR ? 2.5 : 2.8, S.skin, INK, 1.2);
-  else ellipse(g, hx3, hy3, 3.4, 3.4, S.skin, INK, 1.2);
-  if (isFM && o.anim === "cast") { g.save(); g.globalAlpha = 0.4 + 0.4 * o.cast; ellipse(g, tx, ty - 6, 6 + 4 * o.cast, 4, "#ffd23a"); g.restore(); }
+  if (!isFM) ellipse(g, hx3, hy3, isSR ? 2.5 : 2.8, isSR ? 2.5 : 2.8, K.skin, INK, 1.2);
+  else ellipse(g, hx3, hy3, 3.4, 3.4, K.skin, INK, 1.2);
+  
 }
 
 /** Summoned allies: the Summer Intern (small, lanyard, oversized mug) and the Traffic Cone decoy. Idle/walk/attack/death like the monsters. */

@@ -18,7 +18,7 @@ export const WALL_VARIANTS = 3;
 // stairs-locked / stairs-open: the way down from floor 8 (barrier tape until the floor is cleared, then a lit lift). Other themes never use them.
 export const MARKERS = ["door", "stairs-up", "stairs-down", "stairs-locked", "stairs-open"];
 export const FX_IDS = ["alert", "paper", "shadow", "muted", "flee", "spark", "plus", "elevator", "portal", "badge", "table", "chair", "trophy", "screen"];
-export const PROJECTILES = ["stapler", "toner", "slide"];
+export const PROJECTILES = ["stapler", "toner", "slide", "pen", "card", "paper", "sealed", "shard", "bolt", "zap"];
 export const LOOT_IDS = ["item", "gold-s", "gold-m", "gold-l"];
 export const NPC_FRAMES = 4;
 export const UI_IDS = ["vessel-health", "vessel-mana", "skill-slot", "belt-slot", "skill-icon-strike", "icon-plus"];

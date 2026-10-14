@@ -11,3 +11,16 @@ export function hasLineOfSight(grid, x0, y0, x1, y1) {
   }
   return true;
 }
+
+/**
+ * Is the straight flight of a projectile from tile `a` to tile `b` free of walls? Samples the ray every quarter tile with the rounding the
+ * projectile system uses (a shot ends in the first opaque tile it rounds into), so "clear" here means a shot really arrives.
+ */
+export function rayClear(grid, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y, len = Math.sqrt(dx * dx + dy * dy), n = Math.ceil(len / 0.25);
+  for (let i = 1; i < n; i++) {
+    const x = Math.round(a.x + (dx * i) / n), y = Math.round(a.y + (dy * i) / n);
+    if ((x !== b.x || y !== b.y) && grid.opaque(x, y)) return false;
+  }
+  return true;
+}

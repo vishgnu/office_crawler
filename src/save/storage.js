@@ -14,9 +14,9 @@ import { serialize, deserialize, check, checksumOf } from "./format.js";
 export function createMemoryAdapter(initial = {}) {
   const map = new Map(Object.entries(initial));
   return {
-    kind: "memory", failWrites: false,
+    kind: "memory", failWrites: false, failKeys: null, // failKeys: (key) => boolean, a write to such a key throws (a bad slot, R-227)
     getItem: (k) => (map.has(k) ? map.get(k) : null),
-    setItem(k, v) { if (this.failWrites) throw new Error("QuotaExceededError"); map.set(k, String(v)); },
+    setItem(k, v) { if (this.failWrites || this.failKeys?.(k)) throw new Error("QuotaExceededError"); map.set(k, String(v)); },
     removeItem: (k) => { map.delete(k); },
     keys: () => [...map.keys()],
   };
