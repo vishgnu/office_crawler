@@ -209,3 +209,24 @@ Counts: 10 per class; Facilities 3 + 4 + 3, Sales 4 + 3 + 3, IT 4 + 3 + 3 (the c
 2. The respec rule (circle-02 Q3, PROXY with low confidence) can be switched to gold, once or off by one config value.
 3. Whether the starting hero should be auto-given its signature skill (assumed yes to keep the 29-point rule and a playable first minute) or start with one open point; the data supports both.
 4. Whether skill synergies (R-208, could) are wanted in this round; the schema reserves `synergy` and R6 implements it only if there is room.
+
+## Amendment 2026-10-14 (R6-1: skills scale from the class's power attribute)
+
+**Problem.** `deriveStats` added `max(0, grit - gritFree) * damagePerGrit` to the hero's damage range for every class, and every damaging skill adds `floor(mean(p.damage) * weaponShare)` on top of its own curve (`weaponBonus` in `systems/skillfx.js`). A caster (IT Wizard: grit 6, focus 20) therefore had no attribute bonus at all (grit below `gritFree`), and a bot that followed the generic point weights put its points into Grit, a stat that does nothing for a caster's spells. A Sales Rep (grit 8, agility 16) was in the same position. The "caster attribute" was only feeding mana (`mpPerFocus`) and the ranged class's agility only fed attack rating and defence. The R5 bot runs showed the cost: Sales Rep 2/3 wins and 6 deaths, IT Wizard slowest after it (`docs/reviews/R5-adversarial.md`, `R6-balance.md` baseline).
+
+**Decision.** Each class names one *power attribute* in `content/classes.js` `derived.powerAttr`: `grit` (Facilities Manager, melee), `agility` (Sales Rep, ranged), `focus` (IT Wizard, caster). Default when absent: `config.derived.powerAttr = "grit"` (plain player objects and old fixtures behave as before). The formula in `items/derive.js` becomes
+
+```
+powerBonus   = max(0, attrs[powerAttr] - derived.gritFree)          // attrs = own points + gear, as before
+damage.min   = floor(unarmed.min + powerBonus * damagePerGrit.min) + gear.damageMin
+damage.max   = floor(unarmed.max + powerBonus * damagePerGrit.max) + gear.damageMax
+skill hit    = round((rng(skill.min, skill.max) + floor(mean(damage) * weaponShare)) * mult)  // unchanged; mean(damage) now carries the power attribute
+```
+
+`gritFree` and `damagePerGrit` keep their names (no field renamed, no save or snapshot change; the constants are read per class through the existing `derived` override). Class values: Facilities Manager grit, 0.5 per point; Sales Rep agility, 0.8 per point; IT Wizard focus, 0.6 per point; free points 8 for all.
+
+**Why this and not a separate spell-power stat.** It reuses one formula and one data key (the contract of R6 forbids new shared fields), it keeps the skill curves and `weaponShare` meaning intact (a skill still "grows with gear" through the weapon term, and now also through the attribute the class invests in), and it makes the attribute panel honest: the point that raises Focus for a caster raises spell damage and mana, as the class card says. The basic attacks (`strike`, `toss`, `zap`) scale the same way, so the free attack does not fall behind the skills.
+
+**Bot side.** The class `bot.attrWeights` follow the power attribute (IT Wizard: stamina, focus, agility; no Grit). Saves are unaffected: `attrs` already hold all four attributes; a loaded character is re-derived by `applyDerived`.
+
+**Numbers tuned with it** (all in data, listed with old and new values in `docs/reviews/R6-balance.md`): class growth and power rates, skill curves of a few skills, `config.scaling`, `config.xpCurve`.

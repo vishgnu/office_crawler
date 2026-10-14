@@ -77,7 +77,7 @@ test("skill level bonus: +n to all skills and +n to a branch raise the effective
   const v = skillView(s, "stapler-throw");
   assert.deepEqual([v.level, v.bonus], [2, 3]);
   assert.equal(v.cost.mana, content.skills["stapler-throw"].mana(5), "the panel shows the cost at the effective level");
-  assert.equal(v.now[0].value, `${at([4, 2], 5)}-${at([8, 3], 5)}`);
+  assert.equal(v.now[0].value, `${at(sk["stapler-throw"].effects[0].min, 5)}-${at(sk["stapler-throw"].effects[0].max, 5)}`);
 });
 
 test("a bonus level is not capped by maxLevel (the panel shows 5 (+2)); a passive scales with the bonus too", () => {

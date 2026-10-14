@@ -105,8 +105,9 @@ test("effectRows: every skill formats at level 1 and max level into non-empty ro
       for (const r of rows) { assert.ok(content.strings[r.labelKey], `${s.id}: label ${r.labelKey}`); assert.ok(typeof r.value === "string" && r.value.length > 0 && !/NaN|undefined/.test(r.value), `${s.id}: ${r.value}`); }
     }
   }
-  assert.deepEqual(effectRows(content.skills["stapler-throw"], 1)[0], { labelKey: "statDamage", value: "4-8", type: "physical" });
-  assert.equal(effectRows(content.skills["stapler-throw"], 3)[0].value, "8-14");
+  const st = content.skills["stapler-throw"].effects[0], range = (l) => `${at(st.min, l)}-${at(st.max, l)}`; // read from data: balance passes change the numbers, not the format
+  assert.deepEqual(effectRows(content.skills["stapler-throw"], 1)[0], { labelKey: "statDamage", value: range(1), type: "physical" });
+  assert.equal(effectRows(content.skills["stapler-throw"], 3)[0].value, range(3));
 });
 
 test("skillView: state, lock reasons worded from strings, prerequisites, cost, now / next rows, hotkey, signature (R4 contract section 3)", () => {
@@ -114,7 +115,8 @@ test("skillView: state, lock reasons worded from strings, prerequisites, cost, n
   const sig = skillView(s, "stapler-throw");
   assert.deepEqual([sig.state, sig.level, sig.signature, sig.assigned, sig.maxLevel, sig.tier, sig.kind, sig.archetype], ["learned", 1, true, 0, 5, 1, "active", "projectile"]);
   assert.deepEqual(sig.cost, { mana: 3, cooldown: 0, reserve: 0 });
-  assert.equal(sig.now[0].value, "4-8"); assert.equal(sig.next[0].value, "6-11");
+  const sd = content.skills["stapler-throw"].effects[0], range = (l) => `${at(sd.min, l)}-${at(sd.max, l)}`;
+  assert.equal(sig.now[0].value, range(1)); assert.equal(sig.next[0].value, range(2));
   const pen = skillView(s, "pen-volley");
   assert.equal(pen.state, "locked-level"); assert.equal(pen.lockReason, "Needs character level 8"); assert.equal(pen.canLearn, false);
   assert.deepEqual(pen.now, []); assert.ok(pen.next.length > 0);
