@@ -1,0 +1,128 @@
+{
+  "project": "office-crawler",
+  "harnessVersion": "0.4.0",
+  "round": "G",
+  "slice": "Graphics detail: WORLD-G C3 port, in-game reviews G1/G2/G3, G-FIX, WORLD-FIX (G3). The C3 prototype, its two reviews and the proxy decision are counted in round-04.json.",
+  "elapsedMin": null,
+  "humanMin": null,
+  "humanMessages": null,
+  "humanMessagesNote": "Messages are logged once, under round-05.json (G and R5 interleaved).",
+  "agents": [
+    {
+      "role": "implementer",
+      "pkg": "WORLD-G C3 port",
+      "tokensK": 396.8,
+      "minutes": 22.0,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "G in-game appeal",
+      "tokensK": 101.7,
+      "minutes": 2.8,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "G in-game craft",
+      "tokensK": 98.8,
+      "minutes": 2.9,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "G-FIX",
+      "tokensK": 295.3,
+      "minutes": 32.1,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "G2 in-game + char select",
+      "tokensK": 116.1,
+      "minutes": 4.3,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "WORLD-FIX (G3)",
+      "tokensK": 219.6,
+      "minutes": 21.7,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "G3 re-review + char select",
+      "tokensK": 145.8,
+      "minutes": 7.5,
+      "status": "done"
+    }
+  ],
+  "tokensKTotal": 1374.1,
+  "defects": {
+    "adversarial": null,
+    "adversarialNote": "No adversarial pass on render work (visual rounds use visual reviewers); the adversarial pass of R5 covered the save/UI code only",
+    "codeReview": {
+      "blocking": 0,
+      "should": null,
+      "nit": null,
+      "note": "CR-14 (per-frame sort in the loot layer) falls in G scope; the review's counts are in round-05.json"
+    },
+    "visualReview": {
+      "count": null,
+      "detail": "G1 (appeal 32 / craft 31): craft review 16 of 20 checklist items done, 4 partly, 9 label overlaps; G2: 8 numbered in-game findings (2 major, 4 medium, 2 low); G3: N1-N4 in game (1 medium, 3 low)",
+      "g2InGame": 8,
+      "g3InGame": 4
+    },
+    "customer": 0,
+    "escaped": 0
+  },
+  "quality": {
+    "unitTests": 668,
+    "e2eChecks": null,
+    "e2eScripts": 13,
+    "visualScore": {
+      "prototypeC3": [
+        31,
+        31
+      ],
+      "g1": [
+        32,
+        31
+      ],
+      "g2": [
+        33,
+        32
+      ],
+      "g3": [
+        34,
+        33
+      ],
+      "gate": "34 target; under 33 = another pass; proxy passed at 34/33 with follow-ups"
+    },
+    "fps50": 43.9,
+    "fps50LowFx": 52.9,
+    "atlasMs": 4776,
+    "botWinRate": null,
+    "fps50Trend": "59.5 (WORLD-G, under load 4-6) -> 47.1 (G-FIX) -> 51.8 quiet before WORLD-FIX / 40-47 under load -> 43.9 (orchestrator, quiet, after all fixes); atlas about 3.85 s -> 4.78 s of a 5 s budget"
+  },
+  "rework": {
+    "fixRounds": 2,
+    "reverts": 0,
+    "detail": "G-FIX (after G1 reviews), WORLD-FIX / G3 (after G2). Each fix round re-reviewed by a visual-reviewer."
+  },
+  "incidents": [
+    "WORLD-G reported tint and bigger faces as done; both in-game reviewers could not see them at 1x (L-024, applied during the round, verified by G2/G3)",
+    "G2 reviewer pressed Digit1 (belt potion) instead of F1 and reported 'no skill VFX'; the effect existed, the reviewer had no input map (L-025); WORLD-FIX still strengthened the Pallet Slam VFX",
+    "G-FIX handed back with ui.mjs and s3ui.mjs red (L-022); test N5 was red from UI-R5's slots.js importing render/figure.js (parallel ownership clash)",
+    "Bench noisy under parallel load during WORLD-FIX (40-47 vs 51.8 quiet); the quiet orchestrator run shows a real downward trend (L-020)",
+    "G1 and G3 agree label overlaps shrank (9 -> 1 -> 0 touching tags) but new variants of the same defect appeared each pass (loot tag over the hero, tag nicking a head) (L-018)"
+  ],
+  "learnings": [
+    "L-025",
+    "L-020",
+    "L-018",
+    "L-024",
+    "L-022"
+  ]
+}

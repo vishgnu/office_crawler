@@ -1,0 +1,2 @@
+- 2026-10-14 retro R5/G started: round-05.json, round-G.json written
+- done: round-05.json, round-G.json, L-025..L-030, status checks (L-012/13/18/20/21/22/24), INDEX, agents (visual-reviewer, test-engineer, implementer), playbook 7 rows, CHANGELOG, experiments E1-E3, SESSION-NOTES 3 lines; next: return report

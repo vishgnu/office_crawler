@@ -1,0 +1,191 @@
+{
+  "project": "office-crawler",
+  "harnessVersion": "0.4.0",
+  "round": "R5",
+  "slice": "R5 UI (class select, skill-tree panel, five-slot manager, options) plus its fix round (SAVE-FIX, UI-FIX, two follow-ups), the first adversarial passes (2 rounds + flake root cause), code review R4+R5+G and proxy acceptance. WORLD-R5 and CORE-R4 are counted in round-04.json.",
+  "elapsedMin": null,
+  "humanMin": null,
+  "humanMessages": 7,
+  "humanMessagesNote": "All 7 messages logged in human-log.jsonl between 02:44Z and 05:23Z (4 questions, 1 ack, 1 decision, 1 instruction, plus 1 decision); they are not attributable to R5 vs G, so round-G.json uses null. None was a rework request.",
+  "wallClockUtc": {
+    "firstHandBackLogged": "2026-10-14T03:43Z (G-FIX)",
+    "UI-R5HandBack": "04:16Z",
+    "adversarial1": "05:08Z",
+    "fixRoundParallelDone": "05:55Z",
+    "adversarial2": "06:37Z",
+    "verify": "08:07Z",
+    "acceptance": "08:25Z",
+    "note": "start time of UI-R5 not logged, so elapsedMin stays null"
+  },
+  "agents": [
+    {
+      "role": "implementer",
+      "pkg": "UI-R5",
+      "tokensK": 506.6,
+      "minutes": 68.5,
+      "status": "done"
+    },
+    {
+      "role": "reviewer",
+      "pkg": "code review R4+R5+G",
+      "tokensK": 241.5,
+      "minutes": 6.1,
+      "status": "done"
+    },
+    {
+      "role": "test-engineer",
+      "pkg": "ADV-R5 adversarial",
+      "tokensK": 361.6,
+      "minutes": 41.7,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "SAVE-FIX",
+      "tokensK": 221.6,
+      "minutes": 22.2,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "UI-FIX",
+      "tokensK": 266.5,
+      "minutes": 42.9,
+      "status": "done",
+      "note": "ledger status done_with_open_item (undo-replace needed SAVE-FIX follow-up)"
+    },
+    {
+      "role": "implementer",
+      "pkg": "SAVE-FIX follow-up",
+      "tokensK": 9.4,
+      "minutes": 7.6,
+      "status": "done",
+      "note": "resumed agent; tokens are the delta over the first run; minutes include wall-clock wait"
+    },
+    {
+      "role": "test-engineer",
+      "pkg": "ADV-R5 round 2",
+      "tokensK": 83.0,
+      "minutes": 41.3,
+      "status": "done",
+      "note": "resumed agent; tokens are the delta over the first run; minutes include wall-clock wait"
+    },
+    {
+      "role": "implementer",
+      "pkg": "SAVE-FIX ADV-12/14",
+      "tokensK": 26.8,
+      "minutes": 43.9,
+      "status": "done",
+      "note": "resumed agent; tokens are the delta over the first run; minutes include wall-clock wait"
+    },
+    {
+      "role": "test-engineer",
+      "pkg": "ADV-R5 flake root cause",
+      "tokensK": 18.4,
+      "minutes": 26.5,
+      "status": "done",
+      "note": "resumed agent; tokens are the delta over the first run; minutes include wall-clock wait"
+    },
+    {
+      "role": "customer-proxy",
+      "pkg": "acceptance R4+R5+G",
+      "tokensK": 138.5,
+      "minutes": 18.1,
+      "status": "done"
+    }
+  ],
+  "tokensKTotal": 1873.9,
+  "defects": {
+    "adversarial": {
+      "round1": {
+        "blocker": 0,
+        "major": 4,
+        "minor": 7
+      },
+      "round2": {
+        "major": 0,
+        "minor": 3,
+        "note": "ADV-R5-12, -13 (fixed meanwhile), -14; round 2 verified 12 earlier fixes"
+      },
+      "total": 14,
+      "notInCodeReview": 8,
+      "overlapWithCodeReview": [
+        "ADV-R5-02=CR-01",
+        "ADV-R5-09~CR-09",
+        "ADV-R5-04~CR-03"
+      ]
+    },
+    "codeReview": {
+      "blocking": 2,
+      "should": 13,
+      "nit": 13,
+      "blockingIds": [
+        "CR-01 stale tab lock",
+        "CR-02 XSS via imported item id"
+      ],
+      "note": "range R4+R5+G, so some findings belong to G/R4"
+    },
+    "visualReview": {
+      "count": 9,
+      "note": "G2 part 2 (char select, tree, slots) findings 9-17; G3 added N5-N8 (2 medium, 2 low) for this area; in-game findings are counted in round-G.json"
+    },
+    "customer": {
+      "count": 2,
+      "note": "proxy acceptance follow-ups not found earlier: F5 mana spend of Power Surge/Packet Filter unconfirmed, Sales Rep balance"
+    },
+    "escaped": 0,
+    "escapedNote": "none known at acceptance; the file:// storage race (4/23 file://) is an open caveat for the delivery mode"
+  },
+  "quality": {
+    "unitTests": 668,
+    "unitTestsStart": 574,
+    "e2eChecks": null,
+    "e2eScripts": 13,
+    "e2eDetail": "13/13 green; adv-r5 150 checks, r5ui 106",
+    "visualScore": {
+      "charselectAppeal": 34,
+      "charselectCraft": 33,
+      "g2": [
+        33,
+        30
+      ]
+    },
+    "fps50": 43.9,
+    "fps50LowFx": 52.9,
+    "atlasMs": 4776,
+    "botWinRate": null,
+    "benchNote": "orchestrator run on a quiet machine (load 1.0), previous 47.1 (G-FIX), target 40; atlas budget 5000"
+  },
+  "rework": {
+    "fixRounds": 3,
+    "reverts": 0,
+    "detail": "fix round 1: SAVE-FIX + UI-FIX (+ WORLD-FIX in round G) in parallel; fix round 2: SAVE-FIX follow-up (undo-replace, ADV-13) + adversarial re-run; fix round 3: SAVE-FIX ADV-12/14. e2e reds in hand-backs: SAVE-FIX (adv-r5, r5ui), UI-FIX (r5ui undo-replace, adv-r5:154), SAVE-FIX 12/14 (adv-r5 second boot, env race)."
+  },
+  "incidents": [
+    "SAVE-FIX handed back with adv-r5.mjs and r5ui.mjs red (assert old lock behaviour / UI-FIX dialog); UI-FIX with r5ui undo-replace and adv-r5:154 red: reported via e2e_red, fixed in sequence",
+    "Fix contract promised deepest: 0 = Lobby; core could not provide it without changing the golden hash; SAVE-FIX delivered deepest >= 1 (contract deviation) (L-026)",
+    "adv-r5 'second boot does not migrate again' failed 3/3 in full runs; root cause Chromium file:// localStorage race on reload (4/23 file://, 0/24 http, 0/24 https); e2e now serves seeded contexts via https route (L-027)",
+    "Orchestrator suspect 'owner other after reload' did not reproduce (SAVE-FIX follow-up verified owner none; second live tab = other)",
+    "Bench numbers during the fix round were noisy under three parallel implementers (33-51 fps); only the orchestrator's quiet run counts (L-020 reopened)",
+    "UI-R5 took 68.5 min and 506.6k tokens, the most expensive package of the round"
+  ],
+  "learnings": [
+    "L-025",
+    "L-026",
+    "L-027",
+    "L-028",
+    "L-029",
+    "L-030",
+    "L-020",
+    "L-022",
+    "L-021",
+    "L-018",
+    "L-012",
+    "L-024"
+  ],
+  "experiments": {
+    "E1": "supported with caveat (see docs/harness-experiments.md)",
+    "E2": "inconclusive, leaning not supported for integration",
+    "E3": "supported (round G)"
+  }
+}
