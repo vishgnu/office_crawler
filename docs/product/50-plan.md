@@ -370,3 +370,22 @@ R4-4 -> R6-1 ; R5 -> R6-2
   (count decided in the R7 circle). Quest state is part of the save (schema bump with migration).
 - **Order:** circle (facilitator → proxy or customer) → spec ACs → CORE (quest state machine, events, save) → UI (journal,
   HUD hint, NPC dialogue) and WORLD (quest markers if specified) in parallel → adversarial + review → visual → acceptance.
+
+## Round R8: added item from the seventh briefing (2026-10-14)
+
+### R8-0 Hero visuals follow equipped gear (customer request, first item of R8)
+- **Goal:** the hero's figure shows what is equipped in the visible slots (head, body, hands, feet, weapon, off-hand), for all
+  three classes, all facings and animations, in game, on the character sheet and on the character select and slot busts.
+  Rarity reads through colour or trim (Okabe-Ito palette); uniques get a distinct accent.
+- **Approach (architect decides in an ADR before work):** layered vector parts drawn per item *base category* (not per item),
+  composited at runtime or cached per equipment combination. **Risk:** the sprite atlas build is already 4.78 s of a 5 s
+  budget (ADR-0004); pre-baking every combination is not affordable, so the ADR must include an atlas/cache budget.
+- **Order:** architect ADR + data contract (which item field picks the visual) → WORLD (parts, compositing, cache) with
+  CORE only if a field is missing → UI (sheet/select/busts) → visual review with 1x crops per slot and class → adversarial
+  (every slot × class × facing renders without errors, perf with 50 monsters) → acceptance.
+
+## Round R8-T: end-to-end testing and polish (seventh briefing, after R8, before the lighting rounds R9–R10)
+- **Goal:** a full end-to-end pass over everything built so far: no-cheat full runs per class to the boss in a real browser,
+  save/load across all features (quests, gear visuals, slots), keyboard-only and phone layouts, offline/file:// smoke
+  (incl. write-then-immediate-reload), size, legal and denylist scans, then one polish fix round from the findings.
+- **Agents:** test-engineer (adversarial, new e2e journeys), reviewer, visual-reviewer, customer-proxy acceptance, retro.

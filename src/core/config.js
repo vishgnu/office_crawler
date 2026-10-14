@@ -127,7 +127,7 @@ export const config = {
   tierFactor: { normal: 1, champion: 3, boss: 10 },
 
   // Depth scaling of monster stats, percent per depth beyond the first (depth 1 = registry values).
-  scaling: { hpPct: 80, damagePct: 14, defensePct: 16, attackRatingPct: 12, xpPct: 20 },
+  scaling: { hpPct: 88, damagePct: 17, defensePct: 16, attackRatingPct: 12, xpPct: 20 },
   // Floor population budget (AC-R-034-3): sum of cost * tierFactor stays within it.
   budgetBase: 120, budgetPerDepth: 32,
   population: { packsWanted: [12, 16], maxPacks: 50, tries: 400, stopAtBudget: 0.6 }, // how many packs a floor tries to place before it stops

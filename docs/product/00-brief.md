@@ -89,3 +89,14 @@ that lists the active quests and, for each, the concrete next step. Today the ga
 "find out why the floors went dark" memo, ending at the boss) and no journal, so this also means turning that goal into
 explicit quest steps, and, close to the original's mechanics, adding a few NPC side quests. How many side quests is open
 (round 7 circle; the proxy answers unless the customer does).
+
+## Seventh briefing (user, 2026-10-14, verbatim)
+
+> and for the round after that please make sure the characters change their visuals based on the invetrory - do a round of
+> e2e testing and polishing afterwards
+
+**Status: agreed (real customer).** Scheduled as **R8-0** (first item of round 8, the round after the quest-journal round 7)
+and a new round **R8-T** (end-to-end testing and polish) right after round 8, before the lighting rounds 9–10. Interpretation
+by the orchestrator: the hero's look changes with the **equipped** gear (head, body, hands, feet, weapon, off-hand are
+visible slots; rings, amulet and belt are not), as in the original. Today the hero sprite ignores equipment (checked in
+`src/render`). Inventory items that are carried but not worn don't change the look.

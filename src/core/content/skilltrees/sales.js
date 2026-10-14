@@ -20,7 +20,7 @@ export const sales = {
     { id: "pen-volley", class: C, branch: "pitch", tier: 2, col: 0, name: "Pen Volley", textKey: "skillPenVolleyText", kind: "active", archetype: "projectile",
       maxLevel: 5, reqLevel: 8, requires: [{ id: "stapler-throw", level: 1 }], tags: ["physical", "projectile"], cost: { mana: [6, 1], cooldown: 0, reservePct: 0 },
       delivery: { kind: "pen", speed: 0.4, range: 10, count: [3, 0.5, 5], spreadDeg: 30, pierce: 0, chain: 0 },
-      effects: [{ op: "damage", type: "physical", min: [2, 1], max: [4, 1], weaponShare: 0.25 }],
+      effects: [{ op: "damage", type: "physical", min: [3, 2], max: [6, 2], weaponShare: 0.25 }],
       fx: { cast: "fx:paper", hit: null, icon: "pen-volley" } },
     { id: "card-fan", class: C, branch: "pitch", tier: 3, col: 0, name: "Business Card Fan", textKey: "skillCardFanText", kind: "active", archetype: "projectile",
       maxLevel: 1, reqLevel: 16, requires: [{ id: "pen-volley", level: 1 }], tags: ["physical", "projectile"], cost: { mana: [16, 0], cooldown: 0, reservePct: 0 },
