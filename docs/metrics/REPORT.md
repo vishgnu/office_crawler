@@ -18,7 +18,7 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R7 | 9 | 1428.8 | 195.4 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 65 rows, 10137.5 k subagent tokens. **Your messages logged:** 19.
+**Ledger total:** 66 rows, 10137.5 k subagent tokens. **Your messages logged:** 21.
 
 ## Round R3
 
@@ -123,6 +123,7 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | implementer | STUTTER-R7 | 134.1 | 64.4 | done | floorLoad: {"ahead_floor2_max":"33.4-66.6 (median 33.5)","ahead_floor5_max":"33.4","lazy_draws":"480-600 -> 61 / 0"}; fps50_loaded: [53.3,44.2,39.8,46.8,50]; load: 2.3-7.5 |
 | implementer | CORE-R7Q 0.2 (hooks, pouch, hand-in, rewards) | 206.3 | 25.4 | done | tests: 854 (1 red = 0.3 version exception); golden_unchanged: true |
 | implementer | CORE-R7Q 0.3 (save v4) | 196.5 | 27.5 | done | tests: 873 (1 red adversary pin line 185) |
+| implementer | CORE-R7Q 0.4 (bot quests) | – | – | done | tests: 895; parity: {"questsCompleted":"72/72","won":"72/72","medians_min":[29.4,29.3,28.8],"vs_R6":"+9/+7/+10 %","deaths_median":[2,1,1],"giveUps":0} |
 
 ## Harness work
 
@@ -153,3 +154,5 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | 2026-10-14T11:55:30Z | question | do i need to secure this somehow ? ... how to check? |
 | 2026-10-14T14:00:38Z | question | whre are athe metrics for the other iteration? |
 | 2026-10-14T14:01:20Z | question | i only see 1 and 2-3 |
+| 2026-10-14T14:52:22Z | question | sidequest how can i secure this againt bot / crawlers ? |
+| 2026-10-14T14:54:14Z | decision | yes (add noindex to the game build) |

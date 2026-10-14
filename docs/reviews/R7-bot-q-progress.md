@@ -1,0 +1,6 @@
+# R7 CORE-R7Q R7-0.4 progress (bot quest paths)
+
+- start (2026-10-14): contract fields read (L-026): view.quests[id].s (raw state and snapshot), ui.dialog, floor.npcs, groundItems quest entries (tile + id, read by nextLoot unchanged), inputs interact/questAccept/questHandIn/sell/stash/storyRead. cannot: none.
+- done: bot/quests.js (Lobby accept and hand-in, bagFull sell then stash, single climb from floor 4, WAIT sentinel), call sites in policy.js (decideTown, before the live.length === 0 branch, floor-clear), report.js (quest completion ticks, main step order, trips), run-headless.mjs (verdict observed after keepPlaying), parity.mjs (quests per class, median trip minutes), test/quests-bot.test.js (6 tests); next: none.
+- parity (npm run parity, 24 seeds x 3 classes, 4m24s): quests all completed 72/72 (main+sq1+sq2+sq3); medians FM 29.4 / SR 29.3 / IT 28.8 min vs R6 27.0 / 27.4 / 26.1 (+9 %, +7 %, +10 %, band +-25 % ok); Lobby trip median 2.0 / 2.1 / 2.2 min; watchdog give-ups 0; deaths total FM about 40 (median 2, R6 3), SR about 26 (1, R6 3), IT about 38 (1, R6 2): rewards make the run easier; FM median 2 vs three-class median 1 is outside the 25 % integer-median band, means 1.7 / 1.1 / 1.6.
+- verify: npm test 3x green (894, 894, 895 tests), balance gate green.
