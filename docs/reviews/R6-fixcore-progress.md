@@ -4,3 +4,4 @@
 - done: skill-cast.test.js strengthened (mutation-checked); next: bot watchdog counter, parity wiring, ADR amendments, full verify
 - done: bot watchdog counter + parity report + gate, package.json parity script, ADR-0005/0006 amendments; next: wait for parity24, full verify npm test x3, build, e2e
 - done: watchdog split (fired vs quiet), parity24: 1 real give-up (IT seed 24 d8 tick 80598), exit 0; npm test 3x green (743). next: build + e2e
+- done: noticeAttr; adv-r5 hostile save rejected for a hand-built normal-rarity weapon with an id-less affix (illegitimate); next: rerun npm test, e2e adv-r5/adv-r6 sections

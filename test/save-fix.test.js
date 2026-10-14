@@ -328,7 +328,7 @@ test("contract: slotsView has status and list entries with deepest, savedAt (ISO
   session.createCharacter({ slot: 4, class: "it-wizard", name: "Four" });
   session.deleteSlot({ slot: 4, confirm: true });
   const v = slotsView(store);
-  assert.deepEqual(Object.keys(v.status).sort(), ["notice", "owner", "storage"]);
+  assert.deepEqual(Object.keys(v.status).sort(), ["notice", "noticeAttr", "owner", "storage"]);
   assert.equal(v.list.length, 5);
   assert.equal(v.list[1].savedAt, new Date(clock.t).toISOString());
   assert.equal(v.list[0].savedAt, null);

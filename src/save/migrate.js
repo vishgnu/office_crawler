@@ -68,7 +68,7 @@ export const MIGRATIONS = {
 
 /**
  * Bring a parsed save up to `target`. Returns { ok: true, data, notes } or { ok: false, reason: "no-migration", from }.
- * `notes` lists what the player should be told once: { from: 1, refundedPoints: n } for the Clerk migration and { from: 2, attributePointsRefunded: n } (only when n > 0) for the power-attribute migration.
+ * `notes` lists what the player should be told once: { from: 1, refundedPoints: n } for the Clerk migration and { from: 2, attributePointsRefunded: n, attr: the class's power attribute } (only when n > 0) for the power-attribute migration.
  */
 export function migrate(data, target) {
   let d = data, v = d.version;
@@ -80,7 +80,7 @@ export function migrate(data, target) {
     d = step(structuredClone(d));
     if (d.version !== v + 1) return { ok: false, reason: "no-migration", from: v };
     if (v === 1) notes.push({ from: 1, refundedPoints: (d.player?.skillPoints ?? 0) - (before.player?.skillPoints ?? 0) });
-    if (v === 2) { const n = (d.player?.attrPoints ?? 0) - (before.player?.attrPoints ?? 0); if (n > 0) notes.push({ from: 2, attributePointsRefunded: n }); }
+    if (v === 2) { const n = (d.player?.attrPoints ?? 0) - (before.player?.attrPoints ?? 0); if (n > 0) notes.push({ from: 2, attributePointsRefunded: n, attr: classById(d.class)?.derived?.powerAttr ?? null }); }
     v = d.version;
   }
   return { ok: true, data: d, notes };

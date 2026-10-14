@@ -70,14 +70,15 @@ const safeName = (name) => (String(name ?? "").toLowerCase().replace(/[^a-z0-9]+
  * The owner is `{ id, beat }`: the playing tab refreshes `beat` on every write and from a timer (`heartbeat()`); an owner whose beat is
  * older than OWNER_STALE_MS is stale and a tab that started after that beat takes over by itself, any other tab with `takeOver()`.
  * `onNotice(key)` gets string-table keys (slotSaved, slotDeleted, slotImported, slotMigrated, slotCorrupt, saveTooNewSlot, saveFailed,
- * storageFull, anotherTab). `status()` is the persistent state the UI shows: { storage, owner, notice }.
+ * storageFull, anotherTab). `status()` is the persistent state the UI shows: { storage, owner, notice, noticeAttr }.
  */
 export function createSlotStore(adapter = createAdapter(), { now = () => Date.now(), tabId = null, onNotice = () => {} } = {}) {
   const store = { adapter, lastError: null, lastSaveTick: null };
   const startedAt = now();
-  let notice = null, full = false;
-  const setNotice = (key) => { if (NOTICES.includes(key)) notice = key; };
-  const clearNotice = (...keys) => { if (notice !== null && keys.includes(notice)) notice = null; };
+  let notice = null, noticeAttr = null, full = false;
+  const setNotice = (key, attr = null) => { if (NOTICES.includes(key)) { notice = key; noticeAttr = key === "attributes-refunded" ? attr : null; } }; // noticeAttr: the power attribute a refund notice names
+  const clearNotice = (...keys) => { if (notice !== null && keys.includes(notice)) { notice = null; noticeAttr = null; } };
+  const refundNote = (notes) => { const n = (notes ?? []).find((x) => x.from === 2); if (n) setNotice("attributes-refunded", n.attr ?? null); };
   const tell = (key, extra) => { try { onNotice(key, extra); } catch { /* a broken listener must not break saving */ } };
   const get = (k) => adapter.getItem(k);
   // Running total of the characters held by the own keys (CR-13): one full scan the first time, then every put and del adjusts it, so a write
@@ -169,8 +170,8 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
     /** The index (always five entries). One getItem and one small parse; no slot text is read. */
     list: () => index(),
     /** The persistent state the UI shows: where saves go, who owns them, and the notice to show until dismissed. */
-    status: () => ({ storage: adapter.fallback ? "memory" : full ? "full" : "ok", owner: ownerState(index()), notice }),
-    setNotice, dismissNotice() { notice = null; return { ok: true }; },
+    status: () => ({ storage: adapter.fallback ? "memory" : full ? "full" : "ok", owner: ownerState(index()), notice, noticeAttr }),
+    setNotice, dismissNotice() { notice = null; noticeAttr = null; return { ok: true }; },
     /** Refresh this tab's owner beat (called from a timer while a game runs). Never creates an owner. */
     heartbeat() {
       const idx = readIndex();
@@ -268,7 +269,7 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
       }
       if (e.state === "ok" && (e.bytes !== text.length || e.sum !== textSum(text))) { idx.slots[n - 1] = entryFromText(n, text, now(), e); writeIndex(idx); } // repair rule b
       const r = deserialize(text);
-      if (r.ok) { if ((r.notes ?? []).some((x) => x.from === 2)) setNotice("attributes-refunded"); return { ok: true, state: r.state, notes: r.notes ?? [], slot: n }; }
+      if (r.ok) { refundNote(r.notes); return { ok: true, state: r.state, notes: r.notes ?? [], slot: n }; }
       if (r.reason === "newer") { idx.slots[n - 1] = { n, state: "newer" }; writeIndex(idx); tell("saveTooNewSlot"); return fail("newer"); }
       // damaged: keep the text for export, clear the slot, mark it bad
       const kept = putRoom(badKey(n), text, idx);
@@ -382,7 +383,7 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
       idx.slots[n - 1] = entryFromText(n, out, now(), null);
       writeIndex(idx);
       tell("slotImported");
-      if ((r.notes ?? []).some((x) => x.from === 2)) setNotice("attributes-refunded");
+      refundNote(r.notes);
       return { ok: true, notes: r.notes ?? [] };
     },
 
@@ -410,7 +411,7 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
             idx.slots[0] = entryFromText(1, out, now(), null); idx.last = idx.last ?? 1;
             const n = (r.notes ?? []).find((x) => x.from === 1);
             if (n) { migrated = { from: 1, refundedPoints: n.refundedPoints }; tell("slotMigrated", migrated); }
-            if ((r.notes ?? []).some((x) => x.from === 2)) setNotice("attributes-refunded");
+            refundNote(r.notes);
           }
         } else if (r.reason === "newer") { idx.slots[0] = { n: 1, state: "newer" }; tell("saveTooNewSlot"); }
         else {

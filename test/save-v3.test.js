@@ -34,7 +34,7 @@ test("v2 to v3: an R5 IT Wizard and Sales Rep get every attribute point beyond t
     const p = r.state.player;
     assert.deepEqual(p.attrs, cls(id).attrs, `${id}: attributes back to the class start`);
     assert.equal(p.attrPoints, ps);
-    assert.deepEqual(r.notes, [{ from: 2, attributePointsRefunded: ps }]);
+    assert.deepEqual(r.notes, [{ from: 2, attributePointsRefunded: ps, attr: cls(id).derived.powerAttr }]);
     assert.equal(r.save.version, 3);
     assert.deepEqual([p.level, p.xp, p.gold, p.skillPoints, p.skills], [old.player.level, old.player.xp, old.player.gold, old.player.skillPoints, old.player.skills]);
     assert.deepEqual(r.state.inventory.items.map((i) => i.id), old.inventory.items.map((i) => i.id), "gear kept");
@@ -77,8 +77,9 @@ test("the slot store sets status.notice attributes-refunded when it loads or imp
   assert.equal(store.status().notice, null);
   const r = store.importText(1, fx("save-v2-r5-it"));
   assert.equal(r.ok, true, JSON.stringify(r));
-  assert.equal(store.status().notice, "attributes-refunded");
-  store.dismissNotice(); assert.equal(store.status().notice, null);
+  assert.equal(store.status().notice, "attributes-refunded"); assert.equal(store.status().noticeAttr, "focus");
+  store.dismissNotice(); assert.equal(store.status().notice, null); assert.equal(store.status().noticeAttr, null);
+  const sr = createSlotStore(createMemoryAdapter()); sr.importText(1, fx("save-v2-r5-sales")); assert.equal(sr.status().noticeAttr, "agility");
   const l = store.load(1);
   assert.equal(l.ok, true); assert.equal(l.state.player.attrPoints, 65); // the stored text is version 3 already: no second refund
   assert.equal(store.status().notice, null, "a migrated and stored save is not announced twice");
