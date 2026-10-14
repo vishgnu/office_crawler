@@ -13,6 +13,7 @@ import { checkReqs } from "../src/core/items/equipment.js";
 import { buildGrid } from "../src/core/grid.js";
 import { serialize, deserialize } from "../src/save/index.js";
 import { replay } from "./helpers.js";
+import { withLegacyBalance } from "./balance-legacy.js";
 
 const CLASSES = content.classes.map((c) => c.id);
 const GIVER = { sq1: "vendor", sq2: "healer", sq3: "potions", sq4: "stash", sq5: "vendor" };
@@ -545,7 +546,7 @@ test("[R7-golden] the recorded runs replay to their pre-quest hash once the ques
   const runA = JSON.parse(readFileSync(new URL("./fixtures/run-a.json", import.meta.url), "utf8"));
   const old = readFileSync(new URL("./fixtures/run-a.pre-quests.hash", import.meta.url), "utf8").trim();
   const s = replay(runA, { class: "facilities-manager" });
-  assert.equal(hashStateWithout(s, strip), old);
+  assert.equal(withLegacyBalance(() => hashStateWithout(replay(runA, { class: "facilities-manager" }), strip)), old); // R7-3: the baselines are from before the balance numbers changed
   assert.equal(s.eventLog.some((e) => e.type.startsWith("quest.")), false);
   const cls = JSON.parse(readFileSync(new URL("./fixtures/run-class.pre-quests.json", import.meta.url), "utf8"));
   const pre = cls.hashes ?? cls;
@@ -553,7 +554,7 @@ test("[R7-golden] the recorded runs replay to their pre-quest hash once the ques
     const want = typeof pre[id] === "string" ? pre[id] : pre[id]?.hash;
     if (!want) continue;
     const t = replay(runA, { class: id });
-    assert.equal(hashStateWithout(t, strip), want, id);
+    assert.equal(withLegacyBalance(() => hashStateWithout(replay(runA, { class: id }), strip)), want, id);
   }
 });
 

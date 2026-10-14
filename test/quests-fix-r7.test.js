@@ -7,6 +7,7 @@ import { newGame, step, applyInput, config, content, hashState, hashStateWithout
 import { killMonster } from "../src/core/systems/damage.js";
 import { emit } from "../src/core/events.js";
 import { replay } from "./helpers.js";
+import { withLegacyBalance } from "./balance-legacy.js";
 
 const near = (s, npcId) => {
   const n = s.floor.npcs.find((o) => o.id === npcId);
@@ -77,8 +78,12 @@ test("CR7-02 the event log window ignores quest.* entries: the stripped log is t
 
 const runB = JSON.parse(readFileSync("test/fixtures/run-b.json", "utf8"));
 
-test("CR7-02 run-b (the bot from the Lobby to floor 3: stairs, loot, 95 kills, no quest accepted): re-pinned golden and the stripped proof", () => {
-  const s = replay(runB, { start: "town" });
+// R7-3: run-b was recorded under the old balance numbers; its golden (run-b.hash) stays as it was and is replayed under `withLegacyBalance`. The tougher floors of R7-3 need their own recording:
+// run-c (seed 3, Lobby start, the bot with quests off under the new numbers: stairs Lobby to floor 3, loot pickups, 128 kills, no quest accepted, 24000 ticks) with its golden run-c.hash.
+const runC = JSON.parse(readFileSync("test/fixtures/run-c.json", "utf8"));
+
+test("CR7-02 run-b (old balance numbers): golden and the stripped proof", () => {
+  const s = withLegacyBalance(() => replay(runB, { start: "town" }));
   assert.ok(s.deepestDepth >= 3 && s.stats.kills > 50, "the run uses stairs and fights");
   assert.equal(hashState(s), readFileSync("test/fixtures/run-b.hash", "utf8").trim());
   assert.ok(s.eventLog.filter((e) => !e.type.startsWith("quest.")).length === 256, "the log window is full: the strip is exact only because quest entries do not count towards it");
@@ -86,14 +91,24 @@ test("CR7-02 run-b (the bot from the Lobby to floor 3: stairs, loot, 95 kills, n
   assert.ok(content.sideIds.every((id) => s.quests[id].s === "available"));
 });
 
-test("CR7-02 run-b without any quest system (state.quests removed before the first tick) hashes the same as the full run once the quest subtree and events are stripped (arc rewards zeroed: floor 3 is reached)", () => {
+test("CR7-02 run-c (the new balance numbers of R7-3): re-pinned golden, stairs, loot and fights, no quest touched", () => {
+  const s = replay(runC, { start: "town" });
+  assert.ok(s.deepestDepth >= 3 && s.stats.kills > 50, "the run uses stairs and fights");
+  assert.equal(hashState(s), readFileSync("test/fixtures/run-c.hash", "utf8").trim());
+  assert.ok(s.eventLog.filter((e) => !e.type.startsWith("quest.")).length === 256, "the log window is full");
+  assert.deepEqual(s.player.pouch, []);
+  assert.ok(content.sideIds.every((id) => s.quests[id].s === "available"));
+  assert.notEqual(hashState(s), hashState(withLegacyBalance(() => replay(runC, { start: "town" }))), "the balance numbers are what the golden pins");
+});
+
+test("CR7-02 run-c without any quest system (state.quests removed before the first tick) hashes the same as the full run once the quest subtree and events are stripped (arc rewards zeroed: floor 3 is reached)", () => {
   const keep = config.quests.arc, zero = { gold: { base: 0, perDepth: 0 }, xp: { base: 0, perDepth: 0 } };
   try {
     config.quests.arc = { main: zero, main2: zero };
-    const full = replay(runB, { start: "town" });
-    const bare = newGame(runB.seed, { start: "town" });
+    const full = replay(runC, { start: "town" });
+    const bare = newGame(runC.seed, { start: "town" });
     delete bare.quests; // the quest tap and the floor hooks do nothing without it
-    for (let t = 0; t < runB.ticks; t++) step(bare, runB.inputs.filter((i) => i.tick === t).map((i) => i.input));
+    for (let t = 0; t < runC.ticks; t++) step(bare, runC.inputs.filter((i) => i.tick === t).map((i) => i.input));
     assert.equal(hashStateWithout(full, STRIP), hashStateWithout(bare, STRIP), "quests never touched gameplay: spawn order, ids, loot, rng and the event log are identical");
   } finally { config.quests.arc = keep; }
 });
@@ -101,9 +116,10 @@ test("CR7-02 run-b without any quest system (state.quests removed before the fir
 test("CR7-02 run-b plays identically with the R7 retarget and hold rules off (they never act in the recorded run)", () => {
   const keep = { r: config.retargetTicks, h: config.holdMaxTicks };
   try {
-    const on = hashState(replay(runB, { start: "town" }));
+    // R7-3: the claim belongs to the balance of the time (old numbers); with the tougher floors of R7-3 the hold rules do act in this run, and its golden is re-pinned with them on.
+    const on = withLegacyBalance(() => hashState(replay(runB, { start: "town" })));
     config.retargetTicks = 1e9; config.holdMaxTicks = 1e9;
-    assert.equal(hashState(replay(runB, { start: "town" })), on);
+    assert.equal(withLegacyBalance(() => hashState(replay(runB, { start: "town" }))), on);
   } finally { config.retargetTicks = keep.r; config.holdMaxTicks = keep.h; }
 });
 
@@ -116,12 +132,12 @@ test("CR7-02 run-b: the stripped hash equals the golden recorded before the ques
   assert.ok(existsSync(preB), "no pre-quest golden for run-b yet");
   // run-b reaches floor 3: arc 1 pays gold and experience there (R7-4), which the pre-quest game could not. The proof zeroes the arc rewards in the config; everything else is the real game.
   const keep = config.quests.arc, zero = { gold: { base: 0, perDepth: 0 }, xp: { base: 0, perDepth: 0 } };
-  const paid = replay(runB, { start: "town" });
+  const paid = withLegacyBalance(() => replay(runB, { start: "town" })); // R7-3: the proof runs under the old balance numbers (the baseline is from before them)
   assert.ok(paid.quests.main.m.depth >= 3 && paid.quests.main.m.depth < 6, "run-b reaches floor 3 (arc 1 pays) and not floor 6");
   assert.notEqual(hashStateWithout(paid, STRIP), readFileSync(preB, "utf8").trim(), "with the arc reward paid the stripped hash legitimately differs: gold and experience");
   try {
     config.quests.arc = { main: zero, main2: zero };
-    assert.equal(hashStateWithout(replay(runB, { start: "town" }), STRIP), readFileSync(preB, "utf8").trim());
+    assert.equal(withLegacyBalance(() => hashStateWithout(replay(runB, { start: "town" }), STRIP)), readFileSync(preB, "utf8").trim());
   } finally { config.quests.arc = keep; }
 });
 

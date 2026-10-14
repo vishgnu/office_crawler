@@ -4,7 +4,7 @@
 import { spawn } from "node:child_process";
 const scripts = ["audio", "smoke", "hook", "render", "combat", "input", "replay", "realtime", "ui", "s3ui", "r5ui", "adv-r5", "adv-r6", "adv-r7", "r7journal", "r7quest", "polish"];
 const DEFAULT_S = Number(process.env.E2E_TIMEOUT_S) || 240;
-const TIMEOUT_S = { replay: 480, polish: 360, "adv-r5": 420, "adv-r6": 600 }; // per-script overrides (seconds)
+const TIMEOUT_S = { replay: 480, polish: 360, "adv-r5": 420, "adv-r6": 600, "adv-r7": 600 }; // per-script overrides (seconds)
 const results = [];
 
 function run(name) {

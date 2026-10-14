@@ -9,3 +9,7 @@
 - pass E result: smoother (deaths d1 0,d2 0,d3 1,d4 2,d5 2,d6 6,d7 3,d8 6,d9 9) but FM seed 6 orbited an auditor around a cabinet block (bot kept an attack order on a written-off monster; core chase defect pattern, parity watchdog 24). bot fix: drop the order of a skipped target, fight a skipped monster again once it attacks (seed 6 now won, 0 watchdog). final runs on/off next
 - E+botfix result (fin-on): 72/72 wins, quests 72/72, 0 watchdog, medians 25.0/25.4/24.7; deaths per floor sum 0,1,1,1,1,8,6,8,14 (step at d6). pass F: raise floors 2-4 (hp mult d2 .72 d3 .56 d4 .48, dmg d2 1.98 d3 1.74 d4 1.53 d5 1.37 d6 1.24); config saved at scratchpad config.final-E.js to revert
 - pass F result (final): 72/72 wins, quests 72/72, 0 watchdog, medians 25.9/26.2/24.8; deaths per floor sum 0,4,2,5,2,6,2,8,7; near 0,7,6,7,3,16,3,12,20. numbers frozen. next: quests-off run for the shift, then tests/goldens/report
+- quests-off final run: medians 25.4/25.7/24.4 -> shift +2.0/+1.9/+1.6 % (spread 0.4 points); off-bot floor 5 wall remains for a hero that skips quests. next: npm test
+- done: goldens re-pinned (run-a 64368cab05155adc, run-b 370440fd4078dfc3, classes 64368cab.../d5770142.../06d493b6...), proof via test/balance-legacy.js withLegacyBalance; next: npm test x3
+- done: run-c recorded (new-balance run, run-b stays under withLegacyBalance), test/balance-spread.test.js; npm test x3 green (1129 tests, 5 todo from the adversary pass); next: build, e2e, combat, report
+- done: report written (docs/reviews/R7-balance.md); waiting for e2e (background)
