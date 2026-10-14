@@ -18,7 +18,7 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R7 | 21 | 4374.9 | 709.8 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 80 rows, 13083.6 k subagent tokens. **Your messages logged:** 30.
+**Ledger total:** 81 rows, 13083.6 k subagent tokens. **Your messages logged:** 30.
 
 ## Round R3
 
@@ -138,6 +138,7 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | implementer | R7-4.1 (3 arcs, sq4/sq5, save v5, bot) | 341.5 | 61.2 | done (UI reds for R7-4.2) | tests: 1030 pass / 6 fail (ui/render-owned); parity: {"all8":"70/72","medians_min":[32.1,32.5,32.4],"shift_spread_pts":6.1,"giveUps":0}; golden: re-pinned with proof (run-a/class/b) |
 | implementer | R7-4.2 (UI/WORLD arcs, sq4/sq5) | 211.2 | 59.4 | done (reds = core/balance in flight) | e2e: r7journal 70/70, r7quest 62/62 |
 | test-engineer | ADV-R7 update (arcs, sq4/sq5) | 325.2 | 91.8 | done | new: {"high":1,"medium":1,"low":2}; ids: ["ADV-R7-07 pin proto keys","ADV-R7-08","ADV-R7-09","ADV-R7-10 sq5 unwinnable ~1.5% seeds"]; e2e: adv-r7 260/260 (3 XFAIL) |
+| implementer | BAL-R7 (spread difficulty) | – | – | done | parity: {"medians_min":[25.9,26.2,24.8],"wins":"72/72","all8":"72/72","shiftSpread_pts":0.4}; deaths: 73 -> 36 (boss 48 -> 7) |
 
 ## Harness work
 

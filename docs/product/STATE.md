@@ -17,6 +17,7 @@ Gate authority for this project is delegated to `customer-proxy` while the user 
 - IP closeness: keep the current approach (mechanics/feel, everything else original). Names and title approved.
 
 ## Waiting for the real customer
+- **Quests optional or intended?** With quests the floors are now smooth (deaths spread out, floor 5 has 2 deaths in 72 runs). A hero who accepts NO quest still hits a wall at floor 5 (32 deaths). Should the game also be balanced for players who skip quests (softer floor 5 / lighter quest rewards), or are quests the intended route? Default: quests are the intended route.
 - **Optional (R7-4.3)**: the 5th side quest comes from the vendor (second quest there), because only 4 Lobby characters exist. Want a new, 5th Lobby character instead? (about 250 lines + art; default: no).
 - **Portal-overview variant pick** (harness; may fold into the final harness version).
 - Review `proxy-log.md` whenever you are back.

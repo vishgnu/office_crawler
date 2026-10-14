@@ -13,3 +13,4 @@
 - done: goldens re-pinned (run-a 64368cab05155adc, run-b 370440fd4078dfc3, classes 64368cab.../d5770142.../06d493b6...), proof via test/balance-legacy.js withLegacyBalance; next: npm test x3
 - done: run-c recorded (new-balance run, run-b stays under withLegacyBalance), test/balance-spread.test.js; npm test x3 green (1129 tests, 5 todo from the adversary pass); next: build, e2e, combat, report
 - done: report written (docs/reviews/R7-balance.md); waiting for e2e (background)
+- done: build ok, e2e all green (1516 PASS, replay and combat included), npm test x3 green; finished
