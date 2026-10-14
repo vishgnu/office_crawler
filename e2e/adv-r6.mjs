@@ -9,6 +9,7 @@ import { build } from "esbuild";
 import { launch, check, finish, startNew, freeTilesNear, tileScreen } from "./helpers.mjs";
 import { toSave, checksumOf } from "../src/save/index.js";
 import { newGame } from "../src/core/state.js";
+import { config } from "../src/core/config.js";
 import { runOne } from "../bot/run-headless.mjs";
 import { resolve } from "node:path";
 import { canonical } from "../src/core/hash.js";
@@ -420,7 +421,7 @@ for (const kind of (process.env.KINDS ?? "none,memory,full,other,other-confirm,s
 } // sec pause
 // ================================================================ 5. slot manager (from the pause menu) with five slots of every state, five viewports
 if (sec("slots")) {
-  const mk = (cls, name, level) => { const st = newGame(7, { class: cls, name, start: "town", wearStartKit: true }); const sv = toSave(st); sv.player.level = level; sv.player.xp = 0; sv.player.skillPoints = 0; sv.player.attrPoints = 0; return canonical({ ...sv, checksum: checksumOf(sv) }); };
+  const mk = (cls, name, level) => { const st = newGame(7, { class: cls, name, start: "town", wearStartKit: true }); const sv = toSave(st); sv.player.level = level; sv.player.xp = config.xpTable[level - 1]; sv.player.skillPoints = 0; sv.player.attrPoints = 0; return canonical({ ...sv, checksum: checksumOf(sv) }); };
   const seed = {
     "office-crawler.slot.1": mk(CL.fm, "WWWWWWWWWWWWWWWW", 12), "office-crawler.slot.2": mk(CL.sr, "Second", 3), "office-crawler.slot.3": mk(CL.it, "Third", 20),
     "office-crawler.slot.4": "{ this is not json", "office-crawler.slot.5": JSON.stringify({ format: "office-crawler-save", version: 999 }),
