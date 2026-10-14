@@ -49,10 +49,11 @@ const VARIANTS = {
 };
 
 /** A page on an https origin serving `file` (default the shipped build). */
-async function boot({ viewport = { width: 1280, height: 720 }, query = "test=1&seed=1", file = "dist/index.html", init = null, deviceScaleFactor = 1 } = {}) {
+async function boot({ viewport = { width: 1280, height: 720 }, query = "test=1&seed=1", file = "dist/index.html", init = null, seed = null, deviceScaleFactor = 1 } = {}) {
   const context = await browser.newContext({ viewport, deviceScaleFactor });
   await context.route("https://oc.test/**", (r) => r.fulfill({ path: file, contentType: "text/html" }));
   if (init) await context.addInitScript(init);
+  if (seed) await context.addInitScript((d) => { if (localStorage.getItem("advseed")) return; localStorage.setItem("advseed", "1"); for (const [k, v] of Object.entries(d)) localStorage.setItem(k, v); }, seed);
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message + " @ " + String(e.stack).split("\n").slice(1, 3).join(" | ")));
@@ -62,6 +63,7 @@ async function boot({ viewport = { width: 1280, height: 720 }, query = "test=1&s
   const app = (fn, ...args) => page.evaluate(([f, a]) => f.split(".").reduce((o, k) => o[k], window.__app)(...a), [fn, args]);
   return { context, page, app, state: () => app("getState"), errors };
 }
+const VIEWS = [[1280, 720], [1024, 600], [720, 720], [390, 844], [390, 560]];
 const sec = (name) => !process.env.SEC || process.env.SEC.split(",").includes(name); // SEC=pause runs one section while developing
 const hero = async (opts, cls = CL.fm, name = "Probe") => { const g = await boot(opts); await startNew(g.page, { cls, name }); return g; };
 const learnSome = async (g, plan) => { for (const [id, n] of plan) for (let i = 0; i < n; i++) await g.app("tree.learn", id); };
@@ -345,7 +347,7 @@ async function paused(kind, viewport, { slots = false } = {}) {
     if (kind === "other" || kind === "other-confirm") {
       extra = await g.context.newPage(); await extra.goto(`https://oc.test/index.html?test=1&seed=1&start=floor`); await extra.waitForFunction(() => window.__app?.getState().scene === "title");
       await extra.click(T("take-over-saves")); await extra.click(T("take-over-yes"));
-      await g.app("step", 2); await g.page.waitForTimeout(100);
+      await g.app("step", 2); await g.app("save.write"); await g.page.waitForTimeout(100); // the displaced tab learns it lost the saves when its next write is refused
     }
     if (kind === "stale") { await g.page.evaluate(() => { const i = JSON.parse(localStorage.getItem("office-crawler.slots")); i.owner = { id: "ghost", beat: Date.now() - 60000 }; localStorage.setItem("office-crawler.slots", JSON.stringify(i)); }); await g.app("slots.list"); }
     if (kind === "notice") {
@@ -378,7 +380,6 @@ const pauseMetrics = (page) => page.evaluate(async () => {
   return { vh, vw, headingTop: top0, headingBottom: h2.bottom, quitBottomAtEnd: q.bottom, quitTopAtEnd: q.top, resumeInViewAtTop: resume.getBoundingClientRect().top >= 0 && resume.getBoundingClientRect().bottom <= vh, scrollable: s.scrollHeight > s.clientHeight + 1, sideScroll: s.scrollWidth > s.clientWidth + 1 || document.documentElement.scrollWidth > vw + 1,
     outsideX: btns.filter((b, i) => rects0[i].left < -0.5 || rects0[i].right > vw + 0.5).length, tooSmall: btns.filter((b) => b.getBoundingClientRect().height < 30).length, textClipped, banners: [...s.querySelectorAll("[data-testid^='save-'],[data-testid^='take-over']")].map((e) => e.dataset.testid) };
 });
-const VIEWS = [[1280, 720], [1024, 600], [720, 720], [390, 844], [390, 560]];
 for (const kind of (process.env.KINDS ?? "none,memory,full,other,other-confirm,stale,notice").split(",")) {
   for (const [w, h] of VIEWS) {
     if (process.env.VW && String(w) !== process.env.VW) continue;
@@ -397,6 +398,58 @@ for (const kind of (process.env.KINDS ?? "none,memory,full,other,other-confirm,s
 }
 
 } // sec pause
+// ================================================================ 5. slot manager (from the pause menu) with five slots of every state, five viewports
+if (sec("slots")) {
+  const mk = (cls, name, level) => { const st = newGame(7, { class: cls, name, start: "town", wearStartKit: true }); const sv = toSave(st); sv.player.level = level; sv.player.xp = 0; sv.player.skillPoints = 0; sv.player.attrPoints = 0; return canonical({ ...sv, checksum: checksumOf(sv) }); };
+  const seed = {
+    "office-crawler.slot.1": mk(CL.fm, "WWWWWWWWWWWWWWWW", 12), "office-crawler.slot.2": mk(CL.sr, "Second", 3), "office-crawler.slot.3": mk(CL.it, "Third", 20),
+    "office-crawler.slot.4": "{ this is not json", "office-crawler.slot.5": JSON.stringify({ format: "office-crawler-save", version: 999 }),
+  };
+  seed["office-crawler.slot.1"] = mk(CL.fm, "WWWWWWWWWWWWWWWW", 12);
+  const slotMetrics = (page) => page.evaluate(async () => {
+    const dlg = document.querySelector(".dlg-card"), vh = innerHeight, vw = innerWidth; if (!dlg) return { missing: true };
+    dlg.scrollTop = 0; await new Promise((r) => requestAnimationFrame(r));
+    const close = dlg.querySelector('.sl-head .xbtn'), c0 = close?.getBoundingClientRect();
+    const cards = [...dlg.querySelectorAll('[data-testid^="slot-"][data-state]')];
+    const dr = dlg.getBoundingClientRect();
+    dlg.scrollTop = dlg.scrollHeight; await new Promise((r) => requestAnimationFrame(r));
+    const c1 = close?.getBoundingClientRect(), last = cards.at(-1)?.getBoundingClientRect();
+    const btns = [...dlg.querySelectorAll("button")].filter((b) => b.getBoundingClientRect().width > 0);
+    dlg.scrollTop = 0;
+    return { vh, vw, cardCount: cards.length, states: cards.map((c) => c.dataset.state).join(), dlgTop: dr.top, dlgBottom: dr.bottom, closeAtTop: c0 && c0.top >= -0.5 && c0.bottom <= vh + 0.5, closeAfterScroll: c1 && c1.top >= -0.5 && c1.bottom <= vh + 0.5, lastCardVisibleAtEnd: last && last.bottom <= vh + 0.5,
+      sideScroll: dlg.scrollWidth > dlg.clientWidth + 1 || document.documentElement.scrollWidth > vw + 1, outsideX: btns.filter((b) => { const r = b.getBoundingClientRect(); return r.left < -0.5 || r.right > vw + 0.5; }).length, small: btns.filter((b) => b.getBoundingClientRect().height < 30 || b.getBoundingClientRect().width < 30).map((b) => b.dataset.testid) };
+  });
+  for (const [w, h] of VIEWS) {
+    const g = await boot({ viewport: { width: w, height: h }, seed, query: "test=1&seed=1&start=floor" });
+    const states = (await g.app("slots.list")).slots.map((e) => e.state).join();
+    await g.page.click(T("continue")); await g.page.waitForTimeout(150);
+    check(`[R6-slots] ${w}x${h}: five slots of mixed state load (ok, ok, ok, bad, newer) and Continue starts one of them`, states === "ok,ok,ok,bad,newer" && (await g.state()).scene === "town", [states, (await g.state()).scene]);
+    await g.app("pause"); await g.page.click(T("pause-slots")); await g.page.waitForTimeout(150);
+    const m = await slotMetrics(g.page);
+    const tag = `[R6-slots] ${w}x${h}`;
+    check(`${tag}: five cards, Close reachable at the top and after scrolling to the end, last card reachable`, m.cardCount === 5 && m.closeAtTop && m.closeAfterScroll && m.lastCardVisibleAtEnd, m);
+    check(`${tag}: no sideways scroll, nothing outside the page width, every button at least 30 px`, !m.sideScroll && m.outsideX === 0 && m.small.length === 0, m);
+    if ((w === 390 && h === 844) || (w === 1280)) await shot(g.page, `slots-${w}x${h}`);
+    // the delete confirmation of the last card must appear where the player is looking
+    await g.page.evaluate(() => { const d = document.querySelector(".dlg-card"); d.scrollTop = d.scrollHeight; });
+    const del = g.page.locator(T("slot-delete-5"));
+    if (await del.count()) {
+      await del.click(); await g.page.waitForTimeout(100);
+      const vis = await g.page.evaluate(() => { const c = document.querySelector('[data-testid="slot-confirm"]'); if (!c) return null; const r = c.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, vh: innerHeight, focusIn: !!document.activeElement?.closest('[data-testid="slot-confirm"]') }; });
+      check(`${tag}: the delete confirmation of slot 5 is on screen (or scrolled to) with focus inside it`, vis && vis.top >= -1 && vis.bottom <= vis.vh + 1 && vis.focusIn, vis);
+      await g.page.keyboard.press("Escape");
+      check(`${tag}: Esc closes the confirmation only; the slot is still there`, (await g.page.locator(T("slot-confirm")).count()) === 0 && (await g.page.locator(T("slot-5")).count()) === 1);
+    }
+    // the playing slot cannot be deleted or replaced; the damaged and the newer slot say what they are
+    const names = await g.page.evaluate(() => [4, 5].map((n) => document.querySelector(`[data-testid="slot-name-${n}"]`)?.textContent));
+    check(`${tag}: the damaged and the newer slot are labelled as such`, /damaged/i.test(names[0] ?? "") && /newer/i.test(names[1] ?? ""), names);
+    const act = (await g.app("slots.view")).index.active;
+    check(`${tag}: the playing slot (${act}) has Delete, Import and Replace disabled and the others do not`, await g.page.evaluate((n) => [1, 2, 3].every((k) => ["delete", "import", "new"].every((w) => { const b = document.querySelector(`[data-testid="slot-${w}-${k}"]`); return !b || b.disabled === (k === n); })), act), act);
+    check(`${tag}: no page error`, g.errors.length === 0, g.errors);
+    await g.context.close();
+  }
+} // sec slots
+
 // ---- END
 await browser.close();
 const { failed } = finish("adv-r6");
