@@ -7,6 +7,7 @@
 import { content } from "../src/core/index.js";
 
 export const QBOT = {
+  maxTrips: 2,     // trips to the Lobby: the second one is for a quest that became ready after the first (the badge picked up late, ADV-R7-03)
   climbDepth: 4,   // the floor after which the single trip to the Lobby happens (item and elite are on floors 3 and 4)
   maxTries: 12,    // interact orders per NPC per Lobby visit before the bot leaves it alone
   maxFails: 3,     // refused accept or hand-in commands per quest before the bot gives the quest up
@@ -84,7 +85,7 @@ export function questClimb(view, mem, live) {
 
 /** Floor `climbDepth` is clear and the loot is taken: start the single trip to the Lobby when a quest is ready (and the run goes on below). */
 export function questTrip(view, mem) {
-  if (!on(mem) || !view.quests || mem.q.trips > 0 || mem.q.climb || view.depth !== QBOT.climbDepth || (mem.profile.depth ?? 1) <= view.depth) return null;
+  if (!on(mem) || !view.quests || mem.q.trips >= QBOT.maxTrips || mem.q.climb || view.depth !== QBOT.climbDepth || (mem.profile.depth ?? 1) <= view.depth) return null;
   if (!SIDE.some((id) => !mem.q.gaveUp[id] && view.quests[id].s === "ready")) return null;
   mem.q.climb = true; mem.q.tripStart = view.tick;
   return { t: "useStairs", dir: "up" };

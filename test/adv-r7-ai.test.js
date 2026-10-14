@@ -123,7 +123,7 @@ test("[R7-ai] the recorded golden runs play identically with the new AI rules sw
 });
 
 // ADV-R7-03: the bot leaves the badge (sq2) behind on floor 4 and its single Lobby trip is gone before it picks it up again: the quest never completes.
-test("[R7-bot] ADV-R7-03 every run completes all three side quests (AC-R-256-2): Sales Rep seed 104 in the runOne setup", { todo: "ADV-R7-03 bot gives up the badge pickup while monsters are awake, then never returns to the Lobby" }, () => {
+test("[R7-bot] ADV-R7-03 every run completes all three side quests (AC-R-256-2): Sales Rep seed 104 in the runOne setup", () => {
   const r = runOne(104, 400000, { depth: 9, respawn: true, maxDeaths: 12, class: "sales-rep" });
   assert.equal(r.quests.all, true, `quests done: ${r.quests.done.join("+")} (trips ${r.quests.trips})`);
 });

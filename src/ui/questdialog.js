@@ -1,5 +1,5 @@
 // Quest section of the NPC window (R7, AC-R-249-2, AC-R-247-4): pure view model and markup. Plain data in (snapshot.quests), no game rules here.
-// The quest text comes from content/quests.js; reward numbers from config.quests (the same formula the core pays out, see rewardOf).
+// The quest text comes from content/quests.js; reward numbers from the core rewardSummary (the one source the payout uses).
 import { content } from "../core/index.js";
 import { T } from "./text.js";
 import { progressText, rewardLines } from "./journal.js";

@@ -15,10 +15,10 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R5 | 12 | 2407.0 | 353.6 | 1873.9 | 668 | charselectAppeal 34, charselectCraft 33, g2 33/30 | adversarial: 14; codeReview: 28; visualReview: 9; customer: 2; escaped: 0; escapedNote: none known at acceptance; the file:// storage race (4/23 file://) is an open caveat for the delivery mode |
 | G | 11 | 1893.6 | 117.6 | 1374.1 | 668 | prototypeC3 31/31, g1 32/31, g2 33/32, g3 34/33, gate 34 target; under 33 = another pass; proxy passed at 34/33 with follow-ups | adversarial: null; adversarialNote: No adversarial pass on render work (visual rounds use visual reviewers); the adversarial pass of R5 covered the save/UI code only; codeReview: 0; visualReview: 12; customer: 0; escaped: 0 |
 | R6 | 15 | 2375.6 | 376.8 | 2222.0 | 770 | inGame 35/34, charselect 35/34, uiTreeSlotsPause 35/34, note [appeal, craft]; target 34; first time craft reached 34; G3 was 34/33 | adversarial: 7; codeReview: 15; visualReview: 7; customer: 8; escaped: 0; escapedNote: none shipped; two things were found late and are open: N11/R7-2 floor-entry stutter (found by the richer bench, no review saw it) and F1 hero stand-off (bot watchdog had masked it, CR6-05) |
-| R7 | 16 | 3123.3 | 412.6 | – | – | – | – |
+| R7 | 17 | 3332.5 | 451.7 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 73 rows, 11832.0 k subagent tokens. **Your messages logged:** 27.
+**Ledger total:** 75 rows, 12041.2 k subagent tokens. **Your messages logged:** 27.
 
 ## Round R3
 
@@ -131,6 +131,8 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | reviewer | code review R7 | 246.0 | 8.9 | done | findings: {"blocking":1,"should":6,"nit":9} |
 | test-engineer | ADV-R7 | 444.4 | 70.3 | done | findings: {"blocker":0,"major":0,"minor":4,"trivial":2}; no_cheat_runs: 3/3 won with all quests (real input API) + 12 headless (11 all quests) |
 | architect | ARCH-R7-4 (3 main + 5 side quests) | 183.6 | 7.0 | done | acs: 15; packages: ["R7-4.1 core ~590","R7-4.2 ui/world ~420","R7-4.3 optional new NPC"] |
+| implementer | FIX-R7-CORE | 209.2 | 39.1 | done | tests: 1007; fixed: ["CR7-01","CR7-02","CR7-03","CR7-05","CR7-06","ADV-R7-01","ADV-R7-03"]; parity: 71/72 all quests, 0 give-ups |
+| orchestrator | run-b pre-quest golden | – | – | done | result: 6c70792233585181 recorded at 03f8882 (worktree); CR7-02 proof test passes: stripped hash of current run-b == pre-quest hash |
 
 ## Harness work
 

@@ -1,7 +1,7 @@
 // R7-1 / R7-3 (AI-R7): a held target that cannot be reached must not freeze the hero while another monster hits it; the bot watchdog must not count a trip through the Lobby as a stall.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { newGame, step, applyInput } from "../src/core/index.js";
+import { newGame, step, applyInput, config } from "../src/core/index.js";
 import { createBotMemory, decide } from "../bot/policy.js";
 import { gameOn, run } from "./helpers.js";
 
@@ -52,7 +52,58 @@ test("R7-3 floor 1 seed 5 (Facilities Manager, nearest-monster clicker): the her
     idle = s.player.action === "idle" && s.player.target && !s.player.next ? idle + 1 : 0;
     worst = Math.max(worst, idle);
   }
-  assert.ok(worst < 600, `idle with a held target for ${worst} ticks`);
+  assert.ok(worst < 200, `idle with a held target for ${worst} ticks`);
+});
+
+// CR7-03. A chaser that is slow enough never to arrive (speed 0.01) with nothing else in reach: only holdMaxTicks can end the wait.
+const WALLED = ["#######", "#.....#", "#@.#T.#", "#.....#", "#######"];
+function slowChaser() {
+  const s = gameOn(WALLED, [["temp-worker", 4, 2]]);
+  s.player.tile = { x: 2, y: 2 }; s.player.hp = s.player.hpMax = 100000;
+  const t = s.monsters[0]; t.speed = 0.01; t.ai = "chase";
+  assert.equal(applyInput(s, { t: "attack", id: t.id }).ok, true);
+  return { s, t };
+}
+const adjacent = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) <= 1;
+
+test("CR7-03 holdMaxTicks alone: with no attacker to answer the hero stops waiting and walks to the target, and the hold does not come back after one step", () => {
+  const { s, t } = slowChaser();
+  run(s, config.holdMaxTicks - 20);
+  assert.deepEqual(s.player.tile, { x: 2, y: 1 }, "still holding, one step from the start");
+  run(s, 20 + config.ai.repathTicks + 60); // the wait ends, then a path of three steps; a hold that re-engaged after each step would add 120 ticks per step
+  assert.ok(adjacent(s.player.tile, t.tile) || t.ai === "dead", `the hero reached the target (at ${JSON.stringify(s.player.tile)})`);
+});
+
+test("CR7-03 the same stage with the wait never ending (holdMaxTicks 1e9) leaves the hero standing: the new test can fail", () => {
+  const saved = config.holdMaxTicks;
+  try {
+    config.holdMaxTicks = 1e9;
+    const { s } = slowChaser();
+    run(s, 400);
+    assert.equal(s.player.tile.x <= 2, true, "never left the holding place");
+  } finally { config.holdMaxTicks = saved; }
+});
+
+test("CR7-03 a fresh click is never replaced at once: the stand count starts again with the order (CR7-14)", () => {
+  const { s, a, t } = staged();
+  applyInput(s, { t: "attack", id: t.id });
+  run(s, config.retargetTicks - 1);
+  assert.equal(s.player.target, t.id, "not yet");
+  applyInput(s, { t: "attack", id: t.id }); // the player clicks the same target again
+  assert.equal(s.player.standT, 0);
+  run(s, 5);
+  assert.equal(s.player.target, t.id, "the new order stands for its own retargetTicks, not the old count");
+  run(s, config.retargetTicks + 10);
+  assert.notEqual(s.player.target, t.id, "and is answered after them");
+  assert.ok(a.hp <= a.hpMax);
+});
+
+test("CR7-03 a held mouse button is not replaced (the player is still ordering)", () => {
+  const { s, t } = staged();
+  applyInput(s, { t: "attack", id: t.id });
+  s.input.mouse.down = true;
+  run(s, config.retargetTicks + 60);
+  assert.equal(s.player.target, t.id);
 });
 
 test("R7-1 the bot watchdog restarts after a trip through the Lobby (a death and shopping are not a minute without xp)", () => {

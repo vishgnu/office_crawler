@@ -22,6 +22,8 @@ import { slotsView } from "./save/session.js";
 import { damageMonster } from "./core/systems/damage.js";
 
 const MAX_CATCHUP_TICKS = 8;
+const QUEST_LINES = new Set(["quest.accepted", "quest.step", "quest.completed"]); // the toasts that keep the lane (CR7-04); the bag-full refusal does not
+const PASSIVE_LINES = new Set(["levelup", "floorEnter", "potion", "healed", "respawn", "skillLearned"]); // world lines that wait behind a quest line instead of replacing it
 
 export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed, atlasMs = 0, lowFx = false, hc = false, story = false }) {
   const g = canvas.getContext("2d");
@@ -64,7 +66,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (!game.core) return;
     if (ev.type === "floorEnter" && portalToast) return;
     const m = messageFor(ev, game.core);
-    if (m) game.toast(m, ev.type.startsWith("quest.") ? config.quests.toastMs : undefined); // a quest line stays for config.quests.toastMs (AC-R-254-2)
+    if (m) game.toast(m, ev.type.startsWith("quest.") ? config.quests.toastMs : undefined, { quest: QUEST_LINES.has(ev.type), passive: PASSIVE_LINES.has(ev.type), kind: ev.type }); // a quest line stays for config.quests.toastMs (AC-R-254-2)
     if (ev.type === "portalOpen" || ev.type === "portalUse") portalToast = true;
   });
   // R7: a new, advanced or completed quest lights the journal badge (cleared when the journal opens); the open journal and the tracker redraw on every change
@@ -322,25 +324,30 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   const insetTarget = () => (game.core && !game.menu() ? cameraInset(game.w, game.h, { left: !!game.ui.left, right: game.ui.inventory }) : 0);
 
   /** Short message for the toast line and the live region (the UI layer shows it). */
-  // CR7-04 / ADV-R7-02: a quest line (and any line that waited its turn) keeps the lane for its whole time; later lines queue behind it (same text not queued twice)
-  // and are shown, and announced by the live region, one after the other. Plain lines still replace each other at once.
-  const tq = { q: [], timer: 0 };
-  const showToast = (text, ms, hold) => {
-    const now = performance.now();
-    game.ui.toast = { text, id: (game.ui.toast?.id ?? 0) + 1, ...(ms ? { ms } : {}) };
-    tq.until = hold ? now + (ms ?? 3200) : 0;
-    clearTimeout(tq.timer); tq.timer = 0;
-    if (hold) tq.timer = setTimeout(() => { tq.timer = 0; tq.until = 0; const n = tq.q.shift(); if (n) { showToast(n.text, n.ms, true); emitChange(); } }, ms ?? 3200);
+  // CR7-04 / ADV-R7-02: a quest line keeps the lane for its whole time (config.quests.toastMs). The passive lines of the same tick or the seconds after it (level-up,
+  // floor name, potion, healed: they come from the world, not from what the player just did) wait behind it and are then shown, and announced by the live region,
+  // one after the other. Direct feedback (a refusal, a hint, a stairs lock) and quest lines still show at once, as before. The wait list is short on purpose: only the
+  // latest passive line of a kind waits, so a backlog of stale floor names never builds up.
+  const tq = { q: [], timer: 0, until: 0 };
+  const showToast = (n) => {
+    game.ui.toast = { text: n.text, id: (game.ui.toast?.id ?? 0) + 1, ...(n.ms ? { ms: n.ms } : {}) };
+    clearTimeout(tq.timer); tq.timer = 0; tq.until = 0;
+    if (n.hold) {
+      tq.until = performance.now() + (n.ms ?? 3200);
+      tq.timer = setTimeout(() => { tq.timer = 0; tq.until = 0; const nx = tq.q.shift(); if (nx) { showToast({ ...nx, hold: true }); emitChange(); } }, n.ms ?? 3200);
+    } else tq.q.length = 0;
   };
   game.toastReset = () => { tq.q.length = 0; clearTimeout(tq.timer); tq.timer = 0; tq.until = 0; };
-  game.toast = (text, ms, quest) => {
-    const busy = game.ui.toast && tq.until > performance.now();
-    if (busy) {
-      if (game.ui.toast.text !== text && !tq.q.some((n) => n.text === text) && tq.q.length < 4) tq.q.push({ text, ms });
+  /** `opt.quest`: a quest line (holds the lane). `opt.passive`: a world event line (waits behind a held quest line, keyed by `opt.kind` so a newer one of the kind replaces it). */
+  game.toast = (text, ms, opt = {}) => {
+    const n = { text, ms, hold: !!opt.quest, kind: opt.kind };
+    if (opt.passive && game.ui.toast && tq.until > performance.now()) {
+      if (game.ui.toast.text === text) return;
+      tq.q = tq.q.filter((w) => w.kind !== n.kind && w.text !== text);
+      if (tq.q.length < 4) tq.q.push(n);
       return;
     }
-    showToast(text, ms, !!ms || quest);
-    emitChange();
+    showToast(n); emitChange();
   };
 
   /**

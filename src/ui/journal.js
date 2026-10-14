@@ -16,7 +16,7 @@ const fill = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => o[k] ?? "");
 export function rewardLines(id) {
   const def = content.quests[id];
   if (!def || def.kind !== "side") return [];
-  const r = typeof core.rewardSummary === "function" ? core.rewardSummary(id) : null; // guarded: FIX-R7-CORE adds it in parallel
+  const r = core.rewardSummary(id);
   if (!r) return [];
   const out = [];
   if (r.gold > 0) out.push(fill(T.rewardGold, { n: r.gold }));

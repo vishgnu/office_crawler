@@ -283,7 +283,7 @@ export function createPanels(root, game) {
     syncJournalFocus(leftOpen && u.left === "journal");
     if ((leftOpen || rightOpen) !== !!view.drawerWas) { // all drawers closed: focus goes back to the opener, not <body> (phone: the dock is visible again only now)
       view.drawerWas = leftOpen || rightOpen;
-      if (!view.drawerWas && view.hudFk && (!doc.activeElement || doc.activeElement === doc.body) && !menu) {
+      if (!view.drawerWas && view.hudFk && (!doc.activeElement || doc.activeElement === doc.body || el.left.contains(doc.activeElement) || el.right.contains(doc.activeElement)) && !menu) {
         const t = el.hud.querySelector(`[data-fk="${CSS.escape(view.hudFk)}"]`);
         if (t && !t.disabled) t.focus({ preventScroll: true });
       }

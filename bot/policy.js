@@ -19,6 +19,7 @@ export const BOT = {
   noProgressTicks: 3600, // no xp gained for this long on a floor before the boss: write off the awake monsters that never arrive
   waitTicks: 240,       // give up waiting for a chaser that never arrives (blocked) after this long
   drinkBelow: 0.4,      // drink a health potion (belt) below this share of hpMax
+  questLootTries: 40,   // the same for the quest item: orders pre-empted by combat do not use it up (ADV-R7-03)
   lootTries: 3,         // pickup orders per ground entry before the bot gives up on it
   throwRange: 9,        // projectile skills at a target at least this close (and farther than 1 tile) with a clear line
   burstCount: 3,        // a tier-1 area skill when this many awake monsters are within its radius
@@ -109,12 +110,15 @@ function upgrade(view, mem) {
   return null;
 }
 
+const isQuestItem = (g) => !!g.quest || (typeof g.id === "string" && g.id.startsWith("qi-"));
+
 /** The nearest ground entry the bot has not given up on (gold is always worth it; items only while a spot may exist). */
 function nextLoot(view, mem) {
   const from = view.player.tile;
   let best = null, bd = Infinity;
   for (const g of view.groundItems ?? []) {
-    if (mem.lootSkip.has(g.id) || (mem.lootTries[g.id] ?? 0) >= BOT.lootTries) continue;
+    // ADV-R7-03: an order is counted when it is issued, but fights pre-empt orders; a quest item (the badge) is never given up on that count, only when the core refuses it
+    if (mem.lootSkip.has(g.id) || (mem.lootTries[g.id] ?? 0) >= (isQuestItem(g) ? BOT.questLootTries : BOT.lootTries)) continue;
     const d = cheb(g.tile, from);
     if (d < bd) { bd = d; best = g; }
   }
