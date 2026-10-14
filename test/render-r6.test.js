@@ -181,3 +181,25 @@ test("perf CR6-04: warmFrames draws idle/walk/attack in 8 directions of every mo
   atlas.get = (k) => { drawn.add(k); return {}; };
   assert.equal(warmFrames(atlas, core, 0), true, "nothing left to do");
 });
+
+// ---- STUTTER-R7: once the floor's own frames are drawn, the idle/walk/attack frames of the types of floor depth+1 are warmed at a small budget, once each
+test("perf STUTTER-R7: warmFrames warms the next floor's monster types (minDepth <= depth + 1) after the current floor, once each, and nothing from deeper", async () => {
+  const { warmFrames } = await import("../src/render/world.js");
+  const { keys, DIRS, ANIMS } = await import("../src/render/keys.js");
+  const { content } = await import("../src/core/index.js");
+  const counts = new Map(), all = new Set();
+  const nextTypes = Object.keys(content.monsters).filter((t) => content.monsters[t].minDepth <= 3), deeper = Object.keys(content.monsters).filter((t) => content.monsters[t].minDepth > 3);
+  for (const t of Object.keys(content.monsters)) for (const a of ["idle", "walk", "attack", "death"]) for (let d = 0; d < DIRS; d++) for (let f = 0; f < ANIMS[a]; f++) all.add(keys.mon(t, a, d, f));
+  const atlas = { isDrawn: (k) => (all.has(k) ? counts.has(k) === false ? false : true : undefined), get: (k) => { counts.set(k, (counts.get(k) ?? 0) + 1); return {}; } };
+  const core = { depth: 2, monsters: [{ type: "zombie-intern" }], player: { class: "it-wizard" } };
+  let calls = 0;
+  while (!warmFrames(atlas, core, 0) && calls < 20000) calls++;
+  assert.ok(calls < 20000, "finishes");
+  for (const t of nextTypes) for (const a of ["idle", "walk", "attack"]) for (let d = 0; d < DIRS; d++) for (let f = 0; f < ANIMS[a]; f++) assert.ok(counts.has(keys.mon(t, a, d, f)), `${t} ${a} ${d} ${f} warmed ahead`);
+  for (const t of deeper) assert.ok(![...counts.keys()].some((k) => k.startsWith(`mon:${t}:`)), `${t} (deeper than next floor) not warmed`);
+  for (const [k, c] of counts) assert.equal(c, 1, `${k} drawn once`);
+  // a deeper floor queues its own next set
+  core.depth = 4;
+  while (!warmFrames(atlas, core, 0) && calls < 40000) calls++;
+  for (const t of deeper.filter((t) => content.monsters[t].minDepth <= 5)) assert.ok(counts.has(keys.mon(t, "idle", 0, 0)), `${t} warmed after the depth change`);
+});

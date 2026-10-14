@@ -748,118 +748,118 @@ Supersedes in spirit: R-104 (story frame): the three text beats stay; the main g
 ### R-240 Quest model and states
 - Priority: must | Scope: MVP
 - Source: sixth briefing; circle-03 Q1
-- Status: draft | Provenance: INFERRED
+- Status: specified | Provenance: INFERRED
 - Notes: quests are data (id, title key, giver, steps with objectives, rewards) in `src/core/content/`; quest state is part of the game state and driven by game events (floor entered, monster killed, item picked up, NPC talked to, boss defeated). States: unavailable, available, active, completed. Core stays deterministic (R-120, NFR-Q01).
 - Testable as: unit test: a quest advances only through events; the same seed and inputs give the same quest state and replay hash.
 
 ### R-241 Main quest as explicit steps
 - Priority: must | Scope: MVP
 - Source: sixth briefing; R-104; circle-03 Q2
-- Status: draft | Provenance: INFERRED
+- Status: specified | Provenance: INFERRED
 - Notes: the memo goal ("find out why the floors went dark") becomes one main quest of about six steps from the start of a run to the end boss and victory, each with a one-line next-step text. It starts active in a new game. Step texts are original.
 - Testable as: bot run to the boss: every main step completes in order and the journal shows the matching next step at each point.
 
 ### R-242 Next step per active quest
 - Priority: must | Scope: MVP
 - Source: sixth briefing ("the next step to solve for them")
-- Status: draft | Provenance: INFERRED
+- Status: specified | Provenance: INFERRED
 - Notes: every active quest shows exactly one concrete next step as text, derived from state, never stale (for example "Take the lift to floor 3", "Talk to the facilities desk"). Optional hint of where (floor, NPC). Completed quests show no next step.
 - Testable as: unit test: for every quest and every state the next-step text key exists and matches the current step; E2E: journal text changes after the step is done.
 
 ### R-243 Quest journal panel
 - Priority: must | Scope: MVP
 - Source: sixth briefing ("a place to look at the quest")
-- Status: draft | Provenance: INFERRED
+- Status: specified | Provenance: INFERRED
 - Notes: a panel listing active quests (main first, then side quests) with title, giver, next step and progress, plus a completed list. Opens with a key (default J, remappable in Options like the other panel keys), a HUD button and a pause-menu entry; closes with Escape or the same key. Does not pause the game more than other panels do.
 - Testable as: E2E: the key, the HUD button and the pause entry each open it; Escape closes it; remapped key works.
 
 ### R-244 Journal on phone width and keyboard
 - Priority: must | Scope: MVP
 - Source: sixth briefing; NFR-A04, NFR-A07
-- Status: draft | Provenance: INFERRED
+- Status: specified | Provenance: INFERRED
 - Notes: on phone width the journal is a full-screen panel reached by the HUD button (touch target size as other buttons); desktop shows it as a side panel like the character sheet. Keyboard-operable, no colour-only state, reduced motion respected, long text wraps.
 - Testable as: E2E at phone and desktop width: no horizontal scroll, button reachable, all quests readable; keyboard-only open, scroll and close.
 
 ### R-245 Side quests: number and givers
 - Priority: should | Scope: MVP
 - Source: orchestrator interpretation of "stay close to the original"; circle-03 Q1
-- Status: draft | Provenance: ASSUMED
+- Status: specified | Provenance: ASSUMED
 - Notes: default 6 side quests, given by the existing town NPCs (vendor 2, healer 2, potion seller 1, stash keeper 1) in `src/core/content/npcs.js`; no new NPCs. A quest is offered in the NPC dialogue, accepted or declined, and handed in by talking to the same NPC again.
 - Testable as: E2E: each of the 6 quests can be accepted, advanced and handed in with the right NPC; count equals the configured number.
 
 ### R-246 Quest kinds and objectives
 - Priority: should | Scope: MVP
 - Source: genre; circle-03 Q1
-- Status: draft | Provenance: ASSUMED
+- Status: specified | Provenance: ASSUMED
 - Notes: objective types: kill N monsters of a kind or in a zone, find a quest item on a floor (drops once, in a generated room, never lost: it is not in the normal item pool and not sold), reach a floor, defeat a named elite, use a floor feature or the stash. No timed quests, no escort.
 - Testable as: unit tests per objective type; quest item spawns exactly once per quest and per run and is deterministic per seed.
 
 ### R-247 Quest rewards
 - Priority: should | Scope: MVP
 - Source: genre; circle-03 Q1
-- Status: draft | Provenance: ASSUMED
+- Status: specified | Provenance: ASSUMED
 - Notes: gold and experience scaled to the floor, plus for some quests one item of a fixed rarity rolled by the normal item generator, or a few potions; one reward (a stash capacity step) is allowed if the stash supports it. No skill points, no attribute points, no unique-only items. Reward is shown in the journal before accepting and is granted once on hand-in.
 - Testable as: unit test: reward granted once; inventory-full hand-in keeps the quest open or drops to the floor per spec (no loss).
 
 ### R-248 Tracker line and map marker
 - Priority: should | Scope: MVP
 - Source: sixth briefing; circle-03 Q4
-- Status: draft | Provenance: ASSUMED
+- Status: specified | Provenance: ASSUMED
 - Notes: HUD shows one tracked quest's next step as a short line (default: the main quest; the player may pin another); the full map (M) marks the known target (stairs, NPC) of the tracked quest. No in-world arrow in MVP (could).
 - Testable as: E2E: tracker line equals the journal's next step for the pinned quest; marker appears on the map only for known targets.
 
 ### R-249 NPC quest indicators and dialogue
 - Priority: should | Scope: MVP
 - Source: genre; circle-03 Q1
-- Status: draft | Provenance: ASSUMED
+- Status: specified | Provenance: ASSUMED
 - Notes: an NPC with an available quest shows a marker over the figure, one with a hand-in ready a different marker (shape differs, not colour only, NFR-A03); quest dialogue is short original text; existing vendor, healer and stash functions keep working unchanged.
 - Testable as: E2E: marker states in the Lobby; trading and healing still work with an open quest.
 
 ### R-250 Quest areas reuse generated floors
 - Priority: must | Scope: MVP
 - Source: circle-03 Q3
-- Status: draft | Provenance: ASSUMED
+- Status: specified | Provenance: ASSUMED
 - Notes: no new quest-only levels or maps in this round; quests use the existing Lobby and the 8 floors plus the boss arena. Quest content may place a quest item or a named elite in a generated floor through the existing generator hooks without changing layout validity (R-042) or the floor-generation budget.
 - Testable as: generator test: every seed still passes validity with quest content placed; floor generation time within budget.
 
 ### R-251 Quest state in saves, migration v3 to v4
 - Priority: must | Scope: MVP
 - Source: sixth briefing; R-090; circle-03 Q5
-- Status: draft | Provenance: INFERRED
+- Status: specified | Provenance: INFERRED
 - Notes: save version 4 adds quest state per character slot. Migration of a v3 save: main quest step derived from existing fields (deepest depth, boss unlocked, boss defeated); side quests start as available, none active, none completed (no retroactive rewards). A v4 save loaded by older code is rejected as "newer" (existing rule). Checksum and corrupt-slot behaviour unchanged (R-227).
 - Testable as: unit tests: v3 fixtures at several progress points migrate to the right step; round trip of v4; E2E: load an old save, open the journal.
 
 ### R-252 Quest summary on the slot card
 - Priority: should | Scope: MVP
 - Source: circle-03 Q5; R-222
-- Status: draft | Provenance: ASSUMED
+- Status: specified | Provenance: ASSUMED
 - Notes: the slot card (R-222) adds the main quest's current step title and the count of completed side quests (for example "3/6"). A slot with no quest data shows nothing extra.
 - Testable as: E2E: slot card text after progress; migrated old slot shows its derived step.
 
 ### R-253 Quests cannot fail; no abandon in MVP; per character
 - Priority: should | Scope: MVP
 - Source: circle-03 Q7
-- Status: draft | Provenance: ASSUMED
+- Status: specified | Provenance: ASSUMED
 - Notes: death, leaving a floor or quitting never fails a quest; an unfinished quest item stays with the character; objectives are re-reachable. Active side quests cannot be abandoned, but may be left unpinned. Each character slot has its own quest state; a new character starts at the first main step. Respeccing, deleting or overwriting a slot affect only that slot.
 - Testable as: E2E: die with an active quest, reload, quest and progress intact; two slots hold different quest states.
 
 ### R-254 Sound and visual cues for quest updates
 - Priority: should | Scope: MVP
 - Source: circle-03 Q7
-- Status: draft | Provenance: ASSUMED
+- Status: specified | Provenance: ASSUMED
 - Notes: on accept, step done and complete: a short toast with the quest title and new next step, a short chime from the procedural audio kit (global, no files; honours mute and volume), and a badge on the journal button until the journal is opened. Reduced motion: no animation, toast still shown.
 - Testable as: unit test: events raise the cue; E2E: toast text, badge clears on opening; audio test: cue is silent when muted.
 
 ### R-255 Original quest names and text
 - Priority: must | Scope: MVP
 - Source: claim G2; R-102; NFR-L01, NFR-L05; circle-03 escalation
-- Status: draft | Provenance: INFERRED
+- Status: specified | Provenance: INFERRED
 - Notes: quest titles, step texts, dialogue and reward names are original, contain no real brand, company or person, and pass the scans against `ip-denylist.txt` and `ip-denylist-brands.txt`. No quest title or plot may echo the original's. Final quest titles and story text go to the real customer for confirmation (ESCALATE, as R-233); working titles proceed.
 - Testable as: legal test scans all quest strings against both denylists.
 
 ### R-256 Testability and bot support for quests
 - Priority: must | Scope: MVP
 - Source: R-121, R-123; ADR-0003
-- Status: draft | Provenance: INFERRED
+- Status: specified | Provenance: INFERRED
 - Notes: in test mode the hook exposes quest state, can set a quest step, and cheats can complete a quest; the headless bot completes the main quest from events without special casing and is not slowed below the R-006 run target by quest items. Replay hashes are re-pinned once when quest state enters the state (as in R4).
 - Testable as: hook E2E and unit tests; bot run per class reaches the boss with all main steps completed.

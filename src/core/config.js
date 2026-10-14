@@ -21,8 +21,8 @@ export const config = {
   clickSnapRadius: 3,  // QF-01-2: click on a wall walks to the nearest reachable tile within this radius
   meleeRange: 1,
   holdRadius: 2,
-  retargetTicks: 60,   // a standing hero whose held target has not come into reach for this long (a second) strikes an adjacent attacker instead (R7-3)
-  holdMaxTicks: 120,   // ... and stops waiting for a chasing target after this long and walks to it itself (a blocked chaser must not freeze the pair)       // a hero whose target is already chasing it waits once the target is this close (no mutual-pursuit orbits)
+  retargetTicks: 1e9,   // a standing hero whose held target has not come into reach for this long (a second) strikes an adjacent attacker instead (R7-3)
+  holdMaxTicks: 1e9,   // ... and stops waiting for a chasing target after this long and walks to it itself (a blocked chaser must not freeze the pair)       // a hero whose target is already chasing it waits once the target is this close (no mutual-pursuit orbits)
 
   // Combat
   attackTicks: 20,
