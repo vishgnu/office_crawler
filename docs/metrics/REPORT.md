@@ -18,7 +18,7 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R7 | 23 | 4778.9 | 852.5 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 83 rows, 13487.6 k subagent tokens. **Your messages logged:** 30.
+**Ledger total:** 84 rows, 13487.6 k subagent tokens. **Your messages logged:** 30.
 
 ## Round R3
 
@@ -141,6 +141,7 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | implementer | BAL-R7 (spread difficulty) | 228.5 | 99.5 | done | parity: {"medians_min":[25.9,26.2,24.8],"wins":"72/72","all8":"72/72","shiftSpread_pts":0.4}; deaths: 73 -> 36 (boss 48 -> 7) |
 | implementer | FIX-R7-CORE-2 | 175.5 | 43.2 | done | tests: 1142; fixed: ["ADV-R7-10","ADV-R7-07","ADV-R7-08","ADV-R7-09","chase-orbit core"]; parity: 72/72 wins, 72/72 all quests, medians 25.2/26.1/24.9; golden: unchanged |
 | orchestrator | final verify R7 (quiet) | – | – | done | tests: 1141; e2e: 17/17; fps50: [54.1,59,51.8,56.7,55.8]; fps50Median: 55.8; load: 1.0-1.5 |
+| visual-reviewer | R7 visual review | – | – | done | score: {"g":[35,33],"ui":[35,32]}; verdict: iterate; findings: {"medium":4,"low":6,"r6_open":5} |
 
 ## Harness work
 
