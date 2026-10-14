@@ -32,15 +32,19 @@ function pips(n) {
   return h;
 }
 
-function nodeHtml(n, c, bar) {
+function nodeHtml(n, c, bar, row, parents, kids) {
   const learned = n.level > 0, canLearn = n.canLearn, p = c.player;
   const lock = n.lockReason ?? (n.state === "no-points" ? T.trStateNoPoints : STATE_WORD[n.state]);
   const verb = learned ? T.upgrade : T.learn;
   const label = `${n.name}. ${T.trLevelOf} ${n.level} / ${n.maxLevel}. ${STATE_WORD[n.state]}${n.lockReason ? `. ${n.lockReason}` : ""}${n.signature ? `. ${T.trSignature}` : ""}`;
-  let h = `<li class="tnode st-${n.state}${n.signature ? " sig" : ""}${n.assigned !== null ? " bar" : ""}" data-testid="skill-${esc(n.id)}" data-state="${esc(n.state)}" data-tier="${Number(n.tier)}" style="--col:${Number(n.col) || 0}">`;
+  let h = `<li class="tnode st-${n.state}${n.signature ? " sig" : ""}${n.assigned !== null ? " bar" : ""}" data-testid="skill-${esc(n.id)}" data-state="${esc(n.state)}" data-tier="${Number(n.tier)}" style="--col:${Number(n.col) || 0};--row:${row}">`;
+  // R6 tier connector (G2 #14 / N8): drawn from n.requires over the fixed column grid; CSS only, no measuring. The first prerequisite sets the elbow.
+  const from = n.requires.map((r) => parents.get(r.id)).find((x) => x);
+  if (from) { const dx = (Number(n.col) || 0) - from.col; h += `<i class="lk ${dx > 0 ? "l" : dx < 0 ? "r" : "s"}${n.requires.every((r) => r.met) ? " ok" : ""}" style="--span:${Math.abs(dx)}" aria-hidden="true"></i>`; }
+  if (kids.has(n.id)) h += `<i class="kd${n.level > 0 ? " ok" : ""}" aria-hidden="true"></i>`;
   h += `<button type="button" class="tn-main" data-tip="node:${esc(n.id)}" data-fk="n.${esc(n.id)}" data-testid="node-${esc(n.id)}" aria-label="${esc(label)}"><span class="tn-ic">${skillIcon(n.iconKey)}${learned ? '<em class="mk" aria-hidden="true">✓</em>' : ""}</span>`;
   h += `<span class="tn-name">${esc(n.name)}</span><span class="tn-lv"><span class="pp" aria-hidden="true">${pips(n)}</span><span data-testid="level-${esc(n.id)}">${n.level}</span>/${n.maxLevel}</span>`;
-  h += `<span class="tn-st">${esc(lock)}</span></button>`;
+  h += `<span class="tn-st">${esc(STATE_WORD[n.state])}</span>${n.requires.length ? `<span class="tn-req">${esc(T.trNeeds)}: ${esc(n.requires.map((r) => r.name).join(", "))}</span>` : ""}</button>`;
   if (n.kind !== "passive" || n.maxLevel > 0) {
     h += `<button class="learn" type="button" data-testid="learn-${esc(n.id)}" data-learn="${esc(n.id)}" data-fk="l.${esc(n.id)}" ${canLearn ? "" : "disabled"} aria-label="${esc(verb)} ${esc(n.name)}${n.state === "maxed" ? ", " + esc(T.maxed) : ""}">${esc(n.state === "maxed" ? T.maxed : verb)}</button>`;
   }
@@ -60,27 +64,37 @@ function nodeHtml(n, c, bar) {
 }
 
 /** HTML of the whole Skills drawer body for the running game. */
-export function renderTree(c) {
+export function renderTree(c, opts = {}) {
   const p = c.player, v = treeView(c), bar = p.skillBar, cls = classById(p.class), basic = content.skills[cls?.basic];
   let h = `<div class="ph"><span class="phi">${skillIcon(`class:${v.classId}`)}</span><h2>${esc(T.trTitle)}</h2><button class="xbtn" type="button" data-close="skills" data-testid="close-skills" aria-label="${esc(T.closeSkills)}">×</button></div>`;
   h += `<div class="pb"><div class="skills tree" data-testid="skills-panel" data-class="${esc(v.classId)}">@TABS@`;
   h += `<div class="tr-head"><p class="sp"><b>${esc(T.trPoints)}: <span data-testid="skill-points">${v.points}</span></b></p>`;
   h += `<button class="mini respec" type="button" data-testid="respec" data-respec="1" data-fk="rs" ${v.respec.available ? "" : "disabled"} title="${esc(v.respec.available ? T.trResetHint : T.trResetNone)}">${esc(T.trReset)}</button></div>`;
   h += `<p class="sk-note" data-testid="respec-note">${esc(v.respec.available ? T.trResetHint : (v.respec.reason === "not-in-town" ? T.trResetNone : T.trRespecFail[v.respec.reason] ?? T.trResetNone))}</p>`;
+  const refund = v.branches.reduce((a, b) => a + b.nodes.reduce((m, n) => m + n.level - (n.signature ? 1 : 0), 0), 0);
+  if (opts.confirmRespec && v.respec.available && refund > 0) {
+    h += `<div class="rs-confirm" role="alertdialog" aria-labelledby="rs-title" data-testid="respec-confirm"><h3 id="rs-title">${esc(T.trRespecAsk)}</h3>`;
+    h += `<p data-testid="respec-refund">${esc(T.trRespecRefund.replace("{n}", refund).replace("{s}", refund === 1 ? "" : "s"))}${v.respec.cost > 0 ? ` ${esc(T.trRespecCost.replace("{g}", v.respec.cost))}` : ""}${v.respec.mode === "once" ? ` ${esc(T.trRespecOnce)}` : ""}</p>`;
+    h += `<div class="rs-btns"><button class="mini yes" type="button" data-respec-yes="1" data-testid="respec-yes" data-fk="rs.yes">${esc(T.trRespecYes.replace("{n}", refund))}</button><button class="mini" type="button" data-respec-no="1" data-testid="respec-no" data-fk="rs.no">${esc(T.slCancel)}</button></div></div>`;
+  }
   h += `<p class="sk-note">${esc(T.trSelectNote)}</p>`;
   if (basic) {
-    h += `<h3>${esc(T.basicAttack)}</h3><ul class="slist"><li class="srow" data-testid="skill-${esc(basic.id)}" title="${esc(S[basic.textKey] ?? "")}"><div class="sic">${skillIcon(basic.id)}</div><div class="sbody"><div class="sname"><b>${esc(basic.name)}</b></div><div class="stext">${esc(S[basic.textKey] ?? "")}</div></div><span></span>`;
+    h += `<h3 class="basic-h">${esc(T.basicAttack)}</h3><ul class="slist"><li class="srow" data-testid="skill-${esc(basic.id)}" title="${esc(S[basic.textKey] ?? "")}"><div class="sic">${skillIcon(basic.id)}</div><div class="sbody"><div class="sname"><b>${esc(basic.name)}</b></div><div class="stext">${esc(S[basic.textKey] ?? "")}</div></div><span></span>`;
     h += `<div class="sassign" role="group" aria-label="${esc(T.assignTo)} ${esc(basic.name)}"><span>${esc(T.assignTo)}</span>`;
     for (let i = 0; i < bar.hotkeys.length; i++) { const on = bar.hotkeys[i] === basic.id; h += `<button class="mini key${on ? " on" : ""}" type="button" data-testid="assign-${esc(basic.id)}-${i}" data-assign="${esc(basic.id)}" data-slot="${i}" data-fk="a.${esc(basic.id)}.${i}" aria-pressed="${on}" aria-label="${esc(T.assignTo)} F${i + 1}: ${esc(basic.name)}${on ? ", " + esc(T.assigned) : ""}">F${i + 1}</button>`; }
     h += `</div></li></ul>`;
   }
   for (const b of v.branches) {
     h += `<section class="branch" data-testid="branch-${esc(b.id)}" aria-label="${esc(b.name)}"><h3><span class="bic">${skillIcon(b.iconKey)}</span>${esc(b.name)} <em>${esc(T.trBranchSpent)}: ${b.spent}</em></h3>`;
+    // one fixed grid per branch: a label column, then three node columns; tier t is grid row t (R6). Edges come from treeView (b.edges).
     const tiers = [...new Set(b.nodes.map((n) => n.tier))].sort((a, z) => a - z);
-    for (const t of tiers) {
-      h += `<div class="tier"><span class="tl">${esc(T.trTier)} ${Number(t)}</span><ul class="tnodes">${b.nodes.filter((n) => n.tier === t).sort((a, z) => a.col - z.col).map((n) => nodeHtml(n, c, bar)).join("")}</ul></div>`;
-    }
-    h += `</section>`;
+    const parents = new Map(b.nodes.map((n) => [n.id, n])), kids = new Set(b.edges.map((e) => e.from));
+    h += `<ul class="tnodes">`;
+    tiers.forEach((t, i) => {
+      h += `<li class="tl" style="--row:${i + 1}" aria-hidden="true">${esc(T.trTier)} ${Number(t)}</li>`;
+      h += b.nodes.filter((n) => n.tier === t).sort((a, z) => a.col - z.col).map((n) => nodeHtml(n, c, bar, i + 1, parents, kids)).join("");
+    });
+    h += `</ul></section>`;
   }
   return h + `</div></div>`;
 }

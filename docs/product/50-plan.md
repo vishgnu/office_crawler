@@ -360,3 +360,13 @@ R4-4 -> R6-1 ; R5 -> R6-2
 3. **Free signature skill** keeps the "29 points at level 30" answer; the alternative (one open point at level 1) is a config change.
 4. **Round budget:** R4 holds five packages with two large ones (R4-2, R4-3) at the 600-line limit; R5 has four parallel packages; if a package overruns, the split rule inserts a WP in the same round rather than moving work to the next round. Synergies and skill demo reel are explicitly the first items to drop.
 5. **Replay hashes** change in R4-2/-3 (crit draws, new state); they are re-pinned once in R4-3 and each class gets its own replay hash.
+
+## Round R7 (first "flawless gameplay" round): added item from the sixth briefing (2026-10-14)
+
+### R7-0 Quest journal and next steps (customer request, first item of R7)
+- **Goal:** a journal (own key, plus a button on the HUD and in the pause menu) that lists active and completed quests and,
+  for each active quest, the next concrete step ("Take the lift to floor 3", "Talk to the facilities desk"). The main goal
+  (the memo, R-104) becomes explicit quest steps; close to the original's mechanics, a small set of NPC side quests
+  (count decided in the R7 circle). Quest state is part of the save (schema bump with migration).
+- **Order:** circle (facilitator → proxy or customer) → spec ACs → CORE (quest state machine, events, save) → UI (journal,
+  HUD hint, NPC dialogue) and WORLD (quest markers if specified) in parallel → adversarial + review → visual → acceptance.

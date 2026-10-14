@@ -38,9 +38,9 @@ const LOOKS = {
   // S2 monsters
   "temp-worker": { kind: "human", skin: "#e8b48a", hair: "#5a3a22", shirt: "#e8e4d6", suit: null, pants: "#8a7a52", shoe: "#3a2a22", tie: null, sc: 0.95, head: 1.32, arms: "weapon", held: "clipboard", vest: "#ff8c2a", cap: "#ff8c2a" },
   "printer-demon": { kind: "imp", demon: true, size: 0.31, bh: 21, body: "#443a60", lid: "#5a4e7c", wing: "#6a2a58", wingEdge: "#ff3d6e", eye: "#ff3d6e", mouth: "#1a0f1c", cable: "#ff3d6e" },
-  "middle-manager": { kind: "human", skin: "#e8a888", hair: "#8a8a96", shirt: "#f4efe0", suit: "#6a6f86", lapel: "#c8cef0", edge: "#e6ebff", pants: "#3a3f58", shoe: "#161425", tie: "#d83a3a", sc: 1.22, head: 1.12, wide: 1.32, arms: "weapon", held: "binder", bald: true, brute: true, pin: true, breath: 2 },
+  "middle-manager": { kind: "human", skin: "#d99874", hair: "#7a7a88", shirt: "#e6dfc8", suit: "#6a6f86", lapel: "#c8cef0", edge: "#e6ebff", pants: "#3a3f58", shoe: "#161425", tie: "#d83a3a", sc: 1.22, head: 1.12, wide: 1.32, arms: "weapon", held: "binder", bald: true, brute: true, pin: true, breath: 2 },
   "vending-machine": { kind: "machine", style: "vending", body: "#2f6fd8", trim: "#f0e6d0", glass: "#1a2a4a", eye: "#ffe45a" },
-  consultant: { kind: "human", skin: "#f3d2b6", hair: "#1c1626", shirt: "#2fd3bd", suit: "#2a2f50", pants: "#232846", shoe: "#0e0e1c", tie: "#fff6e8", edge: "#a8b4ff", sc: 1.04, head: 1.28, arms: "weapon", held: "slides", glasses: true },
+  consultant: { kind: "human", skin: "#dca77c", hair: "#1c1626", shirt: "#1fa592", suit: "#222744", pants: "#1c2038", shoe: "#0e0e1c", tie: "#e9c98e", edge: "#8d99e6", sc: 1.04, head: 1.28, arms: "weapon", held: "slides", glasses: true },
   auditor: { kind: "human", skin: "#e4c0a0", hair: "#6a6a72", shirt: "#e8e4d8", suit: "#7a6a4c", pants: "#2f5a3c", edge: "#e8dca8", shoe: "#161425", tie: "#2f6b3b", sc: 1.16, head: 1.2, wide: 0.92, arms: "weapon", held: "ledger", glasses: true, visor: "#52b86a" },
   // S3 boss: its own painter. `rage` is the phase-2 look (jacket off, tie loosened, red glow).
   "regional-director": { kind: "director", rage: false },
@@ -142,8 +142,10 @@ function human(g, L, o) {
   limb(g, lx + fx * 1.2, shY + 2 + ly, hx, hy + hr * 0.6, L.skin, 4); // neck
   ellipse(g, hx, hy, hr, hr * 1.05, L.skin, INK, 1.8);
   if (L.headset && !front) { ellipse(g, hx - hr * 0.95, hy + 0.5, 2.6, 3.4, "#c4ecff", INK, 1.2); ellipse(g, hx + hr * 0.95, hy + 0.5, 2.6, 3.4, "#c4ecff", INK, 1.2); }
-  if (front) {
-    const ex = hx + fx * 3.2, ey = hy + 0.8;
+  // WORLD-R6 (N1): every monster and NPC shows its face in every facing (walking away, it glares back over the shoulder, the face turned to the facing side); only the headset hero keeps a back of the head
+  const face = front || !L.headset;
+  if (face) {
+    const ex = hx + (front ? fx : fx || 0.6) * 3.2, ey = hy + (front ? 0.8 : 1.6);
     if (L.zombie) {
       ellipse(g, ex - 3.6, ey, 3.7, 3.7, "#10190f", INK, 1.1); ellipse(g, ex - 3.6, ey, 1.9, 1.9, "#f5ff80");
       ellipse(g, ex + 4.1, ey - 0.3, 4.1, 4.1, "#10190f", INK, 1.1); ellipse(g, ex + 4.1, ey - 0.3, 2.2, 2.2, "#f5ff80");

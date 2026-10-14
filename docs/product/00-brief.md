@@ -77,3 +77,15 @@ gameplay; rounds 11–12 overall test and polish.
   our own (safe default A). The denylists stay in force.
 - Names: **approved**: class names Facilities Manager / Sales Rep / IT Wizard, the title "Office Crawler", and the skill
   renames "Packet Filter" / "Evacuation Drill". Interpretation by the orchestrator; the customer may correct it.
+
+## Sixth briefing (user, 2026-10-14, verbatim)
+
+> hey i missing a place to look at the quest and the next step to solve for them can you put that into the next round after
+> all is done?
+
+**Status: agreed (real customer), scheduled for round 7** (the next round after round 6, which is in progress; round 7 is
+the first "flawless gameplay" round). Interpretation by the orchestrator: a quest journal the player can open at any time
+that lists the active quests and, for each, the concrete next step. Today the game has only one implicit goal (the
+"find out why the floors went dark" memo, ending at the boss) and no journal, so this also means turning that goal into
+explicit quest steps, and, close to the original's mechanics, adding a few NPC side quests. How many side quests is open
+(round 7 circle; the proxy answers unless the customer does).

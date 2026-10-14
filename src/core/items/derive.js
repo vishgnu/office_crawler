@@ -45,7 +45,7 @@ export function deriveStats(player, equipment = player.equipment ?? {}) {
   const { d, unarmed } = derivedFor(player.class), r = ROUND[d.rounding] ?? Math.floor, g = gearTotals(equipment);
   const attrs = {};
   for (const k of ATTRS) attrs[k] = (player.attrs?.[k] ?? 0) + g[k];
-  const gritBonus = Math.max(0, attrs.grit - d.gritFree);
+  const gritBonus = Math.max(0, attrs[d.powerAttr ?? "grit"] - d.gritFree); // the class's power attribute (R6 amendment to ADR-0005): grit, agility or focus; the constants keep their grit names
   const flat = { defense: 0, attackRating: 0, hpMax: 0, mpMax: 0 }, resistAdd = {};
   const mods = { damagePct: 0, critChance: 0, critDamage: 0, moveSpeedPct: 0, regenHp: 0, regenMp: 0, manaCostPct: 0, skillDamagePct: {}, skillLevelAll: g["skillLevel.all"] ?? 0, skillLevelBranch: {} };
   for (const k of MOD_KEYS) mods[k] += g[k] ?? 0;

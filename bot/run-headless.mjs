@@ -2,7 +2,7 @@
 // Drives the same applyInput path as the real game; prints a summary and returns it as JSON on the last line.
 import { newGame, step, applyInput, classes } from "../src/core/index.js";
 import { BOT, createBotMemory, decide, noteResult } from "./policy.js";
-import { createRecorder, observe, finish, summarise, table } from "./report.js";
+import { createRecorder, observe, observeEvents, finish, summarise, table } from "./report.js";
 
 /**
  * profile: { class (a class id; default the Facilities Manager), reckless, depth (play on until this floor is clear; default 1 = clear floor 1 only), respawn (after a death go back
@@ -14,9 +14,9 @@ export function runOne(seed, maxTicks = 20000, profile = {}) {
   for (let i = 0; i < maxTicks && !(mem.done && !(state.victory && !state.victory.done)); i++) { // after the boss falls, play on to the victory screen
     if (state.scene === "dead") {
       if (!profile.respawn || rec.deaths >= maxDeaths) break;
-      noteResult(mem, { t: "respawn" }, applyInput(state, { t: "respawn" })); rec.deaths++; rec.result = "running";
+      const dd = state.depth; noteResult(mem, { t: "respawn" }, applyInput(state, { t: "respawn" })); rec.deaths++; (rec.deathDepths ??= []).push(dd); rec.result = "running";
     }
-    if (i % BOT.decideEvery === 0) { const cmd = decide(state, mem); if (cmd) noteResult(mem, cmd, applyInput(state, cmd)); }
+    if (i % BOT.decideEvery === 0) { const cmd = decide(state, mem); if (cmd) { noteResult(mem, cmd, applyInput(state, cmd)); observeEvents(state, rec); } }
     step(state);
     observe(state, rec);
     if (state.scene === "victory") { // the finale: record it and choose "keep playing" (back to the Lobby)

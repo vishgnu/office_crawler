@@ -56,7 +56,10 @@ export const vector = {
    * logical px (2 screen px at the game's zoom; wider in high-contrast mode).
    */
   async build(onProgress = () => {}, { scale = 1, rim = 0.8, hc = false } = {}) {
-    setInkScale(Math.min(4, Math.max(0.5, 2 / rim))); setTexRes(scale); // the on-screen zoom follows from the rim width (rim = 2 screen px)
+    const inkZoom = Math.min(4, Math.max(0.5, 2 / rim));
+    setInkScale(inkZoom); setTexRes(scale);
+    // Lazily drawn sprites run long after the build: they re-apply this atlas's ink weight and texture resolution first (a rebuild for another zoom changes the globals)
+    const lazyDraw = (fn) => (g, sc) => { setInkScale(inkZoom); setTexRes(scale); fn(g, sc); }; // the on-screen zoom follows from the rim width (rim = 2 screen px)
     const atlas = createAtlas(scale, { rim, hc });
     const steps = [];
     for (const theme of Object.keys(content.themes)) {
@@ -67,20 +70,21 @@ export const vector = {
       });
     }
     steps.push(() => { for (const id of Object.keys(content.props)) atlas.add(keys.prop(id), PROP_W, PROP_H, PROP_CX, PROP_CY, (g) => drawProp(g, id)); });
+    // Monster and S1 hero frames are drawn on first use (WORLD-R6, atlas budget): a floor shows a handful of types, and each frame costs a rim bake.
     const figure = (type, build, anims = ANIMS) => steps.push(() => {
       const rimColour = palette.rims[type];
       for (const [anim, n] of Object.entries(anims)) for (let d = 0; d < DIRS; d++) for (let f = 0; f < n; f++) {
-        atlas.add(build(anim, d, f), FIG_W, FIG_H, FIG_FX, FIG_FY, (g, sc) => figureWithRim(g, sc, FIG_W, FIG_H, rim * (RIM_MULT[type] ?? 1), rimColour, (tg) => { tg.translate(FIG_FX, FIG_FY); drawFigure(tg, type, anim, d, f); }));
+        atlas.addLazy(build(anim, d, f), FIG_W, FIG_H, FIG_FX, FIG_FY, lazyDraw((g, sc) => figureWithRim(g, sc, FIG_W, FIG_H, rim * (RIM_MULT[type] ?? 1), rimColour, (tg) => { tg.translate(FIG_FX, FIG_FY); drawFigure(tg, type, anim, d, f); })));
       }
     });
     figure(PLAYER_CLASS, (a, d, f) => keys.plr(PLAYER_CLASS, a, d, f), PLAYER_ANIMS);
     // R5 class heroes and allies: big sets (176 frames a class), so they are drawn on first use (only the class in play, or a figure on the selection screen)
     steps.push(() => {
       for (const cls of HERO_CLASSES) for (const [anim, n] of Object.entries(PLAYER_ANIMS)) for (let d = 0; d < DIRS; d++) for (let f = 0; f < n; f++) {
-        atlas.addLazy(keys.plr(cls, anim, d, f), FIG_W, FIG_H, FIG_FX, FIG_FY, (g, sc) => figureWithRim(g, sc, FIG_W, FIG_H, rim, palette.rims[cls], (tg) => { tg.translate(FIG_FX, FIG_FY); drawFigure(tg, cls, anim, d, f); }));
+        atlas.addLazy(keys.plr(cls, anim, d, f), FIG_W, FIG_H, FIG_FX, FIG_FY, lazyDraw((g, sc) => figureWithRim(g, sc, FIG_W, FIG_H, rim, palette.rims[cls], (tg) => { tg.translate(FIG_FX, FIG_FY); drawFigure(tg, cls, anim, d, f); })));
       }
       for (const id of ALLY_IDS) for (const [anim, n] of Object.entries(ALLY_ANIMS[id])) for (let d = 0; d < (id === "cone" ? 1 : DIRS); d++) for (let f = 0; f < n; f++) {
-        atlas.addLazy(keys.ally(id, anim, d, f), FIG_W, FIG_H, FIG_FX, FIG_FY, (g, sc) => figureWithRim(g, sc, FIG_W, FIG_H, rim, palette.rims["ally." + id], (tg) => { tg.translate(FIG_FX, FIG_FY); drawFigure(tg, "ally." + id, anim, d, f); }));
+        atlas.addLazy(keys.ally(id, anim, d, f), FIG_W, FIG_H, FIG_FX, FIG_FY, lazyDraw((g, sc) => figureWithRim(g, sc, FIG_W, FIG_H, rim, palette.rims["ally." + id], (tg) => { tg.translate(FIG_FX, FIG_FY); drawFigure(tg, "ally." + id, anim, d, f); })));
       }
     });
     // Lobby NPCs: an idle loop facing the viewer (direction 0)
@@ -96,7 +100,7 @@ export const vector = {
       for (const id of Object.keys(content.bosses ?? {})) for (const type of [id, id + BOSS_P2]) {
         const rimColour = palette.rims[type];
         for (const [anim, n] of Object.entries(BOSS_ANIMS)) for (let d = 0; d < DIRS; d++) for (let f = 0; f < n; f++) {
-          atlas.addLazy(keys.mon(type, anim, d, f), BOSS_W, BOSS_H, BOSS_FX, BOSS_FY, (g, sc) => figureWithRim(g, sc, BOSS_W, BOSS_H, rim * 1.5, rimColour, (tg) => { tg.translate(BOSS_FX, BOSS_FY); drawFigure(tg, type, anim, d, f); }));
+          atlas.addLazy(keys.mon(type, anim, d, f), BOSS_W, BOSS_H, BOSS_FX, BOSS_FY, lazyDraw((g, sc) => figureWithRim(g, sc, BOSS_W, BOSS_H, rim * 1.5, rimColour, (tg) => { tg.translate(BOSS_FX, BOSS_FY); drawFigure(tg, type, anim, d, f); })));
         }
       }
     });

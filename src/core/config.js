@@ -1,7 +1,7 @@
 // Every balance and timing constant of the simulation lives here (tests refer to these names).
 // Times are in simulation ticks (tickHz per second). No timed-input values: AC-NFR-A02-4.
 // XP curve constants (see xpTable below)
-const xpCurve = { quad: 36, lin: 110 };
+const xpCurve = { quad: 26, lin: 110 };
 export const config = {
   tickHz: 60,
 
@@ -52,7 +52,8 @@ export const config = {
     rounding: "floor",               // "floor" | "round" | "ceil", applied to every derived stat
     hpBase: 10, hpPerLevel: 10, hpPerStamina: 3,
     mpBase: 5, mpPerLevel: 5, mpPerFocus: 1,
-    gritFree: 8,                     // damage bonus counts grit points above this value ...
+    powerAttr: "grit",               // the attribute that adds weapon and skill damage; a class names its own (content/classes.js)
+    gritFree: 8,                     // damage bonus counts power-attribute points above this value ...
     damagePerGrit: { min: 1, max: 1 }, // ... times this
     defenseBase: 0, defensePerAgility: 1,
     attackRatingBase: 10, attackRatingPerAgility: 3,

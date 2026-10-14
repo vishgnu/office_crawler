@@ -104,9 +104,9 @@ Object.assign(T, {
   errPlaying: "That is the character you are playing. Quit to the title first.", errAnotherTab: "This game is open in another tab. Close it there to play here.", errQuota: "Storage is full. Export a slot or delete a character.",
   errWrite: "Could not write to storage.", errNoStorage: "Saving is not available here.",
   // skill tree
-  trTitle: "Skills", trPoints: "Skill points", trReset: "Respec", trResetHint: "Take back every point (in the Lobby).", trResetNone: "Respec is only possible in the Lobby.",
+  trTitle: "Skills", trPoints: "Skill points", trReset: "Respec", trRespecAsk: "Reset all skills?", trRespecRefund: "You get {n} skill point{s} back. Your skills go back to the signature skill only.", trRespecOnce: "You can only do this once.", trRespecCost: "It costs {g} gold.", trRespecYes: "Reset, get {n} back", trResetHint: "Take back every point (Lobby only).", trResetNone: "Respec is only possible in the Lobby.",
   trTier: "Tier", trLevelOf: "Level", trNeeds: "Needs", trNow: "Now", trNext: "Next level", trAura: "Aura", trAuraOn: "Aura on", trAuraOff: "Aura off", trSignature: "Signature", trCost: "Mana", trReserve: "reserves", trPassive: "Passive",
-  trAssign: "Assign to bar", trSelectNote: "Hover a skill for its numbers. Right mouse uses the bar skill (F1 to F4).", trBranchSpent: "Points spent", trNothing: "nothing yet",
+  trAssign: "Assign to bar", trSelectNote: "Hover a skill for its numbers. F1 to F4 pick the bar skill.", trBranchSpent: "Points spent", trNothing: "nothing yet",
   trStateLearned: "Learned", trStateAvailable: "Available", trStateLockedLevel: "Locked", trStateLockedPrereq: "Locked", trStateMaxed: "Max level", trStateNoPoints: "No points",
   trRespecDone: "Skill points returned.", trRespecFail: { "not-in-town": "Respec is only possible in the Lobby.", dead: "You cannot do that now.", "respec-off": "Respec is switched off.", "respec-used": "You already used your respec.", "no-gold": "Not enough gold to respec." },
   trLearnFail: { "level-gate": "Your level is too low.", prereq: "Learn the earlier skill first.", "no-points": "No skill points left.", "max-level": "Already at maximum level.", basic: "Basic attacks are free.", "wrong-class": "Not a skill of your class." },

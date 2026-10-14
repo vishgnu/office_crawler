@@ -3,7 +3,7 @@
 // toast and a live region. Plain data in (game.core, game.ui), commands out (game.input / game.openPanel); no game rules here.
 // Everything is a real <button>: keyboard (arrows in the grid, Enter picks up and places, Esc puts back), focus ring,
 // labelled, contrast >= 4.5:1 (see style.css tokens and test/ui-contrast.test.js).
-import { content, itemAt, config } from "../core/index.js";
+import { content, itemAt, config, treeView } from "../core/index.js";
 import { T } from "./text.js";
 import { itemIcon, skillIcon, rarityMark, arrow, coinIcon } from "./icons.js";
 import { describeItem, compareToEquipped, unmetGear, allocPreview, dropCheck, rarityName, statLabel, xpRatio, xpProgress } from "./itemview.js";
@@ -44,7 +44,7 @@ export function createPanels(root, game) {
     <div class="toast" id="toast" data-testid="toast" hidden></div>
     <div class="sr" id="live" role="status" aria-live="polite" data-testid="live"></div>`;
   const el = { hud: root.querySelector("#hudui"), left: root.querySelector("#pleft"), right: root.querySelector("#pright"), tip: root.querySelector("#tip"), ghost: root.querySelector("#ghost"), toast: root.querySelector("#toast"), live: root.querySelector("#live") };
-  const view = { cur: { x: 0, y: 0 }, hoverKey: null, hoverEl: null, last: { x: -999, y: -999 }, drag: null, grab: { gx: 0, gy: 0 }, sigs: { hud: "", left: "", right: "" }, stats: {}, preview: null, toastId: 0, toastTimer: 0, sellArm: null, sellTimer: 0 };
+  const view = { cur: { x: 0, y: 0 }, hoverKey: null, hoverEl: null, last: { x: -999, y: -999 }, drag: null, grab: { gx: 0, gy: 0 }, sigs: { hud: "", left: "", right: "" }, stats: {}, preview: null, toastId: 0, toastTimer: 0, sellArm: null, sellTimer: 0, respecAsk: false };
 
   // ------------------------------------------------------------ lookups
   const cellPx = () => drawerLayout(game.w, game.h).cell;
@@ -127,7 +127,7 @@ export function createPanels(root, game) {
   }
 
   // ------------------------------------------------------------ Skills (the class tree, ui/tree.js)
-  const renderSkills = (c) => renderTree(c).replace("@TABS@", tabsHtml("skills"));
+  const renderSkills = (c) => renderTree(c, { confirmRespec: view.respecAsk }).replace("@TABS@", tabsHtml("skills"));
 
   // ------------------------------------------------------------ NPC windows
   const rowItem = (it, tipKey, right) => rowItemHtml(it, tipKey, right, describeItem(it, core().player).main[0]?.text ?? "");
@@ -155,6 +155,8 @@ export function createPanels(root, game) {
   }
 
   const closeBtn = (name, label) => `<button class="xbtn" type="button" data-close="${name}" data-testid="close-${name}" aria-label="${esc(label)}">×</button>`;
+  // Gear / File / Skills tabs exist on the phone only (G2 #15, intentional): on desktop Gear sits in the right drawer and File / Skills in the left one,
+  // both can be open side by side, so every panel is one click or key away without tabs; on the phone a single drawer fills the screen, so tabs switch it.
   function tabsHtml(active) { // phone: one panel at a time, tabs switch (Gear / Employee File / Skills / talk)
     const D = drawerLayout(game.w, game.h);
     if (!D.phone) return "";
@@ -223,6 +225,7 @@ export function createPanels(root, game) {
     root.classList.toggle("phone", D.phone);
     const u = game.ui, p = c.player, held = c.cursorItem;
     const leftOpen = !!u.left, rightOpen = u.inventory;
+    if (view.respecAsk && (u.left !== "skills" || c.scene !== "town")) view.respecAsk = false; // the confirmation never outlives the panel or the Lobby
     root.classList.toggle("open-left", leftOpen); root.classList.toggle("open-right", rightOpen);
     const frontLeft = leftOpen && (u.front === "left" || !rightOpen);
     root.classList.toggle("front-left", frontLeft); root.classList.toggle("front-right", rightOpen && !frontLeft);
@@ -237,7 +240,7 @@ export function createPanels(root, game) {
       c.inventory.items.map((i) => [i.id, i.x, i.y]), Object.values(c.equipment).map((i) => i?.id ?? 0), c.belt.map((b) => b?.id ?? 0), c.floor.name];
     if (rightOpen) { const sg = sigOf(base); if (sg !== view.sigs.right) { view.sigs.right = sg; renderInto(el.right, renderInventory(c)); } } else view.sigs.right = "";
     if (leftOpen) {
-      const sg = sigOf(base, u.left, u.vendorTab, view.sellArm, c.ui.dialog, c.vendor && [c.vendor.id, c.vendor.stock.map((e) => e.item.id)], c.stash.items.map((i) => i.id));
+      const sg = sigOf(base, u.left, u.vendorTab, view.sellArm, view.respecAsk, c.ui.dialog, c.vendor && [c.vendor.id, c.vendor.stock.map((e) => e.item.id)], c.stash.items.map((i) => i.id));
       if (sg !== view.sigs.left) {
         view.sigs.left = sg;
         renderInto(el.left, u.left === "skills" ? renderSkills(c) : u.left === "npc" ? renderNpc(c) : renderCharacter(c));
@@ -480,6 +483,10 @@ export function createPanels(root, game) {
   doc.addEventListener("pointercancel", () => { if (view.drag && core()?.cursorItem) game.returnHeld(); view.drag = null; });
   doc.addEventListener("contextmenu", (e) => { e.preventDefault(); if (root.contains(e.target)) quickAction(e.target); });
 
+  /** Open or close the respec confirmation inside the Skills panel and put focus where it belongs. */
+  function askRespec(on, focusFk) { view.respecAsk = on; view.sigs.left = ""; sync(); restoreFocus(focusFk); }
+  doc.addEventListener("keydown", (e) => { if (e.code === "Escape" && view.respecAsk) { e.preventDefault(); e.stopImmediatePropagation(); askRespec(false, "rs"); } }, true); // Esc closes the confirmation first, not the panel
+
   root.addEventListener("click", (e) => {
     const b = e.target.closest("button");
     if (!b || !core()) return;
@@ -489,7 +496,13 @@ export function createPanels(root, game) {
     else if (d.open) { if (b.classList.contains("tab")) game.openPanel(d.open); else game.togglePanel(d.open); }
     else if (d.alloc) game.input({ t: "allocate", attr: d.alloc });
     else if (d.learn) { const r = game.input({ t: "learnSkill", id: d.learn }); if (!r.ok && T.trLearnFail[r.error]) game.toast(T.trLearnFail[r.error]); }
-    else if (d.respec) { const r = game.input({ t: "respec" }); game.toast(r.ok ? T.trRespecDone : T.trRespecFail[r.error] ?? T.trResetNone); }
+    else if (d.respecNo) { askRespec(false, "rs"); }
+    else if (d.respecYes) { askRespec(false, "rs"); const r = game.input({ t: "respec" }); game.toast(r.ok ? T.trRespecDone : T.trRespecFail[r.error] ?? T.trResetNone); }
+    else if (d.respec) { // R6: a respec that gives points back asks first (names the points); with nothing learned it just runs
+      const tv = treeView(core());
+      if (tv.respec.available && tv.branches.some((br) => br.nodes.some((n) => n.level - (n.signature ? 1 : 0) > 0))) askRespec(true, "rs.no");
+      else { const r = game.input({ t: "respec" }); game.toast(r.ok ? T.trRespecDone : T.trRespecFail[r.error] ?? T.trResetNone); }
+    }
     else if (d.aura) { const r = game.input({ t: "toggleAura", id: d.aura }); if (!r.ok) game.toast(T.trAuraFail[r.error] ?? T.trAuraFail["no-mana"]); }
     else if (d.assign) game.input({ t: "assignSkill", slot: Number(d.slot), id: core().player.skillBar.hotkeys[Number(d.slot)] === d.assign ? null : d.assign });
     else if (d.skillSlot !== undefined) game.input({ t: "selectSkill", index: Number(d.skillSlot) });

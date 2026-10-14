@@ -251,10 +251,11 @@ export function createSlotsView(h, { mode = "dialog", onClose = null } = {}) {
       const list = el("ul", "sl-list"); list.setAttribute("aria-label", T.slTitle);
       for (const e of idx().slots.slice(0, SLOT_COUNT)) list.append(card(e));
       root.append(list);
-      const u = h.slots()?.usage;
-      if (u) { const p = el("p", "hint sl-usage", `${T.slUsage}: ${Math.round(u.chars / 1024)} KB / ${Math.round(u.ceiling / 1024)} KB`); p.dataset.testid = "slots-usage"; root.append(p); }
-      if (h.playing()) root.append(el("p", "hint", T.slNowPlayingHint));
-      if (mode === "dialog" && onClose) root.append(button(T.slClose, "slots-close", onClose, "btn"));
+      const foot = el("div", "sl-foot"), u = h.slots()?.usage; // usage line and Close share one row (R6 N5: Close must stay on screen at 720)
+      if (u) { const p = el("p", "hint sl-usage", `${T.slUsage}: ${Math.round(u.chars / 1024)} KB / ${Math.round(u.ceiling / 1024)} KB`); p.dataset.testid = "slots-usage"; foot.append(p); }
+      if (h.playing()) foot.append(el("p", "hint sl-playing", T.slNowPlayingHint));
+      if (mode === "dialog" && onClose) foot.append(button(T.slClose, "slots-close", onClose, "btn"));
+      if (foot.childElementCount) root.append(foot);
     }
     let target = keep && root.querySelector(`[data-testid="${keep}"]`);
     if (!target && fallbackSlot) target = root.querySelector(`[data-testid="slot-${fallbackSlot}"] button:not([disabled])`);

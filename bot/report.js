@@ -3,7 +3,15 @@
 export const TICKS_PER_SECOND = 60;
 
 export function createRecorder(seed) {
-  return { seed, deaths: 0, maxLevel: 1, ids: new Set(), firstDamage: new Map(), kills: 0, ttk: [], seen: new Set(), total: null, hpMin: Infinity, hpLast: 0, tick: 0, result: "running", deathTick: null, clearTick: null, boss: { engaged: null, killed: null, hpMin: Infinity, deathsInArena: 0, phase2At: null } };
+  return { seed, deaths: 0, maxLevel: 1, ids: new Set(), firstDamage: new Map(), kills: 0, ttk: [], seen: new Set(), total: null, hpMin: Infinity, hpLast: 0, tick: 0, result: "running", dmg: {}, casts: {}, deathTick: null, clearTick: null, boss: { engaged: null, killed: null, hpMin: Infinity, deathsInArena: 0, phase2At: null } };
+}
+
+/** Damage and casts per skill from the events the view carries (instant skills fire in applyInput, before the tick clears the list, so the runner calls this after both). */
+export function observeEvents(view, rec) {
+  for (const ev of view.events ?? []) { // a browser snapshot may not carry events
+    if (ev.type === "hit" && ev.target !== "player") { const k = ev.skill ?? (ev.source === "ally" ? "allies" : ev.damageType ? "burn" : "basic-melee"); rec.dmg[k] = (rec.dmg[k] ?? 0) + ev.value; }
+    else if (ev.type === "cast") rec.casts[ev.skill] = (rec.casts[ev.skill] ?? 0) + 1;
+  }
 }
 
 export function observe(view, rec) {
@@ -19,6 +27,7 @@ export function observe(view, rec) {
       rec.ttk.push(t - (rec.firstDamage.get(m.id) ?? t)); // time from the first damage dealt to the kill
     }
   }
+  observeEvents(view, rec);
   rec.hpMin = Math.min(rec.hpMin, view.player.hp); rec.hpLast = view.player.hp;
   const boss = view.monsters.find((m) => m.boss);
   if (boss) { // the finale: when the fight started, how low the hero got, when phase 2 began and when the boss fell
@@ -37,7 +46,7 @@ export function finish(view, mem, rec, maxTicks) {
     if (mem.done) { rec.result = "cleared"; rec.clearTick = view.tick; }
     else if (view.tick >= maxTicks) rec.result = "timeout";
   }
-  return { seed: rec.seed, result: rec.result, ticks: rec.tick, kills: rec.kills, total: rec.total, ttk: rec.ttk, stuck: mem.stuck, waitGaveUp: mem.waitGaveUp, failedMoves: mem.failedMoves, hpMin: rec.hpMin, boss: { ...rec.boss, hpMin: rec.boss.hpMin === Infinity ? null : rec.boss.hpMin, fightTicks: rec.boss.killed !== null && rec.boss.engaged !== null ? rec.boss.killed - rec.boss.engaged : null }, victory: rec.victory ?? null, depth: view.deepestDepth ?? 1, level: rec.maxLevel, deaths: rec.deaths + (rec.result === "died" ? 1 : 0), gold: view.player.gold - (rec.gold0 ?? 0), worn: Object.values(view.equipment ?? {}).filter(Boolean).length, loot: (view.groundItems ?? []).length };
+  return { seed: rec.seed, result: rec.result, deathDepths: rec.deathDepths ?? [], dmg: rec.dmg, casts: rec.casts, ticks: rec.tick, kills: rec.kills, total: rec.total, ttk: rec.ttk, stuck: mem.stuck, waitGaveUp: mem.waitGaveUp, failedMoves: mem.failedMoves, hpMin: rec.hpMin, boss: { ...rec.boss, hpMin: rec.boss.hpMin === Infinity ? null : rec.boss.hpMin, fightTicks: rec.boss.killed !== null && rec.boss.engaged !== null ? rec.boss.killed - rec.boss.engaged : null }, victory: rec.victory ?? null, depth: view.deepestDepth ?? 1, level: rec.maxLevel, deaths: rec.deaths + (rec.result === "died" ? 1 : 0), gold: view.player.gold - (rec.gold0 ?? 0), worn: Object.values(view.equipment ?? {}).filter(Boolean).length, loot: (view.groundItems ?? []).length };
 }
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);

@@ -160,7 +160,7 @@ function plateFree(fx, placed, R, x, y, bodies, cam) {
   R.x = x; R.y = y;
   if (!(y > SAFE_ && y + R.h < cam.h - SAFE_ && x >= SAFE_ && x + R.w <= cam.w - SAFE_)) return -1;
   for (let j = 0; j < placed.length; j++) if (hitGap(R, placed[j])) return j + 1;
-  if (fx.blocked(R) || (bodies && fx.onBody(R, cam.z))) return -1;
+  if (fx.blocked(R) || fx.onHead(R, cam.z) || (bodies && fx.onBody(R, cam.z))) return -1; // a head is a keep-out in every pass, relaxed or not (N4)
   return 0;
 }
 const rectHit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
@@ -505,6 +505,19 @@ export function createFx(style) {
       return false;
     },
 
+    /** Does this rectangle touch the head of a live enemy or NPC, with 4 px of padding? Never relaxed: a loot tag may cover a body for a rare item, but not a face. */
+    onHead(r, z) {
+      const list = fx.bodies;
+      if (!list) return false;
+      for (let i = 0; i < list.length; i++) {
+        const a = list[i];
+        if (a.dead || a.hid || a.sx < r.x - 20 * z - 4 || a.sx > r.x + r.w + 20 * z + 4) continue;
+        const top = a.sy - (style.dims[a.type]?.head ?? 50) * z; // head top; the head is about 26 logical px tall
+        if (r.x < a.sx + 15 * z + 4 && a.sx - 15 * z - 4 < r.x + r.w && r.y < top + 26 * z + 4 && top - 4 < r.y + r.h) return true;
+      }
+      return false;
+    },
+
     /** Is this rectangle on a claimed label (plates, pips, loot plates) or leader line? Used by the loot-plate and floater placement. */
     blocked(r) {
       const av = fx.avoid, sg = fx.avoidSegs, pl = fx.platesPlaced;
@@ -669,13 +682,22 @@ export function createFx(style) {
       placed.push(hr);
       const order = lt.order, n = order.length;
       // pass 1: beams (under everything else of the loot layer), pass 2: markers, pass 3 (drawLootPlates): plates
+      let overHero = false;
       for (let i = 0; i < n; i++) {
         const e = order[i], gi = e.gi;
         project(cam, gi.tile.x + 0.5, gi.tile.y + 0.5, pos);
         e.on = !(pos.x < -60 || pos.x > cam.w + 60 || pos.y < -140 * z || pos.y > cam.h + 60);
         e.x = pos.x; e.my = pos.y - 14 * z - (gi.rarity === "unique" ? Math.sin(now / 400) * 1.5 * z : 0);
-        if (e.on) { lt.vis++; if (gi.rarity) beam(g, gi.rarity, e.colour, pos.x, pos.y - 4 * z, z, now); }
+        if (e.on) {
+          lt.vis++;
+          if (gi.rarity) {
+            beam(g, gi.rarity, e.colour, pos.x, pos.y - 4 * z, z, now);
+            const bw = (gi.rarity === "magic" ? 2 : gi.rarity === "rare" ? 4.5 : 7) * z, bh = (gi.rarity === "magic" ? 52 : gi.rarity === "rare" ? 80 : 110) * z;
+            if (pos.x + bw > hr.x && pos.x - bw < hr.x + hr.w && pos.y - 4 * z > hr.y && pos.y - 4 * z - bh < hr.y + hr.h) overHero = true;
+          }
+        }
       }
+      if (overHero && fx.heroRedraw) fx.heroRedraw(g); // N3: a beam never crosses the hero's body: he is drawn over it
       for (let i = 0; i < n; i++) {
         const e = order[i];
         if (e.on) marker(g, P, e.gi, e.x, e.my, size * (e.gi.rarity === "unique" ? 1.15 : 1), e.colour);

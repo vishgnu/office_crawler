@@ -15,6 +15,7 @@ export const BOT = {
   stuckTicks: 150,      // no tile change for this long with an order active = a stuck event
   fightStuckTicks: 300, // same, while chasing a target that is not adjacent
   waitRange: 10,        // a monster already chasing the hero from this close is waited for (walking into it makes both circle each other)
+  noProgressTicks: 3600, // no xp gained for this long on a floor before the boss: write off the awake monsters that never arrive
   waitTicks: 240,       // give up waiting for a chaser that never arrives (blocked) after this long
   drinkBelow: 0.4,      // drink a health potion (belt) below this share of hpMax
   lootTries: 3,         // pickup orders per ground entry before the bot gives up on it
@@ -314,6 +315,9 @@ export function decide(view, mem) {
   const key = `${p.tile.x},${p.tile.y}`;
   if (key !== mem.lastKey || p.action === "attack" || p.action === "cast" || p.next) { mem.lastKey = key; mem.lastMoveTick = t; } // progress = moving, swinging or casting
   const live = view.monsters.filter((m) => m.ai !== "dead");
+  // watchdog (R6): a hero that keeps changing tile but gains no xp for a minute (a chaser that never arrives next to a sleeper it wants to hunt made it dither forever) writes the awake monsters off
+  if (!mem.prog || mem.prog.xp !== p.xp || mem.prog.depth !== view.depth) mem.prog = { xp: p.xp, depth: view.depth, t };
+  else if (view.depth < CORE.bossDepth && t - mem.prog.t > BOT.noProgressTicks) { for (const m of live) if (m.ai !== "idle") mem.skip.add(m.id); mem.waitSince = -1; mem.waitGaveUp++; mem.prog.t = t; }
   const busy = !!(p.next || p.path.length || p.target || p.pickup);
   // potions: drink coffee from the belt when health is low
   if (view.belt && p.hp > 0 && p.hp < p.hpMax * (classOf(p).bot.potionHp ?? BOT.drinkBelow)) {

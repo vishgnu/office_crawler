@@ -234,6 +234,10 @@ async function treeScenario(cls, level, shotName) {
   const spent = (await g.state()).player;
   check(`${cls.name}: Respec is available in the Lobby`, !(await g.page.locator(T("respec")).isDisabled()));
   await g.page.click(T("respec"));
+  check(`${cls.name}: Respec asks first and names the points it returns (R6)`, (await g.page.locator(T("respec-confirm")).count()) === 1 && /skill points? back/.test(await g.page.locator(T("respec-refund")).innerText()) && (await g.state()).player.skills[cand.id] > 0);
+  await g.page.click(T("respec-no"));
+  check(`${cls.name}: Cancel keeps every skill`, (await g.page.locator(T("respec-confirm")).count()) === 0 && (await g.state()).player.skills[cand.id] > 0);
+  await g.page.click(T("respec")); await g.page.click(T("respec-yes"));
   s = await g.state();
   const total = Object.entries(spent.skills).reduce((n, [id, l]) => n + (id === cls.signature ? l - 1 : l), 0) + spent.skillPoints;
   check(`${cls.name}: Respec returns every point (${total}), keeps the signature at level 1 and clears the learned skill from the bar`, s.player.skillPoints === total && s.player.skills[cls.signature] === 1 && !s.player.skills[cand.id] && !s.player.skillBar.hotkeys.includes(cand.id), { sp: s.player.skillPoints, total });

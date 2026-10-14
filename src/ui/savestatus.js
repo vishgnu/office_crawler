@@ -56,6 +56,7 @@ export function createSaveStatus(h, { errorText = () => "", onChange = null } = 
   function render() {
     const s = status();
     root.replaceChildren();
+    root.classList.toggle("confirming", confirming && (s.owner === "other" || s.owner === "stale")); // R6 N7: banner text is not repeated while the confirmation is open
     if (s.storage === "memory") root.append(line("mem", "save-banner-memory", T.svMemory, T.svMemoryText));
     else if (s.storage === "full") root.append(line("mem", "save-banner-full", T.svFull, T.svFullText));
     if (s.notice) {

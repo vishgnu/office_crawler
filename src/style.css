@@ -346,7 +346,10 @@ html.hc .opt-val, html.hc .screen.options .hint, html.hc .hint, html.hc .seed, h
 .cs-conf { position: absolute; left: 22px; top: 62px; z-index: 3; font-size: 14px; letter-spacing: 3px; color: #b4abe0; opacity: .8; pointer-events: none; }
 .cs-lineup { position: absolute; inset: 0; z-index: 2; --chip: 46px; }
 .cs-cls { position: absolute; top: 12%; bottom: 9%; width: 27%; left: calc(var(--x) * 1% - 13.5%); background: none; border: 0; padding: 0; border-radius: 12px; color: inherit; font: inherit; cursor: pointer; --chip: 0px; display: block; }
-.cs-fig { pointer-events: none; position: absolute; inset: auto auto 0 50%; display: block; filter: brightness(.74) saturate(.9) drop-shadow(0 0 1px rgba(255, 236, 190, .6)); transition: transform .3s ease, filter .3s ease; transform-origin: 50% 100%; }
+@keyframes cs-slam { 0% { transform: translateY(2%) scale(1.14) rotate(0); } 28% { transform: translateY(-1.5%) scale(1.14) rotate(-3.5deg); } 40% { transform: translateY(5%) scale(1.14) rotate(2.5deg); } 70% { transform: translateY(2%) scale(1.14) rotate(-.6deg); } 100% { transform: translateY(2%) scale(1.14) rotate(0); } }
+.cs-cls.on .cs-fig.slam { animation: cs-slam .9s ease-out 1; }
+.noanim .cs-fig.slam { animation: none; }
+.cs-fig { pointer-events: none; position: absolute; inset: auto auto 0 50%; display: block; filter: brightness(.8) saturate(.92) drop-shadow(0 0 1px rgba(255, 236, 190, .6)); transition: transform .3s ease, filter .3s ease; transform-origin: 50% 100%; }
 .cs-cls:hover .cs-fig { transform: translateY(-2.5%); filter: brightness(.9) saturate(1) drop-shadow(0 0 1px rgba(255, 236, 190, .8)); }
 .cs-cls.on .cs-fig { transform: translateY(2%) scale(1.14); filter: none; }
 .cs-cls .lbl { position: absolute; left: 50%; bottom: -46px; transform: translateX(-50%); white-space: nowrap; font-weight: 800; font-size: 15px; letter-spacing: .5px; padding: 8px 16px; min-height: 40px; box-sizing: border-box; display: inline-flex; align-items: center; border-radius: 99px; background: rgba(13, 10, 28, .88); border: 2px solid #5b4f98; color: #e0daf6; text-transform: uppercase; transition: .25s; }
@@ -397,8 +400,8 @@ html.hc .opt-val, html.hc .screen.options .hint, html.hc .hint, html.hc .seed, h
 .cs-actions { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; }
 .cs-actions .cs-go { grid-column: 1 / -1; font-size: 20px; padding: 13px 14px; }
 .cs-actions .btn[hidden], .cs-confirm[hidden] { display: none; }
-.cs-go.off { background: color-mix(in srgb, var(--cl) 24%, #1c1640); color: #f4ecd8; box-shadow: none; border-color: color-mix(in srgb, var(--cl) 70%, #0d0a1c); }
-.cs-go.off:hover { background: color-mix(in srgb, var(--cl) 32%, #1c1640); }
+.cs-go.off { background: linear-gradient(#332c6a, #272255); color: #efe9ff; box-shadow: inset 0 -4px 0 color-mix(in srgb, var(--cl) 60%, transparent); border-color: color-mix(in srgb, var(--cl) 75%, #0d0a1c); } /* R6 G2 #17: a neutral indigo fill with the class accent as rim and underline (orange no longer mixes to brown) */
+.cs-go.off:hover { background: linear-gradient(#3b3480, #2e2862); }
 .cs-gohint.invis { visibility: hidden; }
 .cs-gohint { font-size: 14px; font-weight: 800; color: #ffe27a; text-align: center; }
 .cs-slotnote { margin: 0; font-size: 14px; color: #c9c2e8; }
@@ -573,3 +576,84 @@ html.hc .tnode { border-color: #fff; }
   .sl-card.ok .sl-acts .mini, .sl-card.ok .sl-acts .btn.small { min-height: 34px; padding: 3px 10px; }
 }
 @media (max-width: 760px) { .tree .srow .sassign > span { display: none; } .tree .srow .sassign { gap: 4px; } }
+
+/* R6 N5: slot dialog footer = usage line + Close in one sticky row, so Close is never clipped */
+.sl-foot { position: sticky; bottom: -16px; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0 -16px -16px; padding: 8px 16px; background: #241d4e; border-top: 2px solid #3d3068; }
+.sl-foot .hint { margin: 0; flex: 1 1 200px; }
+.sl-foot .btn { flex: none; min-height: 44px; min-width: 120px; margin-left: auto; }
+@media (max-width: 520px) { .sl-foot { margin: 0 -12px -12px; padding: 8px 12px; bottom: -12px; } }
+
+/* R6 N6: the pause screen starts at the top and scrolls instead of centring (overflow used to run off the top). N7: banners shrink to their title while the take-over confirm is open */
+.screen.pause { justify-content: safe center; overflow-y: auto; gap: 10px; }
+.screen.pause > * { flex: none; }
+.screen.pause .sv-status { width: min(560px, 100%); margin: 0; }
+.sv-status.confirming .sv-text { display: none; }
+.sv-status.confirming .sv-line { padding: 4px 10px; }
+.sv-status.confirming .sv-line .mini { display: none; }
+.screen.pause .sv-confirm { padding: 10px 12px; gap: 8px; }
+@media (min-width: 760px) {
+  .sl-card.ok { padding: 5px 8px; gap: 4px 12px; }
+  .sl-card.ok .sl-acts .mini, .sl-card.ok .sl-acts .btn.small { min-height: 32px; padding: 2px 10px; }
+  .sl-card.ok .sl-meta { font-size: 14px; line-height: 1.25; }
+  .sl-badge { height: 70px; }
+  .sl-list { gap: 6px; margin-bottom: 6px; }
+}
+.screen.pause .sv-confirm { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-width: 0; box-sizing: border-box; }
+.screen.pause .sv-confirm .btn { min-width: 0; }
+.screen.pause .sv-confirm h3, .screen.pause .sv-confirm .hint { grid-column: 1 / -1; }
+.screen.pause .sv-status { grid-template-columns: minmax(0, 1fr); box-sizing: border-box; min-width: 0; }
+
+/* ---- R6 skill tree (G2 #14 / N8): one fixed grid per branch (label column + 3 node columns, tier = row), CSS connectors, compact cards ---- */
+.tree { --gx: 6px; --gy: 18px; }
+.tree .tnodes { grid-template-columns: 20px repeat(3, minmax(0, 1fr)); column-gap: var(--gx); row-gap: var(--gy); align-items: stretch; }
+.tree .tl { grid-column: 1; grid-row: var(--row); writing-mode: vertical-rl; transform: rotate(180deg); font-size: 14px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--mut); text-align: center; border-right: 2px solid var(--rim); padding: 0 2px 0 0; }
+.tree .tnode { grid-column: calc(var(--col) + 2); grid-row: var(--row); gap: 3px; padding: 4px 5px 5px; }
+.tree .tn-main { grid-template-columns: 30px minmax(0, 1fr); grid-template-areas: "ic name" "lv lv" "st st"; gap: 1px 5px; min-height: 0; }
+.tree .tn-ic { width: 30px; height: 30px; border-radius: 6px; padding: 1px; }
+.tree .tn-ic .mk { width: 13px; height: 13px; line-height: 13px; font-size: 14px; right: -4px; bottom: -5px; }
+.tree .tn-name { font-size: 14px; line-height: 1.05; }
+.tree .tn-lv { gap: 3px; flex-wrap: nowrap; white-space: nowrap; }
+.tree .tn-st { margin-top: 0; font-size: 14px; line-height: 1.1; }
+.tree .tn-req { display: none; }
+.tree .tnode .learn { min-height: 30px; margin-top: 1px; }
+.tree .tnode .sassign { margin-top: 0; }
+.tree .tnode .sassign .mini { min-height: 28px; }
+/* connectors: .lk sits on top of a node (elbow to the prerequisite's column), .kd under a node that has dependants */
+.tree .lk { position: absolute; left: 0; right: 0; top: -2px; height: 0; pointer-events: none; --lc: #6b5fb0; }
+.tree .lk.ok, .tree .kd.ok { --lc: #6dd6a8; }
+.tree .lk::before { content: ""; position: absolute; left: calc(50% - 1.5px); width: 3px; top: calc(-0.5 * var(--gy)); height: calc(0.5 * var(--gy)); background: var(--lc); }
+.tree .lk.l::after, .tree .lk.r::after { content: ""; position: absolute; height: 3px; top: calc(-0.5 * var(--gy) - 1.5px); background: var(--lc); width: calc(var(--span) * (100% + var(--gx)) + 1.5px); }
+.tree .lk.l::after { right: calc(50% - 1.5px); }
+.tree .lk.r::after { left: calc(50% - 1.5px); }
+.tree .kd { position: absolute; left: calc(50% - 1.5px); width: 3px; top: calc(100% + 2px); height: calc(0.5 * var(--gy)); background: var(--lc, #6b5fb0); pointer-events: none; --lc: #6b5fb0; }
+.tree .kd.ok { background: #6dd6a8; }
+.tree .tnode { overflow: visible; }
+.tree::after { content: ""; display: block; position: sticky; bottom: -10px; height: 22px; margin: -22px -12px -10px; background: linear-gradient(rgba(0, 0, 0, 0), var(--panel)); pointer-events: none; }
+/* respec confirmation */
+.rs-confirm { margin: 6px 0; padding: 8px 10px; background: #17123a; border: 2px solid var(--gold); border-radius: 8px; }
+.rs-confirm h3 { margin: 0 0 3px; border: 0; color: #ffe27a; font-size: 16px; letter-spacing: 0; text-transform: none; }
+.rs-confirm p { margin: 0 0 6px; font-size: 14px; }
+.rs-btns { display: flex; gap: 6px; }
+.rs-btns .mini { flex: 1; min-height: 40px; }
+.rs-btns .mini.yes { background: var(--gold); color: var(--ol); font-weight: 800; }
+/* phone: one column of cards under a tier heading; the prerequisite is named in text instead of an elbow */
+#ui.phone .tree .tnodes { grid-template-columns: minmax(0, 1fr); row-gap: 6px; }
+#ui.phone .tree .tl { grid-column: 1; grid-row: auto; writing-mode: horizontal-tb; transform: none; text-align: left; border: 0; border-bottom: 2px solid var(--rim); padding: 2px 0; }
+#ui.phone .tree .tnode { grid-column: 1; grid-row: auto; }
+#ui.phone .tree .lk, #ui.phone .tree .kd { display: none; }
+#ui.phone .tree .tn-req { display: block; grid-area: req; font-size: 14px; color: #b4abe0; }
+#ui.phone .tree .tn-main { grid-template-areas: "ic name" "lv lv" "st st" "req req"; }
+.tree .basic-h { margin-top: 4px; }
+.tree .sk-note { margin: 1px 0; }
+.tree .tr-head { margin-bottom: 2px; }
+@media (max-height: 800px) { .tree .basic-h { display: none; } .tree .srow { margin-top: 4px; } }
+/* phone: compact cards, level and state share a line, Learn and F1-F4 share a row (44 px touch targets kept) */
+#ui.phone .tree .tn-main { grid-template-columns: 30px auto minmax(0, 1fr); grid-template-areas: "ic name name" "ic lv st" "req req req"; align-items: center; }
+#ui.phone .tree .tn-st { padding-left: 4px; }
+#ui.phone .tree .tnode { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 6px; align-items: center; }
+#ui.phone .tree .tnode > .tn-main { grid-column: 1 / -1; }
+#ui.phone .tree .tnode > .learn { grid-column: 1; }
+#ui.phone .tree .tnode:not(:has(.sassign, .aura)) > .learn { grid-column: 1 / -1; }
+#ui.phone .tree .tnode > .sassign, #ui.phone .tree .tnode > .aura { grid-column: 2; }
+#ui.phone .tree .tnode .sassign { gap: 2px; }
+#ui.phone .tree .tnode .sassign .mini { min-width: 40px; flex: none; }

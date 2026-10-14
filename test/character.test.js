@@ -65,10 +65,10 @@ test("AC-R-012-1 deriveStats follows the config formulas, is pure and rounds as 
   assert.ok(Object.values(s).every((v) => typeof v === "object" || Number.isInteger(v)));
 });
 
-test("a new player's stats follow the class: config.derived with the class overrides, unarmed range plus the grit bonus (AC-R-201-2)", () => {
+test("a new player's stats follow the class: config.derived with the class overrides, unarmed range plus the power-attribute bonus (AC-R-201-2)", () => {
   for (const c of content.classes) {
     const p = newGame(1, { class: c.id }).player, d = { ...config.derived, ...c.derived }, un = c.derived.unarmed ?? config.unarmed, a = c.attrs;
-    const gb = Math.max(0, a.grit - d.gritFree);
+    const gb = Math.max(0, a[d.powerAttr] - d.gritFree); // the class's power attribute (R6)
     assert.deepEqual([p.hpMax, p.mpMax], [d.hpBase + d.hpPerLevel + a.stamina * d.hpPerStamina, d.mpBase + d.mpPerLevel + a.focus * d.mpPerFocus], c.id);
     assert.deepEqual(p.damage, { min: un.min + Math.floor(gb * d.damagePerGrit.min), max: un.max + Math.floor(gb * d.damagePerGrit.max) }, c.id);
     assert.deepEqual([p.defense, p.attackRating], [d.defenseBase + a.agility * d.defensePerAgility, d.attackRatingBase + a.agility * d.attackRatingPerAgility], c.id);

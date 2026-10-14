@@ -28,15 +28,15 @@ const GHOST_DELTAS = [1, 0, 0, 1, 1, 1];
 function figureTable(atlas) {
   let t = figTables.get(atlas);
   if (t) return t;
-  const build = (fn, anims = ANIMS) => {
+  const build = (anims = ANIMS) => { // rows are filled frame by frame the first time a sprite is shown (the atlas draws monster and S1 hero frames lazily)
     const o = {};
-    for (const [anim, n] of Object.entries(anims)) o[anim] = Array.from({ length: DIRS }, (_, d) => Array.from({ length: n }, (_, f) => atlas.get(fn(anim, d, f))));
+    for (const [anim, n] of Object.entries(anims)) o[anim] = Array.from({ length: DIRS }, () => new Array(n));
     return o;
   };
-  t = { plr: build((a, d, f) => keys.plr(PLAYER_CLASS, a, d, f), PLAYER_ANIMS), plrBy: {}, ally: {}, mon: {}, npc: {} };
+  t = { plr: build(PLAYER_ANIMS), plrBy: {}, ally: {}, mon: {}, npc: {} };
   t.plrBy[PLAYER_CLASS] = t.plr;
   for (const id of Object.keys(content.npcs)) t.npc[id] = Array.from({ length: NPC_FRAMES }, (_, f) => atlas.get(keys.npc(id, f)));
-  for (const type of Object.keys(content.monsters)) t.mon[type] = build((a, d, f) => keys.mon(type, a, d, f));
+  for (const type of Object.keys(content.monsters)) t.mon[type] = build();
   figTables.set(atlas, t);
   return t;
 }
@@ -209,7 +209,7 @@ const grab = (d, e, x, y) => {
   return it;
 };
 const byDepth = (a, b) => a.d - b.d;
-const hp = { x: 0, y: 0 }, F = { blocked: null, fw: 0, fh: 0, g: null, cam: null, atlas: null, prev: null, alpha: 1, fx: null, now: 0, env: null, figs: null, hfigs: null, htype: PLAYER_CLASS, shadowE: null, light: null, items };
+const hp = { x: 0, y: 0 }, F = { blocked: null, fw: 0, fh: 0, g: null, cam: null, atlas: null, prev: null, alpha: 1, fx: null, now: 0, env: null, figs: null, hfigs: null, hero: null, htype: PLAYER_CLASS, shadowE: null, light: null, items };
 
 function lerpPos(a, o) {
   actorPos(a, posA);
@@ -336,7 +336,23 @@ function tempRing(g, sx, sy, r, z) {
   g.setLineDash([3 * z, 3 * z]); g.lineWidth = Math.max(1, 1.1 * z); g.strokeStyle = "rgba(235,232,220,0.6)"; g.stroke(); g.restore();
 }
 
+const monFrame = (atlas, type, anim, dir, f) => { const row = F.figs.mon[type][anim][dir]; return row[f] ?? (row[f] = atlas.get(keys.mon(type, anim, dir, f))); };
 const heroFrame = (atlas, anim, dir, f) => { const row = F.hfigs[anim][dir]; return row[f] ?? (row[f] = atlas.get(keys.plr(F.htype, anim, dir, f))); };
+
+/**
+ * The hero's body drawn again over the screen-space loot beams (WORLD-R6, N3): beams belong to the ground, so they pass behind the hero, never through him.
+ * Called by fx.drawLoot right after the beam pass, only when a beam overlaps the hero's rectangle. Same layers as the world pass: sprite, hurt wash, pool tint.
+ */
+function redrawHero(g) {
+  const hi = F.hero, atlas = F.atlas, z = F.cam.z;
+  if (!hi || !hi.e || hi.a <= 0.02) return;
+  const x = hi.x + hi.dx, y = hi.y + hi.dy;
+  g.globalAlpha = hi.a;
+  blit(g, hi.flash ? atlas.flash(hi.e) : hi.e, x, y, z);
+  if (hi.tintA > 0) { g.globalCompositeOperation = "multiply"; g.globalAlpha = hi.tintA * hi.a; blit(g, atlas.tint(hi.e, hi.tint), x, y, z); g.globalCompositeOperation = "source-over"; }
+  if (hi.hurt) { g.globalAlpha = 0.14; blit(g, atlas.tint(hi.e, "#ff1f2e"), x, y, z); }
+  g.globalAlpha = 1;
+}
 
 /** Share of an actor's own (shaded, tinted) body that is drawn back over the additive pool light: the wash on actors is clamped to the remaining 1 - this (round G3, F2). */
 const RESTORE_A = 0.72;
@@ -349,9 +365,10 @@ function restoreActors(g) {
   const { cam, atlas } = F, z = cam.z;
   for (let i = 0; i < restore.length; i++) {
     const it = restore[i], x = it.x + it.dx, y = it.y + it.dy;
-    g.globalAlpha = RESTORE_A * it.a;
+    const ra = it.ghost ? RESTORE_A * 0.85 : RESTORE_A; // an actor beside a wall or prop is restored a little less: it is already shown through the wall (ghost copy)
+    g.globalAlpha = ra * it.a;
     blit(g, it.flash ? atlas.flash(it.e) : it.e, x, y, z);
-    if (it.shade > 0) { g.globalAlpha = it.shade * it.a * RESTORE_A; blit(g, atlas.shade(it.e, "#070518"), x, y, z); }
+    if (it.shade > 0) { g.globalAlpha = it.shade * it.a * ra; blit(g, atlas.shade(it.e, "#070518"), x, y, z); }
     g.globalCompositeOperation = "multiply"; g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, z); g.globalCompositeOperation = "source-over";
   }
   g.globalAlpha = 1;
@@ -360,7 +377,7 @@ function restoreActors(g) {
 function addActor(a, isPlayer, pos, dir, sx, sy) {
   const { g, cam, atlas, fx, now, env, light } = F, z = cam.z;
   const af = animFor(a, isPlayer, now), boss = !isPlayer && a.tier === "boss";
-  const e = boss ? atlas.get(keys.mon(bossType(a.type, a.boss?.phase ?? 1), af.anim, dir, af.frame)) : (isPlayer ? heroFrame(atlas, af.anim, dir, af.frame) : F.figs.mon[a.type][af.anim][dir][af.frame]);
+  const e = boss ? atlas.get(keys.mon(bossType(a.type, a.boss?.phase ?? 1), af.anim, dir, af.frame)) : (isPlayer ? heroFrame(atlas, af.anim, dir, af.frame) : monFrame(atlas, a.type, af.anim, dir, af.frame));
   let alphaV = 1, flash = false;
   const dying = af.anim === "death";
   if (dying) {
@@ -577,7 +594,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
   const heroDir = faceFor(hero, true, core, rs);
   project(cam, hp.x + 0.5, hp.y + 0.5, pt);
   out.heroScreen.x = pt.x; out.heroScreen.y = pt.y; out.heroDir = heroDir; fx.heroS = out.heroScreen; // the drawn hero position: the loot-plate keep-out follows the sprite, not the logical tile
-  out.heroItem = addActor(hero, true, hp, heroDir, pt.x, pt.y);
+  out.heroItem = F.hero = addActor(hero, true, hp, heroDir, pt.x, pt.y); fx.heroRedraw = redrawHero;
   for (let i = 0; i < nm; i++) {
     const m = mons[i], o = actorOut[i];
     o.hid = false;
@@ -622,7 +639,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     }
     if (it.hurt) { g.globalAlpha = 0.14; blit(g, atlas.tint(it.e, "#ff1f2e"), x, y, z); }
     g.globalAlpha = 1;
-    if (it.tintA > 0 && !it.ghost && !it.hurt && it.a > 0.02) restore.push(it); // lit by a pool: its body is drawn again over the additive pass (restoreActors)
+    if (it.tintA > 0 && !it.hurt && it.a > 0.6) restore.push(it); // (an actor faded because it stands in front of the hero is not restored: the hero must stay readable) // lit by a pool: its body is drawn again over the additive pass (restoreActors)
     if (it.summoned) blit(g, atlas.get(keys.fx("badge")), x + 5 * z, y - 30 * z, z * 0.9); // temp badge pinned to the chest
     if (it.sf) drawStatus(g, it.sf, x, y, it.head, z, now, fx.reducedMotion);
     if (it.icon) drawIcon(g, atlas, it, x, y, z, now);

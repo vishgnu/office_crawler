@@ -13,6 +13,8 @@ import { errorText, markUndo } from "./slots.js";
 const S = content.strings;
 const SX = [0.22, 0.5, 0.78]; // class x positions as a share of the stage width (decision must-fix 1)
 const OUT = "#0d0a1c", TAU = Math.PI * 2;
+const FIG_SHARE = 0.62; // figure canvas height as a share of the stage height (R6, G2 #13: was 0.5, the unchosen classes read too small)
+const SLAM_DUR = 0.9; // seconds of the Facilities Manager wrench-slam flourish (variant A: wrench slam + shockwave)
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const ss = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const hash = (n) => { n = Math.sin(n * 127.1 + 311.7) * 43758.5453; return n - Math.floor(n); };
@@ -203,7 +205,7 @@ export function createCharSelect(h, info) {
     W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height)); dpr = Math.min(window.devicePixelRatio || 1, 2);
     bgCv.width = Math.round(W * dpr); bgCv.height = Math.round(H * dpr); bg = paintBackdrop(W, H, dpr);
     for (const x of btns) {
-      const ch = Math.max(1, Math.round(Math.min(H * 0.5, x.b.getBoundingClientRect().height))), cw = Math.round((ch * 104) / 96);
+      const ch = Math.max(1, Math.round(Math.min(H * FIG_SHARE, x.b.getBoundingClientRect().height))), cw = Math.round((ch * 104) / 96);
       x.fig.width = Math.round(cw * dpr); x.fig.height = Math.round(ch * dpr); x.fig.style.width = cw + "px"; x.fig.style.height = ch + "px"; x.fig.style.marginLeft = -Math.round(cw / 2) + "px";
     }
     const sr = stage.getBoundingClientRect(), fr = btns[sel].fig.getBoundingClientRect();
@@ -239,6 +241,18 @@ export function createCharSelect(h, info) {
     g.lineWidth = Math.max(1.5, sc * 1.2); g.strokeStyle = "#fff"; g.stroke();
     if (flour >= 0 && !reduced()) { g.globalAlpha = 1 - pulse; g.lineWidth = Math.max(2, sc * 1.6); g.strokeStyle = figures.accent[cards[sel].id]; g.beginPath(); g.ellipse(ringX, GY, (34 + 30 * pulse) * sc, (10 + 9 * pulse) * sc, 0, 0, TAU); g.stroke(); }
     g.restore();
+    // Facilities Manager flourish (variant A): the wrench comes down beside him and a gold shockwave rolls out over the floor. Ported from A.html
+    // drawFacilitiesManager (ring at x +47, ratio .28, eight diamond sparks); the sprite itself is the in-world one, so the slam is the stage overlay plus a body hop (CSS).
+    const sf = !busy && !reduced() && cards[sel].id === "facilities-manager" && selT < SLAM_DUR ? selT / SLAM_DUR : -1;
+    if (sf > 0.38) {
+      const s = (sf - 0.38) / 0.62, al = Math.max(0, 1 - s), k0 = sc * 0.45, wx = ringX + 47 * k0, wy = GY - 1 * k0, rr = (8 + s * 62) * k0; // the in-world sprite fills about 45 % of the canvas that A.html units assume
+      g.save(); g.globalAlpha = al; g.lineWidth = Math.max(3, 3.2 * k0); g.strokeStyle = OUT; g.beginPath(); g.ellipse(wx, wy, rr, rr * 0.28, 0, 0, TAU); g.stroke();
+      g.lineWidth = Math.max(1.5, 1.6 * sc); g.strokeStyle = "#ffd23a"; g.stroke();
+      g.lineWidth = Math.max(1.5, 2 * sc); g.strokeStyle = "#fff3a0"; g.beginPath(); g.ellipse(wx, wy, (4 + s * 44) * k0, (4 + s * 44) * k0 * 0.28, 0, 0, TAU); g.stroke();
+      for (let k = 0; k < 8; k++) { const an = (k / 8) * TAU + 0.4, r = (10 + s * 52) * k0, x = wx + Math.cos(an) * r, y = wy + Math.sin(an) * r * 0.3 - s * (10 + (k & 1) * 8) * (1 - s) * 2.6 * k0, d = 3 * k0; g.fillStyle = "#ffd23a"; g.strokeStyle = OUT; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x, y - d); g.lineTo(x + d * 0.7, y); g.lineTo(x, y + d); g.lineTo(x - d * 0.7, y); g.closePath(); g.fill(); g.stroke(); }
+      g.restore();
+      g.save(); g.globalCompositeOperation = "lighter"; const gl = 0.5 * Math.max(0, 1 - s * 2.5); if (gl > 0) { const rg = g.createRadialGradient(wx, wy - 4 * k0, 0, wx, wy - 4 * k0, 40 * k0 * 2); rg.addColorStop(0, `rgba(255,184,31,${gl})`); rg.addColorStop(1, "rgba(255,184,31,0)"); g.fillStyle = rg; g.fillRect(wx - 40 * k0 * 2, wy - 44 * k0 * 2, 80 * k0 * 2, 80 * k0 * 2); } g.restore();
+    }
     const vg = g.createRadialGradient(W / 2, H * 0.55, Math.min(W, H) * 0.35, W / 2, H * 0.55, Math.max(W, H) * 0.75); vg.addColorStop(0, "rgba(8,6,20,0)"); vg.addColorStop(1, "rgba(8,6,20,.6)"); g.fillStyle = vg; g.fillRect(0, 0, W, H);
   }
   let raf = 0, prevNow = 0;
@@ -264,6 +278,7 @@ export function createCharSelect(h, info) {
     if (busy) return;
     const was = sel; sel = clamp(i, 0, cards.length - 1); draft.cls = sel; selT = 0; T0 = performance.now(); dirty = true;
     renderInfo(); drawFigures(true);
+    if (cards[sel].id === "facilities-manager" && !reduced()) { const f = btns[sel].fig; f.classList.remove("slam"); void f.offsetWidth; f.classList.add("slam"); }
     if (was !== sel) h.emit?.("ui:click");
     const sr = stage.getBoundingClientRect(); GY = btns[sel].b.getBoundingClientRect().bottom - sr.top - FHn() * 0.24;
     if (focus) btns[sel].b.focus();
@@ -322,6 +337,7 @@ export function createCharSelect(h, info) {
   renderInfo(); syncName(); syncSlotNote();
   root.afterMount = () => { // layout needs the element in the document
     layout(); T0 = performance.now(); raf = requestAnimationFrame(loop);
+    if (cards[sel].id === "facilities-manager" && !reduced()) btns[sel].fig.classList.add("slam");
     if (new URLSearchParams(location.search).get("test") === "1") root.dataset.ready = "1";
   };
   root.focusDefault = () => nameInp.focus({ preventScroll: true });
