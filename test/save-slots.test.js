@@ -367,3 +367,24 @@ test("AC-R-234-2 / NFR-D06 every class survives serialize, store, load: the load
     assert.equal(serialize(b), serialize(a));
   }
 });
+
+test("hook surfaces forward to the store, the session and the core views without logic (slots, character, tree)", async () => {
+  const { slotsHook, characterHook, treeHook } = await import("../src/save/index.js");
+  const { store, adapter } = mk(), session = createSession(store, { seedSource: () => 5 });
+  let started = null;
+  const slots = slotsHook(store), character = characterHook(session, { start: (s, n) => { started = [s.player.class, n]; } });
+  assert.equal(character.cards().length, 3);
+  assert.deepEqual(character.create({ slot: 2, class: "it-wizard", name: "Hooked" }), { ok: true, slot: 2 });
+  assert.deepEqual(started, ["it-wizard", 2]);
+  assert.equal(character.create({ slot: 2, class: "it-wizard", name: "Again" }).error, "occupied");
+  assert.equal(slots.list().slots[1].name, "Hooked"); assert.equal(slots.raw(2), adapter.getItem("office-crawler.slot.2"));
+  assert.ok(slots.keys().includes("office-crawler.slot.2"));
+  assert.deepEqual(slots.fail(true), { ok: true });
+  assert.equal(store.write(2, deserialize(slots.raw(2)).state).ok, false);
+  slots.fail(false);
+  assert.equal(store.write(2, deserialize(slots.raw(2)).state).ok, true);
+  const game = deserialize(slots.raw(2)).state; setLevel(game, 4);
+  const tree = treeHook(() => game);
+  assert.equal(tree.get().classId, "it-wizard"); assert.equal(tree.learn("cold-boot").ok, true); assert.equal(tree.get().branches[1].nodes[0].level, 1);
+  assert.equal(tree.respec().ok, true);
+});

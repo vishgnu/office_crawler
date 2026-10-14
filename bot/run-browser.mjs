@@ -11,7 +11,7 @@ export async function runBrowser(n = 5, maxTicks = 12000, profile = {}, firstSee
   const runs = [];
   for (let i = 0; i < n; i++) {
     const seed = firstSeed + i, mem = createBotMemory(profile), rec = createRecorder(seed);
-    let view = await g.app("newGame", { seed });
+    let view = await g.app("newGame", { seed, ...(profile.class ? { class: profile.class } : {}) });
     observe(view, rec);
     while (view.scene === "floor" && !mem.done && view.tick < maxTicks) {
       const cmd = decide(view, mem);

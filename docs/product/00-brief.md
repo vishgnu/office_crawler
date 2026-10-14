@@ -67,3 +67,13 @@ gameplay; rounds 11–12 overall test and polish.
 > Do a round on improving grafics design stile idea is good but more details and polishing
 
 **Status: agreed (real customer).** The style idea (C2) stays; add a round for more detail and polish across the game's graphics.
+
+## Customer decisions (2026-10-14, verbatim)
+
+> Ip closeness we are good, naes good
+
+**Recorded as real-customer answers (no longer escalated):**
+- Circle 1 Q1 (IP closeness): **keep the current approach**: the original's mechanics and feel, with all names, art, text and story
+  our own (safe default A). The denylists stay in force.
+- Names: **approved**: class names Facilities Manager / Sales Rep / IT Wizard, the title "Office Crawler", and the skill
+  renames "Packet Filter" / "Evacuation Drill". Interpretation by the orchestrator; the customer may correct it.

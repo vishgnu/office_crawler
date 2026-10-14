@@ -30,9 +30,9 @@ export function createWebStorageAdapter(storage) {
     storage.setItem(probe, "1"); storage.removeItem(probe);
   } catch { return null; }
   return {
-    kind: "localStorage",
+    kind: "localStorage", failWrites: false, // failWrites: the test hook makes writes reject (R-227 e2e)
     getItem: (k) => { try { return storage.getItem(k); } catch { return null; } },
-    setItem: (k, v) => storage.setItem(k, v), // may throw (quota): the store catches it
+    setItem(k, v) { if (this.failWrites) throw new Error("QuotaExceededError"); storage.setItem(k, v); }, // may throw (quota): the stores catch it
     removeItem: (k) => { try { storage.removeItem(k); } catch { /* nothing to do */ } },
     keys: () => { try { return Object.keys(storage); } catch { return []; } },
   };

@@ -156,6 +156,7 @@ test("an ordinary ally is hit only when the hero is out of reach", () => {
   const hero = s.player.hp;
   run(s, config.monsterAttackHitTick + 2);
   assert.ok(a.hp < a.hpMax); assert.equal(s.player.hp, hero);
+  assert.ok(s.eventLog.some((e) => e.type === "allyHurt" && e.id === a.id && e.value > 0));
 });
 
 test("allies and zones are cleared on a floor change and on respec; they are not saved state", () => {

@@ -4,3 +4,4 @@ export { migrate, MIGRATIONS } from "./migrate.js";
 export { createSaveStore, createAdapter, createMemoryAdapter, createWebStorageAdapter } from "./storage.js";
 export { createSlotStore, emptyIndex, textSum } from "./slots.js";
 export { createSession, slotsView } from "./session.js";
+export { slotsHook, characterHook, treeHook } from "./hook.js";

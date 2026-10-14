@@ -110,3 +110,5 @@ One line per decision by `customer-proxy`. The real customer can overrule any of
 - 2026-10-14 | art-direction Round G (C3) approach | approve orchestrator: no C4 mock-up, port into game with amplifications, in-game review by both reviewers (target 34+) | high
 - 2026-10-14 | art-direction Round G mood question | LIFT ambient mid-tone +12 % outside pools (range 10-15), vignette and pool contrast kept, single constant AMBIENT_LIFT; REAL CUSTOMER please confirm or revert (identity call, "more details" vs moody feel) | medium
 - 2026-10-14 | art-direction Round G port checklist | 20 items (port/amplify/drop) in decision.md "Round G (C3)"; drops: posters, face micro-detail, dust, glint slashes, fine decals | medium-high
+
+- 2026-10-14 REAL CUSTOMER: IP closeness OK as is; names approved (class names, title, skill renames). Escalations closed.

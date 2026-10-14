@@ -13,11 +13,12 @@ in review.** Slices S1–S3 accepted (PROXY). Harness version 0.4.0. Experiments
 Gate authority for this project is delegated to `customer-proxy` while the user is away (see `00-brief.md`,
 "Delegation record"). All proxy decisions: `proxy-log.md`.
 
+## Decided by the real customer
+- IP closeness: keep the current approach (mechanics/feel, everything else original). Names and title approved.
+
 ## Waiting for the real customer
 - **Graphics mood**: the proxy lifted the ambient floor tone by +12 % so the new detail reads (`AMBIENT_LIFT`, 0 = the old darker look). Confirm or revert.
-- **Class names and game title** (brand): working names Facilities Manager / Sales Rep / IT Wizard, title "Office Crawler".
 - **Respec rule** (proxy chose free respec in town at LOW confidence; "stay close to the original" may mean no respec).
-- **Skill names** "Packet Filter" / "Evacuation Drill" (safe-default renames, kept away from a genre skill name). Confirm or overturn.
 - **Listen and pick the sound kit**: open docs/product/variants/sound-direction/{A,B,C}.html, play the ambients and SFX (about 2 minutes). Agents cannot judge sound by ear.
 - Review `proxy-log.md` whenever you are back.
 - Answer or confirm Q1 (legal/IP) in `circles/circle-01.md`.
