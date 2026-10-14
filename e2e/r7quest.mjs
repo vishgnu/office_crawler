@@ -36,6 +36,10 @@ const toastText = (g) => g.page.evaluate(() => { const t = document.querySelecto
   let s = await g.state();
   check("setup: Lobby, three side quests available, markers on the three givers", s.scene === "town" && ["sq1", "sq2", "sq3"].every((i) => s.quests[i].state === "available") && ["vendor", "healer", "potions"].every((n) => s.npcs.find((x) => x.id === n)?.marker === "available"), s.npcs);
 
+  await g.page.waitForTimeout(300);
+  const mk = (await g.app("perf")).npcMarkers;
+  check("AC-R-249-1 the render model lists an exclamation marker for the three givers and none for the stash keeper", ["vendor", "healer", "potions"].every((n) => mk.find((m) => m.id === n)?.shape === "exclamation") && !mk.some((m) => m.id === "stash"), mk);
+
   // --- offer (AC-R-249-2, AC-R-247-4), decline (AC-R-245-1)
   await talk(g, "vendor");
   const win = await g.page.evaluate(() => { const w = document.querySelector('[data-testid="npc-window"]'); return { kind: w?.dataset.kind, quest: !!document.querySelector('[data-testid="npc-quest-sq1"]'), state: document.querySelector('[data-testid="npc-quest-state-sq1"]')?.textContent, label: document.querySelector('[data-testid="npc-quest-sq1"]')?.getAttribute("aria-label"), role: document.querySelector('[data-testid="npc-quest-sq1"]')?.getAttribute("role"), vendor: !!document.querySelector('[data-testid="vendor-stock"]'), hs: document.documentElement.scrollWidth <= innerWidth, active: document.activeElement?.dataset?.testid }; });
@@ -117,6 +121,9 @@ const toastText = (g) => g.page.evaluate(() => { const t = document.querySelecto
   let n = 0;
   for (; n < 60; n++) { const r = await g.app("cheat.giveItem", { slot: "body" }); if (!r?.ok) break; }
   s = await g.state();
+  await g.page.waitForTimeout(300);
+  const mk2 = (await g.app("perf")).npcMarkers;
+  check("AC-R-249-1 ready quests show a question marker, a different shape from the exclamation", ["vendor", "healer", "potions"].every((n) => mk2.find((m) => m.id === n)?.shape === "question"), mk2);
   await talk(g, "healer");
   const before = JSON.stringify([s.player.gold, s.player.xp, s.inventory.items.length, s.player.pouch]);
   const rdy = await g.page.evaluate(() => ({ btn: !!document.querySelector('[data-testid="quest-handin-sq2"]'), text: document.querySelector('[data-testid="npc-quest-text-sq2"]')?.textContent, state: document.querySelector('[data-testid="npc-quest-state-sq2"]')?.textContent }));

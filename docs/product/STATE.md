@@ -3,7 +3,7 @@
 _Updated 2026-10-14 by the orchestrator._
 
 **Phase: Build. Round 4 (classes, skill trees, 5 save slots) in progress; round 5 render running; round G (graphics detail)
-in review.** Slices S1–S3 accepted (PROXY). Harness version 0.4.0. Experiments: docs/harness-experiments.md.
+in review.** Slices S1–S3 accepted (PROXY). Harness version 0.4.0 (rounds 1–6 and G), 0.5.0 from round 7. Experiments: docs/harness-experiments.md.
 
 ## Open questions
 - **Q1 ESCALATE - real customer (not delegated): how close names and visuals may go to the original.** Safe default: strict originality.

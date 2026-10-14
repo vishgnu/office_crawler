@@ -21,3 +21,4 @@
 {"at": "2026-10-14T14:52:22Z", "kind": "question", "text": "sidequest how can i secure this againt bot / crawlers ?"}
 {"at": "2026-10-14T14:54:14Z", "kind": "decision", "text": "yes (add noindex to the game build)"}
 {"at": "2026-10-14T15:14:11Z", "kind": "question", "text": "did you updatge the harnes and reviews after the completed rounds?"}
+{"at": "2026-10-14T15:30:45Z", "kind": "decision", "text": "YES (release harness 0.5.0)"}
