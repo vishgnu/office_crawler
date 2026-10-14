@@ -101,6 +101,7 @@ function addWallDecor(floor, props, atlas, isWall, blocked, kindAt) {
       const side = isWall(x, y - 1) ? "N" : isWall(x - 1, y) ? "W" : "";
       if (!side || (floor.theme === "executive" && floor.arena && y <= 6)) continue;
       if (isWall(x, y - 1) && isWall(x - 1, y)) continue; // not in a corner
+      if (isWall(x + 1, y) || isWall(x, y + 1)) continue; // nothing in front of it that would hide it
       cands.push({ x, y, side, k: vhash(x * 7 + 3, y * 13 + 5) });
     }
     cands.sort((a, b) => a.k - b.k);

@@ -15,4 +15,4 @@
 {"round": "G", "role": "customer-proxy", "pkg": "C3 port decision", "tokensK": 72.5, "minutes": 0.6, "status": "done", "source": "agent completion report"}
 {"round": "R5", "role": "implementer", "pkg": "WORLD-R5 class sprites + FX", "tokensK": 390.3, "minutes": 30.8, "status": "done", "source": "agent completion report"}
 {"round": "R4", "role": "implementer", "pkg": "CORE-R4", "tokensK": 513.4, "minutes": 47.1, "status": "done", "source": "agent completion report"}
-{"round": "R4", "role": "harness-retro", "pkg": "retro R4", "tokensK": null, "minutes": null, "status": "done", "source": "agent completion report"}
+{"round": "R4", "role": "harness-retro", "pkg": "retro R4", "tokensK": 133.7, "minutes": 3.0, "status": "done", "source": "agent completion report"}
