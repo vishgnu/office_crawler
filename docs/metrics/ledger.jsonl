@@ -55,4 +55,4 @@
 {"round": "R6", "role": "harness-retro", "pkg": "retro R6", "tokensK": 153.6, "minutes": 5.0, "status": "done", "learnings_new": ["L-032","L-033","L-034","L-035","L-036","L-037","L-038","L-039"], "reopened": ["L-019","L-020","L-022"], "source": "task usage"}
 {"round": "R7", "role": "orchestrator", "pkg": "round start", "status": "started", "source": "orchestrator"}
 {"round": "R7", "role": "requirements-facilitator", "pkg": "circle-03 quests", "tokensK": 98.7, "minutes": 4.0, "status": "done", "questions": 7, "readiness": "11/20", "requirements": "R-240..R-256", "source": "task usage"}
-{"round": "R7", "role": "customer-proxy", "pkg": "circle-03 answers", "tokensK": null, "minutes": null, "status": "done", "readiness": "15/20", "decision": "3 side quests (2 give gear before floor 5), main quest 6 steps, journal J + HUD tracker", "source": "agent report; usage pending"}
+{"round": "R7", "role": "customer-proxy", "pkg": "circle-03 answers", "tokensK": 80.7, "minutes": 0.9, "status": "done", "readiness": "15/20", "decision": "3 side quests (2 give gear before floor 5), main quest 6 steps, journal J + HUD tracker", "source": "task usage"}
