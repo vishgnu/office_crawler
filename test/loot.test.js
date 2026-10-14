@@ -251,3 +251,24 @@ test("snapshot-like state with loot on the ground is JSON-serialisable and round
   for (let i = 0; i < 30; i++) { step(s); step(copy); }
   assert.equal(hashState(copy), hashState(s));
 });
+
+test("G-FIX drop tiles avoid tall props: a kill next to a plant drops on a tile that is not adjacent to it, deterministically", async () => {
+  const { newGame } = await import("../src/core/index.js");
+  const { floorFromRows } = await import("./helpers.js");
+  const mk = () => {
+    const floor = floorFromRows(OPEN);
+    floor.props = [{ type: "plant", x: 5, y: 4, blocks: true }, { type: "server-rack", x: 9, y: 2, blocks: true }, { type: "paper-stack", x: 7, y: 6, blocks: false }];
+    return newGame(1, { floor });
+  };
+  const a = mk(), b = mk();
+  const near = (t, p) => Math.abs(t.x - p.x) <= 1 && Math.abs(t.y - p.y) <= 1;
+  for (const s of [a, b]) {
+    for (let i = 0; i < 8; i++) dropLoot(s, { type: "zombie-intern", level: 3, tile: { x: 6, y: 5 }, tier: "champion" });
+    for (const g of s.groundItems) { assert.ok(!near(g.tile, { x: 5, y: 4 }), `tag on the plant: ${g.tile.x},${g.tile.y}`); assert.ok(!near(g.tile, { x: 9, y: 2 })); }
+  }
+  assert.deepEqual(a.groundItems.map((g) => g.tile), b.groundItems.map((g) => g.tile));
+  // a non-tall prop (paper stack) does not push drops away
+  const c = mk(); c.groundItems.length = 0;
+  const e = dropLoot(c, { type: "zombie-intern", level: 1, tile: { x: 12, y: 6 }, tier: "normal" })[0];
+  if (e) assert.ok(Math.abs(e.tile.x - 12) <= 1 && Math.abs(e.tile.y - 6) <= 1);
+});

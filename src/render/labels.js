@@ -21,11 +21,14 @@ function onSprite(r, actors, self, cam, style) {
   return false;
 }
 const overlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+const BR = { x: 0, y: 0, w: 0, h: 0 };
+const GAP = 4; // minimum gap between stacked plates, px (round G fix: de-collision with a vertical push and a gap)
+const overlapGap = (a, b) => a.x < b.x + b.w + GAP && b.x < a.x + a.w + GAP && a.y < b.y + b.h + GAP && b.y < a.y + a.h + GAP;
 
 export function createLabels(style) {
   const P = style.palette, cache = new Map();
   const placed = Array.from({ length: MAX_PLATES }, () => ({ x: 0, y: 0, w: 0, h: 0, ax: 0, ay: 0, sprite: null, ratio: 0, moved: false, id: "", name: "" }));
-  const cand = [], pips = Array.from({ length: MAX_PIPS }, () => ({ x: 0, y: 0, w: 0, h: 0, ratio: 0, id: "" }));
+  const cand = [], pips = Array.from({ length: MAX_PIPS }, () => ({ x: 0, y: 0, w: 0, h: 0, ratio: 0, id: "", fade: 1 }));
   let pipN = 0;
   const heroRect = { x: 0, y: 0, w: 0, h: 0 };
   const L = {
@@ -99,7 +102,7 @@ export function createLabels(style) {
           r.x = Math.min(cam.w - SAFE - r.w, Math.max(SAFE, ax - Math.round(r.w / 2)));
           r.y = Math.max(SAFE, ay - r.h - k * (r.h + 3));
           ok = !overlap(r, heroRect) && !onSprite(r, actors, a, cam, style);
-          for (let j = 0; j < n && ok; j++) if (overlap(r, placed[j])) ok = false;
+          for (let j = 0; j < n && ok; j++) if (overlapGap(r, placed[j])) ok = false;
           for (let j = 0; j < obstacles.length && ok; j++) if (overlap(r, obstacles[j])) ok = false;
           r.moved = Math.abs(r.x + r.w / 2 - ax) > 6 || ay - r.h - r.y > 4;
         }
@@ -116,7 +119,17 @@ export function createLabels(style) {
         let ok = pp.x > SAFE && pp.x + pw < cam.w - SAFE && pp.y > SAFE;
         for (let j = 0; j < n && ok; j++) if (overlap(pp, placed[j])) ok = false;
         for (let j = 0; j < obstacles.length && ok; j++) if (overlap(pp, obstacles[j])) ok = false;
-        if (ok) pipN++;
+        if (ok) {
+          // a bar that sits on the body of an actor standing in front of its owner (nearer the camera) fades, so it does not read as that actor's health
+          pp.fade = 1;
+          for (const o of actors) {
+            if (o === a || o.dead || o.hid || o.sy <= a.sy || Math.abs(o.sx - a.sx) > 30 * z) continue;
+            const oh = (style.dims[o.type]?.head ?? 50) * z;
+            BR.x = o.sx - 16 * z; BR.y = o.sy - oh; BR.w = 32 * z; BR.h = oh;
+            if (overlap(pp, BR)) { pp.fade = 0.3; break; }
+          }
+          pipN++;
+        }
       }
       return n;
     },
@@ -138,9 +151,11 @@ export function createLabels(style) {
     draw(g) {
       for (let i = 0; i < pipN; i++) { // mini health pips for the rest of the pack
         const p = pips[i];
+        g.globalAlpha = p.fade;
         g.fillStyle = P.ink; g.fillRect(p.x - 1.5, p.y - 1.5, p.w + 3, p.h + 3);
         g.fillStyle = P.plate.hpTrack; g.fillRect(p.x, p.y, p.w, p.h);
         g.fillStyle = P.plate.hp; g.fillRect(p.x, p.y, p.w * p.ratio, p.h);
+        g.globalAlpha = 1;
       }
       for (let i = 0; i < L.count; i++) {
         const r = placed[i], sp = r.sprite;

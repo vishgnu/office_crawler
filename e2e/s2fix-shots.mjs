@@ -1,6 +1,6 @@
 // Screenshots of the S2 fix round (UI-FIX): docs/shots/s2-fix-{fight,inventory,map,phone}.jpg (JPEG q85, <= 300 KB).
 // Usage: node e2e/s2fix-shots.mjs [outDir=docs/shots]. Not asserted; the e2e scripts check the behaviour.
-import { launch, open, freeTilesNear } from "./helpers.mjs";
+import { launch, open, freeTilesNear, startNew } from "./helpers.mjs";
 import { resolve } from "node:path";
 import { statSync } from "node:fs";
 
@@ -15,7 +15,7 @@ const shot = async (g, name) => {
 };
 const begin = async (viewport, seed = 5) => {
   const g = await open(browser, { query: `test=1&seed=${seed}`, viewport, lobby: true });
-  await g.page.click(T("new-game"));
+  await startNew(g.page);
   return g;
 };
 

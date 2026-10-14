@@ -145,7 +145,7 @@ function prepare(floor, atlas) {
     else if (code === STAIRS_DOWN) ground[i] = atlas.get(keys.marker(theme, "stairs-down"));
     else ground[i] = atlas.get(keys.floor(theme, kindAt[i], floorVariant(vhash(x, y))));
   }
-  const props = floor.props.map((p) => { if (p.blocks) blocked[p.y * w + p.x] = 1; return { x: p.x, y: p.y, blocks: p.blocks, e: atlas.get(keys.prop(p.type)), dy: 0, dd: 0 }; });
+  const props = floor.props.map((p) => { if (p.blocks) blocked[p.y * w + p.x] = 1; return { x: p.x, y: p.y, blocks: p.blocks, e: atlas.get(keys.prop(p.type)), dy: 0, dd: 0, led: p.type === "server-rack" }; });
   if (theme === "executive" && floor.arena) addBoardroomDecor(props, atlas);
   addWallDecor(floor, props, atlas, isWall, blocked, kindAt);
   // The Lobby elevator is a tall doorframe standing on the exit tile (no tile can show it alone)
@@ -182,6 +182,17 @@ function prepare(floor, atlas) {
   return c;
 }
 
+/** Blinking drive-bay LEDs on a server rack (round G fix, secondary motion): 4 rows x 3 lights painted over the baked ones (props.js: front face u -0.18..0.02, v 0.28, z 9 + 8.5 i + 3.2). */
+function rackLeds(g, sx, sy, z, now, it) {
+  for (let i = 0; i < 4; i++) for (let k = 0; k < 3; k++) {
+    const n = i * 3 + k, per = 380 + n * 97, on = ((Math.floor(now / per) + n * 5) % 3) !== 1;
+    const u = -0.18 + k * 0.1, x = sx + (u - 0.28) * 32 * z, y = sy + (u + 0.28) * 16 * z - (9 + i * 8.5 + 3.2) * z;
+    g.fillStyle = on ? (k === 2 ? "#ffd08a" : "#7dfff0") : "#262e44";
+    g.beginPath(); g.arc(x, y, 1.45 * z, 0, 6.2832); g.fill();
+    if (on) { g.globalAlpha = 0.28; g.beginPath(); g.arc(x, y, 3 * z, 0, 6.2832); g.fill(); g.globalAlpha = 1; }
+  }
+}
+
 function blit(g, e, sx, sy, z) {
   g.drawImage(e.img, Math.round(sx - e.ox * z), Math.round(sy - e.oy * z), Math.round(e.w * z), Math.round(e.h * z));
 }
@@ -193,12 +204,12 @@ const pool = [], items = [], actorOut = [], posA = { x: 0, y: 0 }, posB = { x: 0
 const out = { heroScreen: { x: 0, y: 0 }, heroDir: 0, actors: actorOut, heroItem: null };
 let nPool = 0;
 const grab = (d, e, x, y) => {
-  const it = pool[nPool++] ?? (pool[nPool - 1] = { d: 0, e: null, x: 0, y: 0, a: 1, actor: false, isPlayer: false, alert: false, shade: 0, tint: "", tintA: 0, flash: false, head: 0, hurt: false, dx: 0, dy: 0, icon: 0, champ: false, mute: false, npc: false, boss: false, summoned: false });
-  it.d = d; it.e = e; it.x = x; it.y = y; it.a = 1; it.actor = false; it.isPlayer = false; it.alert = false; it.shade = 0; it.tint = ""; it.tintA = 0; it.flash = false; it.dx = 0; it.dy = 0; it.icon = 0; it.champ = false; it.mute = false; it.npc = false; it.hurt = false; it.boss = false; it.summoned = false; it.sf = 0;
+  const it = pool[nPool++] ?? (pool[nPool - 1] = { d: 0, e: null, x: 0, y: 0, a: 1, actor: false, isPlayer: false, alert: false, shade: 0, tint: "", tintA: 0, flash: false, head: 0, hurt: false, dx: 0, dy: 0, icon: 0, champ: false, mute: false, npc: false, boss: false, summoned: false, ghost: false, led: false });
+  it.d = d; it.e = e; it.x = x; it.y = y; it.a = 1; it.actor = false; it.isPlayer = false; it.alert = false; it.shade = 0; it.tint = ""; it.tintA = 0; it.flash = false; it.dx = 0; it.dy = 0; it.icon = 0; it.champ = false; it.mute = false; it.npc = false; it.hurt = false; it.boss = false; it.summoned = false; it.sf = 0; it.ghost = false; it.led = false;
   return it;
 };
 const byDepth = (a, b) => a.d - b.d;
-const hp = { x: 0, y: 0 }, F = { g: null, cam: null, atlas: null, prev: null, alpha: 1, fx: null, now: 0, env: null, figs: null, hfigs: null, htype: PLAYER_CLASS, shadowE: null, light: null, items };
+const hp = { x: 0, y: 0 }, F = { blocked: null, fw: 0, fh: 0, g: null, cam: null, atlas: null, prev: null, alpha: 1, fx: null, now: 0, env: null, figs: null, hfigs: null, htype: PLAYER_CLASS, shadowE: null, light: null, items };
 
 function lerpPos(a, o) {
   actorPos(a, posA);
@@ -342,7 +353,7 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
   let shade = 0, tint = "", tintA = 0, shTint = "", sdx = 0, sdy = 0;
   const champ = !isPlayer && a.tier === "champion" && !dying;
   light.sample(pos.x + 0.5, pos.y + 0.5, LS);
-  if (!env.lowFx && LS.tint) { tint = LS.mul; tintA = Math.min(LS.tintA, isPlayer ? 0.15 : 0.2); shTint = LS.sh; sdx = LS.dx; sdy = LS.dy; } // G round, item 9: every actor takes the colour of the pool it stands in (15-25 % multiply) and casts a coloured shadow
+  if (!env.lowFx && LS.tint) { tint = LS.mul; tintA = LS.tintA; shTint = LS.sh; sdx = LS.dx; sdy = LS.dy; } // G round, item 9: every actor takes the colour of the pool it stands in (15-25 % multiply) and casts a coloured shadow
   if (!isPlayer) {
     shade = LS.shade;
     // Final polish: a monster inside a reasonable radius of the hero, or one that is awake and hunting, is never dimmed or hidden by the dark.
@@ -377,6 +388,12 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
     if (a.ai === "stagger") { // recoil away from the facing direction and shiver, easing out over the recovery
       const kk = Math.min(1, a.staggerT / config.hitRecoveryTicks), v = DIR_VEC[dir];
       it.dx = (-v[0] * 4 * kk + Math.sin(now * 0.075) * 1.8 * kk) * z; it.dy = -v[1] * 2 * kk * z;
+    }
+  }
+  if (!isPlayer && !dying && a.tile && F.blocked) { // beside a wall or a tall prop that is drawn in front of it: the actor is shown through it, like the hero (round G fix)
+    for (let k = 0; k < GHOST_DELTAS.length && !it.ghost; k += 2) {
+      const x = a.tile.x + GHOST_DELTAS[k], y = a.tile.y + GHOST_DELTAS[k + 1];
+      if (x < F.fw && y < F.fh && F.blocked[y * F.fw + x]) it.ghost = true;
     }
   }
   it.hurt = isPlayer && !dying && flash; // hero hurt flash: red wash over the sprite
@@ -482,7 +499,9 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) continue;
     project(cam, p.x + 0.5, p.y + 0.5, pt);
     if (pt.x < -margin || pt.x > cam.w + margin || pt.y < -margin || pt.y > yMax) continue;
-    items.push(grab(p.x + p.y + 1 - (p.blocks ? 0 : 0.3) + p.dd, p.e, pt.x + (p.dxs ?? 0) * z, pt.y - p.dy * z + (p.dys ?? 0) * z));
+    const pit = grab(p.x + p.y + 1 - (p.blocks ? 0 : 0.3) + p.dd, p.e, pt.x + (p.dxs ?? 0) * z, pt.y - p.dy * z + (p.dys ?? 0) * z);
+    pit.led = p.led === true && !env.lowFx && !fx.reducedMotion;
+    items.push(pit);
   }
 
   // the Emergency Exit door: a lit prop standing on its tile (the floor it was opened on, and the Lobby spot)
@@ -495,7 +514,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     }
   }
   const hero = core.player, light = env.lighting;
-  fx.core = core; fx.alpha = alpha; // the screen-space pass (floaters, projectiles, loot plates) reads the state through these
+  fx.core = core; fx.alpha = alpha; fx.bodies = actorOut; // the screen-space pass (floaters, projectiles, loot plates) reads the state through these
   // ---- ground loot: rarity ring underneath, a small box or a gold pile on top (the marker, beam and plate come in fx.draw) ----
   const ground = core.groundItems;
   if (ground) for (let i = 0; i < ground.length; i++) {
@@ -513,6 +532,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
 
   // ---- actors: positions first (lights need them), then lit sprites ----
   F.g = g; F.cam = cam; F.atlas = atlas; F.prev = prev; F.alpha = alpha; F.fx = fx; F.now = now; F.env = env; F.light = light;
+  F.blocked = c.blocked; F.fw = fw; F.fh = fh;
   F.figs = figureTable(atlas); F.htype = heroType(core.player.class); F.hfigs = heroFigs(atlas, core.player.class); F.shadowE = atlas.get(keys.fx("shadow"));
   lerpPos(hero, hp);
   const mons = core.monsters, nm = mons.length, npcs = core.floor.npcs ?? [], na = nm + npcs.length;
@@ -561,7 +581,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
   const champColour = env.style.palette.champion;
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
-    if (!it.actor) { blit(g, it.e, it.x, it.y, z); continue; }
+    if (!it.actor) { blit(g, it.e, it.x, it.y, z); if (it.led) rackLeds(g, it.x, it.y, z, now, it); continue; }
     const x = it.x + it.dx, y = it.y + it.dy;
     if (it.a < 1) g.globalAlpha = it.a;
     if (it.champ) { // outline: a baked ring of the sprite's silhouette in the champion colour, under the sprite
@@ -575,7 +595,10 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     if (it.sf & SF.freeze) { g.globalAlpha = 0.5 * it.a; blit(g, atlas.tint(it.e, "#9fe4ff"), x, y, z); }
     if (it.sf & SF.burn) { g.globalAlpha = (fx.reducedMotion ? 0.2 : 0.14 + 0.1 * Math.sin(now / 90 + x)) * it.a; blit(g, atlas.tint(it.e, "#ff7a1f"), x, y, z); }
     if (it.shade > 0) { g.globalAlpha = it.shade * it.a; blit(g, atlas.shade(it.e, "#070518"), x, y, z); }
-    if (it.tintA > 0) { g.globalCompositeOperation = "multiply"; g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, z); g.globalCompositeOperation = "source-over"; }
+    if (it.tintA > 0) { // pool colour on the actor (round G fix): multiply at 15-25 % plus a half-strength colour wash, so the cast survives the additive pool on top of it
+      g.globalCompositeOperation = "multiply"; g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, z); g.globalCompositeOperation = "source-over";
+      g.globalAlpha = it.tintA * 0.8 * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, z);
+    }
     if (it.hurt) { g.globalAlpha = 0.14; blit(g, atlas.tint(it.e, "#ff1f2e"), x, y, z); }
     g.globalAlpha = 1;
     if (it.summoned) blit(g, atlas.get(keys.fx("badge")), x + 5 * z, y - 30 * z, z * 0.9); // temp badge pinned to the chest
@@ -583,6 +606,24 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     if (it.icon) drawIcon(g, atlas, it, x, y, z, now);
   }
 
+  for (let i = 0; i < items.length; i++) { // actors beside a wall top: a see-through copy drawn only where a wall or prop in front covers the sprite (nothing is clipped away)
+    const it = items[i];
+    if (!it.ghost || it.shade >= 0.6) continue;
+    const ax = it.x + it.dx, ay = it.y + it.dy, ex = it.e;
+    for (let j = i + 1; j < items.length; j++) {
+      const w = items[j];
+      if (w.actor || w.e.h < 36) continue; // walls and tall props only
+      const wx = w.x - w.e.ox * z, wy = w.y - w.e.oy * z, ww = w.e.w * z, wh = w.e.h * z;
+      const x0 = Math.max(wx, ax - ex.ox * z), y0 = Math.max(wy, ay - ex.oy * z), x1 = Math.min(wx + ww, ax - ex.ox * z + ex.w * z), y1 = Math.min(wy + wh, ay - ex.oy * z + ex.h * z);
+      if (x1 - x0 < 2 || y1 - y0 < 2) continue;
+      g.save(); g.beginPath(); g.rect(x0, y0, x1 - x0, y1 - y0); g.clip();
+      g.globalAlpha = 0.6 * it.a; blit(g, it.e, ax, ay, z);
+      if (it.shade > 0) { g.globalAlpha = it.shade * it.a * 0.6; blit(g, atlas.shade(it.e, "#070518"), ax, ay, z); }
+      if (it.tintA > 0) { g.globalCompositeOperation = "multiply"; g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), ax, ay, z); }
+      g.restore();
+    }
+    g.globalAlpha = 1;
+  }
   // pack readability: when enemies stand in front of the hero he is drawn again above them, half transparent, with his ring's front arc
   if (buried && hi && hero.action !== "dead") {
     const rx = env.style.dims[F.htype].shadowR * 1.7 * z, ry = rx * 0.5;

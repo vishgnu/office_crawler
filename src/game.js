@@ -17,6 +17,7 @@ import { createMap } from "./render/map.js";
 import { pick } from "./input/pick.js";
 import { requiredKeys } from "./render/keys.js";
 import { slotsView } from "./save/session.js";
+import { damageMonster } from "./core/systems/damage.js";
 
 const MAX_CATCHUP_TICKS = 8;
 
@@ -147,7 +148,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     slotsCache = null;
     if (cmd.t === "createCharacter" && r.ok) { game.startState(r.state, { fresh: true }); }
     else if ((cmd.t === "loadSlot" || cmd.t === "continue") && r.ok) { game.startState(r.state); const m = noticeText(r.notes); if (m) game.toast(m); }
-    else if (cmd.t === "renameSlot" && r.ok && running && cmd.slot === active) game.input({ t: "setName", name: r.name });
+    else if (cmd.t === "renameSlot" && r.ok && running && cmd.slot === active) { const was = running.paused; running.paused = false; game.input({ t: "setName", name: r.name }); running.paused = was; } // the pause menu is open when this is used: the core refuses input while paused
     if (r.ok && ["createCharacter", "loadSlot", "continue"].includes(cmd.t)) { game.ui.slots = false; game.ui.create = null; game.ui.options = null; game.capturing = false; }
     emitChange();
     return r;
@@ -363,6 +364,8 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   game.cheat = {
     setLevel: (n) => { const r = cheat((c) => setLevel(c, n)); pointsHint(); return r; },
     setHp: (n) => cheat((c) => setHp(c, n)),
+    /** Class-independent damage for scripted fights (bosses resist fire and cold, so a skill kill depends on the class): true damage through the normal death path. */
+    damageMonster: (id, n) => cheat((c) => { const m = c.monsters.find((o) => o.id === id); if (!m || m.ai === "dead") return { ok: false, error: "no such monster" }; damageMonster(c, m, Math.max(1, Math.floor(n)), { source: "player" }); return { ok: true, hp: m.hp }; }),
     teleportFloor: (d) => cheat((c) => teleportFloor(c, d)),
     giveGold: (n) => cheat((c) => (giveGold(c, n) ? { ok: true, gold: c.player.gold } : { ok: false, error: "gold must be a positive integer" })),
     /** Drop a rolled item on the ground next to the hero: opts as rollItem ({slot, rarity, base, ilvl} or {potion:true}). */

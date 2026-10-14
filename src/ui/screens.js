@@ -75,7 +75,7 @@ export function createScreens(root, h) {
       if (recent) { const sub = el("span", "btn-sub"); sub.dataset.testid = "continue-who"; sub.textContent = `${recent.name} · ${slotSummary(recent).split(" · ").slice(0, 2).join(" · ")}`; cont.append(sub); cont.classList.add("two"); cont.setAttribute("aria-label", `${T.continueGame}: ${recent.name}`); }
       box.append(cont);
       box.append(button(S.newGame, "new-game", () => h.openCreate()));
-      const load = button(T.loadGame, "load-game", () => { returnFocus = "load-game"; h.openSlots(); }); load.disabled = ok.length === 0 && !slots.some((e) => e.state !== "empty"); load.title = load.disabled ? T.noSaveYet : "";
+      const load = button(T.loadGame, "load-game", () => { returnFocus = "load-game"; h.openSlots(); }); 
       box.append(load);
       box.append(button(T.options, "options", () => h.openOptions()));
       box.append(el("p", "hint", S.controlsHint), el("p", "seed", `${S.seedLabel} ${info.seed}`));
@@ -155,7 +155,7 @@ export function createScreens(root, h) {
       sub = null;
       const sm = info.summary ? `${info.summary.kills}/${info.summary.seconds}/${info.summary.depth}` : "", v = info.victory ? `${info.victory.seconds}/${info.victory.kills}` : "";
       const sl = menu === "title" ? JSON.stringify(info.slots?.index ?? null) : menu === "create" ? `${info.create?.slot ?? ""}/${(info.slots?.index.slots ?? []).map((e) => e.state[0]).join("")}` : "";
-      const key = menu ? `${menu}:${sub ?? ""}:${info.seed ?? ""}:${sm}:${v}:${sl}:${info.notice ?? ""}:${info.story ?? ""}` : "";
+      const key = menu ? `${menu}:${sub ?? ""}:${info.seed ?? ""}:${sm}:${v}:${sl}:${menu === "title" ? info.notice ?? "" : ""}:${info.story ?? ""}` : "";
       if (key === current && !force) return;
       current = key;
       active?.destroy?.(); active = null;

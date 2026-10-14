@@ -15,6 +15,9 @@ import { normalizeOptions } from "./ui/options.js";
 import { errorText } from "./ui/slots.js";
 import { bindKey, defaultKeys } from "./input/keymap.js";
 import { T } from "./ui/text.js";
+import { provideFigures } from "./ui/figureHost.js";
+import { drawFigure } from "./render/figure.js";
+import { HERO_ACCENT } from "./render/styles/vector/heroes.js";
 
 const S = content.strings;
 const params = new URLSearchParams(location.search);
@@ -30,6 +33,7 @@ const seedFixed = testMode || (params.get("seed") !== null && params.get("seed")
 const seed = Number.isFinite(seedParam) && params.get("seed") !== null && params.get("seed") !== "" ? seedParam : testMode ? 1 : Date.now() % 2147483647;
 
 async function boot() {
+  provideFigures({ draw: drawFigure, accent: HERO_ACCENT });
   document.title = S.gameTitle;
   const overlay = document.getElementById("overlay");
   overlay.textContent = S.loading;
@@ -46,6 +50,7 @@ async function boot() {
   hc = options.highContrast; lowFx = options.lowFx;
   let game = null;
   function notify(key, extra) { // a save problem or result: toast while playing, a line on the title screen otherwise
+    game?.refreshSlots(); // a notice from inside a store call: the cached slot list is stale by now
     let text = content.strings[key];
     if (!text) return;
     if (key === "slotMigrated") text = text.replace("{n}", String(extra?.refundedPoints ?? 0));
@@ -148,18 +153,20 @@ async function boot() {
     remove: (n) => { const r = store.remove(n ?? store.activeSlot(), { confirm: true }); game.refreshSlots(); shellSync(); return r; },
   };
   if (mig.migrated) notify("slotMigrated", mig.migrated);
-  bus.on("autosave", (ev) => { if (game.core) { const r = store.autosave(game.core, ev); if (r.ok && !r.skipped) game.refreshSlots(); } });
-  const flush = () => { if (game.core && !game.error && game.core.scene !== "error") { store.autosave(game.core, {}, { force: true }); game.refreshSlots(); } };
-  addEventListener("pagehide", () => { flush(); store.clearActive(); });
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); audio.setVisible(document.visibilityState !== "hidden"); });
+  let resume = null; // the slot this tab was playing when the page was hidden: restored if the page comes back (bfcache) so autosave keeps working
+  const ensureActive = () => { if (game.core && resume !== null && store.activeSlot() === null) store.setActive(resume); };
+  bus.on("autosave", (ev) => { if (game.core) { ensureActive(); const r = store.autosave(game.core, ev); if (r.ok && !r.skipped) game.refreshSlots(); } });
+  const flush = () => { if (game.core && !game.error && game.core.scene !== "error") { ensureActive(); store.autosave(game.core, {}, { force: true }); game.refreshSlots(); } };
+  addEventListener("pagehide", () => { flush(); resume = store.activeSlot() ?? resume; store.clearActive(); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") ensureActive(); if (document.visibilityState === "hidden") flush(); audio.setVisible(document.visibilityState !== "hidden"); });
   // Leaving a session (Quit to title, game over, victory) saves first: Continue must show what the player just did.
-  const saveAndQuit = () => { flush(); store.clearActive(); game.toTitle(); };
+  const saveAndQuit = () => { flush(); resume = null; store.clearActive(); game.toTitle(); };
   const shell = { download, session: (cmd) => game.session(cmd), slots: () => game.slots, active: () => store.activeSlot(), adapter: store.adapter, playing: () => !!game.core };
 
   const screens = createScreens(overlay, {
     ...shell,
     openSlots: () => game.openSlots(), closeSlots: () => game.closeSlots(), openCreate: (o) => game.openCreate(o), closeCreate: () => game.closeCreate(),
-    titleMessage: (r) => { game.titleNotice = errorText(r.error); shellSync(); },
+    titleMessage: (r) => { game.titleNotice = game.titleNotice ?? errorText(r.error); shellSync(); },
     resume: () => game.key("Escape"),
     restart: () => game.input({ t: "restart" }),
     respawn: () => game.input({ t: "respawn" }),

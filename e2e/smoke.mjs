@@ -1,5 +1,5 @@
 // Page loads from file://, shows the title screen, ships no hook without ?test=1, makes no foreign requests.
-import { launch, open, check, finish } from "./helpers.mjs";
+import { launch, open, check, finish, startNew } from "./helpers.mjs";
 
 const browser = await launch();
 {
@@ -13,7 +13,7 @@ const browser = await launch();
   check("CSP meta tag present", (await g.page.locator('meta[http-equiv="Content-Security-Policy"]').count()) === 1);
   check("AC-R-110-1 no page error / console.error on load", g.errors.length === 0, g.errors);
   check("AC-NFR-O02-1 only file:// or data: requests", g.requests.every((u) => /^(file|data|blob):/.test(u)), g.requests);
-  await g.page.click('[data-testid="new-game"]');
+  await startNew(g.page);
   await g.page.waitForSelector('[data-testid="story-continue"]'); // outside test mode a new run opens with the story text
   await g.page.click('[data-testid="story-continue"]');
   await g.page.waitForSelector('[data-testid="story-continue"]', { state: "detached" });
@@ -26,7 +26,7 @@ const browser = await launch();
   const s = await g.state();
   check("AC-R-110-1 scene is title on load", s.scene === "title" && s.ui.menu === "title");
   check("AC-R-076-1 title offers New game", (await g.page.locator('[data-testid="new-game"]').count()) === 1);
-  await g.page.click('[data-testid="new-game"]');
+  await startNew(g.page);
   const s2 = await g.state();
   check("AC-R-001-2 clicking New game starts in the Lobby (scene town, S2)", s2.scene === "town" && s2.depth === 0 && s2.seed === 5, { scene: s2.scene, seed: s2.seed });
   check("no page errors", g.errors.length === 0, g.errors);

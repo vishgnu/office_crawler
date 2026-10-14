@@ -1,10 +1,10 @@
 // Real-time loop (?realtime=1): fixed-step accumulator runs on its own, pause stops it, input still works.
-import { launch, open, check, finish, freeTilesNear, tileScreen, SHOTS } from "./helpers.mjs";
+import { launch, open, check, finish, freeTilesNear, tileScreen, SHOTS, startNew } from "./helpers.mjs";
 
 const browser = await launch();
 const g = await open(browser, { query: "test=1&seed=1&realtime=1" });
 const frames = (n) => g.page.evaluate((k) => new Promise((res) => { let i = 0; const f = () => (++i >= k ? res() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
-await g.page.click('[data-testid="new-game"]');
+await startNew(g.page);
 let s = await g.state();
 const T = freeTilesNear(s, s.player.tile, 6, 4)[0], p = tileScreen(s.ui.camera, T.x, T.y);
 await g.page.mouse.click(p.x, p.y);
@@ -32,7 +32,7 @@ check("AC-NFR-O02-1 only file:/data: requests", g.requests.every((u) => /^(file|
 await g.context.close();
 { // a fresh quiet game: the hero walks on its own for a second
   const g2 = await open(browser, { query: "test=1&seed=1&realtime=1" });
-  await g2.page.click('[data-testid="new-game"]');
+  await startNew(g2.page);
 // camera easing keeps the click mapping exact: the camera the hook reports is the one on screen, and picking in the same
 // task goes through it, however far the eased camera lags behind the moving hero (the hero is walking here)
 { const s0 = await g2.state(), far = freeTilesNear(s0, s0.player.tile, 10, 7)[0]; await g2.app("clickTile", far.x, far.y); }

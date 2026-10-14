@@ -1,6 +1,6 @@
 // Screenshots of the S2 UI for visual review (not asserted). Usage: node e2e/ui-shots.mjs [outDir=docs/shots]
 // Writes s2-ui-{inventory,employee-file,vendor,skills,lobby}.jpg (JPEG q85) plus the 1024 px and phone variants.
-import { launch, open, tileScreen } from "./helpers.mjs";
+import { launch, open, tileScreen, startNew } from "./helpers.mjs";
 import { resolve } from "node:path";
 import { statSync } from "node:fs";
 
@@ -10,7 +10,7 @@ const browser = await launch();
 const shot = async (g, name) => { const path = `${out}/s2-ui-${name}.jpg`; await g.page.waitForTimeout(150); await g.page.screenshot({ path, type: "jpeg", quality: 85 }); console.log(name, Math.round(statSync(path).size / 1024) + " KB"); };
 const begin = async (viewport, seed = 1) => {
   const g = await open(browser, { query: `test=1&seed=${seed}`, viewport, lobby: true });
-  await g.page.click(T("new-game"));
+  await startNew(g.page);
   return g;
 };
 const gear = async (g) => {

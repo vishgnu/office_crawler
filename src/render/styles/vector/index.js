@@ -13,6 +13,8 @@ import { drawProjectile, drawLootItem, drawGold, drawMuted, drawFlee, drawSpark,
 import { VESSEL_REF, VESSEL_SHAPES, VESSEL_PAD, drawVesselFrame, drawVesselLive, vesselFrameSize, drawSlot, drawIconStrike, drawIconPlus, drawAlert, drawPaper, drawShadow, drawSlash } from "./ui.js";
 import { drawBadge, drawBoardTable, drawChair, drawTrophy, drawScreen, TABLE_BOX, SCREEN_BOX } from "./boardroom.js";
 
+/** Wider rim ring for dark-suit monsters, so they stand off dark concrete (round G fix). */
+const RIM_MULT = { auditor: 1.7, "middle-manager": 1.6, consultant: 1.6 };
 const yieldFrame = () => new Promise((r) => setTimeout(r, 0));
 
 // Scratch canvases for the rim bake (reused for every figure sprite).
@@ -68,7 +70,7 @@ export const vector = {
     const figure = (type, build, anims = ANIMS) => steps.push(() => {
       const rimColour = palette.rims[type];
       for (const [anim, n] of Object.entries(anims)) for (let d = 0; d < DIRS; d++) for (let f = 0; f < n; f++) {
-        atlas.add(build(anim, d, f), FIG_W, FIG_H, FIG_FX, FIG_FY, (g, sc) => figureWithRim(g, sc, FIG_W, FIG_H, rim, rimColour, (tg) => { tg.translate(FIG_FX, FIG_FY); drawFigure(tg, type, anim, d, f); }));
+        atlas.add(build(anim, d, f), FIG_W, FIG_H, FIG_FX, FIG_FY, (g, sc) => figureWithRim(g, sc, FIG_W, FIG_H, rim * (RIM_MULT[type] ?? 1), rimColour, (tg) => { tg.translate(FIG_FX, FIG_FY); drawFigure(tg, type, anim, d, f); }));
       }
     });
     figure(PLAYER_CLASS, (a, d, f) => keys.plr(PLAYER_CLASS, a, d, f), PLAYER_ANIMS);

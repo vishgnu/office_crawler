@@ -2,12 +2,14 @@
 // options (sound, key remapping, accessibility), audio cues for the boss events, the victory screen and keep playing.
 // Screenshots (JPEG q85) go to docs/shots/s3-ui-{title,options,victory,boss-bar}.jpg.
 import { readFileSync, mkdirSync, statSync } from "node:fs";
-import { launch, open, check, finish } from "./helpers.mjs";
+import { launch, open, check, finish, startNew } from "./helpers.mjs";
 import { content, config } from "../src/core/index.js";
 import { DEFAULT_KEYS } from "../src/input/keymap.js";
 import { T as UT } from "../src/ui/text.js";
 
 const S = content.strings;
+const FM = content.classes[0];
+const SLOT_KEY = (n) => `office-crawler.slot.${n}`, INDEX_KEY = "office-crawler.slots";
 const browser = await launch();
 const T = (id) => `[data-testid="${id}"]`;
 const SHOTS = "docs/shots";
@@ -15,30 +17,38 @@ mkdirSync(SHOTS, { recursive: true });
 const shot = async (page, name) => { const path = `${SHOTS}/s3-ui-${name}.jpg`; await page.screenshot({ path, type: "jpeg", quality: 85 }); const kb = statSync(path).size / 1024; check(`screenshot ${name}.jpg is at most 300 KB`, kb <= 300, kb); };
 const start = async (query = "test=1&seed=1", viewport = { width: 1280, height: 720 }) => {
   const g = await open(browser, { query, viewport, lobby: true });
-  await g.page.click(T("new-game"));
+  await startNew(g.page);
   return g;
 };
 const reload = async (g) => { await g.page.reload(); await g.page.waitForFunction(() => window.__app?.getState().scene === "title", null, { timeout: 15000 }); };
 const setRange = (page, id, v) => page.locator(T(id)).evaluate((el, val) => { el.value = String(val); el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); }, v);
 const disabled = (page, id) => page.locator(T(id)).isDisabled();
 const lsKeys = (page) => page.evaluate(() => Object.keys(localStorage));
+const ownKeys = (keys) => keys.every((k) => k.startsWith("office-crawler.")) && !keys.includes(config.saveKey);
+const openLoad = async (page) => { await page.click(T("load-game")); await page.waitForSelector(T("slots-view")); };
+const slotState = (page, n) => page.locator(T(`slot-${n}`)).getAttribute("data-state");
 const levelUp = async (g, level = 30) => {
   await g.app("cheat.setLevel", level);
   await g.page.evaluate(() => { const a = window.__app; const pts = a.getState().player.attrPoints; for (let i = 0; i < pts; i++) a.input({ t: "allocate", attr: i % 3 === 0 ? "stamina" : "grit" }); });
 };
 const near = (a, b, e = 0.001) => Math.abs(a - b) <= e;
 
-// ---------------------------------------------------------------- title, save round trip, autosave triggers
+// ---------------------------------------------------------------- title, save round trip, autosave triggers (five slots, R5)
 let savedText = null;
 {
   const g = await open(browser, { query: "test=1&seed=1", lobby: true });
   let s = await g.state();
-  check("AC-R-076-1 title offers New game, Continue (disabled without a save) and Options", s.scene === "title" && (await g.page.locator(T("new-game")).count()) === 1 && (await disabled(g.page, "continue")) && (await g.page.locator(T("options")).count()) === 1);
-  check("AC-R-090-5 no save: Continue is disabled, Export is disabled", (await disabled(g.page, "continue")) && (await disabled(g.page, "export-save")));
+  check("AC-R-076-1 title offers New game, Continue (disabled without a save), Load game and Options", s.scene === "title" && (await g.page.locator(T("new-game")).count()) === 1 && (await disabled(g.page, "continue")) && (await g.page.locator(T("load-game")).count()) === 1 && (await g.page.locator(T("options")).count()) === 1);
+  const contOff = await disabled(g.page, "continue");
+  await openLoad(g.page);
+  const names = await g.page.locator('[data-testid^="slot-name-"]').allInnerTexts();
+  check("AC-R-090-5 no save: Continue is disabled and the Load game dialog lists five empty slots", contOff && names.length === 5 && names.every((n) => /Empty/.test(n)), names);
+  await g.page.keyboard.press("Escape");
+  check("Escape closes the Load game dialog and focus returns to the Load game button", (await g.state()).ui.menu === "title" && (await g.page.evaluate(() => document.activeElement?.dataset?.testid)) === "load-game");
   check("audio engine exists and the title bed is the lobby ambient (cue state readable)", (await g.app("audio.getState")).ambientId === null || (await g.app("audio.getState")).ambientId === "ambient:lobby");
-  await g.page.click(T("new-game")); // a first click: unlocks audio, emits the click cue
+  await startNew(g.page, { name: "Pat Pending" }); // a first click: unlocks audio, emits the click cue
   s = await g.state();
-  check("New game without a save starts at once (no confirm): scene town", s.scene === "town");
+  check("New game (class, name, Start) starts at once in the Lobby: scene town, a character named Pat Pending", s.scene === "town" && s.player.name === "Pat Pending");
   check("AC-R-080-3 a UI button click logs the uiClick cue", (await g.app("audio.getState")).cueLog.some((c) => c.name === "uiClick"));
   check("audio is unlocked after the first gesture", (await g.app("audio.getState")).unlocked === true);
   await levelUp(g, 7);
@@ -47,20 +57,20 @@ let savedText = null;
   const w = await g.app("save.write");
   check("save.write() succeeds", w.ok === true, w);
   const keys = await lsKeys(g.page);
-  check("AC-R-090-4 / NFR-D01-1 only the documented keys are in localStorage, no cookie", keys.every((k) => [config.saveKey, config.optionsKey].includes(k)) && keys.includes(config.saveKey) && (await g.page.evaluate(() => document.cookie)) === "", keys);
+  check("AC-R-090-4 / NFR-D01-1 only the documented office-crawler keys (slot, index, options) are in localStorage, no cookie", ownKeys(keys) && keys.includes(SLOT_KEY(1)) && keys.includes(INDEX_KEY) && (await g.page.evaluate(() => document.cookie)) === "", keys);
   const raw = await g.app("save.raw");
-  check("AC-R-090-4 the save is at most config.saveMaxBytes", raw.length <= config.saveMaxBytes, raw.length);
+  check("AC-R-090-4 the save is at most config.slotMaxBytes", raw.length <= config.slotMaxBytes, raw.length);
   savedText = raw;
   const before = await g.state();
   await reload(g);
-  check("after reload Continue is enabled", !(await disabled(g.page, "continue")));
+  check("after reload Continue is enabled and names the character", !(await disabled(g.page, "continue")) && /Pat Pending/.test(await g.page.locator(T("continue-who")).innerText()));
   await g.page.click(T("continue"));
   s = await g.state();
   const canon = (v) => (Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])])) : v);
   const eq = (a, b) => JSON.stringify(canon(a)) === JSON.stringify(canon(b)); // deep equal, key order aside
-  check("AC-R-090-1 Continue restores level, xp, attrs, points, skills, bar, gold, class, inventory, equipment, belt, stash, deepestDepth, bossDefeated",
-    s.scene === "town" && ["level", "xp", "attrs", "attrPoints", "skillPoints", "skills", "skillBar", "gold", "class"].every((k) => eq(s.player[k], before.player[k])) &&
-    ["inventory", "equipment", "belt", "stash", "deepestDepth", "bossDefeated"].every((k) => eq(s[k], before[k])), { scene: s.scene, diff: [...["level", "xp", "attrs", "attrPoints", "skillPoints", "skills", "skillBar", "gold", "class"].filter((k) => !eq(s.player[k], before.player[k])), ...["inventory", "equipment", "belt", "stash", "deepestDepth", "bossDefeated"].filter((k) => !eq(s[k], before[k]))] });
+  check("AC-R-090-1 Continue restores level, xp, attrs, points, skills, bar, gold, class, name, inventory, equipment, belt, stash, deepestDepth, bossDefeated",
+    s.scene === "town" && ["level", "xp", "attrs", "attrPoints", "skillPoints", "skills", "skillBar", "gold", "class", "name"].every((k) => eq(s.player[k], before.player[k])) &&
+    ["inventory", "equipment", "belt", "stash", "deepestDepth", "bossDefeated"].every((k) => eq(s[k], before[k])), { scene: s.scene, diff: [...["level", "xp", "attrs", "attrPoints", "skillPoints", "skills", "skillBar", "gold", "class", "name"].filter((k) => !eq(s.player[k], before.player[k])), ...["inventory", "equipment", "belt", "stash", "deepestDepth", "bossDefeated"].filter((k) => !eq(s[k], before[k]))] });
   check("AC-R-090-1 options are carried in the state", s.options && s.options.keys && eq(s.options.keys, DEFAULT_KEYS));
 
   // pagehide saves the changes since the last autosave
@@ -96,30 +106,44 @@ let savedText = null;
 
   // many autosave triggers: one save, one key
   await g.page.evaluate(() => { for (let i = 0; i < 100; i++) window.__app.save.write(); });
-  check("AC-R-091-5 100 saves leave exactly one save key", (await lsKeys(g.page)).filter((k) => k === config.saveKey).length === 1);
+  check("AC-R-091-5 100 saves leave exactly one slot key for the character", (await lsKeys(g.page)).filter((k) => /^office-crawler\.slot\.\d+$/.test(k)).length === 1);
 
-  // New game with a save: confirm
+  // a second character takes the next free slot and never touches the first one
   await g.app("cheat.giveGold", 5);
   await g.page.evaluate(() => window.__app.save.write());
-  const kept = await g.app("save.raw");
   await g.app("pause"); // open the pause menu to leave to the title
   await g.page.click(T("quit"));
-  await g.page.click(T("new-game"));
-  check("AC-R-092-4 New game with a save asks for confirmation (scene still title)", (await g.page.locator(T("confirm-new-yes")).count()) === 1 && (await g.state()).scene === "title");
-  await g.page.click(T("confirm-new-no"));
-  check("AC-R-092-4 cancelling keeps the save and the title", (await g.state()).scene === "title" && (await g.app("save.raw")) === kept);
-  await g.page.click(T("new-game"));
-  await g.page.click(T("confirm-new-yes"));
+  const kept = await g.app("slots.raw", 1);
+  await startNew(g.page, { name: "Second Hand" });
   s = await g.state();
-  check("AC-R-092-4 confirming starts a new game (gold back to the start value)", s.scene === "town" && s.player.gold === config.startGold, s.player.gold);
+  check("AC-R-092-4 New game with a character already saved goes to the next free slot: gold back to the start value, slot 1 untouched, slot 2 active", s.scene === "town" && s.player.gold === config.startGold && (await g.app("slots.raw", 1)) === kept && (await g.app("slots.list")).active === 2, { gold: s.player.gold });
 
-  // delete character
+  // replacing a character asks first, naming it (the old one is kept for undo)
   await g.app("save.write");
   await g.app("pause");
   await g.page.click(T("quit"));
-  await g.page.click(T("delete-save"));
-  await g.page.click(T("confirm-delete-yes"));
-  check("AC-NFR-D02-1 Delete character removes the save key, Continue is gone, the options key stays", !(await lsKeys(g.page)).includes(config.saveKey) && (await disabled(g.page, "continue")));
+  await openLoad(g.page);
+  await g.page.click(T("slot-new-1"));
+  await g.page.fill(T("create-name"), "Fresh Start");
+  await g.page.click(T("create-start"));
+  check("AC-R-092-4 replacing a character asks for confirmation that names it (scene still title, nothing written)", (await g.page.locator(T("create-confirm-yes")).count()) === 1 && /Pat Pending/.test(await g.page.locator(T("create-confirm-title")).innerText()) && (await g.state()).scene === "title" && (await g.app("slots.raw", 1)) === kept);
+  await g.page.click(T("create-confirm-no"));
+  check("AC-R-092-4 cancelling keeps the character", (await g.state()).scene === "title" && (await g.app("slots.raw", 1)) === kept);
+  await g.page.click(T("create-start"));
+  await g.page.click(T("create-confirm-yes"));
+  s = await g.state();
+  check("AC-R-092-4 confirming starts the new character in slot 1; the replaced one is kept once for undo", s.scene === "town" && s.player.name === "Fresh Start" && s.player.gold === config.startGold && (await g.app("slots.keys")).includes(`${SLOT_KEY(1)}.prev`), { name: s.player.name });
+
+  // delete character (from the slot list, naming it)
+  await g.app("save.write");
+  await g.app("pause");
+  await g.page.click(T("quit"));
+  await openLoad(g.page);
+  await g.page.click(T("slot-delete-2"));
+  check("delete asks first and names the character", /Second Hand/.test(await g.page.locator(T("slot-confirm-title")).innerText()));
+  await g.page.click(T("slot-confirm-yes"));
+  const after = await lsKeys(g.page);
+  check("AC-NFR-D02-1 Delete character removes the slot key, the other slot and the options key stay", !after.includes(SLOT_KEY(2)) && after.includes(SLOT_KEY(1)) && (await slotState(g.page, 2)) === "empty" && after.length > 0);
   check("no page errors (save round trip)", g.errors.length === 0, g.errors);
   await g.context.close();
 }
@@ -128,22 +152,42 @@ let savedText = null;
 {
   const g = await open(browser, { query: "test=1&seed=1", lobby: true });
   const trunc = savedText.slice(0, 200);
-  await g.page.evaluate(([k, v]) => localStorage.setItem(k, v), [config.saveKey, trunc]);
+  // found at boot: a damaged index forces the scan of the five slot keys
+  await g.page.evaluate(([i, k, v]) => { localStorage.setItem(i, "{"); localStorage.setItem(k, v); }, [INDEX_KEY, SLOT_KEY(1), trunc]);
   await reload(g);
   let s = await g.state();
-  check("AC-NFR-D03-3 a corrupt save: no crash, scene title, a notice offers a fresh start", s.scene === "title" && s.ui.notice === S.saveCorrupt && (await g.page.locator(T("title-notice")).innerText()).includes(S.saveCorrupt), s.ui.notice);
-  check("AC-NFR-D03-3 the corrupt text is kept and exportable; Continue is disabled", (await g.app("save.export", "corrupt")) === trunc && (await disabled(g.page, "continue")));
-  await g.page.click(T("new-game"));
-  check("AC-NFR-D03-3 New game works and keeps the backup", (await g.state()).scene === "town" && (await g.app("save.export", "corrupt")) === trunc);
+  check("AC-NFR-D03-3 a corrupt slot found at boot: no crash, scene title, Continue disabled, the slot is shown as damaged", s.scene === "title" && (await disabled(g.page, "continue")) && (await openLoad(g.page), await slotState(g.page, 1)) === "bad");
+  const [dl] = await Promise.all([g.page.waitForEvent("download"), g.page.click(T("slot-export-1"))]);
+  check("AC-NFR-D03-3 the damaged text is kept and exportable", readFileSync(await dl.path(), "utf8") === trunc);
+  await g.page.keyboard.press("Escape");
+  await startNew(g.page);
+  check("AC-NFR-D03-3 New game works (next free slot) and keeps the damaged slot text", (await g.state()).scene === "town" && (await g.app("slots.raw", 1)) === trunc);
   await g.context.close();
 }
 {
-  const g = await open(browser, { query: "test=1&seed=1", lobby: true });
-  const newer = JSON.stringify({ ...JSON.parse(savedText), version: config.saveVersion + 1 });
-  await g.page.evaluate(([k, v]) => localStorage.setItem(k, v), [config.saveKey, newer]);
+  // found on load: the index says ok, the text is cut off
+  const g = await start();
+  await g.app("save.write");
+  await g.app("pause"); await g.page.click(T("quit"));
+  await g.page.evaluate(([k, v]) => localStorage.setItem(k, v), [SLOT_KEY(1), savedText.slice(0, 200)]);
   await reload(g);
+  await g.page.click(T("continue"));
   const s = await g.state();
-  check("AC-NFR-D03-2 a save from a newer version: notice, save untouched, New game remains", s.scene === "title" && s.ui.notice === S.saveTooNew && (await g.app("save.raw")) === newer && (await g.page.locator(T("new-game")).count()) === 1, s.ui.notice);
+  check("AC-NFR-D03-3 a corrupt save on Continue: no crash, a notice says it was kept, Continue is gone, New game remains", s.scene === "title" && s.ui.notice === S.slotCorrupt && (await g.page.locator(T("title-notice")).innerText()).includes(S.slotCorrupt) && (await disabled(g.page, "continue")) && (await g.page.locator(T("new-game")).count()) === 1, s.ui.notice);
+  await g.context.close();
+}
+{
+  const g = await start();
+  await g.app("save.write");
+  await g.app("pause"); await g.page.click(T("quit"));
+  const newer = JSON.stringify({ ...JSON.parse(savedText), version: config.saveVersion + 1 });
+  await g.page.evaluate(([k, v]) => localStorage.setItem(k, v), [SLOT_KEY(1), newer]);
+  await reload(g);
+  await g.page.click(T("continue"));
+  const s = await g.state();
+  check("AC-NFR-D03-2 a save from a newer version: notice, save untouched, New game remains", s.scene === "title" && s.ui.notice === S.saveTooNewSlot && (await g.app("slots.raw", 1)) === newer && (await g.page.locator(T("new-game")).count()) === 1, s.ui.notice);
+  await openLoad(g.page);
+  check("the newer slot is labelled in the list and cannot be replaced silently", (await slotState(g.page, 1)) === "newer");
   await g.context.close();
 }
 {
@@ -151,7 +195,7 @@ let savedText = null;
   await g.page.evaluate(() => { Storage.prototype.setItem = function () { throw new Error("QuotaExceededError"); }; });
   const r = await g.app("save.write");
   const s = await g.state();
-  check("AC-R-090-6 a failing storage: the game keeps running and ui.notice says the save failed", r.ok === false && s.scene === "town" && s.ui.notice?.text === S.saveFailed && (await g.page.locator(T("toast")).innerText()).includes(S.saveFailed), { r, notice: s.ui.notice });
+  check("AC-R-090-6 a failing storage: the game keeps running and ui.notice says the save failed", r.ok === false && s.scene === "town" && [S.saveFailed, S.storageFull].includes(s.ui.notice?.text) && /Could not save/.test(await g.page.locator(T("toast")).innerText()), { r, notice: s.ui.notice });
   await g.context.close();
 }
 let exported = null;
@@ -163,45 +207,47 @@ let exported = null;
   const want = await g.state();
   await g.app("pause");
   await g.page.click(T("quit"));
-  const [dl] = await Promise.all([g.page.waitForEvent("download"), g.page.click(T("export-save"))]);
+  await openLoad(g.page);
+  const [dl] = await Promise.all([g.page.waitForEvent("download"), g.page.click(T("slot-export-1"))]);
   exported = readFileSync(await dl.path(), "utf8");
-  check("AC-R-092-1 Export downloads a file named config.saveFileName with the save text", dl.suggestedFilename() === config.saveFileName && exported === (await g.app("save.raw")), dl.suggestedFilename());
-  // garbage import leaves the save alone
-  const before = await g.app("save.raw");
-  await g.page.click(T("import-save"));
+  check("AC-R-092-1 Export downloads a file named for the slot and character with the slot text", /^office-crawler-slot-1-tester\.json$/.test(dl.suggestedFilename()) && exported === (await g.app("slots.raw", 1)), dl.suggestedFilename());
+  // garbage import leaves the slots alone
+  await g.page.click(T("slot-import-2"));
   await g.page.setInputFiles(T("import-file"), { name: "junk.json", mimeType: "application/json", buffer: Buffer.from("{ this is not json") });
-  await g.page.waitForSelector(T("title-notice"));
-  check("AC-R-092-3 importing garbage shows the import-failed notice and leaves the save unchanged", (await g.page.locator(T("title-notice")).innerText()) === S.importFailed && (await g.app("save.raw")) === before);
+  await g.page.waitForFunction(() => /not a usable/.test(document.querySelector('[data-testid="slots-message"]')?.textContent ?? ""));
+  check("AC-R-092-3 importing garbage shows an error and leaves every slot unchanged", (await g.app("slots.raw", 2)) === null && (await g.app("slots.raw", 1)) === exported);
   await g.context.close();
-  // fresh context: import the exported file, then Continue
+  // fresh context: import the exported file into slot 3, then Continue
   const h = await open(browser, { query: "test=1&seed=1", lobby: true });
-  await h.page.click(T("import-save"));
-  await h.page.setInputFiles(T("import-file"), { name: "office-crawler-save.json", mimeType: "application/json", buffer: Buffer.from(exported) });
-  await h.page.waitForFunction(() => !document.querySelector('[data-testid="continue"]')?.disabled);
-  check("import shows the done notice and enables Continue", (await h.page.locator(T("title-notice")).innerText()) === S.importDone);
+  await openLoad(h.page);
+  await h.page.click(T("slot-import-3"));
+  await h.page.setInputFiles(T("import-file"), { name: "character.json", mimeType: "application/json", buffer: Buffer.from(exported) });
+  await h.page.waitForFunction(() => document.querySelector('[data-testid="slot-3"]')?.dataset.state === "ok");
+  check("import shows the done message and the slot", /Imported/.test(await h.page.locator(T("slots-message")).innerText()));
+  await h.page.keyboard.press("Escape");
+  check("importing enables Continue", !(await disabled(h.page, "continue")));
   await h.page.click(T("continue"));
   const s = await h.state();
-  check("AC-R-092-2 after import + Continue the saved fields are restored", s.player.level === 7 && s.player.gold === want.player.gold && s.scene === "town", { level: s.player.level, gold: s.player.gold });
-  // S7: importing over an existing character asks first, and the replaced one is kept as a backup
+  check("AC-R-092-2 after import + Continue the saved fields are restored", s.player.level === 7 && s.player.gold === want.player.gold && s.scene === "town" && (await h.app("slots.list")).active === 3, { level: s.player.level, gold: s.player.gold });
+  // S7: importing over an existing character asks first, and the replaced one is kept for undo
   await h.app("pause"); await h.page.click(T("quit"));
-  const mine = await h.app("save.raw");
-  await h.page.click(T("import-save"));
+  const mine = await h.app("slots.raw", 3);
+  await openLoad(h.page);
+  await h.page.click(T("slot-import-3"));
   await h.page.fill(T("import-text"), exported.replace(/"gold":\d+/, '"gold":1').replace(/"checksum":"[0-9a-f]+"/, ""));
   await h.page.click(T("import-go"));
-  check("S7 an invalid import is refused at once with the failed notice, no confirm", (await h.page.locator(T("confirm-import-yes")).count()) === 0 && (await h.page.locator(T("title-notice")).innerText()) === S.importFailed);
-  await h.page.click(T("import-save"));
-  await h.page.fill(T("import-text"), JSON.stringify(JSON.parse(await h.app("save.raw"))));
+  check("S7 an invalid import is refused at once with an error, no confirm", (await h.page.locator(T("slot-confirm-yes")).count()) === 0 && /not a usable/.test(await h.page.locator(T("slots-message")).innerText()));
+  // the import form stays open after a refusal: the next paste goes into the same form
+  await h.page.fill(T("import-text"), JSON.stringify(JSON.parse(await h.app("slots.raw", 3))));
   await h.page.click(T("import-go"));
-  check("S7 a valid import over an existing character asks for confirmation", (await h.page.locator(T("confirm-import-yes")).count()) === 1);
-  await h.page.click(T("confirm-import-no"));
-  check("S7 cancelling keeps the character", (await h.app("save.raw")) === mine);
-  // paste path
-
-  await h.app("save.remove");
-  await h.page.click(T("import-save"));
+  check("S7 a valid import over an existing character asks for confirmation, naming it", (await h.page.locator(T("slot-confirm-yes")).count()) === 1 && /Tester/.test(await h.page.locator(T("slot-confirm-title")).innerText()));
+  await h.page.click(T("slot-confirm-no"));
+  check("S7 cancelling keeps the character", (await h.app("slots.raw", 3)) === mine);
+  // paste path into an empty slot
+  await h.page.click(T("slot-import-4"));
   await h.page.fill(T("import-text"), exported);
   await h.page.click(T("import-go"));
-  check("pasting the save text imports it too", !(await disabled(h.page, "continue")));
+  check("pasting the save text imports it too", (await slotState(h.page, 4)) === "ok");
   check("no page errors (export/import)", h.errors.length === 0, h.errors);
   await h.context.close();
 }
@@ -237,7 +283,7 @@ let exported = null;
   a = await g.app("audio.getState");
   s = await g.state();
   check("AC-R-082-3 volume, mute and kit persist across a reload (audio.getState and options)", near(a.master, 0.3) && near(a.sfx, 0.5) && near(a.ambient, 0.8) && a.kit === "gothic" && s.options.kit === "gothic" && near(s.options.volume.sfx, 0.5), { a: a.kit, o: s.options });
-  check("AC-NFR-D01-1 the options key exists after a change and the only keys are the documented ones", (await lsKeys(g.page)).every((k) => [config.saveKey, config.optionsKey].includes(k)) && (await lsKeys(g.page)).includes(config.optionsKey));
+  check("AC-NFR-D01-1 the options key exists after a change and the only keys are the documented ones", ownKeys(await lsKeys(g.page)) && (await lsKeys(g.page)).includes(config.optionsKey));
   check("no page errors (options sound)", g.errors.length === 0, g.errors);
   await g.context.close();
 }
@@ -342,6 +388,7 @@ let exported = null;
     const b = s.monsters.find((m) => m.tier === "boss");
     if (!b) { await g.app("step", 10); s = await g.state(); continue; }
     await g.app("cmd.attack", b.id);
+    await g.app("cheat.damageMonster", b.id, Math.ceil(b.hpMax * 0.06)); // class-independent: the boss resists fire and cold, so a skill kill would depend on the class
     await g.app("step", 30);
     s = await g.state();
     const bar = s.ui.hud?.boss;
@@ -376,7 +423,7 @@ let exported = null;
 // ---------------------------------------------------------------- final fix: quit saves, story frame, text size
 {
   const g = await open(browser, { query: "test=1&seed=1", lobby: true });
-  await g.page.click(T("new-game"));
+  await startNew(g.page);
   await g.app("cheat.giveGold", 777);
   await g.app("cheat.setLevel", 4);
   const before = await g.state();
@@ -391,14 +438,14 @@ let exported = null;
 }
 {
   const g = await open(browser, { query: "test=1&seed=1&story=1", lobby: true });
-  await g.page.click(T("new-game"));
+  await startNew(g.page);
   let s = await g.state();
   check("AC-R-104-2 New game shows the start story, paused behind it", s.ui.menu === "story" && (await g.page.locator(".screen.story-screen").innerText()).includes(content.story.start.lines[0]), s.ui.menu);
   check("AC-R-104-2 the story button has focus (keyboard: Enter)", await g.page.evaluate(() => document.activeElement?.dataset?.testid === "story-continue"));
   await g.page.keyboard.press("Enter");
   check("AC-R-104-2 Enter dismisses the start story", (await g.state()).ui.menu === null);
   s = await g.state();
-  check("first run: the rapier is worn and Strike is on F1", s.equipment.weapon?.base === config.startKit.weapon && s.player.skillBar.hotkeys[0] === "strike", { weapon: s.equipment.weapon?.base, bar: s.player.skillBar });
+  check("first run: the class kit weapon is worn, the basic attack is the class one and the signature skill is on F1", s.equipment.weapon?.base === FM.startKit.weapon && s.player.skillBar.primary === FM.basic && s.player.skillBar.hotkeys[0] === FM.signature, { weapon: s.equipment.weapon?.base, bar: s.player.skillBar });
   await g.app("cheat.setLevel", 3);
   check("first run: a one-time prompt appears when points are waiting to be spent", (await g.state()).ui.toast === UT.pointsHint, (await g.state()).ui.toast);
   await g.app("cheat.teleportFloor", 9);
@@ -413,7 +460,7 @@ let exported = null;
 }
 {
   const g = await open(browser, { query: "test=1&seed=1", lobby: true, viewport: { width: 1920, height: 1080 } });
-  await g.page.click(T("new-game"));
+  await startNew(g.page);
   await g.app("cheat.setLevel", 6);
   for (const p of ["inventory", "character", "skills"]) await g.app("ui.open", p);
   await g.app("step", 2);

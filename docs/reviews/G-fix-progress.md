@@ -1,0 +1,4 @@
+- done: item 5 loot halo (core/systems/loot.js, soft +1000 penalty next to tall props); npm test shows 2 pre-existing UI-owned fails (layering N5 charselect->render/figure.js; s3-final 14px css) not mine; next: shot harness + characters
+- done (pending visual proof): item 1 faces/2-tone/blocks/rims in characters.js+heroes.js+index.js (RIM_MULT)+palette rims; item 2 tint saturated 15-25% + coloured shadow in light.js/world.js; vending machine enemy recoloured blue; next: shots, items 3,4,6
+- done: items 3,4,5,6 with 1x before/after crops in docs/shots/g-fix/ (item*.jpg, strip-*.jpg); wall ghost, loot cap/body avoid, pip fade, rack LEDs, idle bob; next: gates
+- done: gates (npm test 3x 569/569, bench 42.9/47.1/51.8 median 47.1, atlas 3.8 s at 1280); polish e2e fixed (crowd cap counts eligible tags); e2e_red: ui.mjs, s3ui.mjs (UI-owned, startNew/continue timeouts)

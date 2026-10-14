@@ -1,5 +1,5 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
-_Last updated 2026-10-14T03:09:10Z. Keep this block current after every step; the log below is history._
+_Last updated 2026-10-14T03:43:36Z. Keep this block current after every step; the log below is history._
 
 **Where we are:** round 4 core done, round 5 WORLD done, round G (graphics detail) ported; round 5 UI and the G gate reviews are running.
 
@@ -8,7 +8,9 @@ _Last updated 2026-10-14T03:09:10Z. Keep this block current after every step; th
   (ui.mjs, s3ui.mjs) + per-script e2e timeout. Progress: `docs/reviews/R5-ui-progress.md`. When done: run
   `npm test` and `npm run e2e` (one command) yourself; test N5 (ui must not import render) must be resolved;
   wire `src/render/hudchrome.js` into hud.js (see `docs/reviews/G-world-progress.md`).
-- G gate: `docs/reviews/G-visual-review-appeal.md` and `G-visual-review-craft.md` (target ≥ 34/40). Below → a G fix round.
+- G gate: in-game reviews scored appeal 32 / craft 31 (target ≥ 34). **G-FIX done** (crops in `docs/shots/g-fix/`,
+  569 tests ×3 green, bench median 47.1, atlas ~3.85 s). e2e ui.mjs/s3ui.mjs red, owned by UI-R5. Not fixed yet: additive
+  pool washes dark monsters, nameplate body avoidance, horizontal loot-tag nudge, FM face eye-band. **Re-review G after UI-R5.**
 
 **Next steps, in order:**
 1. After UI-R5: **adversarial test-engineer pass** (never run so far; learning L-021, experiment E1), then code review
@@ -154,3 +156,4 @@ Each round also improves the harness (learnings → agent definitions/rules), as
 - [G] WORLD-G done: 20-item checklist (13 done, 3 partly, 7 dropped as decided), AMBIENT_LIFT 0.12 in light.js, 11 textures, hudchrome.js (for UI-R5 to wire), bench median 59, atlas 3.6–3.9 s. Test N5 is red because UI-R5's in-progress slots.js imports render/figure.js (UI-R5 must resolve). In-game G review (2 reviewers) launched.
 - [G] In-game appeal review: 32/40 (iterate vs gate 34). World reads at 1x; characters don't (faces ~25 px, no pool tint visible). DISCREPANCY: WORLD-G claimed items 9/10 (tint, faces) done, the reviewer doesn't see them → G-FIX must verify at 1x with crops. Overlaps: HP bars on actors in crowds, actors clipped by wall tops. Waiting for the craft review.
 - [G] Craft review 31/40 (16/20 done, 4 partly, 9 label overlaps → L-018 recurring). G-FIX launched (render + core loot.js; not hud/ui). New learning L-024 (visual claims need 1x crop evidence) applied to implementer.md.
+- 2026-10-14T03:43:36Z G-FIX hand-back: faces 1.4x 2-tone, pool tint, far-half hue, label de-collision, loot off props. 569 tests, bench 47.1. Ledger row added. G re-review after UI-R5.

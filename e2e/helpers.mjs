@@ -66,3 +66,15 @@ export function tileScreen(cam, x, y) {
   const wx = x + 0.5, wy = y + 0.5;
   return { x: cam.ox + (wx - wy) * 32 * cam.z, y: cam.oy + (wx + wy) * 16 * cam.z };
 }
+
+/**
+ * Start a character through the real UI: New game -> class -> name -> Start (the class selection screen, R5). Defaults: first class, name "Tester",
+ * first free slot. Test mode has no transition animation, so the game is running when this returns.
+ */
+export async function startNew(page, { cls = null, name = "Tester", confirm = false } = {}) {
+  await page.click('[data-testid="new-game"]');
+  if (cls) await page.click(`[data-testid="class-${cls}"]`);
+  await page.fill('[data-testid="create-name"]', name);
+  await page.click('[data-testid="create-start"]');
+  if (confirm) await page.click('[data-testid="create-confirm-yes"]');
+}

@@ -38,10 +38,10 @@ const LOOKS = {
   // S2 monsters
   "temp-worker": { kind: "human", skin: "#e8b48a", hair: "#5a3a22", shirt: "#e8e4d6", suit: null, pants: "#8a7a52", shoe: "#3a2a22", tie: null, sc: 0.95, head: 1.32, arms: "weapon", held: "clipboard", vest: "#ff8c2a", cap: "#ff8c2a" },
   "printer-demon": { kind: "imp", demon: true, size: 0.31, bh: 21, body: "#443a60", lid: "#5a4e7c", wing: "#6a2a58", wingEdge: "#ff3d6e", eye: "#ff3d6e", mouth: "#1a0f1c", cable: "#ff3d6e" },
-  "middle-manager": { kind: "human", skin: "#e8a888", hair: "#8a8a96", shirt: "#f4efe0", suit: "#6a6f86", lapel: "#9aa0bc", pants: "#3a3f58", shoe: "#161425", tie: "#d83a3a", sc: 1.22, head: 1.12, wide: 1.32, arms: "weapon", held: "binder", bald: true, brute: true, pin: true, breath: 2 },
-  "vending-machine": { kind: "machine", style: "vending", body: "#c8403a", trim: "#f0e6d0", glass: "#1a2a4a", eye: "#ffe45a" },
-  consultant: { kind: "human", skin: "#f3d2b6", hair: "#1c1626", shirt: "#f4f2f8", suit: "#262a44", pants: "#1c2036", shoe: "#0e0e1c", tie: "#35e0c8", sc: 1.04, head: 1.28, arms: "weapon", held: "slides", glasses: true },
-  auditor: { kind: "human", skin: "#e4c0a0", hair: "#6a6a72", shirt: "#e8e4d8", suit: "#6a5a44", pants: "#40382c", shoe: "#161425", tie: "#2f6b3b", sc: 1.16, head: 1.2, wide: 0.92, arms: "weapon", held: "ledger", glasses: true, visor: "#52b86a" },
+  "middle-manager": { kind: "human", skin: "#e8a888", hair: "#8a8a96", shirt: "#f4efe0", suit: "#6a6f86", lapel: "#c8cef0", edge: "#e6ebff", pants: "#3a3f58", shoe: "#161425", tie: "#d83a3a", sc: 1.22, head: 1.12, wide: 1.32, arms: "weapon", held: "binder", bald: true, brute: true, pin: true, breath: 2 },
+  "vending-machine": { kind: "machine", style: "vending", body: "#2f6fd8", trim: "#f0e6d0", glass: "#1a2a4a", eye: "#ffe45a" },
+  consultant: { kind: "human", skin: "#f3d2b6", hair: "#1c1626", shirt: "#2fd3bd", suit: "#2a2f50", pants: "#232846", shoe: "#0e0e1c", tie: "#fff6e8", edge: "#a8b4ff", sc: 1.04, head: 1.28, arms: "weapon", held: "slides", glasses: true },
+  auditor: { kind: "human", skin: "#e4c0a0", hair: "#6a6a72", shirt: "#e8e4d8", suit: "#7a6a4c", pants: "#2f5a3c", edge: "#e8dca8", shoe: "#161425", tie: "#2f6b3b", sc: 1.16, head: 1.2, wide: 0.92, arms: "weapon", held: "ledger", glasses: true, visor: "#52b86a" },
   // S3 boss: its own painter. `rage` is the phase-2 look (jacket off, tie loosened, red glow).
   "regional-director": { kind: "director", rage: false },
   "regional-director-rage": { kind: "director", rage: true },
@@ -58,7 +58,7 @@ function pose(anim, dir, f) {
   const a = anim === "attack" || anim === "cast" ? f / (n - 1) : 0;
   return {
     fx, fy, anim, f, n, S,
-    bob: anim === "idle" ? S * 0.9 : anim === "walk" ? -Math.abs(S) * 2.2 : 0,
+    bob: anim === "idle" ? S * 1.5 : anim === "walk" ? -Math.abs(S) * 2.2 : 0,
     swing: anim === "walk" ? S : 0,
     a, lunge: anim === "attack" ? Math.sin(a * Math.PI) : 0, cast: anim === "cast" ? Math.sin((f / (n - 1)) * Math.PI) : 0,
     p: anim === "death" ? f / (n - 1) : 0,
@@ -68,13 +68,13 @@ function pose(anim, dir, f) {
 
 function human(g, L, o) {
   const { fx, fy, bob, swing, lunge, a } = o, sc = L.sc, front = fy > -0.2, wide = L.wide ?? 1;
-  const legH = 15 * sc, torsoH = 19 * sc, hr = 7.2 * sc * L.head;
+  const legH = 15 * sc, torsoH = 19 * sc, hr = 7.2 * sc * L.head * 1.12; // round G fix: heads ~12 % bigger, features ~40 % bigger (readable at 1x)
   const lx = fx * lunge * 5, ly = fy * lunge * 2.5;
   const hipY = -legH + bob * 0.4, shY = hipY - torsoH;
   // legs (far leg one shade darker)
   for (const k of [-1, 1]) {
     const ph = swing * k, ftx = k * 3.6 * sc + fx * 6 * ph, fty = fy * 3 * ph - Math.max(0, ph) * 2;
-    limb(g, k * 3.4 * sc + lx * 0.2, hipY, ftx, fty - 1, k < 0 ? shade(L.pants, -0.25) : L.pants, 5.2 * sc);
+    limb(g, k * 3.4 * sc + lx * 0.2, hipY, ftx, fty - 1, k < 0 ? shade(L.pants, -0.36) : L.pants, 5.2 * sc);
     ellipse(g, ftx + fx * 1.2, fty, 3.8 * sc, 2.3 * sc, L.shoe, INK, 1.3);
   }
   // far arm (behind the torso)
@@ -90,13 +90,13 @@ function human(g, L, o) {
     const cx0 = lx + fx * 1.5;
     if (front) {
       fillPoly(g, [[tl + lx, shY + ly], [cx0 - 4.2, shY + ly], [cx0 - 1.4, hipY + 1], [tl + 1 + lx * 0.5, hipY + 1]], L.suit, INK, 1.2); // jacket, light side (the shirt panel between the halves is a big colour block)
-      fillPoly(g, [[cx0 + 4.2, shY + ly], [tr + lx, shY + ly], [tr - 1 + lx * 0.5, hipY + 1], [cx0 + 1.4, hipY + 1]], shade(L.suit, -0.28), INK, 1.2); // shadow side
+      fillPoly(g, [[cx0 + 4.2, shY + ly], [tr + lx, shY + ly], [tr - 1 + lx * 0.5, hipY + 1], [cx0 + 1.4, hipY + 1]], shade(L.suit, -0.4), INK, 1.2); // shadow side
       if (L.lapel) fillPoly(g, [[cx0 - 4.2, shY + ly], [cx0 - 8, shY + ly], [cx0 - 3.6, shY + ly + torsoH * 0.62], [cx0 - 1.9, shY + ly + torsoH * 0.62]], L.lapel, INK, 1.1); // lighter lapel
       if (L.pin) { for (let i = 0; i < 4; i++) { const x = tl + 2.4 + i * 3.3 * wide; line(g, x + lx, shY + ly + 3, x + 0.6 + lx * 0.5, hipY - 1, "rgba(200,205,235,0.4)", 0.9); } for (let i = 0; i < 4; i++) { const x = tr - 2.2 - i * 3.3 * wide; line(g, x + lx, shY + ly + 3, x - 0.6 + lx * 0.5, hipY - 1, "rgba(200,205,235,0.28)", 0.9); } } // pinstripes
       if (L.pin) { for (const yy of [hipY - 4.5, hipY - 9.5]) { ellipse(g, cx0 - 3.2, yy, 1.35, 1.35, "#e8d890", INK, 0.8); } } // buttons
     } else fillPoly(g, [[tl + lx, shY + ly], [tr + lx, shY + ly], [tr - 1 + lx * 0.5, hipY + 1], [tl + 1 + lx * 0.5, hipY + 1]], L.suit, INK, 1.7);
-    fillPoly(g, [[lx + 1.5, shY + ly], [tr + lx, shY + ly], [tr - 1 + lx * 0.5, hipY + 1], [lx * 0.7 + 1.5, hipY + 1]], "rgba(20,10,50,0.18)");
-  } else fillPoly(g, [[lx + 1.5, shY + ly], [tr + lx, shY + ly], [tr - 1 + lx * 0.5, hipY + 1], [lx * 0.7 + 1.5, hipY + 1]], shade(L.shirt, -0.22));
+    fillPoly(g, [[lx + 1.5, shY + ly], [tr + lx, shY + ly], [tr - 1 + lx * 0.5, hipY + 1], [lx * 0.7 + 1.5, hipY + 1]], "rgba(20,10,50,0.3)");
+  } else fillPoly(g, [[lx + 1.5, shY + ly], [tr + lx, shY + ly], [tr - 1 + lx * 0.5, hipY + 1], [lx * 0.7 + 1.5, hipY + 1]], shade(L.shirt, -0.36));
   if (L.vest) { // hi-vis vest: two panels with reflective stripes
     const vt = shY + ly + 0.5, vb = hipY - 1;
     if (front) {
@@ -110,8 +110,13 @@ function human(g, L, o) {
   }
   if (L.cross && front) { const cx0 = lx + fx * 2 + 3.4, cy0 = shY + ly + 9 * sc; fillPoly(g, [[cx0 - 1.2, cy0 - 3.5], [cx0 + 1.2, cy0 - 3.5], [cx0 + 1.2, cy0 - 1.2], [cx0 + 3.5, cy0 - 1.2], [cx0 + 3.5, cy0 + 1.2], [cx0 + 1.2, cy0 + 1.2], [cx0 + 1.2, cy0 + 3.5], [cx0 - 1.2, cy0 + 3.5], [cx0 - 1.2, cy0 + 1.2], [cx0 - 3.5, cy0 + 1.2], [cx0 - 3.5, cy0 - 1.2], [cx0 - 1.2, cy0 - 1.2]], "#e0363f", INK, 0.9); }
   line(g, tl + lx + 1, shY + ly + 1.2, tr + lx - 1, shY + ly + 1.2, shade(L.suit ?? L.shirt, 0.4), 1.2); // rim on the shoulder line
+  if (L.edge) { // dark suits: a thin light ink down the lit shoulder / flank and the far leg, so they stand off dark concrete (round G fix)
+    line(g, tl + lx + 1.2, shY + ly + 1.6, tl + 1.8 + lx * 0.5, hipY - 0.5, L.edge, 1.9);
+    line(g, tl + lx + 1, shY + ly + 1.2, tr + lx - 1, shY + ly + 1.2, L.edge, 1.9);
+    line(g, -4.4 * sc + lx * 0.2, hipY + 2, -3.9 * sc, -3, shade(L.edge, -0.25), 1.5);
+  }
   if (front && L.tie) {
-    const tx = lx + fx * 2, tw = Math.sin((o.f / o.n) * Math.PI * 2 + 0.8) * (o.anim === "walk" ? 3.4 : o.anim === "idle" ? 2 : 1) * sc; // tie sway, 2-3x the old (none): baked per frame
+    const tx = lx + fx * 2, tw = Math.sin((o.f / o.n) * Math.PI * 2 + 0.8) * (o.anim === "walk" ? 3.6 : o.anim === "idle" ? 3.4 : 1.2) * sc; // tie sway, 2-3x the old (none): baked per frame
     fillPoly(g, [[tx - 2.2, shY + ly + 1], [tx + 2.2, shY + ly + 1], [tx + 1.7 + tw * 0.6, shY + ly + 10 * sc], [tx + tw, shY + ly + 13 * sc], [tx - 1.7 + tw * 0.6, shY + ly + 10 * sc]], L.tie, INK, 1);
     line(g, tx - 0.6 + tw * 0.2, shY + ly + 3, tx + 0.4 + tw * 0.5, shY + ly + 9 * sc, shade(L.tie, -0.3), 1.1); // tie stripe
     if (L.lanyard) {
@@ -133,31 +138,31 @@ function human(g, L, o) {
     fillPoly(g, [[tr + lx - 8, hipY - 3], [tr + lx - 5, hipY + 3.5], [tr + lx - 3, hipY - 1], [tr + lx - 1, hipY + 3], [tr + lx, hipY - 5]], shade(L.shirt, -0.22), INK, 1);
   }
   // head
-  const hx = lx + fx * 2.2, hy = shY - hr + 3 + ly + bob * 0.5 + fy * 0.8;
+  const hx = lx + fx * 2.2, hy = shY - hr + 3 + ly + bob * 0.9 + fy * 0.8;
   limb(g, lx + fx * 1.2, shY + 2 + ly, hx, hy + hr * 0.6, L.skin, 4); // neck
   ellipse(g, hx, hy, hr, hr * 1.05, L.skin, INK, 1.8);
   if (L.headset && !front) { ellipse(g, hx - hr * 0.95, hy + 0.5, 2.6, 3.4, "#c4ecff", INK, 1.2); ellipse(g, hx + hr * 0.95, hy + 0.5, 2.6, 3.4, "#c4ecff", INK, 1.2); }
   if (front) {
     const ex = hx + fx * 3.2, ey = hy + 0.8;
     if (L.zombie) {
-      ellipse(g, ex - 3, ey, 2.6, 2.6, "#1f2e24", INK, 1); ellipse(g, ex - 3, ey, 1.2, 1.2, "#f5ff80");
-      ellipse(g, ex + 3.4, ey - 0.3, 2.9, 2.9, "#1f2e24", INK, 1); ellipse(g, ex + 3.4, ey - 0.3, 1.4, 1.4, "#f5ff80");
-      ellipse(g, ex + 0.4, ey + 5.6, 4.4, 3.2, "#3a0f22", INK, 1.2); // one big mouth, two fangs
-      fillPoly(g, [[ex - 2.4, ey + 3.4], [ex - 0.6, ey + 3.4], [ex - 1.5, ey + 6]], "#f4efe0", INK, 0.8); fillPoly(g, [[ex + 1.8, ey + 3.4], [ex + 3.6, ey + 3.4], [ex + 2.7, ey + 6]], "#f4efe0", INK, 0.8);
+      ellipse(g, ex - 3.6, ey, 3.7, 3.7, "#10190f", INK, 1.1); ellipse(g, ex - 3.6, ey, 1.9, 1.9, "#f5ff80");
+      ellipse(g, ex + 4.1, ey - 0.3, 4.1, 4.1, "#10190f", INK, 1.1); ellipse(g, ex + 4.1, ey - 0.3, 2.2, 2.2, "#f5ff80");
+      ellipse(g, ex + 0.2, ey + 6.6, 5.8, 4.2, "#2a0818", INK, 1.3); // one big mouth, two fangs
+      fillPoly(g, [[ex - 3.4, ey + 3.9], [ex - 0.8, ey + 3.9], [ex - 2.1, ey + 7.6]], "#f4efe0", INK, 0.9); fillPoly(g, [[ex + 1.8, ey + 3.9], [ex + 4.6, ey + 3.9], [ex + 3.2, ey + 7.6]], "#f4efe0", INK, 0.9);
     } else { // faces 1.5x larger and darker: bigger eyes, a longer mouth line
-      ellipse(g, ex - 3.3, ey, 1.8, 2.5, INK); ellipse(g, ex + 3.3, ey, 1.8, 2.5, INK);
-      ellipse(g, ex - 3.7, ey - 1, 0.6, 0.7, "rgba(255,255,255,0.85)"); ellipse(g, ex + 2.9, ey - 1, 0.6, 0.7, "rgba(255,255,255,0.85)"); // eye glints
-      if (L.brute) line(g, ex - 3.6, ey + 5.3, ex + 3.6, ey + 5.3, INK, 1.9); // the manager's flat mouth bar
-      else { g.beginPath(); g.moveTo(ex - 2.6, ey + 4.5); g.quadraticCurveTo(ex, ey + 6.3, ex + 2.8, ey + 4.4); g.lineWidth = 1.5; g.lineCap = "round"; g.strokeStyle = INK; g.stroke(); }
+      ellipse(g, ex - 4.1, ey, 2.5, 3.5, INK); ellipse(g, ex + 4.1, ey, 2.5, 3.5, INK);
+      ellipse(g, ex - 4.7, ey - 1.4, 0.95, 1.1, "rgba(255,255,255,0.95)"); ellipse(g, ex + 3.5, ey - 1.4, 0.95, 1.1, "rgba(255,255,255,0.95)"); // eye glints
+      if (L.brute) line(g, ex - 4.8, ey + 6.4, ex + 4.8, ey + 6.4, INK, 2.8); // the manager's flat mouth bar
+      else { g.beginPath(); g.moveTo(ex - 3.6, ey + 5.4); g.quadraticCurveTo(ex, ey + 8, ex + 3.8, ey + 5.3); g.lineWidth = 2.2; g.lineCap = "round"; g.strokeStyle = INK; g.stroke(); }
     }
     if (L.glasses) {
-      ellipse(g, ex - 3.3, ey, 3.4, 3, "rgba(210,236,255,0.35)", INK, 1.2); ellipse(g, ex + 3.3, ey, 3.4, 3, "rgba(210,236,255,0.35)", INK, 1.2);
-      line(g, ex - 0.2, ey - 0.2, ex + 0.2, ey - 0.2, INK, 1);
+      ellipse(g, ex - 4.1, ey, 4.3, 3.9, "rgba(210,236,255,0.32)", INK, 1.5); ellipse(g, ex + 4.1, ey, 4.3, 3.9, "rgba(210,236,255,0.32)", INK, 1.5);
+      line(g, ex - 0.4, ey - 0.2, ex + 0.4, ey - 0.2, INK, 1.4);
     }
     if (L.bald) { // side tufts only, a shiny scalp and a frown
       ellipse(g, hx - hr * 0.96, hy - 1, 2, 3, L.hair, INK, 1.2); ellipse(g, hx + hr * 0.96, hy - 1, 2, 3, L.hair, INK, 1.2);
       line(g, hx - 4, hy - hr * 0.78, hx - 1.2, hy - hr * 0.92, "rgba(255,255,255,0.55)", 1.4);
-      line(g, ex - 4.4, ey - 3.4, ex - 1, ey - 2, INK, 1.4); line(g, ex + 4.4, ey - 3.4, ex + 1, ey - 2, INK, 1.4); // angry brows
+      line(g, ex - 6.2, ey - 4.6, ex - 1, ey - 2.4, INK, 2.3); line(g, ex + 6.2, ey - 4.6, ex + 1, ey - 2.4, INK, 2.3); // angry brows
     } else { g.beginPath(); g.ellipse(hx, hy - 1.5, hr + 0.4, hr * 0.78, 0, Math.PI, 0); g.fillStyle = L.hair; g.fill(); g.lineWidth = ink(1.6); g.strokeStyle = INK; g.stroke(); }
     if (L.cap) { // hard cap
       g.beginPath(); g.ellipse(hx, hy - 2, hr + 0.8, hr * 0.8, 0, Math.PI, 0); g.closePath(); g.fillStyle = L.cap; g.fill(); g.lineWidth = ink(1.6); g.strokeStyle = INK; g.stroke();
@@ -186,8 +191,8 @@ function human(g, L, o) {
     }
   }
   g.save(); g.beginPath(); g.ellipse(hx, hy - 0.5, hr + 0.2, hr * 1.04, 0, 0, Math.PI * 2); g.clip(); // two-tone head: the shadow side (right, away from the light)
-  g.fillStyle = "rgba(34,10,56,0.2)"; g.beginPath(); g.ellipse(hx + hr * 0.95, hy + hr * 0.1, hr * 0.9, hr * 1.3, 0, 0, Math.PI * 2); g.fill(); g.restore();
-  g.beginPath(); g.arc(hx, hy, hr - 1, Math.PI * 1.05, Math.PI * 1.55); g.lineWidth = 1.2; g.strokeStyle = shade(L.skin, 0.45); g.stroke(); // rim light
+  g.fillStyle = "rgba(34,10,56,0.36)"; g.beginPath(); g.ellipse(hx + hr * 0.9, hy + hr * 0.1, hr * 0.95, hr * 1.35, 0, 0, Math.PI * 2); g.fill(); g.restore();
+  g.beginPath(); g.arc(hx, hy, hr - 1, Math.PI * 1.05, Math.PI * 1.55); g.lineWidth = 1.8; g.strokeStyle = shade(L.skin, 0.5); g.stroke(); // rim light
   // near arm (+ weapon or reach)
   const nx = -side * 7.5 * sc * wide + lx, ny = shY + 3 + ly;
   if (L.arms === "reach") {

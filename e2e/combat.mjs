@@ -1,5 +1,5 @@
 // Gameplay through the real input path: move, hold, attack, kill, death, restart, pause.
-import { launch, open, check, finish, freeTilesNear, tileScreen, SHOTS } from "./helpers.mjs";
+import { launch, open, check, finish, freeTilesNear, tileScreen, SHOTS, startNew } from "./helpers.mjs";
 
 const browser = await launch();
 const g = await open(browser, { query: "test=1&seed=1" });
@@ -7,7 +7,7 @@ const { app, state, page } = g;
 const SEED = 1;
 
 // ---- move by real mouse click ----
-await page.click('[data-testid="new-game"]');
+await startNew(page);
 let s = await app("step", 1);
 const T = freeTilesNear(s, s.player.tile, 6, 4)[0];
 const p = tileScreen(s.ui.camera, T.x, T.y);
@@ -92,7 +92,7 @@ s = await state();
 check("AC-R-076-2 Quit to title gives scene title", s.scene === "title" && s.ui.menu === "title");
 
 // ---- death and restart ----
-await page.click('[data-testid="new-game"]');
+await startNew(page);
 s = await state();
 const h0 = (await app("newGame", { seed: SEED })).hash;
 s = await state();

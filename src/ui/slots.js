@@ -6,8 +6,7 @@
 import { content } from "../core/index.js";
 import { validateName } from "../core/name.js";
 import { T } from "./text.js";
-import { drawFigure } from "../render/figure.js";
-import { HERO_ACCENT } from "../render/styles/vector/heroes.js";
+import { figures } from "./figureHost.js";
 
 const S = content.strings;
 const SLOT_COUNT = 5;
@@ -33,8 +32,8 @@ const bustSrc = new Map();
 function bustSource(classId) {
   let c = bustSrc.get(classId);
   if (c) return c;
-  c = document.createElement("canvas"); c.width = 240; c.height = 300;
-  drawFigure(c, `hero.${classId}`, { anim: "portrait" });
+  c = document.createElement("canvas"); c.width = 480; c.height = 600;
+  figures.draw(c, `hero.${classId}`, { anim: "portrait" });
   bustSrc.set(classId, c);
   return c;
 }
@@ -43,7 +42,7 @@ export function paintBust(canvas, classId) {
   g.clearRect(0, 0, s, s);
   g.fillStyle = "#17123a"; g.fillRect(0, 0, s, s);
   g.imageSmoothingQuality = "high";
-  g.drawImage(src, 40, 6, 160, 160, 0, 0, s, s);
+  g.drawImage(src, 140, 262, 200, 200, 0, 0, s, s); // head and shoulders of the 480 x 600 portrait
 }
 
 export const fmtPlay = (sec) => `${Math.floor((sec ?? 0) / 3600)}:${String(Math.floor(((sec ?? 0) % 3600) / 60)).padStart(2, "0")}`;
@@ -86,7 +85,7 @@ export function createSlotsView(h, { mode = "dialog", onClose = null } = {}) {
     li.dataset.testid = `slot-${n}`; li.dataset.state = e.state;
     const active = idx().active === n, playing = playingSlot() === n;
     if (e.state === "ok") {
-      li.style.setProperty("--acc", HERO_ACCENT[e.class] ?? "#ffd43b");
+      li.style.setProperty("--acc", figures.accent[e.class] ?? "#ffd43b");
       li.dataset.class = e.class;
       const badge = el("div", "sl-badge"), cv = el("canvas"); cv.width = cv.height = 112; cv.setAttribute("aria-hidden", "true");
       badge.append(el("span", "sl-clip"), cv); li.append(badge);
@@ -124,7 +123,7 @@ export function createSlotsView(h, { mode = "dialog", onClose = null } = {}) {
       const body = el("div", "sl-body"), name = el("strong", "sl-name", `${T.slSlot} ${n}: ${e.state === "bad" ? T.slDamaged : T.slNewer}`); name.dataset.testid = `slot-name-${n}`;
       body.append(name, el("span", "sl-meta", e.state === "bad" ? T.slDamagedText : T.slNewerText)); li.append(body);
       const acts = el("div", "sl-acts");
-      acts.append(button(e.state === "bad" ? T.slExportDamaged : T.slExport, `slot-export-${n}`, () => { const r = run({ t: "exportSlot", slot: n, which: e.state === "bad" ? "bad" : "current" }); if (r.ok) h.download(r.filename, r.text); else fail(r); render(); }, "mini"));
+      acts.append(button(e.state === "bad" ? T.slExportDamaged : T.slExport, `slot-export-${n}`, () => { let r = run({ t: "exportSlot", slot: n, which: e.state === "bad" ? "bad" : "current" }); if (!r.ok && e.state === "bad") r = run({ t: "exportSlot", slot: n, which: "current" }); /* a damaged slot found at boot still holds its text under the slot key */ if (r.ok) h.download(r.filename, r.text); else fail(r); render(); }, "mini"));
       if (e.state === "bad") acts.append(button(T.slDelete, `slot-delete-${n}`, () => { sub = { kind: "delete", n, e }; render(); }, "mini warn"));
       acts.append(button(T.slImport, `slot-import-${n}`, () => { sub = { kind: "import", n }; render(); }, "mini"));
       li.append(acts);
@@ -193,8 +192,11 @@ export function createSlotsView(h, { mode = "dialog", onClose = null } = {}) {
   function render() {
     const keep = focusKey;
     root.replaceChildren();
-    if (mode === "dialog") { const h2 = el("h2", "", T.slTitle); h2.id = "sl-title"; root.append(h2); }
-    else root.append(el("h3", "sl-h", T.slTitle));
+    if (mode === "dialog") {
+      const head = el("div", "sl-head"), h2 = el("h2", "", T.slTitle); h2.id = "sl-title"; head.append(h2);
+      if (onClose) head.append(button("×", "slots-close-x", onClose, "xbtn", T.slClose));
+      root.append(head);
+    }
     root.append(el("p", "hint sl-intro", T.slIntro));
     const live = el("p", "sl-msg"); live.setAttribute("role", "status"); live.dataset.testid = "slots-message"; live.textContent = msg.text;
     root.append(live);

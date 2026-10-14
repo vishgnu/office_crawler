@@ -1,6 +1,6 @@
 // Input edge cases through the real browser: held mouse across pause (S1 review B1), pointer cancel,
 // resize while playing, Escape and Tab with focused menu buttons.
-import { launch, open, check, finish, freeTilesNear, tileScreen } from "./helpers.mjs";
+import { launch, open, check, finish, freeTilesNear, tileScreen, startNew } from "./helpers.mjs";
 
 const browser = await launch();
 const frames = (page, n) => page.evaluate((k) => new Promise((res) => { let i = 0; const f = () => (++i >= k ? res() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
@@ -8,7 +8,7 @@ const frames = (page, n) => page.evaluate((k) => new Promise((res) => { let i = 
 // ---- B1: hold, Esc, release, Esc, move -> the hero must not follow ----
 {
   const g = await open(browser, { query: "test=1&seed=1&realtime=1" });
-  await g.page.click('[data-testid="new-game"]');
+  await startNew(g.page);
   let s = await g.state();
   const [A, B] = [freeTilesNear(s, s.player.tile, 6, 3)[0], freeTilesNear(s, s.player.tile, 9, 7).at(-1)];
   const pa = tileScreen(s.ui.camera, A.x, A.y);
@@ -36,7 +36,7 @@ const frames = (page, n) => page.evaluate((k) => new Promise((res) => { let i = 
 // ---- pointercancel releases the button ----
 {
   const g = await open(browser);
-  await g.page.click('[data-testid="new-game"]');
+  await startNew(g.page);
   let s = await g.app("step", 1);
   const T = freeTilesNear(s, s.player.tile, 6, 3)[0], p = tileScreen(s.ui.camera, T.x, T.y);
   await g.page.mouse.move(p.x, p.y);
@@ -51,7 +51,7 @@ const frames = (page, n) => page.evaluate((k) => new Promise((res) => { let i = 
 // ---- resize while playing ----
 {
   const g = await open(browser, { viewport: { width: 1280, height: 720 } });
-  await g.page.click('[data-testid="new-game"]');
+  await startNew(g.page);
   let s = await g.app("step", 1);
   const T = freeTilesNear(s, s.player.tile, 5, 3)[0];
   const sizes = [[1280, 720], [1920, 1080], [900, 600]];
@@ -75,15 +75,18 @@ const frames = (page, n) => page.evaluate((k) => new Promise((res) => { let i = 
 // ---- menu keyboard: Tab moves focus, Escape on a focused button acts once ----
 {
   const g = await open(browser);
-  await g.page.click('[data-testid="new-game"]');
+  await startNew(g.page);
   await g.app("step", 1);
   await g.page.keyboard.press("Escape");
   const focused = () => g.page.evaluate(() => document.activeElement?.dataset?.testid ?? null);
   check("pause screen focuses Resume", (await focused()) === "resume");
   await g.page.keyboard.press("Tab");
-  check("Tab moves focus between pause buttons (Resume, Options, Quit)", (await focused()) === "options");
+  check("Tab moves focus between pause buttons (Resume, Save slots, Options, Quit)", (await focused()) === "pause-slots");
+  await g.page.keyboard.press("Tab");
+  check("Tab again reaches Options", (await focused()) === "options");
   await g.page.keyboard.press("Tab");
   check("Tab again reaches Quit", (await focused()) === "quit");
+  await g.page.keyboard.press("Shift+Tab");
   await g.page.keyboard.press("Shift+Tab");
   await g.page.keyboard.press("Shift+Tab");
   check("Shift+Tab moves focus back", (await focused()) === "resume");

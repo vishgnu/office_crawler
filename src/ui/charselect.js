@@ -7,8 +7,7 @@ import { classCards, validateName, suggestName } from "../core/index.js";
 import { content } from "../core/index.js";
 import { T } from "./text.js";
 import { skillIcon } from "./icons.js";
-import { drawFigure } from "../render/figure.js";
-import { HERO_ACCENT } from "../render/styles/vector/heroes.js";
+import { figures } from "./figureHost.js";
 import { errorText, markUndo } from "./slots.js";
 
 const S = content.strings;
@@ -110,7 +109,7 @@ export function createCharSelect(h, info) {
   const lineup = el("div", "cs-lineup"); lineup.setAttribute("role", "radiogroup"); lineup.setAttribute("aria-label", T.csClasses);
   const btns = cards.map((c, i) => {
     const b = el("button", "cs-cls"); b.type = "button"; b.setAttribute("role", "radio"); b.dataset.testid = `class-${c.id}`; b.dataset.class = c.id;
-    b.style.setProperty("--x", String(SX[i] * 100)); b.style.setProperty("--c", HERO_ACCENT[c.id] ?? "#ffd43b");
+    b.style.setProperty("--x", String(SX[i] * 100)); b.style.setProperty("--c", figures.accent[c.id] ?? "#ffd43b");
     const fig = el("canvas", "cs-fig"); fig.setAttribute("aria-hidden", "true");
     const lbl = el("span", "lbl", c.name);
     b.append(fig, lbl);
@@ -174,7 +173,7 @@ export function createCharSelect(h, info) {
     const quote = el("p", "cs-quote", S[c.blurbKey]);
     const tags = el("ul", "cs-tags"); tags.setAttribute("aria-label", T.csPlaystyle);
     const sigName = content.skills[c.signature]?.name;
-    for (const t of [S[c.roleKey], sigName ? `${T.trSignature}: ${sigName}` : null, content.skills[c.basic]?.name ? `${content.skills[c.basic].name}` : null]) if (t) tags.append(el("li", "", t));
+    for (const t of [sigName ? `${T.trSignature}: ${sigName}` : null, content.skills[c.basic]?.name ? `${content.skills[c.basic].name}` : null]) if (t) tags.append(el("li", "", t));
     const stats = el("dl", "cs-stats"); stats.setAttribute("aria-label", T.csStats);
     for (const [label, val, max] of STATS) {
       const v = val(c), pips = Math.max(1, Math.round((v / max) * 5)), d = el("div", "cs-stat");
@@ -207,15 +206,16 @@ export function createCharSelect(h, info) {
       x.fig.width = Math.round(cw * dpr); x.fig.height = Math.round(ch * dpr); x.fig.style.width = cw + "px"; x.fig.style.height = ch + "px"; x.fig.style.marginLeft = -Math.round(cw / 2) + "px";
     }
     const sr = stage.getBoundingClientRect(), fr = btns[sel].fig.getBoundingClientRect();
-    GY = fr.bottom - sr.top - fr.height * 0.03; FH = fr.height;
+    GY = btns[sel].b.getBoundingClientRect().bottom - sr.top - FHn() * 0.24; FH = FHn();
     drawFigures(true); dirty = true;
   }
+  const FHn = () => parseFloat(btns[sel].fig.style.height) || 300;
   const lastFrame = [-1, -1, -1];
   function drawFigures(all) {
     const still = reduced();
     btns.forEach((x, i) => {
-      if (i === sel && !still) { const f = Math.floor((performance.now() - T0) / 83); if (!all && lastFrame[i] === f) return; lastFrame[i] = f; drawFigure(x.fig, x.c.figureKey, { anim: "card-idle", t: (performance.now() - T0) / 1000 }); }
-      else if (all || lastFrame[i] !== -2) { lastFrame[i] = -2; drawFigure(x.fig, x.c.figureKey, { anim: "portrait" }); }
+      if (i === sel && !still) { const f = Math.floor((performance.now() - T0) / 83); if (!all && lastFrame[i] === f) return; lastFrame[i] = f; figures.draw(x.fig, x.c.figureKey, { anim: "card-idle", t: (performance.now() - T0) / 1000 }); }
+      else if (all || lastFrame[i] !== -2) { lastFrame[i] = -2; figures.draw(x.fig, x.c.figureKey, { anim: "portrait" }); }
     });
   }
   function render(now) {
@@ -236,7 +236,7 @@ export function createCharSelect(h, info) {
     const sc = (FH / 100) * 1.14, ringX = spot * W, pulse = flour >= 0 ? ss(0, 1, flour) : 1;
     g.save(); g.lineWidth = Math.max(3, sc * 2.6); g.strokeStyle = OUT; g.beginPath(); g.ellipse(ringX, GY, 33 * sc, 10 * sc, 0, 0, TAU); g.stroke();
     g.lineWidth = Math.max(1.5, sc * 1.2); g.strokeStyle = "#fff"; g.stroke();
-    if (flour >= 0 && !reduced()) { g.globalAlpha = 1 - pulse; g.lineWidth = Math.max(2, sc * 1.6); g.strokeStyle = HERO_ACCENT[cards[sel].id]; g.beginPath(); g.ellipse(ringX, GY, (34 + 30 * pulse) * sc, (10 + 9 * pulse) * sc, 0, 0, TAU); g.stroke(); }
+    if (flour >= 0 && !reduced()) { g.globalAlpha = 1 - pulse; g.lineWidth = Math.max(2, sc * 1.6); g.strokeStyle = figures.accent[cards[sel].id]; g.beginPath(); g.ellipse(ringX, GY, (34 + 30 * pulse) * sc, (10 + 9 * pulse) * sc, 0, 0, TAU); g.stroke(); }
     g.restore();
     const vg = g.createRadialGradient(W / 2, H * 0.55, Math.min(W, H) * 0.35, W / 2, H * 0.55, Math.max(W, H) * 0.75); vg.addColorStop(0, "rgba(8,6,20,0)"); vg.addColorStop(1, "rgba(8,6,20,.6)"); g.fillStyle = vg; g.fillRect(0, 0, W, H);
   }
@@ -254,7 +254,7 @@ export function createCharSelect(h, info) {
   // ---- behaviour ----
   function renderInfo() {
     const c = cards[sel];
-    root.style.setProperty("--cl", HERO_ACCENT[c.id] ?? "#ffd43b");
+    root.style.setProperty("--cl", figures.accent[c.id] ?? "#ffd43b");
     infoBox.replaceChildren(infoHtml(c)); infoBox.classList.remove("fade"); void infoBox.offsetWidth; if (!reduced()) infoBox.classList.add("fade");
     btns.forEach((x, i) => { x.b.setAttribute("aria-checked", i === sel ? "true" : "false"); x.b.tabIndex = i === sel ? 0 : -1; x.b.classList.toggle("on", i === sel); });
     root.dataset.class = c.id;
@@ -264,7 +264,7 @@ export function createCharSelect(h, info) {
     const was = sel; sel = clamp(i, 0, cards.length - 1); draft.cls = sel; selT = 0; T0 = performance.now(); dirty = true;
     renderInfo(); drawFigures(true);
     if (was !== sel) h.emit?.("ui:click");
-    const sr = stage.getBoundingClientRect(), fr = btns[sel].fig.getBoundingClientRect(); GY = fr.bottom - sr.top - fr.height * 0.03;
+    const sr = stage.getBoundingClientRect(); GY = btns[sel].b.getBoundingClientRect().bottom - sr.top - FHn() * 0.24;
     if (focus) btns[sel].b.focus();
   }
   suggest.addEventListener("click", () => { draft.nameIdx = (draft.nameIdx + 1) % 24; nameInp.value = suggestName(draft.nameIdx); syncName(); nameInp.focus(); }, sig);

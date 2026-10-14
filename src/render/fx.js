@@ -40,6 +40,7 @@ const MAX_PLATES = 6; // visible loot labels at once (Alt shows up to 2x)
 const LOOT_GAP = 5; // minimum gap between stacked loot labels, px
 const RARITY_RANK = { unique: 4, rare: 3, magic: 2 };
 const PLATE_NEAR = 5, PLATE_FAR = 10;
+const CROWD_LOOT = 6, CROWD_CAP = 4, CROWD_R = 6; // round G fix: more than CROWD_LOOT drops within CROWD_R tiles of the hero -> only the nearest CROWD_CAP get a tag
 const plateCache = new Map();
 const rarityColour = (P, gi) => (gi.rarity && P.rarity[gi.rarity]) || gi.color || "#d6d3cb";
 
@@ -462,6 +463,19 @@ export function createFx(style) {
       }
     },
 
+    /** Does this rectangle cover the body of a live enemy or NPC (sprite spans ~34 px across, feet to head)? Loot tags keep off bodies. */
+    onBody(r, z) {
+      const list = fx.bodies;
+      if (!list) return false;
+      for (let i = 0; i < list.length; i++) {
+        const a = list[i];
+        if (a.dead || a.hid || a.sx < r.x - 20 * z || a.sx > r.x + r.w + 20 * z) continue;
+        const head = (style.dims[a.type]?.head ?? 50) * z;
+        if (r.x < a.sx + 16 * z && a.sx - 16 * z < r.x + r.w && r.y < a.sy && a.sy - head < r.y + r.h) return true;
+      }
+      return false;
+    },
+
     /** Is this rectangle on a claimed label (plates, pips, loot plates) or leader line? Used by the loot-plate and floater placement. */
     blocked(r) {
       const av = fx.avoid, sg = fx.avoidSegs, pl = fx.platesPlaced;
@@ -653,23 +667,35 @@ export function createFx(style) {
       const placed = fx.platesPlaced, size = fx.lootSize, fs = fx.lootFs, dpr = fx.lootDpr, hc = fx.lootHc, SAFE = 8;
       let plates = 0;
       // most valuable first (the hovered entry before all), so the cap never drops a rare for a pile of commons
+      let crowd = 0;
+      for (let i = 0; i < vis.length; i++) if (vis[i].d <= CROWD_R) crowd++;
+      const nearest = fx.lootNear ?? (fx.lootNear = new Set());
+      nearest.clear();
+      if (crowd > CROWD_LOOT && !fx.showAllLoot) { // a pile: tags for the nearest few only (the rest show on hover or Alt)
+        const elig = vis.filter((v) => { const r = RARITY_RANK[v.gi.rarity] ?? 0; return v.gi.id === fx.hoverLootId || (!v.gi.gold && ((r === 2 && v.d <= PLATE_NEAR) || (r >= 3 && v.d <= PLATE_FAR))); }).sort((a, b) => a.d - b.d); // the nearest few of the items that would get a tag
+        for (let i = 0; i < CROWD_CAP && i < elig.length; i++) nearest.add(elig[i].gi.id);
+      }
       vis.sort((a, b) => (b.gi.id === fx.hoverLootId) - (a.gi.id === fx.hoverLootId) || (RARITY_RANK[b.gi.rarity] ?? 0) - (RARITY_RANK[a.gi.rarity] ?? 0) || a.d - b.d);
       for (let i = 0; i < vis.length; i++) {
         const { gi, x, my, colour, d } = vis[i];
         // labels: common items (and gold) only on hover or while Alt is held (genre convention); magic near the hero; rare / unique in sight
         const rank = RARITY_RANK[gi.rarity] ?? 0;
         const show = fx.showAllLoot || gi.id === fx.hoverLootId || (!gi.gold && ((rank === 2 && d <= PLATE_NEAR) || (rank >= 3 && d <= PLATE_FAR)));
-        if (!show || plates >= (fx.showAllLoot ? 2 * MAX_PLATES : MAX_PLATES)) continue;
+        if (!show || plates >= (fx.showAllLoot ? 2 * MAX_PLATES : nearest.size ? CROWD_CAP : MAX_PLATES)) continue;
+        if (nearest.size && !nearest.has(gi.id) && gi.id !== fx.hoverLootId) continue;
         const sp = plateSprite(P, gi.label, gi.rarity ?? "normal", gi.border === "none" ? "plain" : gi.border ?? "plain", colour, fs, hc, dpr);
         const r = { x: Math.round(Math.min(cam.w - SAFE - sp.w, Math.max(SAFE, x - sp.w / 2))), y: Math.round(my - size / 2 - 4 - sp.h), w: sp.w, h: sp.h };
         if (r.x < heroRect.x + heroRect.w && heroRect.x < r.x + r.w && r.y < heroRect.y + heroRect.h && heroRect.y < r.y + r.h) r.y = Math.round(heroRect.y - r.h - LOOT_GAP);
         let ok = false;
         const y0 = r.y;
-        for (let k = 0; k < 7 && !ok; k++) {
-          ok = r.y > SAFE && r.y + r.h < cam.h - SAFE;
-          for (let j = 0; j < placed.length && ok; j++) if (rectHit(gapRect(r), placed[j])) ok = false;
-          if (ok && fx.blocked(r)) ok = false;
-          if (!ok) r.y = k === 3 ? Math.round(my + size / 2 + 4) : k > 3 ? r.y + r.h + LOOT_GAP : r.y - (r.h + LOOT_GAP); // up three times, then below the marker, then further down
+        for (let pass = 0; pass < 2 && !ok; pass++) { // pass 0 also keeps off enemy bodies; pass 1 (no free spot found) only the labels
+          r.y = y0;
+          for (let k = 0; k < 7 && !ok; k++) {
+            ok = r.y > SAFE && r.y + r.h < cam.h - SAFE;
+            for (let j = 0; j < placed.length && ok; j++) if (rectHit(gapRect(r), placed[j])) ok = false;
+            if (ok && (fx.blocked(r) || (pass === 0 && fx.onBody(r, cam.z)))) ok = false;
+            if (!ok) r.y = k === 3 ? Math.round(my + size / 2 + 4) : k > 3 ? r.y + r.h + LOOT_GAP : r.y - (r.h + LOOT_GAP); // up three times, then below the marker, then further down
+          }
         }
         if (!ok) { r.y = y0; continue; }
         placed.push({ x: r.x, y: r.y, w: r.w, h: r.h });

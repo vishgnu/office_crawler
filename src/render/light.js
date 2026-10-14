@@ -80,13 +80,13 @@ const darkCache = new Map();
 /** A pool colour mixed 80 % towards the shadow ink: the soft coloured ground shadow under actors standing in a pool. */
 function darkColour(hex) {
   let c = darkCache.get(hex);
-  if (!c) { const [r, g, b] = hexRgb(hex).map((v, i) => Math.round([6, 4, 26][i] + (v - [6, 4, 26][i]) * 0.2)); c = `rgb(${r},${g},${b})`; darkCache.set(hex, c); }
+  if (!c) { const [r, g, b] = hexRgb(hex).map((v, i) => Math.round([6, 4, 26][i] + (v - [6, 4, 26][i]) * 0.42)); c = `rgb(${r},${g},${b})`; darkCache.set(hex, c); }
   return c;
 }
-/** A pool colour mixed 55 % towards white: the multiply tint of actors (a hue shift without darkening them). */
+/** A pool colour mixed 8 % towards white: the multiply tint of actors (a hue shift without darkening them). */
 function lightColour(hex) {
   let c = lightCache.get(hex);
-  if (!c) { const [r, g, b] = hexRgb(hex).map((v) => Math.round(v + (255 - v) * 0.55)); c = `rgb(${r},${g},${b})`; lightCache.set(hex, c); }
+  if (!c) { const [r, g, b] = hexRgb(hex).map((v) => Math.round(v + (255 - v) * 0.08)); c = `rgb(${r},${g},${b})`; lightCache.set(hex, c); }
   return c;
 }
 /** Offer a static pool (second fixture, exit sign, window shaft) to the nearest-MAX_STATIC set. Allocation-free. */
@@ -227,7 +227,7 @@ export function createLighting(style) {
         dark = Math.max(0, dark - s * 0.55);
       }
       out.shade = Math.round(Math.min(0.6, dark * 0.62) * 10) / 10;
-      out.tint = best > 0.1 ? tint : ""; out.tintA = Math.round(Math.min(0.25, best * 0.25) * 20) / 20;
+      out.tint = best > 0.1 ? tint : ""; out.tintA = out.tint ? Math.round((0.15 + Math.min(1, best) * 0.1) * 20) / 20 : 0; // 15-25 % inside any pool
       out.mul = out.tint ? lightColour(out.tint) : ""; out.sh = out.tint ? darkColour(out.tint) : ""; out.dx = bx; out.dy = by;
       return out;
     },

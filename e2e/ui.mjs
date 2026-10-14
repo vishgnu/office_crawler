@@ -1,13 +1,18 @@
 // S2 UI through the real browser: the Lobby start, panels (inventory, Employee File, skills), equip/compare/drag, vendor,
 // healer, stash, allocate, learn + right-mouse cast, stairs, death -> respawn, keyboard, 1024 px and phone layouts.
-import { launch, open, check, finish, tileScreen } from "./helpers.mjs";
+import { launch, open, check, finish, tileScreen, startNew } from "./helpers.mjs";
+import { content } from "../src/core/index.js";
 
 const browser = await launch();
 const T = (id) => `[data-testid="${id}"]`;
 const centre = async (page, sel) => { const b = await page.locator(sel).boundingBox(); return { x: b.x + b.width / 2, y: b.y + b.height / 2, b }; };
-const start = async (query = "test=1&seed=1", viewport = { width: 1280, height: 800 }) => {
+// R5: a new game is a character: New game -> class -> name -> Start. The S2 fixtures below were written for an unarmed start with the kit weapon in the
+// drawer, so the worn weapon goes back into the drawer first (the class kit itself, potions and the class skills on the bar, stays).
+const FM = content.classes[0];
+const start = async (query = "test=1&seed=1", viewport = { width: 1280, height: 800 }, cls = null) => {
   const g = await open(browser, { query, viewport, lobby: true });
-  await g.page.click(T("new-game"));
+  await startNew(g.page, { cls });
+  await g.app("input", { t: "unequip", slot: "weapon" });
   return g;
 };
 const stepTo = async (g, pred, max = 900, n = 5) => { for (let i = 0; i < max; i += n) { const s = await g.app("step", n); if (pred(s)) return s; } return g.state(); };
@@ -24,7 +29,7 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   const g = await start();
   let s = await g.state();
   check("AC-R-040-1 New game starts in the Lobby: scene town, depth 0, no monsters", s.scene === "town" && s.depth === 0 && s.monsters.length === 0, { scene: s.scene, depth: s.depth });
-  check("HUD: level, xp bar ratio inside the level, point indicators, skill bar with F1 selected, belt of 4 with 2 potions", s.ui.hud.level === 1 && s.ui.hud.xpBar.ratio === 0 && s.ui.hud.points.attr === 0 && s.ui.hud.skillBar.slots.length === 4 && s.ui.hud.skillBar.selected === 0 && s.ui.hud.skillBar.slots.every((x) => x.skill === null) && s.ui.hud.belt.length === 4 && s.ui.hud.belt.filter((b) => !b.empty).length === 2, s.ui.hud.belt);
+  check("HUD: level, xp bar ratio inside the level, point indicators, skill bar with F1 selected (the class signature), belt of 4 with 2 potions", s.ui.hud.level === 1 && s.ui.hud.xpBar.ratio === 0 && s.ui.hud.points.attr === 0 && s.ui.hud.skillBar.slots.length === 4 && s.ui.hud.skillBar.selected === 0 && s.ui.hud.skillBar.slots[0].skill === FM.signature && s.ui.hud.skillBar.slots.slice(1).every((x) => x.skill === null) && s.ui.hud.belt.length === 4 && s.ui.hud.belt.filter((b) => !b.empty).length === 2, s.ui.hud.belt);
   check("AC-R-071-2 belt slots mirror state.belt and show keys 1-4", s.ui.hud.belt.every((b, i) => b.key === String(i + 1) && (b.item?.id ?? null) === (s.belt[i]?.id ?? null)));
   check("DOM HUD: four skill buttons and four belt buttons are labelled", (await g.page.locator("[data-skill-slot]").count()) === 4 && (await g.page.locator("[data-use-belt]").count()) === 4 && (await g.page.getAttribute(T("hud-skill-0"), "aria-label")).includes("F1"));
   check("selected skill slot is marked (aria-pressed) and the others are not", (await g.page.getAttribute(T("hud-skill-0"), "aria-pressed")) === "true" && (await g.page.getAttribute(T("hud-skill-1"), "aria-pressed")) === "false");
@@ -34,7 +39,9 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   check("F1-F4 are preventDefault-ed", f1);
   await g.page.keyboard.press("F1");
   s = await g.state();
-  check("[F1] selects slot 0 (empty at the start: the right button has no skill yet)", s.player.skillBar.selected === 0 && s.player.skillBar.secondary === null);
+  check("[F1] selects slot 0: the right button has the class signature skill from the start", s.player.skillBar.selected === 0 && s.player.skillBar.secondary === FM.signature);
+  await g.page.keyboard.press("F2");
+  s = await g.state();
   const spot = tileScreen(s.ui.camera, s.player.tile.x + 2, s.player.tile.y + 1);
   await g.page.mouse.click(spot.x, spot.y, { button: "right" });
   check("right mouse with no skill selected says so (toast) and does not move the hero", /No skill selected/.test(await g.page.textContent(T("toast"))) && (await g.state()).player.path.length === 0);
@@ -143,18 +150,18 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   check("+ buttons are enabled with points (AC-R-072-2: values updated after the level-up)", (await g.page.locator("button.plus:not(:disabled)").count()) === 4 && s.player.attrPoints === 15);
   await g.page.hover(T("alloc-agility"));
   const pv = await g.page.locator(T("alloc-preview")).textContent();
-  check("hovering + previews the derived change before it is spent", /Agility 10 → 11/.test(pv) && /Defense/.test(pv), pv);
+  check("hovering + previews the derived change before it is spent", new RegExp(`Agility ${FM.attrs.agility} → ${FM.attrs.agility + 1}`).test(pv) && /Defense/.test(pv), pv);
   const hp0 = s.player.hpMax;
   await g.page.click(T("alloc-stamina"));
   s = await g.state();
-  check("AC-R-016-1 clicking + raises the attribute, spends a point and recomputes health", s.player.attrs.stamina === 11 && s.player.attrPoints === 14 && s.player.hpMax === hp0 + 3, { hpMax: s.player.hpMax });
+  check("AC-R-016-1 clicking + raises the attribute, spends a point and recomputes health", s.player.attrs.stamina === FM.attrs.stamina + 1 && s.player.attrPoints === 14 && s.player.hpMax === hp0 + FM.derived.hpPerStamina, { hpMax: s.player.hpMax });
   check("the sheet updates live after the click", (await g.page.innerText(T("employee-file"))).includes(`${s.player.hp} / ${s.player.hpMax}`));
-  // unmet gear list: an item needing grit 12 appears with the missing amount, and disappears after the points
-  await g.app("cheat.giveItem", { base: "stapler-mace", rarity: "normal", ilvl: 5 });
+  // unmet gear list: an item needing agility 12 (the Facilities Manager has 8) appears with the missing amount, and disappears after the points
+  await g.app("cheat.giveItem", { base: "loafers", rarity: "normal", ilvl: 4 });
   await g.page.waitForSelector(T("unmet-list"));
   const um = await g.page.locator(T("unmet-list")).innerText();
-  check("AC-R-016-3 gear you cannot use yet lists the missing amount", /Stapler Mace/.test(um) && /Grit 12/.test(um) && /2 more/.test(um), um);
-  await g.page.click(T("alloc-grit")); await g.page.click(T("alloc-grit"));
+  check("AC-R-016-3 gear you cannot use yet lists the missing amount", /Loafers/.test(um) && /Agility 12/.test(um) && new RegExp(`${12 - FM.attrs.agility} more`).test(um), um);
+  for (let i = 0; i < 12 - FM.attrs.agility; i++) await g.page.click(T("alloc-agility"));
   check("spending the points makes the '!' list empty live", (await g.page.locator(T("unmet-list")).count()) === 0);
   for (let i = 0; i < 12; i++) await g.page.click(T("alloc-focus"), { trial: false }).catch(() => {});
   s = await g.state();
@@ -165,24 +172,25 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   await g.context.close();
 }
 
-// ---------------------------------------------------------------- Skills: learn, assign, select, right-mouse cast
+// ---------------------------------------------------------------- Skills: learn, assign, select, right-mouse cast (Sales Rep: Stapler Throw is the signature skill on F1)
 {
-  const g = await start();
+  const g = await start("test=1&seed=1", { width: 1280, height: 800 }, "sales-rep");
   await g.app("cheat.setLevel", 3);
   await g.app("cheat.teleportFloor", 1);
   await g.page.keyboard.press("KeyS");
   let s = await g.state();
-  check("AC-R-074-1 [S] lists the basic attack, 4 actives and 2 passives with level, max and mana", s.ui.panels.skills === true && (await g.page.locator(".srow").count()) === 7 && s.player.skillPoints === 2, s.player.skillPoints);
+  check("AC-R-074-1 [S] shows the class tree: the basic attack, 3 branches, 10 skills with level, max and state; 2 points", s.ui.panels.skills === true && (await g.page.locator(".srow").count()) === 1 && (await g.page.locator(".branch").count()) === 3 && (await g.page.locator(".tnode").count()) === 10 && s.player.skillPoints === 2, s.player.skillPoints);
   check("points shown in the panel", (await g.page.textContent(T("skill-points"))) === "2");
-  await g.page.click(T("learn-stapler-throw"));
+  check("the signature skill is learned at level 1 and sits on F1", s.player.skills["stapler-throw"] === 1 && s.player.skillBar.hotkeys[0] === "stapler-throw");
+  await g.page.click(T("learn-intern"));
   s = await g.state();
-  check("AC-R-074-2 Learn spends a point and the skill lands on the next free hotkey", s.player.skills["stapler-throw"] === 1 && s.player.skillPoints === 1 && s.player.skillBar.hotkeys[0] === "stapler-throw");
-  check("HUD skill bar shows the new skill in F1", s.ui.hud.skillBar.slots[0].skill === "stapler-throw" && s.ui.hud.skillBar.slots[0].cost === 3);
-  await g.page.click(T("learn-mute"));
-  await g.page.click(T("assign-mute-3"));
+  check("AC-R-074-2 Learn spends a point and the skill lands on the next free hotkey", s.player.skills.intern === 1 && s.player.skillPoints === 1 && s.player.skillBar.hotkeys[1] === "intern");
+  check("HUD skill bar shows the signature in F1 and the new skill in F2", s.ui.hud.skillBar.slots[0].skill === "stapler-throw" && s.ui.hud.skillBar.slots[0].cost === 3 && s.ui.hud.skillBar.slots[1].skill === "intern");
+  await g.page.click(T("learn-hustle"));
+  await g.page.click(T("assign-intern-3"));
   s = await g.state();
-  check("assign buttons put a learned skill on F4", s.player.skillBar.hotkeys[3] === "mute");
-  check("with no points the other learn buttons are disabled", (await g.page.locator(T("learn-reply-all")).isDisabled()));
+  check("assign buttons put a learned skill on F4", s.player.skillBar.hotkeys[3] === "intern");
+  check("with no points the other learn buttons are disabled", (await g.page.locator(T("learn-upsell")).isDisabled()) && (await g.page.locator(T("learn-reply-all")).isDisabled()));
   await g.page.keyboard.press("KeyS");
   await g.page.keyboard.press("F3");
   s = await g.state();
@@ -441,8 +449,9 @@ function freeTilesNearUi(s, c) {
 }
 for (const [W, H] of [[1280, 800], [1024, 768], [390, 844]]) {
   // HUD slots are at least 44 px at every size, icons centred in the frame, names not truncated
-  const g = await start("test=1&seed=1", { width: W, height: H });
-  await g.app("cheat.setLevel", 5);
+  const g = await start("test=1&seed=1", { width: W, height: H }, "sales-rep"); // Reply-All is a Sales Rep skill (level 8)
+  await g.app("cheat.setLevel", 8);
+  await g.app("input", { t: "learnSkill", id: "intern" }); // Reply-All needs Summer Intern
   await g.app("input", { t: "learnSkill", id: "reply-all" });
   await g.app("input", { t: "assignSkill", slot: 1, id: "reply-all" });
   await g.app("step", 1);

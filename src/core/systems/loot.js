@@ -23,13 +23,32 @@ export function mint(state, item) {
 
 const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
-/** The kill tile, or the nearest walkable tile without a ground entry (ties: smaller y, then smaller x). */
+// Tall props whose silhouette hides a ground tag drawn on a neighbouring tile (round G fix, item 5).
+const TALL_PROPS = new Set(["plant", "server-rack", "filing-cabinet", "box-stack", "generator", "copier", "partition", "desk", "conference-table", "reception-desk"]);
+const nearProp = new WeakMap();
+/** Set of tile keys (y * width + x) that are a tall prop or 8-adjacent to one. Cached per floor object; pure. */
+function propHalo(floor) {
+  let s = nearProp.get(floor);
+  if (s) return s;
+  s = new Set();
+  for (const p of floor.props ?? []) {
+    if (!TALL_PROPS.has(p.type)) continue;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) s.add((p.y + dy) * floor.w + (p.x + dx));
+  }
+  nearProp.set(floor, s);
+  return s;
+}
+
+/**
+ * The kill tile, or the nearest walkable tile without a ground entry (ties: smaller y, then smaller x).
+ * Tiles next to a tall prop (plant, rack, cabinet, ...) are skipped while any other candidate exists, so tags do not sit on silhouettes.
+ */
 export function freeGroundTile(state, origin) {
   const ctx = getCtx(state), taken = new Set(state.groundItems.map((g) => `${g.tile.x},${g.tile.y}`));
-  const r = config.dropRadius, cand = [];
+  const r = config.dropRadius, cand = [], halo = propHalo(state.floor), fw = state.floor.w;
   for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
     const x = origin.x + dx, y = origin.y + dy;
-    if (ctx.grid.walkable(x, y) && !taken.has(`${x},${y}`)) cand.push({ x, y, d: Math.max(Math.abs(dx), Math.abs(dy)) * 10 + Math.abs(dx) + Math.abs(dy) });
+    if (ctx.grid.walkable(x, y) && !taken.has(`${x},${y}`)) cand.push({ x, y, d: Math.max(Math.abs(dx), Math.abs(dy)) * 10 + Math.abs(dx) + Math.abs(dy) + (halo.has(y * fw + x) ? 1000 : 0) });
   }
   cand.sort((a, b) => a.d - b.d || a.y - b.y || a.x - b.x);
   return cand.length ? { x: cand[0].x, y: cand[0].y } : { x: origin.x, y: origin.y };

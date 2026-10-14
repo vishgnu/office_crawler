@@ -79,7 +79,7 @@ export function hero(g, id, o) {
   // legs
   for (const k of [-1, 1]) {
     const ph = swing * k, ftx = k * 3.8 * sc * (isFM ? 1.25 : 1) + fx * 6 * ph, fty = fy * 3 * ph - Math.max(0, ph) * 2;
-    limb(g, k * 3.6 * sc * (isFM ? 1.3 : 1) + lx * 0.2, hipY, ftx, fty - 1, k < 0 ? shade(K.pants, -0.25) : K.pants, (isFM ? 6.4 : isSR ? 4.4 : 5.2) * sc);
+    limb(g, k * 3.6 * sc * (isFM ? 1.3 : 1) + lx * 0.2, hipY, ftx, fty - 1, k < 0 ? shade(K.pants, -0.36) : K.pants, (isFM ? 6.4 : isSR ? 4.4 : 5.2) * sc);
     ellipse(g, ftx + fx * 1.4, fty, K.shoeW * sc, 2.5 * sc, K.shoe, INK, 1.3);
     if (isIT) line(g, ftx - K.shoeW * 0.8 + fx * 1.4, fty + 1.9, ftx + K.shoeW * 0.8 + fx * 1.4, fty + 1.9, "#33e0ff", 1.3);
   }
@@ -109,7 +109,7 @@ export function hero(g, id, o) {
       for (const yy of [vt + 7, vt + 12.5]) line(g, tl + 1.2 + lx, yy, tr - 1.2 + lx, yy, "#f4f6d0", 2);
       line(g, cx0, vt, cx0, vb, "#e0701a", 1.4);
     }
-    half("rgba(20,10,50,0.14)");
+    half("rgba(20,10,50,0.28)");
     // tool belt with gold buckle, key ring and a spare tape on the hip
     fillPoly(g, [[tl + lx, hipY - 5], [tr + lx, hipY - 5], [tr - taper + lx * 0.5, hipY + 0.5], [tl + taper + lx * 0.5, hipY + 0.5]], "#6b4528", INK, 1.3);
     if (front) rect(g, cx0, hipY - 2.4, 5, 4, "#ffb81f", INK, 1);
@@ -122,13 +122,13 @@ export function hero(g, id, o) {
       fillPoly(g, [[tl + lx, shY + ly], [cx0 - 4.4, shY + ly], [cx0 + 0.3 - 2, hipY - 3], [tl + taper + lx * 0.5, hipY + 1]], "#c0346a", INK, 1.1); // lapel panels
       fillPoly(g, [[cx0 + 4.4, shY + ly], [tr + lx, shY + ly], [tr - taper + lx * 0.5, hipY + 1], [cx0 + 2.6, hipY - 3]], "#a82a5a", INK, 1.1);
       rect(g, tr - 2.6 + lx, shY + ly + 8, 3.4, 2.6, K.shirt, INK, 0.8); // pocket square
-    } else { line(g, cx0, shY + ly + 1, cx0, hipY, "#b02a5c", 1.3); half("rgba(20,10,50,0.16)"); }
-    if (front) half("rgba(20,10,50,0.14)");
+    } else { line(g, cx0, shY + ly + 1, cx0, hipY, "#b02a5c", 1.3); half("rgba(20,10,50,0.3)"); }
+    if (front) half("rgba(20,10,50,0.28)");
   } else {
     // IT hoodie: big body, kangaroo pocket, drawstrings
     torso(K.shirt);
-    half("rgba(20,10,50,0.2)");
-    fillPoly(g, [[tl + 1 + lx, hipY - 2], [tr - 1 + lx, hipY - 2], [tr - 3 + lx, hipY - 9], [tl + 3 + lx, hipY - 9]], shade(K.shirt, -0.28), INK, 1.1);
+    half("rgba(20,10,50,0.32)");
+    fillPoly(g, [[tl + 1 + lx, hipY - 2], [tr - 1 + lx, hipY - 2], [tr - 3 + lx, hipY - 9], [tl + 3 + lx, hipY - 9]], "#2aa8c8", INK, 1.2); // second colour block: cyan kangaroo pocket
     fillPoly(g, [[tl + lx - 0.5, hipY - 1], [tr + lx + 0.5, hipY - 1], [tr + lx + 0.5, hipY + 3.4], [tl + lx - 0.5, hipY + 3.4]], shade(K.shirt, -0.38), INK, 1.2);
     if (front) { line(g, cx0 - 2.6, shY + ly + 2, cx0 - 3, shY + ly + 10, "#ffe9b0", 1.5); line(g, cx0 + 2.6, shY + ly + 2, cx0 + 3, shY + ly + 10, "#ffe9b0", 1.5); }
     else { // hood bunched on the back
@@ -140,7 +140,7 @@ export function hero(g, id, o) {
   // laptop (IT) is held on the far side, in front of the torso edge
   if (isIT) laptop(g, farHand[0] + (front ? side * 0 : 0), farHand[1] - 1, 1, front, pulse);
   // head
-  const hr = K.head, hx = lx + fx * 2.2 + fx * hunch, hy = shY - hr + 3 + ly + bob * 0.5 + fy * 0.8 + (isIT ? 3 : 0);
+  const hr = K.head * 1.1, hx = lx + fx * 2.2 + fx * hunch, hy = shY - hr + 3 + ly + bob * 0.5 + fy * 0.8 + (isIT ? 3 : 0);
   limb(g, lx + fx * 1.2, shY + 2 + ly, hx, hy + hr * 0.6, K.skin, isFM ? 6 : 4); // neck
   if (isIT) { // hood bunched behind and around the head
     ellipse(g, hx - fx * 1.5, hy + 1.4, hr + 3.6, hr + 2.2, shade(K.shirt, -0.3), INK, 1.5);
@@ -150,23 +150,23 @@ export function hero(g, id, o) {
   if (front) {
     const ex = hx + fx * 3.2, ey = hy + 0.8;
     if (isFM) {
-      ellipse(g, ex - 3.4, ey, 1.9, 2.6, INK); ellipse(g, ex + 3.4, ey, 1.9, 2.6, INK); ellipse(g, ex - 3.8, ey - 1, 0.6, 0.7, "rgba(255,255,255,0.85)"); ellipse(g, ex + 3, ey - 1, 0.6, 0.7, "rgba(255,255,255,0.85)");
-      line(g, ex - 5.6, ey - 3.6, ex - 1.2, ey - 2.6, "#2b1d17", 1.7); line(g, ex + 1.2, ey - 2.6, ex + 5.6, ey - 3.6, "#2b1d17", 1.7);
+      ellipse(g, ex - 4.6, ey + 0.3, 2.2, 3.1, INK); ellipse(g, ex + 4.6, ey + 0.3, 2.2, 3.1, INK); ellipse(g, ex - 5.2, ey - 0.9, 1.05, 1.25, "rgba(255,255,255,0.98)"); ellipse(g, ex + 4, ey - 0.9, 1.05, 1.25, "rgba(255,255,255,0.98)");
+      line(g, ex - 7, ey - 4.6, ex - 2, ey - 3.8, "#3a2a22", 1.8); line(g, ex + 2, ey - 3.8, ex + 7, ey - 4.6, "#3a2a22", 1.8);
       g.beginPath(); g.ellipse(hx + fx, hy + 3.4, hr * 0.95, hr * 0.7, 0, 0.1, Math.PI - 0.1); g.fillStyle = "#2b1d17"; g.fill(); g.lineWidth = ink(1.4); g.strokeStyle = INK; g.stroke(); // beard
       line(g, ex - 1.8, ey + 4.8, ex + 1.8, ey + 4.8, "#c98a5e", 1.2);
     } else if (isSR) {
-      ellipse(g, ex - 3.1, ey, 1.8, 2.5, INK); ellipse(g, ex + 3.1, ey, 1.8, 2.5, INK); ellipse(g, ex - 3.5, ey - 1, 0.6, 0.7, "rgba(255,255,255,0.85)"); ellipse(g, ex + 2.7, ey - 1, 0.6, 0.7, "rgba(255,255,255,0.85)");
-      line(g, ex - 5, ey - 3.4, ex - 1.4, ey - 3.8, "#8a6a28", 1.4); line(g, ex + 1.4, ey - 3.8, ex + 5, ey - 3.4, "#8a6a28", 1.4);
-      g.beginPath(); g.moveTo(ex - 2, ey + 4.6); g.quadraticCurveTo(ex + 0.2, ey + 6.4, ex + 3.2, ey + 4.2); g.lineWidth = ink(1.3); g.strokeStyle = INK; g.stroke(); // grin
+      ellipse(g, ex - 3.9, ey, 2.5, 3.5, INK); ellipse(g, ex + 3.9, ey, 2.5, 3.5, INK); ellipse(g, ex - 4.5, ey - 1.4, 0.95, 1.1, "rgba(255,255,255,0.95)"); ellipse(g, ex + 3.3, ey - 1.4, 0.95, 1.1, "rgba(255,255,255,0.95)");
+      line(g, ex - 6.4, ey - 4.6, ex - 1.6, ey - 5, "#6a4a18", 2.1); line(g, ex + 1.6, ey - 5, ex + 6.4, ey - 4.6, "#6a4a18", 2.1);
+      g.beginPath(); g.moveTo(ex - 3.2, ey + 5.4); g.quadraticCurveTo(ex + 0.2, ey + 8.2, ex + 4.2, ey + 5); g.lineWidth = ink(2); g.strokeStyle = INK; g.stroke(); // grin
     } else {
-      ellipse(g, ex - 3.3, ey, 3.6, 3.6, "rgba(196,236,255,0.85)", INK, 1.3); ellipse(g, ex + 3.5, ey, 3.6, 3.6, "rgba(196,236,255,0.85)", INK, 1.3);
-      line(g, ex - 0.1, ey - 0.2, ex + 0.2, ey - 0.2, INK, 1.2);
-      ellipse(g, ex - 3.3, ey + 0.4, 1.7, 2, INK); ellipse(g, ex + 3.5, ey + 0.4, 1.7, 2, INK);
-      g.beginPath(); g.moveTo(ex - 2, ey + 5.4); g.quadraticCurveTo(ex + 0.4, ey + 6.6, ex + 2.6, ey + 5); g.lineWidth = ink(1.2); g.strokeStyle = INK; g.stroke();
+      ellipse(g, ex - 4.1, ey, 4.7, 4.7, "rgba(196,236,255,0.85)", INK, 1.7); ellipse(g, ex + 4.3, ey, 4.7, 4.7, "rgba(196,236,255,0.85)", INK, 1.7);
+      line(g, ex - 0.3, ey - 0.2, ex + 0.5, ey - 0.2, INK, 1.5);
+      ellipse(g, ex - 4.1, ey + 0.4, 2.3, 2.9, INK); ellipse(g, ex + 4.3, ey + 0.4, 2.3, 2.9, INK); ellipse(g, ex - 4.7, ey - 0.8, 0.8, 0.9, "rgba(255,255,255,0.95)"); ellipse(g, ex + 3.7, ey - 0.8, 0.8, 0.9, "rgba(255,255,255,0.95)");
+      g.beginPath(); g.moveTo(ex - 2.6, ey + 6.4); g.quadraticCurveTo(ex + 0.4, ey + 8.2, ex + 3.4, ey + 6); g.lineWidth = ink(1.9); g.strokeStyle = INK; g.stroke();
     }
   }
   g.save(); g.beginPath(); g.ellipse(hx, hy, hr, hr * 1.05, 0, 0, Math.PI * 2); g.clip(); // two-tone head: shadow side away from the light
-  g.fillStyle = "rgba(34,10,56,0.2)"; g.beginPath(); g.ellipse(hx + hr * 0.95, hy + hr * 0.1, hr * 0.9, hr * 1.3, 0, 0, Math.PI * 2); g.fill(); g.restore();
+  g.fillStyle = "rgba(34,10,56,0.36)"; g.beginPath(); g.ellipse(hx + hr * 0.9, hy + hr * 0.1, hr * 0.95, hr * 1.35, 0, 0, Math.PI * 2); g.fill(); g.restore();
   // hair / hats
   if (isFM) {
     const top = front ? 0 : 1;
@@ -201,7 +201,7 @@ export function hero(g, id, o) {
       fillPoly(g, [[hx - hr * 0.8, hy - hr * 0.7], [hx - hr * 0.3, hy - hr * 1.5], [hx + hr * 0.2, hy - hr * 0.95], [hx + hr * 0.6, hy - hr * 1.4], [hx + hr * 0.85, hy - hr * 0.6]], "#2a1a40", INK, 1.2);
     }
   }
-  g.beginPath(); g.arc(hx, hy, hr - 1, Math.PI * 1.05, Math.PI * 1.55); g.lineWidth = 1.2; g.strokeStyle = shade(K.skin, 0.45); g.stroke(); // rim light
+  g.beginPath(); g.arc(hx, hy, hr - 1, Math.PI * 1.05, Math.PI * 1.55); g.lineWidth = 1.8; g.strokeStyle = shade(K.skin, 0.5); g.stroke(); // rim light
 
   // near arm + the class item
   const nx = -side * (hw - 0.5) + lx, ny = shY + 3 + ly;

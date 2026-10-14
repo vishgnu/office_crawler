@@ -31,3 +31,18 @@ test("decor sprites are required keys", () => {
   for (const id of FX_IDS.filter((i) => i.startsWith("decor-"))) assert.ok(keys.includes("fx:" + id));
   assert.equal(FX_IDS.filter((i) => i.startsWith("decor-")).length, 7);
 });
+
+test("G-FIX actor tint: 15-25 % inside any pool, a saturated multiply colour and a coloured (not near-black) shadow colour", async () => {
+  const { createLighting } = await import("../src/render/light.js");
+  const L = createLighting({ palette });
+  L.select({ w: 1920, h: 1080, z: 2.7 }, { x: 10, y: 10 }, [{ kind: "monitor", x: 10, y: 10 }], [], false, false, "open-plan", []);
+  const o = { shade: 0, tint: "", tintA: 0, mul: "", sh: "", dx: 0, dy: 0 };
+  L.sample(10.2, 10.2, o);
+  assert.ok(o.tint && o.tintA >= 0.15 && o.tintA <= 0.25, JSON.stringify(o));
+  const ch = (c) => c.match(/\d+/g).map(Number);
+  assert.ok(Math.min(...ch(o.mul)) < 215, "multiply colour is saturated, not a near-white wash: " + o.mul);
+  assert.ok(Math.max(...ch(o.sh)) > 40, "the shadow keeps the pool hue: " + o.sh);
+  L.sample(40, 40, o);
+  assert.equal(o.tintA, 0);
+});
+test("G-FIX ambient lift stays at or below 0.15", () => { assert.ok(AMBIENT_LIFT <= 0.15); });

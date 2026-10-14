@@ -19,3 +19,4 @@
 {"round": "G", "role": "implementer", "pkg": "WORLD-G C3 port", "tokensK": 396.8, "minutes": 22.0, "status": "done", "source": "agent completion report"}
 {"round": "G", "role": "visual-reviewer", "pkg": "G in-game appeal", "tokensK": 101.7, "minutes": 2.8, "status": "done", "score": 32, "source": "agent report"}
 {"round": "G", "role": "visual-reviewer", "pkg": "G in-game craft", "tokensK": 98.8, "minutes": 2.9, "status": "done", "score": 31, "source": "agent report"}
+{"round": "G", "role": "implementer", "pkg": "G-FIX", "tokensK": 295.3, "minutes": 32.1, "status": "done", "tests": 569, "fps50": 47.1, "e2e_red": ["ui.mjs", "s3ui.mjs"], "source": "agent report"}

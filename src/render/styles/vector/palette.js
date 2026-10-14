@@ -22,7 +22,7 @@ export const palette = {
   // Per-actor rim colours (2 px silhouette ring baked into the atlas sprite).
   rims: {
     clerk: "#e6fbff", "facilities-manager": "#ffe9a8", "sales-rep": "#ffd0e4", "it-wizard": "#b8f6ff", "ally.intern": "#cfe8ff", "ally.cone": "#ffd0a0", "zombie-intern": "#a6e65a", "printer-imp": "#ff5a46",
-    "temp-worker": "#ffb35a", "printer-demon": "#ff3d6e", "middle-manager": "#ffd2a0", "vending-machine": "#58e0ff", consultant: "#d6c8ff", auditor: "#b8f060",
+    "temp-worker": "#ffb35a", "printer-demon": "#ff3d6e", "middle-manager": "#fff0d0", "vending-machine": "#58e0ff", consultant: "#e4dcff", auditor: "#d4ff7a",
     "regional-director": "#ffd24a", "regional-director-rage": "#ff4a3a",
     "npc-vendor": "#ffe08a", "npc-healer": "#9ff5d8", "npc-potions": "#9fe08a", "npc-stash": "#bcd0ff",
   },
@@ -34,7 +34,7 @@ export const palette = {
       floors: { corridor: ["#3d3550", "#463d5c"], reception: ["#4a3f5a", "#5a4d6e"], breakroom: ["#2f4f58", "#386068"] },
       floorEdge: "rgba(255,214,160,0.16)",
       wall: { top: "#4d3d5a", left: "#8b6a7a", right: "#6a4f63", band: "#3c2f48", base: "#2d2238", trim: "#d4a64a", trimDark: "#9a7428", rim: "#ffe3b8" },
-      dark: "rgba(14,8,26,0.55)",
+      dark: "rgba(34,12,22,0.55)",
     },
     basement: {
       floors: { corridor: ["#2b3a49", "#354757"], server: ["#243b50", "#2e5066"], archive: ["#363a4c", "#41465c"], boiler: ["#38322d", "#473f38"], storage: ["#303a48", "#3b4859"] },
@@ -94,7 +94,7 @@ export const palette = {
     rage: ["#ff3a2a", 0.18],      // phase 2: red
   },
   actorLights: { "printer-imp": "lamp", "printer-demon": "lamp", "regional-director": "boss" }, // monsters that carry a coloured light
-  dark: "rgba(7,5,24,0.86)",
+  dark: "rgba(24,9,20,0.86)", // round G fix: a warm plum shift of the far half (hue, not lift)
   // Boss telegraphs (colour-blind safe: each kind also has its own shape and a fill that grows; the colours are Okabe-Ito vermillion, yellow and sky blue)
   telegraph: { slam: "#ff6a1f", volley: "#f0e442", summon: "#56b4e9", edge: "#0d0a1c" },
   // Plates: background and text colours; contrast of text on plate is unit-tested (>= 4.5:1).
