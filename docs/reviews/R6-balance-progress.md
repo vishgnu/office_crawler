@@ -6,3 +6,4 @@
 - done: test/skill-cast.test.js (F5: Power Surge refused without direction = no mana; Packet Filter is an active buff, not aura; all 24 actives spend cost + effect). pass 2 numbers applied (xp quad 26, scaling hp88/dmg19, FM floor-buffer, SR pen-volley, IT firewall absorb, class hp/power). next: final 24-seed run, balance-gate test, ADR, report, golden.
 - done: final numbers fixed (= p9 config; hp8 for IT and an FM build reorder were tried and reverted: IT boss deaths x2, FM pallet-slam share up). ADR-0005 amendment written. next: npm test x3, build, e2e, final 24-seed run for the report, golden.
 - done: golden re-recorded once (run-a.hash 519989b11a15ab03 -> a4a3cd6a1dac3cb2, run-class.json per class). next: npm test x3, build, e2e, report.
+- done: docs/reviews/R6-balance.md written; e2e: all green except adv-r5 (2 checks, respec confirm from UI-R6). Finished.
