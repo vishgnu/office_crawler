@@ -4,3 +4,4 @@
 - npm test 574/574 pass; checking denylist, core, perf
 - core skimmed (progression, skillfx, allies, zones, statuses); next: tests quality scan, render hot path, ui charselect/screens/options/testhook, e2e
 - confirmed by experiment: stale owner lockout, hostile item id accepted; next render hot path
+- review written: docs/reviews/R4-R5-G-code-review.md (2 blocking, 13 should, 13 nit)
