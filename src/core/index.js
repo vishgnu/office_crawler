@@ -8,7 +8,7 @@ import { themes } from "./content/themes.js";
 import { props } from "./content/props.js";
 import { strings } from "./content/strings.js";
 import { story } from "./content/story.js";
-import { classes, defaultClass } from "./content/classes.js";
+import { classById, defaultClass } from "./content/classes.js";
 import { bases, slotKeys, rarities, rarityOrder } from "./content/items.js";
 import { affixes, affixGroups } from "./content/affixes.js";
 import { uniques } from "./content/uniques.js";

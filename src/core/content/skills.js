@@ -1,37 +1,48 @@
-// Skills of the one class (S2-3). Data-driven: `effect` picks the code path in systems/skills.js.
-// Mana cost only, no cooldowns (QF-06-5). Values grow with the skill level (AC-R-014-5): level 1 is the base.
-// mana(level) -> integer; value(level) -> the effect number the `perLevel` text describes (damage range, heal, radius ...).
-const lin = (base, per) => (level) => base + per * (level - 1);
+// Skills (ADR-0005). Data only: the three class trees live in content/skilltrees/*.js and are merged here.
+// A numeric value that grows with the skill level is a curve [base, perLevel, cap?]; at(curve, level) evaluates it.
+// Mana cost only, no cooldowns (QF-06-5; `cost.cooldown` is always 0). The exports keep the pre-R4 import `skills` working (id lookup).
+import { facilities } from "./skilltrees/facilities.js";
+import { sales } from "./skilltrees/sales.js";
+import { it } from "./skilltrees/it.js";
 
-export const skills = {
-  strike: { id: "strike", name: "Strike", kind: "basic", maxLevel: 1, effect: "melee", mana: () => 0, text: "skillStrikeText" },
+/** Curve value at a skill level (level 1 = base). A plain number is a constant. */
+export function at(curve, level) {
+  if (typeof curve === "number") return curve;
+  const [base, per = 0, cap] = curve;
+  const v = base + per * (Math.max(1, level) - 1);
+  return cap === undefined ? v : Math.min(cap, v);
+}
 
-  "stapler-throw": {
-    id: "stapler-throw", name: "Stapler Throw", kind: "active", effect: "projectile", maxLevel: 5, text: "skillStaplerText",
-    mana: lin(3, 1), dmgMin: lin(4, 2), dmgMax: lin(8, 3), weaponShare: 0.5,
-    projectile: { kind: "stapler", speed: 0.35, range: 12 },
-    perLevel: "damage",
-  },
-  "reply-all": {
-    id: "reply-all", name: "Reply-All", kind: "active", effect: "burst", maxLevel: 5, text: "skillReplyAllText",
-    mana: lin(8, 2), dmgMin: lin(5, 2), dmgMax: lin(10, 3), weaponShare: 0.25, radius: lin(2.5, 0.5), knockback: true,
-    perLevel: "area",
-  },
-  "coffee-break": {
-    id: "coffee-break", name: "Coffee Break", kind: "active", effect: "heal", maxLevel: 5, text: "skillCoffeeText",
-    mana: lin(8, 1), heal: lin(20, 10),
-    perLevel: "heal",
-  },
-  mute: {
-    id: "mute", name: "Mute", kind: "active", effect: "crowd-control", maxLevel: 5, text: "skillMuteText",
-    mana: lin(7, 1), radius: lin(4.5, 0.5), duration: lin(90, 30),
-    perLevel: "duration",
-  },
+/** Mana cost at a level: an integer (rounded). */
+export const manaCost = (def, level) => Math.max(0, Math.round(at(def.cost?.mana ?? 0, Math.max(1, level))));
 
-  "dress-code": { id: "dress-code", name: "Dress Code", kind: "passive", maxLevel: 5, stat: "defense", perLevel: 4, text: "skillDressCodeText" },
-  hustle: { id: "hustle", name: "Hustle", kind: "passive", maxLevel: 5, stat: "attackRating", perLevel: 6, text: "skillHustleText" },
+export const basics = {
+  strike: { id: "strike", class: null, name: "Strike", textKey: "skillStrikeText", kind: "basic", archetype: "melee", maxLevel: 1, reqLevel: 1, requires: [], tags: ["physical", "melee"],
+    cost: { mana: [0, 0], cooldown: 0, reservePct: 0 }, delivery: { range: 1 }, effects: [{ op: "damage", type: "physical", min: [0, 0], max: [0, 0], weaponShare: 1 }], fx: { cast: null, hit: null, icon: "strike" } },
+  toss: { id: "toss", class: "sales-rep", name: "Toss", textKey: "skillTossText", kind: "basic", archetype: "projectile", maxLevel: 1, reqLevel: 1, requires: [], tags: ["physical", "projectile"],
+    cost: { mana: [0, 0], cooldown: 0, reservePct: 0 }, delivery: { kind: "paper", speed: 0.35, range: 7, count: [1, 0], spreadDeg: 0, pierce: 0, chain: 0 },
+    effects: [{ op: "damage", type: "physical", min: [2, 0], max: [4, 0], weaponShare: 0.6 }], fx: { cast: "fx:paper", hit: null, icon: "toss" } },
+  zap: { id: "zap", class: "it-wizard", name: "Zap", textKey: "skillZapText", kind: "basic", archetype: "projectile", maxLevel: 1, reqLevel: 1, requires: [], tags: ["shock", "projectile"],
+    cost: { mana: [0, 0], cooldown: 0, reservePct: 0 }, delivery: { kind: "zap", speed: 0.5, range: 6, count: [1, 0], spreadDeg: 0, pierce: 0, chain: 0 },
+    effects: [{ op: "damage", type: "shock", min: [2, 0], max: [4, 0], weaponShare: 0.5 }], fx: { cast: "fx:bolt", hit: null, icon: "zap" } },
 };
+
+const trees = [facilities, sales, it];
+/** { [classId]: { branches: [{ id, nameKey, iconKey, skills: [skillId] }], skills: { [id]: SkillDef } } } */
+export const skillTrees = Object.fromEntries(trees.map((t) => [t.classId, {
+  branches: t.branches.map((b) => ({ ...b, skills: [...b.skills] })),
+  skills: Object.fromEntries(t.skills.map((s) => [s.id, s])),
+}]));
+
+/** Flat table of every skill, basics included. */
+export const skills = { ...basics };
+for (const t of Object.values(skillTrees)) Object.assign(skills, t.skills);
+// Compatibility accessor for pre-R4 callers (the old HUD and skill panel call def.mana(level)): non-enumerable, so the data stays plain JSON.
+for (const def of Object.values(skills)) Object.defineProperty(def, "mana", { value: (level) => manaCost(def, level), enumerable: false });
 
 export const skillList = Object.values(skills);
 export const activeSkills = skillList.filter((s) => s.kind === "active");
 export const passiveSkills = skillList.filter((s) => s.kind === "passive");
+export const auraSkills = skillList.filter((s) => s.kind === "aura");
+/** Branch id of a skill (null for basics). */
+export const branchOf = (id) => skills[id]?.branch ?? null;
