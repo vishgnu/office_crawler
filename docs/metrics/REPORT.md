@@ -15,10 +15,10 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R5 | 12 | 2407.0 | 353.6 | 1873.9 | 668 | charselectAppeal 34, charselectCraft 33, g2 33/30 | adversarial: 14; codeReview: 28; visualReview: 9; customer: 2; escaped: 0; escapedNote: none known at acceptance; the file:// storage race (4/23 file://) is an open caveat for the delivery mode |
 | G | 11 | 1893.6 | 117.6 | 1374.1 | 668 | prototypeC3 31/31, g1 32/31, g2 33/32, g3 34/33, gate 34 target; under 33 = another pass; proxy passed at 34/33 with follow-ups | adversarial: null; adversarialNote: No adversarial pass on render work (visual rounds use visual reviewers); the adversarial pass of R5 covered the save/UI code only; codeReview: 0; visualReview: 12; customer: 0; escaped: 0 |
 | R6 | 15 | 2375.6 | 376.8 | 2222.0 | 770 | inGame 35/34, charselect 35/34, uiTreeSlotsPause 35/34, note [appeal, craft]; target 34; first time craft reached 34; G3 was 34/33 | adversarial: 7; codeReview: 15; visualReview: 7; customer: 8; escaped: 0; escapedNote: none shipped; two things were found late and are open: N11/R7-2 floor-entry stutter (found by the richer bench, no review saw it) and F1 hero stand-off (bot watchdog had masked it, CR6-05) |
-| R7 | 10 | 1586.1 | 211.8 | – | – | – | – |
+| R7 | 11 | 1821.7 | 246.5 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 66 rows, 10294.8 k subagent tokens. **Your messages logged:** 21.
+**Ledger total:** 67 rows, 10530.4 k subagent tokens. **Your messages logged:** 22.
 
 ## Round R3
 
@@ -124,6 +124,7 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | implementer | CORE-R7Q 0.2 (hooks, pouch, hand-in, rewards) | 206.3 | 25.4 | done | tests: 854 (1 red = 0.3 version exception); golden_unchanged: true |
 | implementer | CORE-R7Q 0.3 (save v4) | 196.5 | 27.5 | done | tests: 873 (1 red adversary pin line 185) |
 | implementer | CORE-R7Q 0.4 (bot quests) | 157.3 | 16.4 | done | tests: 895; parity: {"questsCompleted":"72/72","won":"72/72","medians_min":[29.4,29.3,28.8],"vs_R6":"+9/+7/+10 %","deaths_median":[2,1,1],"giveUps":0} |
+| implementer | UI-R7Q 0.5 (journal, tracker) | 235.6 | 34.7 | done | tests: 895; e2e: r7journal 59/59 + all touched scripts green |
 
 ## Harness work
 
@@ -156,3 +157,4 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | 2026-10-14T14:01:20Z | question | i only see 1 and 2-3 |
 | 2026-10-14T14:52:22Z | question | sidequest how can i secure this againt bot / crawlers ? |
 | 2026-10-14T14:54:14Z | decision | yes (add noindex to the game build) |
+| 2026-10-14T15:14:11Z | question | did you updatge the harnes and reviews after the completed rounds? |
