@@ -21,7 +21,7 @@ function onSprite(r, actors, self, cam, style) {
   return false;
 }
 /** True when the leader line (x1,y1)-(x2,y2) passes through the body of an actor other than `self` (or the hero rect). Sampled; lines are short. */
-function lineCrossesBody(x1, y1, x2, y2, actors, self, cam, style, heroR) {
+export function lineCrossesBody(x1, y1, x2, y2, actors, self, cam, style, heroR) {
   const z = cam.z;
   for (let k = 1; k <= 12; k++) {
     const t = k / 12, x = x1 + (x2 - x1) * t, y = y1 + (y2 - y1) * t;

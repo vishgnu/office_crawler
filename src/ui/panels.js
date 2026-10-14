@@ -20,6 +20,15 @@ const SLOT_LABEL = { head: T.slotHead, amulet: T.slotAmulet, weapon: T.slotWeapo
 const DOLL = { head: [3, 1, 2, 2], amulet: [5, 1, 1, 1], weapon: [1, 2, 2, 3], body: [3, 3, 2, 3], offhand: [6, 2, 2, 3], hands: [1, 5, 2, 2], belt: [3, 6, 2, 1], feet: [6, 5, 2, 2], ring1: [5, 5, 1, 1], ring2: [5, 6, 1, 1] };
 const ATTR_HINT = { grit: T.raisesDamage, agility: T.raisesDefense, stamina: T.raisesHealth, focus: T.raisesMana };
 const RESISTS = [["fire", T.resistFire], ["cold", T.resistCold], ["shock", T.resistShock], ["acid", T.resistAcid]];
+// ---- pure markup builders (exported so a unit test can feed them hostile ids and names, CR-02) ----
+export const escHtml = esc;
+export const nameLineHtml = (it, size = 13) => `<span class="l-${esc(it.rarity)}">${rarityMark(it.rarity, size)} ${esc(it.name)}</span>`;
+export function itemBoxHtml(it, { fill = false, pos = null, cls = "", unmet = false } = {}) {
+  const warn = unmet ? '<span class="warn" aria-hidden="true">!</span>' : "";
+  const style = pos ? ` style="--x:${Number(pos.x) || 0};--y:${Number(pos.y) || 0};--w:${Number(it.w) || 1};--h:${Number(it.h) || 1}"` : "";
+  return `<span class="item r-${esc(it.rarity)}${fill ? " fill" : ""}${cls ? " " + esc(cls) : ""}" data-item="${esc(it.id)}"${style}>${itemIcon(it)}<span class="rm">${rarityMark(it.rarity, 11)}</span>${warn}</span>`;
+}
+export const rowItemHtml = (it, tipKey, right, mainText = "") => `<li class="row" data-tip="${esc(tipKey)}"><span class="ricon" style="--rw:${Number(it.w) || 1};--rh:${Number(it.h) || 1}">${itemIcon(it)}</span><span class="rname">${nameLineHtml(it, 14)}<small>${esc(mainText)}</small></span>${right}</li>`;
 const num = (n) => Number(n).toLocaleString("en-US");
 
 export function createPanels(root, game) {
@@ -57,12 +66,8 @@ export function createPanels(root, game) {
   const itemLabel = (it) => `${it.name}, ${rarityName(it.rarity)}, ${it.w} by ${it.h} ${T.cells}${unmetOf(it) ? `, ${T.msgReqs.toLowerCase()}` : ""}`;
 
   // ------------------------------------------------------------ item markup
-  const itemBox = (it, { fill = false, pos = null, cls = "" } = {}) => {
-    const warn = unmetOf(it) ? '<span class="warn" aria-hidden="true">!</span>' : "";
-    const style = pos ? ` style="--x:${Number(pos.x) || 0};--y:${Number(pos.y) || 0};--w:${Number(it.w) || 1};--h:${Number(it.h) || 1}"` : "";
-    return `<span class="item r-${esc(it.rarity)}${fill ? " fill" : ""}${cls ? " " + cls : ""}" data-item="${esc(it.id)}"${style}>${itemIcon(it)}<span class="rm">${rarityMark(it.rarity, 11)}</span>${warn}</span>`;
-  };
-  const nameLine = (it, size = 13) => `<span class="l-${esc(it.rarity)}">${rarityMark(it.rarity, size)} ${esc(it.name)}</span>`;
+  const itemBox = (it, o = {}) => itemBoxHtml(it, { ...o, unmet: !!unmetOf(it) });
+  const nameLine = nameLineHtml;
   const legend = () => `<ul class="legend" aria-label="${esc(T.rarityKey)}"><li class="lh">${esc(T.rarityKey)}</li>${["normal", "magic", "rare", "unique"].map((r) =>
     `<li class="l-${r}"><span class="swatch r-${r}"></span>${rarityMark(r, 14)}<span>${esc(rarityName(r))}</span></li>`).join("")}</ul>`;
 
@@ -125,7 +130,7 @@ export function createPanels(root, game) {
   const renderSkills = (c) => renderTree(c).replace("@TABS@", tabsHtml("skills"));
 
   // ------------------------------------------------------------ NPC windows
-  const rowItem = (it, tipKey, right) => `<li class="row" data-tip="${esc(tipKey)}"><span class="ricon" style="--rw:${Number(it.w) || 1};--rh:${Number(it.h) || 1}">${itemIcon(it)}</span><span class="rname">${nameLine(it, 14)}<small>${esc(describeItem(it, core().player).main[0]?.text ?? "")}</small></span>${right}</li>`;
+  const rowItem = (it, tipKey, right) => rowItemHtml(it, tipKey, right, describeItem(it, core().player).main[0]?.text ?? "");
   function renderNpc(c) {
     const d = c.ui.dialog;
     if (!d) return "";

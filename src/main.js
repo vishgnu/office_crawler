@@ -161,9 +161,11 @@ async function boot() {
   const ensureActive = () => { if (game.core && resume !== null && store.activeSlot() === null) store.setActive(resume); };
   setInterval(() => { if (game.core && !game.error) store.heartbeat(); }, config.ownerBeatMs); // while a game runs this tab keeps the owner lock fresh
   bus.on("autosave", (ev) => { if (game.core) { ensureActive(); const r = store.autosave(game.core, ev); if (r.ok && !r.skipped) game.refreshSlots(); } });
-  const flush = () => { if (game.core && !game.error && game.core.scene !== "error") { ensureActive(); store.autosave(game.core, {}, { force: true }); game.refreshSlots(); } };
-  addEventListener("pagehide", () => { flush(); resume = store.activeSlot() ?? resume; store.clearActive(); });
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { ensureActive(); if (game.core) store.heartbeat(); } if (document.visibilityState === "hidden") flush(); audio.setVisible(document.visibilityState !== "hidden"); });
+  let released = false; // pagehide gave the saves up: the visibilitychange that follows it must not take them back (the next page load would see a live owner)
+  const flush = () => { if (released) return; if (game.core && !game.error && game.core.scene !== "error") { ensureActive(); store.autosave(game.core, {}, { force: true }); game.refreshSlots(); } };
+  addEventListener("pagehide", () => { flush(); resume = store.activeSlot() ?? resume; store.clearActive(); released = true; });
+  addEventListener("pageshow", () => { if (!released) return; released = false; ensureActive(); if (game.core) store.heartbeat(); }); // back from the bfcache: play on
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !released) { ensureActive(); if (game.core) store.heartbeat(); } if (document.visibilityState === "hidden") flush(); audio.setVisible(document.visibilityState !== "hidden"); });
   // Leaving a session (Quit to title, game over, victory) saves first: Continue must show what the player just did.
   const saveAndQuit = () => { flush(); resume = null; store.clearActive(); game.toTitle(); };
   const shell = { download, session: (cmd) => game.session(cmd), slots: () => game.slots, active: () => store.activeSlot(), adapter: store.adapter, playing: () => !!game.core };

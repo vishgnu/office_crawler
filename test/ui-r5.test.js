@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { content, newGame, treeView, classCards, setLevel, skillTrees } from "../src/core/index.js";
 import { skillIcon } from "../src/ui/icons.js";
 import { nodeTipHtml, rowsHtml } from "../src/ui/tree.js";
-import { fmtPlay, fmtWhen, errorText, slotSummary } from "../src/ui/slots.js";
+import { fmtPlay, fmtWhen, fmtStamp, errorText, slotSummary } from "../src/ui/slots.js";
 import { T } from "../src/ui/text.js";
 
 test("every skill, branch and class of the R4 contract has an icon", () => {
@@ -42,8 +42,14 @@ test("slot list formatting: play time h:mm, relative last played, error texts fo
   assert.equal(fmtWhen(now - 5000, now), "just now"); assert.equal(fmtWhen(now - 5 * 60000, now), "5 min ago"); assert.equal(fmtWhen(now - 3 * 3600000, now), "3 h ago");
   assert.equal(fmtWhen(NaN, now), "");
   for (const e of ["bad-name", "bad-slot", "empty-slot", "occupied", "confirm-required", "corrupt", "newer", "quota", "too-large", "write-failed", "another-tab", "playing", "no-storage", "bad-class"]) assert.ok(errorText(e).length > 5, e);
-  assert.match(slotSummary({ class: "it-wizard", level: 9, depth: 0, playSec: 600 }), /IT Wizard · Level 9 · Lobby · 0:10 played/);
-  assert.match(slotSummary({ class: "sales-rep", level: 3, depth: 4, playSec: 0 }), /Floor 4/);
+  // CR-12: the card shows the DEEPEST floor (contract field `deepest`), not where the character stands, and date plus time of the last save
+  assert.match(slotSummary({ class: "it-wizard", level: 9, depth: 0, deepest: 0, playSec: 600 }), /IT Wizard · Level 9 · Deepest: Lobby · 0:10 played/);
+  assert.match(slotSummary({ class: "sales-rep", level: 3, depth: 1, deepest: 4, playSec: 0 }), /Deepest floor 4/);
+  assert.doesNotMatch(slotSummary({ class: "sales-rep", level: 3, depth: 1, deepest: 4, playSec: 0 }), /Floor 1/);
+  const iso = "2026-10-14T09:41:00.000Z", st = fmtStamp({ savedAt: iso });
+  assert.match(st, /2026/); assert.match(st, /\d{1,2}[:.]\d{2}/, "has a time");
+  assert.equal(fmtStamp({ lastPlayed: Date.parse(iso) }), st, "the older lastPlayed field gives the same stamp");
+  assert.equal(fmtStamp({}), ""); assert.equal(fmtStamp({ savedAt: "not a date" }), "");
 });
 
 test("R5 UI strings: every respec and learn error code has a message", () => {

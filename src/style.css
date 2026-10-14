@@ -445,7 +445,7 @@ html.hc .opt-val, html.hc .screen.options .hint, html.hc .hint, html.hc .seed, h
 .sl-head .xbtn { margin-left: auto; width: 44px; height: 44px; border-radius: 8px; border: 3px solid #0d0a1c; background: #3a2f78; font: 900 22px/1 inherit; color: #fff; padding: 0; cursor: pointer; }
 .sl-view .sl-h { margin: 0; font-size: 15px; }
 .sl-intro { margin: 0 0 8px; font-size: 14px; color: #c9c2e8; }
-.sl-msg { margin: 0 0 8px; min-height: 20px; font-weight: 800; color: #ffe27a; font-size: 14px; }
+.sl-msg { margin: 0 0 6px; min-height: 0; font-weight: 800; color: #ffe27a; font-size: 14px; }
 .sl-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
 .sl-card { display: grid; grid-template-columns: 62px 1fr; gap: 6px 12px; align-items: center; padding: 8px; border-radius: 10px; background: #120e29; border: 2px solid #3d3068; --acc: #5b4f98; }
 .sl-card.ok { border-color: color-mix(in srgb, var(--acc) 55%, #3d3068); }
@@ -565,3 +565,11 @@ html.hc .tnode { border-color: #fff; }
   .sl-list { gap: 6px; margin-bottom: 8px; }
   .sl-head { padding: 2px 0 2px; }
 }
+
+@media (min-width: 760px) {
+  .dlg-card { width: min(780px, 100%); }
+  .sl-card.ok { grid-template-columns: 62px minmax(0, 1fr) auto; }
+  .sl-card.ok .sl-acts { grid-column: auto; display: grid; grid-template-columns: repeat(3, auto); justify-content: end; gap: 4px; }
+  .sl-card.ok .sl-acts .mini, .sl-card.ok .sl-acts .btn.small { min-height: 34px; padding: 3px 10px; }
+}
+@media (max-width: 760px) { .tree .srow .sassign > span { display: none; } .tree .srow .sassign { gap: 4px; } }
