@@ -62,7 +62,7 @@ async function boot() {
 
   const canvas = document.getElementById("game");
   const bus = createBus();
-  game = createGame({ canvas, atlas, style, bus, testMode, realtime: params.get("realtime") === "1", seed, atlasMs, lowFx, hc });
+  game = createGame({ canvas, atlas, style, bus, testMode, realtime: params.get("realtime") === "1", seed, atlasMs, lowFx, hc, story: !testMode || params.get("story") === "1" });
 
   game.options = options; game.commitOptions();
   const audio = createAudio({ bus, getState: () => game.core ?? null, options }); // writes volume / mute / kit back into `options`
@@ -151,13 +151,16 @@ async function boot() {
     },
     deleteSave: () => { store.remove(); refreshSave(); game.titleNotice = null; shellSync(); },
     exportSave: (which) => { const text = store.exportText(which); if (text === null) { game.titleNotice = T.noSaveYet; shellSync(); return; } download(store.exportName(), text); },
+    canImport: (text) => store.canImport(text),
     importText: (text) => { const r = store.importText(text); refreshSave(); shellSync(); return r.ok; },
     importFile: async (file) => { let text = ""; try { text = await file.text(); } catch { /* unreadable: reported as a failed import */ } return shell.importText(text); },
   };
   bus.on("autosave", (ev) => { if (game.core) { const r = store.autosave(game.core, ev); if (r.ok) hasSave = true; } });
   const flush = () => { if (game.core && !game.error && game.core.scene !== "error") store.save(game.core, { force: true }); };
   addEventListener("pagehide", flush);
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); audio.setVisible(document.visibilityState !== "hidden"); });
+  // Leaving a session (Quit to title, game over, victory) saves first: Continue must show what the player just did.
+  const saveAndQuit = () => { flush(); refreshSave(); game.toTitle(); };
 
   const screens = createScreens(overlay, {
     ...shell,
@@ -165,7 +168,8 @@ async function boot() {
     restart: () => game.input({ t: "restart" }),
     respawn: () => game.input({ t: "respawn" }),
     keepPlaying: () => game.keepPlaying(),
-    quit: () => game.toTitle(),
+    quit: saveAndQuit,
+    dismissStory: () => game.dismissStory(),
     openOptions: () => game.openOptions(),
     closeOptions: () => game.closeOptions(),
     optionsCtl,
@@ -173,7 +177,7 @@ async function boot() {
   });
   const sync = () => screens.show(game.menu(), {
     seed: game.titleSeed, error: game.error, summary: game.menu() === "dead" ? game.summary() : null,
-    hasSave, hasCorrupt, notice: game.core ? null : game.titleNotice, victory: game.core?.victory?.stats ?? null,
+    hasSave, hasCorrupt, story: game.ui.story, notice: game.core ? null : game.titleNotice, victory: game.core?.victory?.stats ?? null,
   });
   shellSync = sync;
   game.onChange(sync);

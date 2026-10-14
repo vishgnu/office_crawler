@@ -19,7 +19,7 @@ import { requiredKeys } from "./render/keys.js";
 
 const MAX_CATCHUP_TICKS = 8;
 
-export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed, atlasMs = 0, lowFx = false, hc = false }) {
+export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed, atlasMs = 0, lowFx = false, hc = false, story = false }) {
   const g = canvas.getContext("2d");
   const fx = createFx(style), lighting = createLighting(style), labels = createLabels(style), hud = createHud(style), fmap = createMap(style);
   fx.lowFx = lowFx; fx.hc = hc;
@@ -32,8 +32,8 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     // persisted options (volume, keys, accessibility; main.js replaces this with the stored object) and a frozen copy the core state points at
     options: defaultOptions(), optSnap: null, titleNotice: null, capturing: false,
     // UI state that is not game state: which drawers are open (left: character | skills | npc), vendor tab, hover tooltip, toast
-    ui: { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null },
-    inset: 0, defaultStart: "town",
+    ui: { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null },
+    storyOn: !!story, inset: 0, defaultStart: "town",
   };
   const syncUi = () => { // the NPC window follows the core dialog; the drawers go away with the run
     const u = game.ui;
@@ -75,21 +75,29 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (!game.core) return "title";
     if (game.core.scene === "dead") return "dead";
     if (game.core.scene === "victory") return "victory";
+    if (game.ui.story) return "story";
     if (game.core.paused) return "pause";
     return null;
   };
-  const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null }); game.inset = 0; game.heldOrigin = null; };
+  let storyBossSeen = false;
+  const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null }); game.inset = 0; storyBossSeen = false; game.heldOrigin = null; };
   const resetRender = () => { game.run.kills = 0; game.prev.clear(); rs.facing.clear(); fx.reset(); game.acc = 0; game.hover = null; game.focus = null; };
   game.setBackdrop = () => { game.backdrop = newGame(game.titleSeed); resetRender(); };
   /** Start a run. opts.start: "town" (default: the Lobby, R-040) or "floor" (fixtures and tests that want floor 1). */
   game.newGame = (s = game.titleSeed, opts = {}) => {
     game.titleSeed = Number(s) >>> 0;
     game.core = newGame(game.titleSeed, { start: opts.start ?? game.defaultStart });
-    resetUi(); resetRender(); emitChange();
+    resetUi(); resetRender();
+    if (game.storyOn) game.ui.story = "start"; // R-104: the start text, dismissed by click or key
+    emitChange();
     return game.core;
   };
   /** Swap in a state built by the save package (Continue). */
   game.loadState = (state) => { game.core = state; resetUi(); resetRender(); emitChange(); return state; };
+  game.dismissStory = () => { if (!game.ui.story) return { ok: true }; game.ui.story = null; bus.emit({ type: "ui:close" }); emitChange(); return { ok: true }; };
+  bus.on("floorEnter", (ev) => { // R-104: the boss text, once per run, the first time the Executive Suite is entered
+    if (game.storyOn && game.core && ev.depth === config.bossDepth && !game.core.bossDefeated && !storyBossSeen) { storyBossSeen = true; game.ui.story = "boss"; emitChange(); }
+  });
   game.openOptions = () => { if (game.ui.options) return { ok: true }; game.ui.options = game.core ? "pause" : "title"; bus.emit({ type: "ui:open" }); emitChange(); return { ok: true }; };
   game.closeOptions = () => { if (!game.ui.options) return { ok: true }; game.ui.options = null; game.capturing = false; bus.emit({ type: "ui:close" }); emitChange(); return { ok: true }; };
   game.toTitle = () => { game.core = null; game.titleNotice = null; resetUi(); game.setBackdrop(); emitChange(); };
@@ -246,6 +254,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     }
     if (!game.core) return { ok: false, error: "no game running" };
     if (game.menu() === "victory") return { ok: false, error: "victory screen" };
+    if (game.menu() === "story") return raw === "Escape" ? game.dismissStory() : { ok: false, error: "story open" }; // Enter / Space press the focused button
     const code = resolveKey(raw, game.options.keys); // remapped keys become the action's default code; a moved action's old key is dead
     if (code === null) return { ok: false, error: "key not bound" };
     const panel = panelFor(code);
@@ -353,7 +362,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     const c = makeCamera(game.w, game.h, game.focus.x, game.focus.y, undefined, game.inset);
     c.ox += shake.x; c.oy += shake.y;
     game.cam = c;
-    env.lowFx = game.lowFx; env.hc = game.hc;
+    env.lowFx = game.lowFx; env.hc = game.hc; env.reducedMotion = fx.reducedMotion = !!game.options.reducedMotion;
     lighting.ensure(c, game.lowFx, game.hc);
     const out = drawWorld(g, c, atlas, w, game.prev, game.alpha, fx, now, rs, env);
     lighting.draw(g, c, out.heroScreen, now);

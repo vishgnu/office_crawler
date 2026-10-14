@@ -40,7 +40,8 @@ export function createScreens(root, h) {
     title: (info) => {
       if (sub === "confirm-new") return confirmBox(T.confirmNewTitle, T.confirmNewText, S.newGame, () => h.newGame(), "confirm-new");
       if (sub === "confirm-delete") return confirmBox(T.confirmDeleteTitle, T.confirmDeleteText, T.deleteCharacter, () => h.deleteSave(), "confirm-delete");
-      if (sub === "import") return buildImport();
+      if (sub === "import") return buildImport(info);
+      if (sub === "confirm-import") return confirmBox(T.confirmImportTitle, T.confirmImportText, T.importGo, () => { const t = pendingImport; pendingImport = null; h.importText(t); }, "confirm-import");
       const s = el("section", "screen title"), box = el("div", "panel");
       box.append(el("h1", "", S.gameTitle), el("p", "tagline", S.tagline));
       if (info.notice) { const n = el("p", "notice-line", info.notice); n.setAttribute("role", "status"); n.dataset.testid = "title-notice"; box.append(n); }
@@ -68,10 +69,19 @@ export function createScreens(root, h) {
       const v = createOptionsView(h.optionsCtl, () => h.closeOptions());
       return v;
     },
+    story: (info) => {
+      const st = content.story[info.story] ?? content.story.start, s = el("section", "screen story-screen"), box = el("div", "panel vic");
+      box.setAttribute("role", "dialog"); box.setAttribute("aria-label", st.title);
+      box.append(el("p", "kicker", T.storyKicker), el("h2", "", st.title));
+      for (const line of st.lines) box.append(el("p", "story", line));
+      box.append(button(T.storyContinue, "story-continue", h.dismissStory));
+      s.append(box);
+      return s;
+    },
     victory: (info) => {
       const s = el("section", "screen victory"), box = el("div", "panel vic"), r = info.victory ?? {};
       box.setAttribute("role", "dialog"); box.setAttribute("aria-label", S.victoryTitle);
-      box.append(el("p", "kicker", T.victoryBoss), el("h2", "", S.victoryTitle), el("p", "story", S.victoryText), el("h3", "", S.victoryStats));
+      box.append(el("p", "kicker", T.victoryBoss), el("h2", "", S.victoryTitle), ...content.story.victory.lines.map((l) => el("p", "story", l)), el("h3", "", S.victoryStats));
       box.append(stats([[S.victoryTime, fmtTime(r.seconds ?? 0)], [S.victoryKills, String(r.kills ?? 0)], [S.victoryDeaths, String(r.deaths ?? 0)], [S.victoryLevel, String(r.level ?? 1)], [S.victoryGold, String(r.gold ?? 0)], [S.victoryDeepest, String(r.deepestDepth ?? 0)]]));
       box.append(button(S.keepPlaying, "keep-playing", h.keepPlaying), button(T.victoryQuit, "quit", h.quit));
       s.append(box);
@@ -92,15 +102,19 @@ export function createScreens(root, h) {
       return s;
     },
   };
-  function buildImport() {
+  let pendingImport = null;
+  const requestImport = (text, info) => { // a save already exists: ask before it is replaced
+    if (info.hasSave && h.canImport(text)) { pendingImport = text; go("confirm-import"); } else { h.importText(text); go(null); }
+  };
+  function buildImport(info) {
     const s = el("section", "screen title import"), box = el("div", "panel");
     box.append(el("h2", "", T.importTitle));
     const file = el("input"); file.type = "file"; file.accept = ".json,application/json,text/plain"; file.dataset.testid = "import-file"; file.id = "import-file";
     const lab = el("label", "hint", T.importFile); lab.htmlFor = "import-file";
-    file.addEventListener("change", async () => { const f = file.files?.[0]; if (f) { const ok = await h.importFile(f); if (ok) go(null); else go(null); } });
+    file.addEventListener("change", async () => { const f = file.files?.[0]; if (!f) return; let text = ""; try { text = await f.text(); } catch { /* reported as a failed import */ } requestImport(text, info);  });
     const ta = el("textarea"); ta.rows = 5; ta.dataset.testid = "import-text"; ta.setAttribute("aria-label", T.importPasteLabel); ta.spellcheck = false;
     const row = el("div", "btn-row");
-    row.append(button(T.importGo, "import-go", () => { h.importText(ta.value); go(null); }, "btn small"), button(T.back, "import-back", () => go(null), "btn small"));
+    row.append(button(T.importGo, "import-go", () => requestImport(ta.value, info), "btn small"), button(T.back, "import-back", () => go(null), "btn small"));
     box.append(lab, file, el("p", "hint", T.importPaste), ta, row);
     s.append(box);
     return s;
@@ -111,7 +125,7 @@ export function createScreens(root, h) {
       last = { menu, info };
       if (menu !== "title") sub = null;
       const sm = info.summary ? `${info.summary.kills}/${info.summary.seconds}/${info.summary.depth}` : "", v = info.victory ? `${info.victory.seconds}/${info.victory.kills}` : "";
-      const key = menu ? `${menu}:${sub ?? ""}:${info.seed ?? ""}:${sm}:${v}:${info.hasSave ? 1 : 0}${info.hasCorrupt ? 1 : 0}:${info.notice ?? ""}` : "";
+      const key = menu ? `${menu}:${sub ?? ""}:${info.seed ?? ""}:${sm}:${v}:${info.hasSave ? 1 : 0}${info.hasCorrupt ? 1 : 0}:${info.notice ?? ""}:${info.story ?? ""}` : "";
       if (key === current && !force) return;
       current = key;
       active?.destroy?.(); active = null;

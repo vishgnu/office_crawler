@@ -1,0 +1,33 @@
+# CI for the Office Crawler game. GitHub only runs workflows from the repository root, so this file lives here as a template:
+# copy it to <repo root>/.github/workflows/office-crawler-ci.yml to enable it (see README.md).
+name: office-crawler-ci
+on:
+  push:
+    paths: ["office-crawler/**"]
+  pull_request:
+    paths: ["office-crawler/**"]
+defaults:
+  run:
+    working-directory: office-crawler
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: office-crawler/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Install the Playwright browser (version pinned by package-lock: 1.56.1)
+        run: npx playwright@1.56.1 install --with-deps chromium
+      - run: npm run e2e
+      - name: Benchmark (advisory: shared runners are slow and noisy, never blocks)
+        continue-on-error: true
+        run: npm run bench
+      - name: Check play/index.html is the current build
+        run: cmp dist/index.html play/index.html

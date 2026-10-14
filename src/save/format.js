@@ -13,7 +13,9 @@ import { enterFloor } from "../core/systems/world.js";
 import { xpNextFor } from "../core/systems/progression.js";
 import { canPlace } from "../core/items/inventory.js";
 import { classes } from "../core/content/classes.js";
-import { slotKeys, rarityOrder } from "../core/content/items.js";
+import { slotKeys, rarityOrder, bases } from "../core/content/items.js";
+import { affixes as affixDefs } from "../core/content/affixes.js";
+import { uniques as uniqueDefs } from "../core/content/uniques.js";
 import { skills as skillDefs } from "../core/content/skills.js";
 import { migrate } from "./migrate.js";
 
@@ -76,16 +78,41 @@ const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const isInt = (v, lo = -Infinity, hi = Infinity) => Number.isInteger(v) && v >= lo && v <= hi;
 const hasOnly = (o, keys) => isObj(o) && Object.keys(o).every((k) => keys.includes(k));
 
+const own = (o, k) => Object.hasOwn(o, k); // never trust inherited names such as `constructor`
+const STAT_IDS = new Set([...affixDefs.map((a) => a.stat), ...uniqueDefs.flatMap((u) => u.affixes.map((a) => a.stat))]);
+export const ITEM_KEYS = ["id", "base", "baseName", "name", "kind", "rarity", "ilvl", "slot", "w", "h", "x", "y", "reqs", "affixes", "damage", "defense", "twoHanded",
+  "restores", "restore", "effect", "unique", "flavour"];
+const AFFIX_KEYS = ["id", "group", "kind", "stat", "name", "tier", "value", "range"];
+const MAX_TEXT = 64, MAX_NUM = 1e6;
+const str = (v, max = MAX_TEXT) => typeof v === "string" && v.length <= max;
+const num = (v, lo = -MAX_NUM, hi = MAX_NUM) => typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi;
+
+function affixOk(a) {
+  if (!hasOnly(a, AFFIX_KEYS) || !str(a.stat) || !STAT_IDS.has(a.stat) || !num(a.value)) return false;
+  for (const k of ["id", "group", "kind", "name"]) if (a[k] !== undefined && !str(a[k])) return false;
+  if (a.tier !== undefined && !isInt(a.tier, 0, 99)) return false;
+  if (a.range !== undefined && !(Array.isArray(a.range) && a.range.length === 2 && a.range.every((n) => num(n)))) return false;
+  return true;
+}
+
 function itemOk(it, { placed }) {
-  if (!isObj(it) || typeof it.id !== "string" || typeof it.name !== "string" || typeof it.base !== "string") return false;
+  if (!hasOnly(it, ITEM_KEYS) || !str(it.id) || !str(it.name) || !str(it.base) || !own(bases, it.base)) return false;
+  if (it.baseName !== undefined && !str(it.baseName)) return false;
+  if (it.slot !== undefined && !str(it.slot)) return false;
+  if (it.unique !== undefined && !str(it.unique)) return false;
+  if (it.flavour !== undefined && !str(it.flavour, 200)) return false;
+  if (it.effect !== undefined && !str(it.effect)) return false;
+  if (it.restores !== undefined && !str(it.restores)) return false;
+  if (it.ilvl !== undefined && !isInt(it.ilvl, 0, 999)) return false;
+  if (it.twoHanded !== undefined && typeof it.twoHanded !== "boolean") return false;
   if (!["gear", "potion", "consumable"].includes(it.kind) || !rarityOrder.includes(it.rarity)) return false;
   if (!isInt(it.w, 1, 6) || !isInt(it.h, 1, 6)) return false;
   if (placed && (!isInt(it.x, 0, 99) || !isInt(it.y, 0, 99))) return false;
-  if (!Array.isArray(it.affixes ?? []) || (it.affixes ?? []).some((a) => !isObj(a) || typeof a.stat !== "string" || !Number.isFinite(a.value))) return false;
-  if (it.damage !== undefined && !(isObj(it.damage) && Number.isFinite(it.damage.min) && Number.isFinite(it.damage.max))) return false;
-  if (it.defense !== undefined && !Number.isFinite(it.defense)) return false;
-  if (it.restore !== undefined && !Number.isFinite(it.restore)) return false;
-  if (it.reqs !== undefined && !isObj(it.reqs)) return false;
+  if (!Array.isArray(it.affixes ?? []) || (it.affixes ?? []).length > 12 || (it.affixes ?? []).some((a) => !affixOk(a))) return false;
+  if (it.damage !== undefined && !(hasOnly(it.damage, ["min", "max"]) && num(it.damage.min, 0) && num(it.damage.max, 0))) return false;
+  if (it.defense !== undefined && !num(it.defense, 0)) return false;
+  if (it.restore !== undefined && !num(it.restore, 0)) return false;
+  if (it.reqs !== undefined && !(isObj(it.reqs) && Object.entries(it.reqs).every(([k, v]) => str(k, 16) && num(v, 0, 1000)))) return false;
   return true;
 }
 
@@ -114,10 +141,10 @@ export function schemaProblem(d) {
   if (!hasOnly(p, PLAYER_KEYS) || PLAYER_KEYS.some((k) => !(k in p))) return "bad player";
   if (!isInt(p.level, 1, config.levelCap) || !isInt(p.xp, 0, config.xpPastCap) || !isInt(p.attrPoints, 0, 1000) || !isInt(p.skillPoints, 0, 1000) || !isInt(p.gold, 0, 1e9)) return "bad player numbers";
   if (!hasOnly(p.attrs, ATTRS) || ATTRS.some((a) => !isInt(p.attrs[a], 0, 1000))) return "bad attributes";
-  if (!isObj(p.skills) || Object.entries(p.skills).some(([id, l]) => !skillDefs[id] || !isInt(l, 0, config.skillMaxLevel))) return "bad skills";
+  if (!isObj(p.skills) || Object.entries(p.skills).some(([id, l]) => !own(skillDefs, id) || !isInt(l, 0, config.skillMaxLevel))) return "bad skills";
   const bar = p.skillBar;
   if (!hasOnly(bar, ["primary", "secondary", "hotkeys", "selected"]) || !Array.isArray(bar.hotkeys) || bar.hotkeys.length !== 4 || !isInt(bar.selected, 0, 3)) return "bad skill bar";
-  for (const id of [bar.primary, bar.secondary, ...bar.hotkeys]) if (id !== null && !skillDefs[id]) return "bad skill bar";
+  for (const id of [bar.primary, bar.secondary, ...bar.hotkeys]) if (id !== null && !(typeof id === "string" && own(skillDefs, id))) return "bad skill bar";
   const ids = new Set();
   if (!gridOk(d.inventory, config.inventory.w, config.inventory.h, ids)) return "bad inventory";
   if (!gridOk(d.stash, config.stash.w, config.stash.h, ids)) return "bad stash";
@@ -126,7 +153,7 @@ export function schemaProblem(d) {
   if (!Array.isArray(d.belt) || d.belt.length !== config.beltSlots) return "bad belt";
   for (const it of d.belt) if (it !== null && (!itemOk(it, { placed: false }) || ids.has(it.id) || !ids.add(it.id))) return "bad belt item";
   if (d.cursorItem !== null && (!itemOk(d.cursorItem, { placed: false }) || ids.has(d.cursorItem.id))) return "bad cursor item";
-  if (!Array.isArray(d.uniquesFound) || d.uniquesFound.some((u) => typeof u !== "string")) return "bad uniques";
+  if (!Array.isArray(d.uniquesFound) || d.uniquesFound.length > 100 || d.uniquesFound.some((u) => !str(u))) return "bad uniques";
   if (!isInt(d.nextItemId, 1)) return "bad item counter";
   if (!isObj(d.rng) || ["world", "combat", "ai", "loot"].some((n) => !isObj(d.rng[n]) || !isInt(d.rng[n].s, 0, 0xffffffff)) || Object.keys(d.rng).length !== 4) return "bad random streams";
   if (!hasOnly(d.stats, ["kills", "deaths", "bossAttempts"]) || Object.values(d.stats).length !== 3 || Object.values(d.stats).some((n) => !isInt(n, 0))) return "bad stats";
@@ -181,7 +208,7 @@ export function loadSave(save) {
 export function deserialize(text) {
   try {
     if (typeof text !== "string") return fail("parse", "The save is not text.");
-    if (text.length > config.saveMaxBytes * 2) return fail("size", "The save is too large.");
+    if (text.length > config.saveMaxBytes) return fail("size", "The save is too large.");
     let raw;
     try { raw = JSON.parse(text); } catch { return fail("parse", "The save is not valid JSON."); }
     const r = check(raw);

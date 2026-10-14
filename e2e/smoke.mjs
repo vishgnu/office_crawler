@@ -14,7 +14,9 @@ const browser = await launch();
   check("AC-R-110-1 no page error / console.error on load", g.errors.length === 0, g.errors);
   check("AC-NFR-O02-1 only file:// or data: requests", g.requests.every((u) => /^(file|data|blob):/.test(u)), g.requests);
   await g.page.click('[data-testid="new-game"]');
-  await g.page.waitForSelector('[data-testid="new-game"]', { state: "detached" });
+  await g.page.waitForSelector('[data-testid="story-continue"]'); // outside test mode a new run opens with the story text
+  await g.page.click('[data-testid="story-continue"]');
+  await g.page.waitForSelector('[data-testid="story-continue"]', { state: "detached" });
   check("clicking New game leaves the title screen", (await g.page.locator(".screen").count()) === 0);
   await g.context.close();
 }

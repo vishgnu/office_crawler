@@ -57,6 +57,7 @@ export const T = {
   mapTitle: "Floor map", openMap: "Map", closeMap: "Close map (M)", mapLegend: "You, stairs, people, exit door", mapUnexplored: "Nothing explored yet.",
   msgPortalOpen: "Emergency Exit: a door opens. Step through to return here.", msgPortalUse: "You step through the Emergency Exit.", msgPortalBack: "The Emergency Exit leads back to your floor.", msgExitUse: "Emergency Exit used.", useItem: "Use", exitItemHint: "Right-click to use, or press its belt key.", exitEffect: "Door to the Lobby; walk back through it",
   // S3 title, save, options, victory, boss
+  storyContinue: "Get to work", storyKicker: "Story", confirmImportTitle: "Replace your character?", confirmImportText: "Importing replaces the character in this browser. The current one is kept once as a damaged-save backup you can export.",
   continueGame: "Continue", options: "Options", back: "Back", exportSave: "Export save", importSave: "Import save", deleteCharacter: "Delete character", exportCorrupt: "Export damaged save",
   confirmNewTitle: "Start a new game?", confirmNewText: "This replaces your saved character. Export the save first if you want to keep it.", confirmDeleteTitle: "Delete the character?", confirmDeleteText: "The saved character is removed. Your options stay.",
   confirmYes: "Yes, continue", confirmNo: "Cancel", importTitle: "Import a save", importFile: "Choose a save file", importPaste: "Or paste the save text here", importGo: "Import pasted text", importPasteLabel: "Pasted save text",

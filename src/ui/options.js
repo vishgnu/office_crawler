@@ -112,7 +112,7 @@ export function createOptionsView(ctl, onBack) {
 
   // ---- accessibility
   const acc = el("fieldset", "opt-group"); acc.append(el("legend", "", T.optAccess));
-  for (const [name, label, id, invert] of [["highContrast", T.optHighContrast, "opt-hc"], ["lowFx", T.optLowFx, "opt-lowfx"], ["reducedMotion", T.optReduceMotion, "opt-reduce-motion"], ["screenShake", T.optShake, "opt-shake"]]) {
+  for (const [name, label, id] of [["highContrast", T.optHighContrast, "opt-hc"], ["lowFx", T.optLowFx, "opt-lowfx"], ["reducedMotion", T.optReduceMotion, "opt-reduce-motion"], ["screenShake", T.optShake, "opt-shake"]]) {
     const c = el("input"); c.type = "checkbox"; c.checked = !!o[name];
     c.addEventListener("change", () => { ctl.setFlag(name, c.checked); ctl.click(); });
     acc.append(field(label, c, id));

@@ -7,6 +7,7 @@ import { npcs } from "./content/npcs.js";
 import { themes } from "./content/themes.js";
 import { props } from "./content/props.js";
 import { strings } from "./content/strings.js";
+import { story } from "./content/story.js";
 import { classes, defaultClass } from "./content/classes.js";
 import { bases, slotKeys, rarities, rarityOrder } from "./content/items.js";
 import { affixes, affixGroups } from "./content/affixes.js";
@@ -47,7 +48,7 @@ export { findPath } from "./pathfind.js";
 export { advance } from "./clock.js";
 export { hashState };
 
-export const content = { monsters, bosses, championMods, skills, npcs, themes, props, strings, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops };
+export const content = { monsters, bosses, championMods, skills, npcs, themes, props, strings, story, classes, defaultClass, items: bases, slots: slotKeys, rarities, rarityOrder, affixes, affixGroups, uniques, drops };
 
 export const cloneState = (state) => structuredClone(state);
 

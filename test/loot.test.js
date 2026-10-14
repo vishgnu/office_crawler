@@ -64,7 +64,7 @@ test("a monster killed in play drops loot and the hit/kill events stay as before
   assert.ok(dropped > 0);
 });
 
-test("champions drop at least magic and always something; bosses drop bossDrops rare-or-better items (QF-03-4, QF-04-7)", () => {
+test("champions drop at least magic and always something; bosses drop guaranteedDrops rare-or-better items (QF-03-4, QF-04-7)", () => {
   const s = gameOn(OPEN);
   for (const d of killDrops(s, 60, { tier: "champion", level: 4 })) {
     const gear = d.filter((e) => e.item?.kind === "gear");
@@ -72,7 +72,7 @@ test("champions drop at least magic and always something; bosses drop bossDrops 
   }
   for (const d of killDrops(s, 20, { tier: "boss", level: 8 })) {
     const gear = d.filter((e) => e.item?.kind === "gear");
-    assert.equal(gear.length, config.bossDrops);
+    assert.equal(gear.length, config.boss.guaranteedDrops);
     assert.ok(gear.every((e) => e.item.rarity === "rare" || e.item.rarity === "unique"));
   }
 });

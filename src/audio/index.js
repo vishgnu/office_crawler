@@ -31,7 +31,7 @@ export function createAudio({ bus, getState = () => null, options = {}, deps = {
   const vol = { master: clamp01(vol0.master) ?? C.defaultMaster, sfx: clamp01(vol0.sfx) ?? C.defaultBus.sfx, ambient: clamp01(vol0.ambient) ?? C.defaultBus.ambient };
   let muted = options.muted === true;
   let kitId = kits[options.kit] ? options.kit : C.defaultKit;
-  let ctx = null, kit = null, out = null, timer = null, disposed = false, paused = false;
+  let ctx = null, kit = null, out = null, timer = null, disposed = false, paused = false, hidden = false;
   let amb = null, ambZone = null;
   const limiter = createVoiceLimiter({ cooldowns: COOLDOWNS });
   const cueLog = [];
@@ -64,8 +64,8 @@ export function createAudio({ bus, getState = () => null, options = {}, deps = {
     if (disposed) return;
     const s = state();
     const want = ambientZone(s);
-    if (ctx && s) {
-      const p = !!s.paused;
+    if (ctx) { // suspended while the game is paused or the tab is hidden; a missing state (title screen) is not a pause
+      const p = !!s?.paused || hidden;
       if (p !== paused) { paused = p; try { (p ? ctx.suspend() : ctx.resume())?.catch?.(() => {}); } catch { /* ignore */ } }
     }
     if (want === ambZone && (amb || !running())) return;
@@ -124,12 +124,11 @@ export function createAudio({ bus, getState = () => null, options = {}, deps = {
       kitId = id; persist();
       if (!ctx) return true;
       stopAmbient();
-      const oldKit = kit, oldOut = out;
+      const oldOut = out;
       if (oldOut) { // let the old kit's tails finish quietly, then cut it
         oldOut.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
         setTimeout(() => { try { oldOut.disconnect(); } catch { /* ignore */ } }, 1500)?.unref?.();
       }
-      void oldKit;
       makeKit();
       ambZone = null;
       sync();
@@ -143,6 +142,8 @@ export function createAudio({ bus, getState = () => null, options = {}, deps = {
       vol[ch] = c; persist(); applyVolumes();
       return true;
     },
+    /** The tab went to the background (false) or came back (true): the context is suspended while hidden. */
+    setVisible(v) { hidden = !v; sync(); },
     setMuted(b) { muted = !!b; persist(); applyVolumes(); },
     /** Test hook payload (audio.getState). effectiveGain = master x bus value, 0 while muted (AC-R-082-1/2). */
     getState() {

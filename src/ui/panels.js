@@ -182,7 +182,7 @@ export function createPanels(root, game) {
   // ------------------------------------------------------------ HUD slot layer + panel buttons
   function renderHud(c) {
     const L = hudLayout(game.w, game.h), s = L.scale, p = c.player, bar = p.skillBar, panels = game.panels();
-    const fs = Math.max(10, Math.round(8.5 * s)), ctl = (r) => `left:${r.x.toFixed(1)}px;top:${r.y.toFixed(1)}px;width:${r.w.toFixed(1)}px;height:${r.h.toFixed(1)}px;--fs:${fs}px`;
+    const fs = Math.max(10, Math.round(9.5 * s)), ctl = (r) => `left:${r.x.toFixed(1)}px;top:${r.y.toFixed(1)}px;width:${r.w.toFixed(1)}px;height:${r.h.toFixed(1)}px;--fs:${fs}px`;
     const kl = (a) => keyLabel(c.options?.keys?.[a] ?? DEFAULT_KEYS[a]); // the key badges follow the bindings in Options
     let h = `<div class="hgroup" role="group" aria-label="${esc(T.skillBar)}">`;
     for (let i = 0; i < 4; i++) {

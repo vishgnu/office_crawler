@@ -23,6 +23,10 @@ const fontFor = (px) => (fonts[px] ??= `900 italic ${px}px ${SANS}`);
 const ease = (t) => 1 - (1 - t) * (1 - t) * (1 - t);
 const RUNE = { "stapler-throw": "#c9d2e4", "reply-all": "#ffb35a", "coffee-break": "#6fe08a", mute: "#c9a0ff" };
 const IMPACT_MS = 380;
+/** AC-NFR-A05-2: nothing flashes more than 3 times a second. The boss telegraph "hot" edge toggles every FLASH_HALF_MS (a flash is one on/off cycle). */
+export const FLASH_HALF_MS = 170;
+/** Low-HP pulse period in ms for a health ratio (below 0.3): 700 to 1150 ms. */
+export const lowHpPeriod = (ratio) => 700 + 900 * ratio / 0.3 * 0.5;
 const CONFETTI = ["#ffd24a", "#e0363f", "#56b4e9", "#6fe08a", "#ffffff", "#ff9acb", "#f0e442"];
 const hash01 = (n) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
 
@@ -139,7 +143,7 @@ export function createFx(style) {
     parts: [], slashes: [], rings: [], impacts: [], pillars: [], proj: new Map(), flash: new Map(), // `flash` is unused (flashTicks is state-backed) and kept so older callers do not break
     core: null, alpha: 1, hc: false, showAllLoot: false, hoverLootId: null, // the shell may set these three (high contrast, Alt held, hovered ground entry)
     avoid: [], avoidSegs: [], // plate / pip rectangles and leader lines claimed by the nameplate pass this frame (set by the shell); loot plates and floaters keep clear of them
-    hurtUntil: 0, lowHp: false, beat: -1, shakeUntil: 0, hitStopUntil: 0, deathAt: null, lowFx: false, victoryAt: -1e9,
+    reducedMotion: false, hurtUntil: 0, lowHp: false, beat: -1, shakeUntil: 0, hitStopUntil: 0, deathAt: null, lowFx: false, victoryAt: -1e9,
     reset() {
       fx.parts.length = 0; fx.slashes.length = 0; fx.rings.length = 0; fx.impacts.length = 0; fx.pillars.length = 0; fx.proj.clear(); fx.flash.clear();
       fx.hurtUntil = fx.shakeUntil = fx.hitStopUntil = 0; fx.deathAt = null; fx.victoryAt = -1e9; fx.lowHp = false; fx.beat = -1;
@@ -347,7 +351,7 @@ export function createFx(style) {
         if (!w || m.ai === "dead") continue;
         const live = w.t < w.total, after = w.t - w.total; // after: ticks since it landed
         if (!live && (w.kind !== "slam" || after > 8)) continue;
-        const p = live ? Math.min(1, (w.t + fx.alpha) / w.total) : 1, fade = live ? 1 : 1 - after / 8, hot = live && p > 0.8 && Math.floor(now / 90) % 2 === 0;
+        const p = live ? Math.min(1, (w.t + fx.alpha) / w.total) : 1, fade = live ? 1 : 1 - after / 8, hot = live && p > 0.8 && (fx.reducedMotion || Math.floor(now / FLASH_HALF_MS) % 2 === 0);
         g.save(); g.globalAlpha = fade; g.lineJoin = "round"; g.lineCap = "round";
         if (w.kind === "slam") fx.telegraphSlam(g, cam, w, p, hot, now, z);
         else if (w.kind === "volley") fx.telegraphVolley(g, cam, m, w, p, hot, now, z);
@@ -396,7 +400,7 @@ export function createFx(style) {
       g.beginPath(); g.moveTo(ox, oy); g.lineTo(tx0, ty0); g.lineTo(tx1, ty1); g.closePath(); g.lineWidth = Math.max(1.5, 1.6 * z); g.strokeStyle = ink; g.globalAlpha = a0 * 0.6; g.stroke(); g.globalAlpha = a0;
       for (let k = -half; k <= half; k++) {
         const t = tip(k, R), lx = t.x, ly = t.y;
-        g.setLineDash([12 * z, 8 * z]); g.lineDashOffset = -now * 0.05 * z;
+        g.setLineDash([12 * z, 8 * z]); g.lineDashOffset = fx.reducedMotion ? 0 : -now * 0.05 * z;
         g.beginPath(); g.moveTo(ox, oy); g.lineTo(lx, ly); g.lineWidth = Math.max(4, 4.4 * z); g.strokeStyle = ink; g.stroke();
         g.lineWidth = Math.max(2, 2.2 * z); g.strokeStyle = hot ? "#ffffff" : col; g.stroke(); g.setLineDash([]);
         // arrow head at the lane's end (shape cue)
@@ -428,6 +432,7 @@ export function createFx(style) {
     drawConfetti(g, cam, now) {
       const t0 = now - fx.victoryAt;
       if (t0 < 0 || t0 > 9200) return;
+      if (fx.reducedMotion) return; // no golden flash and no falling confetti: the victory screen carries the news
       const n = fx.lowFx ? 70 : 230, W = cam.w, H = cam.h, COL = CONFETTI;
       if (t0 < 420) { g.fillStyle = `rgba(255,226,150,${0.22 * (1 - t0 / 420)})`; g.fillRect(0, 0, W, H); } // a brief golden flash as the boss falls
       for (let i = 0; i < n; i++) {
@@ -640,11 +645,11 @@ export function createFx(style) {
       const low = ratio > 0 && ratio < 0.3;
       if (low !== fx.lowHp) { fx.lowHp = low; bus?.emit({ type: "ui:lowhp", low, ratio }); }
       if (!low) { fx.beat = -1; return 0; }
-      const period = 700 + 900 * ratio / 0.3 * 0.5, phase = (now % period) / period, beat = Math.floor(now / period);
+      const period = lowHpPeriod(ratio), phase = (now % period) / period, beat = Math.floor(now / period);
       if (beat !== fx.beat) { fx.beat = beat; bus?.emit({ type: "ui:heartbeat", ratio, period }); }
       const pulse = Math.max(0, 1 - phase * 2.2) ** 2; // sharp thump then fade
       fx.ensureVignette(w, h);
-      g.globalAlpha = Math.min(1, 0.35 + 0.65 * pulse) * (fx.lowFx ? 0.8 : 1);
+      g.globalAlpha = (fx.reducedMotion ? 0.5 : Math.min(1, 0.35 + 0.65 * pulse)) * (fx.lowFx ? 0.8 : 1); // reduced motion: a steady edge, no pulse
       g.drawImage(hurtCanvas, 0, 0, w, h);
       g.globalAlpha = 1;
       return pulse;

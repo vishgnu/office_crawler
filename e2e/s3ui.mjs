@@ -182,8 +182,21 @@ let exported = null;
   await h.page.click(T("continue"));
   const s = await h.state();
   check("AC-R-092-2 after import + Continue the saved fields are restored", s.player.level === 7 && s.player.gold === want.player.gold && s.scene === "town", { level: s.player.level, gold: s.player.gold });
-  // paste path
+  // S7: importing over an existing character asks first, and the replaced one is kept as a backup
   await h.app("pause"); await h.page.click(T("quit"));
+  const mine = await h.app("save.raw");
+  await h.page.click(T("import-save"));
+  await h.page.fill(T("import-text"), exported.replace(/"gold":\d+/, '"gold":1').replace(/"checksum":"[0-9a-f]+"/, ""));
+  await h.page.click(T("import-go"));
+  check("S7 an invalid import is refused at once with the failed notice, no confirm", (await h.page.locator(T("confirm-import-yes")).count()) === 0 && (await h.page.locator(T("title-notice")).innerText()) === S.importFailed);
+  await h.page.click(T("import-save"));
+  await h.page.fill(T("import-text"), JSON.stringify(JSON.parse(await h.app("save.raw"))));
+  await h.page.click(T("import-go"));
+  check("S7 a valid import over an existing character asks for confirmation", (await h.page.locator(T("confirm-import-yes")).count()) === 1);
+  await h.page.click(T("confirm-import-no"));
+  check("S7 cancelling keeps the character", (await h.app("save.raw")) === mine);
+  // paste path
+
   await h.app("save.remove");
   await h.page.click(T("import-save"));
   await h.page.fill(T("import-text"), exported);
@@ -349,7 +362,7 @@ let exported = null;
   check("AC-R-076-4 scene victory is reached after the boss dies", s.scene === "victory" && s.ui.menu === "victory", s.scene);
   const vNames = new Set((await g.app("audio.getState")).cueLog.map((c) => c.name));
   check("audio cues victory and stairsUnlocked/bossDefeated were logged", vNames.has("victory") && vNames.has("bossDefeated"), [...vNames]);
-  check("the victory screen shows the story text, the run summary, Keep playing and Quit to title", (await g.page.locator(".screen.victory").innerText()).includes(S.victoryTitle) && (await g.page.locator(".screen.victory dd").count()) === 6 && (await g.page.locator(T("keep-playing")).count()) === 1 && (await g.page.locator(T("quit")).count()) === 1);
+  check("the victory screen shows the story text, the run summary, Keep playing and Quit to title", (await g.page.locator(".screen.victory").innerText()).includes(S.victoryTitle) && (await g.page.locator(".screen.victory").innerText()).includes(content.story.victory.lines[0]) && (await g.page.locator(".screen.victory dd").count()) === 6 && (await g.page.locator(T("keep-playing")).count()) === 1 && (await g.page.locator(T("quit")).count()) === 1);
   await g.page.waitForTimeout(600);
   await shot(g.page, "victory");
   await g.page.click(T("keep-playing"));
@@ -357,6 +370,63 @@ let exported = null;
   check("AC-R-045-5 Keep playing returns to the Lobby with the character unchanged", s.scene === "town" && s.depth === 0 && s.player.level === 30 && s.bossDefeated === true, { scene: s.scene, depth: s.depth });
   check("autosave on victory stored bossDefeated", (await g.app("save.read"))?.bossDefeated === true);
   check("no page errors (boss and victory)", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+
+// ---------------------------------------------------------------- final fix: quit saves, story frame, text size
+{
+  const g = await open(browser, { query: "test=1&seed=1", lobby: true });
+  await g.page.click(T("new-game"));
+  await g.app("cheat.giveGold", 777);
+  await g.app("cheat.setLevel", 4);
+  const before = await g.state();
+  await g.app("pause");
+  await g.page.click(T("quit"));
+  check("B1 Quit to title saves first: Continue is enabled right after quitting", !(await disabled(g.page, "continue")));
+  await g.page.click(T("continue"));
+  const after = await g.state();
+  check("B1 play, gain xp and gold, quit to title, Continue: progress kept", after.player.gold === before.player.gold && after.player.level === 4 && after.player.xp === before.player.xp, { gold: after.player.gold, level: after.player.level });
+  check("B1 no page errors", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+{
+  const g = await open(browser, { query: "test=1&seed=1&story=1", lobby: true });
+  await g.page.click(T("new-game"));
+  let s = await g.state();
+  check("AC-R-104-2 New game shows the start story, paused behind it", s.ui.menu === "story" && (await g.page.locator(".screen.story-screen").innerText()).includes(content.story.start.lines[0]), s.ui.menu);
+  check("AC-R-104-2 the story button has focus (keyboard: Enter)", await g.page.evaluate(() => document.activeElement?.dataset?.testid === "story-continue"));
+  await g.page.keyboard.press("Enter");
+  check("AC-R-104-2 Enter dismisses the start story", (await g.state()).ui.menu === null);
+  await g.app("cheat.teleportFloor", 9);
+  s = await g.state();
+  check("AC-R-104-2 entering the Executive Suite shows the boss text", s.ui.menu === "story" && (await g.page.locator(".screen.story-screen").innerText()).includes(content.story.boss.lines[0]), s.ui.menu);
+  await g.page.keyboard.press("Escape");
+  check("AC-R-104-2 Escape dismisses the boss text, and it does not return on the same run's next visit", (await g.state()).ui.menu === null);
+  await g.app("cheat.teleportFloor", 8); await g.app("cheat.teleportFloor", 9);
+  check("the boss text shows once per run", (await g.state()).ui.menu === null);
+  check("no page errors (story)", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+{
+  const g = await open(browser, { query: "test=1&seed=1", lobby: true, viewport: { width: 1920, height: 1080 } });
+  await g.page.click(T("new-game"));
+  await g.app("cheat.setLevel", 6);
+  for (const p of ["inventory", "character", "skills"]) await g.app("ui.open", p);
+  await g.app("step", 2);
+  const small = await g.page.evaluate(() => {
+    const out = [];
+    for (const el of document.querySelectorAll("#ui *, #overlay *")) {
+      const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+      if (!own) continue;
+      const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+      if (cs.display === "none" || cs.visibility === "hidden" || (r.width === 0 && r.height === 0)) continue;
+      let z = 1; for (let n = el; n; n = n.parentElement) z *= Number(getComputedStyle(n).zoom) || 1;
+      const px = parseFloat(cs.fontSize) * z;
+      if (px < 14) out.push(`${el.tagName}.${el.className}: ${px}px "${el.textContent.trim().slice(0, 20)}"`);
+    }
+    return out;
+  });
+  check("AC-NFR-A04-1 every visible HUD and panel text is at least 14 px at 1920x1080", small.length === 0, small.slice(0, 8));
   await g.context.close();
 }
 

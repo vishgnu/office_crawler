@@ -84,7 +84,6 @@ export const config = {
   maxPrefixes: 3, maxSuffixes: 3,
   uniqueOncePerGame: true,           // QF-05-2: a taken unique falls back to a rare of the same base
   tierMinRarity: { normal: "normal", champion: "magic", boss: "rare" }, // QF-03-4 and QF-04-7
-  bossDrops: 3,                      // kept for older tests; config.boss.guaranteedDrops is the source of truth
   dropRadius: 3,                     // loot lands on the kill tile or the nearest free tile within this radius
   pickupRange: 1,                    // Chebyshev tiles
   consumePotionAtFull: true,         // QF-05-5
