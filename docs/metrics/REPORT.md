@@ -15,10 +15,10 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R5 | 12 | 2407.0 | 353.6 | 1873.9 | 668 | charselectAppeal 34, charselectCraft 33, g2 33/30 | adversarial: 14; codeReview: 28; visualReview: 9; customer: 2; escaped: 0; escapedNote: none known at acceptance; the file:// storage race (4/23 file://) is an open caveat for the delivery mode |
 | G | 11 | 1893.6 | 117.6 | 1374.1 | 668 | prototypeC3 31/31, g1 32/31, g2 33/32, g3 34/33, gate 34 target; under 33 = another pass; proxy passed at 34/33 with follow-ups | adversarial: null; adversarialNote: No adversarial pass on render work (visual rounds use visual reviewers); the adversarial pass of R5 covered the save/UI code only; codeReview: 0; visualReview: 12; customer: 0; escaped: 0 |
 | R6 | 15 | 2375.6 | 376.8 | 2222.0 | 770 | inGame 35/34, charselect 35/34, uiTreeSlotsPause 35/34, note [appeal, craft]; target 34; first time craft reached 34; G3 was 34/33 | adversarial: 7; codeReview: 15; visualReview: 7; customer: 8; escaped: 0; escapedNote: none shipped; two things were found late and are open: N11/R7-2 floor-entry stutter (found by the richer bench, no review saw it) and F1 hero stand-off (bot watchdog had masked it, CR6-05) |
-| R7 | 14 | 2495.3 | 335.3 | – | – | – | – |
+| R7 | 15 | 2939.7 | 405.6 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 72 rows, 11204.0 k subagent tokens. **Your messages logged:** 27.
+**Ledger total:** 72 rows, 11648.4 k subagent tokens. **Your messages logged:** 27.
 
 ## Round R3
 
@@ -129,7 +129,7 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | implementer | UI-R7Q 0.6 (dialogue, toasts, slot card) | 225.4 | 30.2 | done | tests: 900; e2e: r7quest 54/54 + touched scripts green |
 | orchestrator | verify after R7-0 packages | – | – | done | tests: 900; e2e: 16/16; fps50: [54.5,53.3,51.8,58.1]; fps50Median: 53.9; load: 1.0-1.4; note: 5th bench run cut by the 30-min background limit |
 | reviewer | code review R7 | 246.0 | 8.9 | done | findings: {"blocking":1,"should":6,"nit":9} |
-| test-engineer | ADV-R7 | – | – | done | findings: {"blocker":0,"major":0,"minor":4,"trivial":2}; no_cheat_runs: 3/3 won with all quests (real input API) + 12 headless (11 all quests) |
+| test-engineer | ADV-R7 | 444.4 | 70.3 | done | findings: {"blocker":0,"major":0,"minor":4,"trivial":2}; no_cheat_runs: 3/3 won with all quests (real input API) + 12 headless (11 all quests) |
 
 ## Harness work
 
