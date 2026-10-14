@@ -88,3 +88,11 @@ Running log for the orchestrator (main Claude session). Update after every step.
 - [r4] Started. POLISH agent from iteration 3 still running (render/ui).
 - [r4] Circle 2: R-200..R-234 (29 reqs), readiness 11/20, 7 questions (default classes: Facilities Manager melee / Sales Rep ranged / IT Wizard caster; 3 branches × ~10 skills; free respec in town; 5 slots; per-class balance within 25%). Proxy answering. Next in parallel: prototyper (class concepts + character-select variants), spec-writer (ACs for area M, ≤40/slice per L-03), architect (tree schema, slot layout).
 - [r4] Proxy answered circle 2: all defaults (classes Facilities Manager/Sales Rep/IT Wizard as WORKING names, names escalated; 3×~10 trees; free respec in town (low confidence); all items for all classes; carousel select; 5 slots; balance parity ±25%). Launching: prototyper (character-select variants with 3 class figures), spec-writer (area M ACs), architect (tree schema, slots, migration).
+
+## Rounds 7–12 (user, 2026-10-14, fourth briefing): after rounds 4–6
+| Round | Focus | Content |
+|---|---|---|
+| 7–8 | Flawless gameplay | Adversarial test-engineer pass on every system; bot playtests for all 3 classes × many seeds (stuck, softlock, exploit, death-spiral detection); input/pathing/AI edge cases; game-feel review (responsiveness, hit feedback, fairness); fix everything; regression tests per bug |
+| 9–10 | Lighting effects for gameplay | Dynamic lights from skills, projectiles, loot beams, boss telegraphs; light as gameplay information (danger, interactables); per-zone mood; shadows/occlusion where cheap; reduced-effects and perf gates (fps50 ≥ 40) |
+| 11–12 | Overall test and polish | Full playthrough per class (bot + review), cross-cutting visual/audio/UX polish, final code + visual reviews, release checklist (DoD), proxy acceptance, summary |
+Each round also improves the harness (learnings → agent definitions/rules), as before.

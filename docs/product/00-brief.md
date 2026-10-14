@@ -53,3 +53,11 @@ generates all assets itself (procedural or code-drawn art, synthesised audio). N
 **Status: agreed (real customer).** Overrides the proxy's earlier answer to circle 1 Q4 ("one save slot"): the game now has
 **5 save slots**, reachable from the options menu (and, for usability, from the title/character screen). New scope:
 3 player classes, each with a skill tree; a visually appealing character-selection screen; 3 more rounds of work on both the game and the harness.
+
+## Fourth briefing (user, 2026-10-14, verbatim)
+
+> Whem done add 2 rounds that focus on flawless gameplay, when done add 2 rounds on light effects for gameplay and then
+> 2 rounds one overall test and polish
+
+**Status: agreed (real customer).** After rounds 4–6: rounds 7–8 flawless gameplay; rounds 9–10 lighting effects for
+gameplay; rounds 11–12 overall test and polish.
