@@ -19,3 +19,4 @@
 {"at": "2026-10-14T14:00:38Z", "kind": "question", "text": "whre are athe metrics for the other iteration?"}
 {"at": "2026-10-14T14:01:20Z", "kind": "question", "text": "i only see 1 and 2-3"}
 {"at": "2026-10-14T14:52:22Z", "kind": "question", "text": "sidequest how can i secure this againt bot / crawlers ?"}
+{"at": "2026-10-14T14:54:14Z", "kind": "decision", "text": "yes (add noindex to the game build)"}
