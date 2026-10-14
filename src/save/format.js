@@ -97,7 +97,9 @@ function affixOk(a) {
   for (const k of ["id", "group", "kind", "class"]) if (a[k] !== undefined && !safeId(a[k])) return false;
   if (a.name !== undefined && !str(a.name)) return false;
   if (a.tier !== undefined && !isInt(a.tier, 0, 99)) return false;
-  if (a.range !== undefined && !(Array.isArray(a.range) && a.range.length === 2 && a.range.every((n) => num(n)))) return false;
+  // The generator always rolls a range, and the value lies inside it: a missing range or a value outside it is a forged affix (ADV-R5-12, -14).
+  if (!(Array.isArray(a.range) && a.range.length === 2 && a.range.every((n) => num(n)) && a.range[0] <= a.range[1])) return false;
+  if (a.value < a.range[0] || a.value > a.range[1]) return false;
   return true;
 }
 

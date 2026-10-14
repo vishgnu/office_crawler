@@ -8,7 +8,7 @@ export function sellValue(item) {
   const baseValue = base?.value ?? 1;
   if (item.kind !== "gear") return Math.max(1, Math.round(baseValue * config.consumableValueMult)); // potions and consumables
   let points = 0;
-  for (const a of item.affixes ?? []) points += a.range[1] > 0 ? a.value / a.range[1] : 0;
+  for (const a of item.affixes ?? []) points += a.range?.[1] > 0 ? a.value / a.range[1] : 0; // a missing range counts as no worth, never a crash
   const scale = baseValue * (1 + item.ilvl * config.ilvlValue);
   return Math.max(1, Math.floor(scale * (config.rarityValue[item.rarity] + points * config.affixWorth)));
 }

@@ -21,7 +21,7 @@ const idxOf = (ad) => JSON.parse(ad.getItem(config.slotIndexKey));
 
 // ---- findings ----------------------------------------------------------------------------------------------------------------
 
-test("ADV-R5-12 an imported item with a negative hpMax or stamina affix must not leave the hero with negative health", { todo: "ADV-R5-12" }, () => {
+test("ADV-R5-12 an imported item with a negative hpMax or stamina affix must not leave the hero with negative health", () => {
   const bad = [];
   for (const cls of CLASSES) for (const stat of ["hpMax", "stamina"]) {
     const s = toSave(mk(cls)); s.equipment.weapon.affixes = [{ stat, value: -100 }];
@@ -305,7 +305,7 @@ test("rename, delete and import are guarded by the owner lock; the displaced tab
   assert.equal(ad.getItem("office-crawler.slot.1"), before);
 });
 
-test("ADV-R5-14 an affix without `range` is accepted by the schema but makes sellValue/buyPrice (and the item tooltip) throw", { todo: "ADV-R5-14" }, () => {
+test("ADV-R5-14 an affix without `range` is accepted by the schema but makes sellValue/buyPrice (and the item tooltip) throw", () => {
   const s = toSave(mk());
   s.inventory.items.push({ ...structuredClone(s.equipment.weapon), id: "i90", x: 0, y: 0, affixes: [{ stat: "defense", value: 5 }] });
   const r = deserialize(reseal(s));

@@ -70,8 +70,8 @@ export function deriveStats(player, equipment = player.equipment ?? {}) {
   const un = g.armed ? { min: 0, max: 0 } : unarmed, cap = config.caps;
   const resist = {};
   for (const type of new Set([...Object.keys(g.resist), ...Object.keys(resistAdd)])) resist[type] = Math.min(cap.resist, (g.resist[type] ?? 0) + (resistAdd[type] ?? 0));
-  const hpMax = r(d.hpBase + player.level * d.hpPerLevel + attrs.stamina * d.hpPerStamina) + g.hpMax + flat.hpMax;
-  const mpMax = r(d.mpBase + player.level * d.mpPerLevel + attrs.focus * d.mpPerFocus) + g.mpMax + flat.mpMax;
+  const hpMax = Math.max(1, r(d.hpBase + player.level * d.hpPerLevel + attrs.stamina * d.hpPerStamina) + g.hpMax + flat.hpMax); // never below 1: a hostile negative affix cannot kill the hero by itself
+  const mpMax = Math.max(0, r(d.mpBase + player.level * d.mpPerLevel + attrs.focus * d.mpPerFocus) + g.mpMax + flat.mpMax);
   const aura = player.aura && skills[player.aura]?.kind === "aura" && player.skills?.[player.aura] > 0 ? skills[player.aura] : null;
   mods.critChance = Math.min(75, config.crit.chance + mods.critChance);
   mods.critDamage = config.crit.damage + mods.critDamage;
