@@ -112,3 +112,4 @@ One line per decision by `customer-proxy`. The real customer can overrule any of
 - 2026-10-14 | art-direction Round G port checklist | 20 items (port/amplify/drop) in decision.md "Round G (C3)"; drops: posters, face micro-detail, dust, glint slashes, fine decals | medium-high
 
 - 2026-10-14 REAL CUSTOMER: IP closeness OK as is; names approved (class names, title, skill renames). Escalations closed.
+- 2026-10-14 | R4+R5+G acceptance (classes/trees, select screen, 5 slots, graphics detail) | ACCEPT WITH FOLLOW-UPS: played all 3 classes, slots and Continue after reload work, G3 34/33 so G gate passes now with N1/N5/N6 as first R6 fixes, Sales Rep balance and F2/F4 skill check to R6; file:// instant-reload save loss judged not a blocker (0/12 in my run, 4/23 earlier), see reviews/R5-acceptance.md; sound, respec, AMBIENT_LIFT, portal pick left to the real customer | medium

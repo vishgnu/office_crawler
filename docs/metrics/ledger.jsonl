@@ -33,3 +33,4 @@
 {"round": "R5", "role": "test-engineer", "pkg": "ADV-R5 flake root cause", "tokensK": 18.4, "minutes": 26.5, "status": "done", "root_cause": "c: Chromium file:// storage race across reload (4/23 file://, 0/48 http/https)", "source": "task usage (cumulative 462.9k minus 444.6k)"}
 {"round": "R5", "role": "orchestrator", "pkg": "verify after fix round", "status": "done", "tests": 668, "e2e": "13/13", "fps50": 43.9, "fps50Low": 52.9, "atlasMs": 4776, "source": "orchestrator run"}
 {"round": "G", "role": "visual-reviewer", "pkg": "G3 re-review + char select", "tokensK": 145.8, "minutes": 7.5, "status": "done", "score": {"g": [34, 33], "charselect": [34, 33]}, "verdict": "iterate narrow (craft 1 short)", "new": {"medium": 3, "low": 5}, "source": "task usage"}
+{"round": "R5", "role": "customer-proxy", "pkg": "acceptance R4+R5+G", "tokensK": 138.5, "minutes": 18.1, "status": "done", "verdict": "accept with follow-ups; G gate pass (a)", "source": "task usage"}

@@ -20,4 +20,9 @@ Gate authority for this project is delegated to `customer-proxy` while the user 
 - **Graphics mood**: the proxy lifted the ambient floor tone by +12 % so the new detail reads (`AMBIENT_LIFT`, 0 = the old darker look). Confirm or revert.
 - **Respec rule** (proxy chose free respec in town at LOW confidence; "stay close to the original" may mean no respec).
 - **Listen and pick the sound kit**: open docs/product/variants/sound-direction/{A,B,C}.html, play the ambients and SFX (about 2 minutes). Agents cannot judge sound by ear.
+- **G gate (2026-10-14)**: the proxy passed round G at in-game 34/33 and character select 34/33 (craft 1 short of 34), with the
+  remaining polish items as round 6 must-fix (`docs/reviews/R5-acceptance.md`). Accept or overrule.
+- **Known risk, file:// play**: in automation Chromium lost saves ~4 of 23 times when the page was reloaded immediately after
+  saving from file:// (0 of 48 on http/https). Not seen in normal play. Tell us if you want a note in play/README.md or a
+  tiny local server script.
 - Review `proxy-log.md` whenever you are back.

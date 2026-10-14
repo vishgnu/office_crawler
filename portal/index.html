@@ -29,11 +29,11 @@ figcaption{font-size:12.5px;color:var(--muted);margin-bottom:4px}iframe{width:10
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 footer{color:var(--muted);font-size:12px;text-align:center;padding:24px}
 </style></head><body>
-<header><h1>Office Crawler</h1><span class="meta">phase <strong>Circles</strong> · readiness 11/20 · generated 2026-10-14 02:28 UTC · ce3e0c0</span></header>
+<header><h1>Office Crawler</h1><span class="meta">phase <strong>Build</strong> · readiness 11/20 · generated 2026-10-14 08:25 UTC · 2512655</span></header>
 <nav><a href="#overview" data-tab="overview">Overview</a><a href="#variants" data-tab="variants">Variants</a><a href="#circles" data-tab="circles">Circles</a><a href="#requirements" data-tab="requirements">Requirements</a><a href="#previews" data-tab="previews">Previews</a><a href="#scorecard" data-tab="scorecard">Scorecard</a><a href="#activity" data-tab="activity">Activity</a><a href="#concept" data-tab="concept">Concept</a></nav>
 <main><section class="tab" id="tab-overview">
     <div class="tiles">
-      <div class="tile"><div class="k">Phase</div><div class="v">Circles</div></div>
+      <div class="tile"><div class="k">Phase</div><div class="v">Build</div></div>
       <div class="tile"><div class="k">Readiness</div><div class="v">11<small>/20</small></div><div class="bar"><span style="width:55.00000000000001%"></span></div></div>
       <div class="tile"><div class="k">Requirements</div><div class="v">108</div><div class="sub">agreed 9 · draft 95 · ? 4</div></div>
       <div class="tile"><div class="k">Open decisions</div><div class="v">0</div><div class="sub">0 variant set(s) to pick</div></div>
@@ -45,25 +45,17 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:24px}
       
       <p class="muted">Nothing is waiting for you.</p>
     </div>
-    <h2>Status</h2><div class="card"><h1 id="session-notes-read-this-first-after-any-context-loss">Session notes: read this first after any context loss</h1>
-<p>Running log for the orchestrator (main Claude session). Update after every step. Newest entries at the bottom of each section.</p>
-<h2 id="standing-instructions-from-the-user-verbatim-where-possible">Standing instructions from the user (verbatim where possible)</h2>
-<ul><li>2026-10-13: Build a browser tribute to the classic isometric hack-and-slash, set in an office. Stay close to the original (in <strong>mechanics</strong>; names, art and text must be original). Use an agent to play the user's role while they are away. Separate folder. Use it to test and improve the harness.</li><li>2026-10-13: &quot;generate all you need, we want to have nice sound and graphics as well&quot; (agreed, real customer).</li><li>2026-10-13: &quot;Run some agents to verify the graphics design is good and looks really nice.&quot;</li><li>2026-10-13: &quot;While the tokens last do 3 iterations on the build process and the game design. Don't forget to take notes so we don't get context compressed.&quot;</li><li>Harness project (<code>harness/</code>): gates need the <strong>real</strong> user. Circle 2 (7 questions) and the portal-overview variant pick are waiting for them. The proxy is NOT delegated there.</li><li>User preferences: claims table + status + confidence; Haiku/Sonnet for most work, Opus only with an approved plan. So far everything delegated runs on <strong>Sonnet</strong>.</li></ul>
-<h2 id="key-paths">Key paths</h2>
-<ul><li>Harness agents: <code>harness/.claude/agents/*.md</code>. They don't auto-load here (session root is the repo root), so run them as <code>general-purpose</code> with <code>model: sonnet</code> and &quot;read and follow your definition at …&quot;.</li><li>Game product docs: <code>office-crawler/docs/product/</code> (00-brief, 20-requirements (79 reqs), 40-nfr, circles/, variants/, STATE.md, proxy-log.md)</li><li>Learnings: <code>office-crawler/docs/harness-learnings.md</code> (L-xx)</li><li>Stack pack for the game: <code>harness/stack-packs/static-web/</code> (single-file build with esbuild, seeded RNG, <code>window.__app</code> hook)</li><li>Screenshot script for visual reviews: <code>$SCRATCH/pw/artshots.mjs &lt;variants-dir&gt; &lt;out-dir&gt;</code>. Playwright 1.56.1 lives in <code>$SCRATCH/pw/node_modules</code> and matches the preinstalled Chromium 1194. <code>$SCRATCH=/tmp/claude-0/-home-user-helloworld2/c8e0107a-ab3e-5dd1-bb46-0c0db0deb601/scratchpad</code> (lost if the container resets; recreate with <code>npm i playwright@1.56.1</code>)</li><li>Bicep CLI at /tmp/claude-0/bicep; actionlint via pip.</li><li>Branch: <code>harness-concept</code>. Commit and push after every step (a stop hook enforces it). Commit trailer lines are required.</li><li><strong>Gotcha:</strong> never <code>pkill -f</code> a pattern that also matches your own bash command (it killed the shell twice).</li></ul>
-<h2 id="plan-3-iterations-each-game-slice-harness-improvement">Plan: 3 iterations (each = game slice + harness improvement)</h2>
-<div class="tbl"><table><thead><tr><th>Iter</th><th>Game design / build</th><th>Harness focus</th><th>Exit</th></tr></thead><tbody><tr><td>1</td><td>Proxy answers circle 1. Art-direction variants get 2 visual reviews and a pick. Spec + plan for the MVP. <strong>Slice 1: playable core</strong> (isometric office floor, click-to-move, 1–2 monster types, melee combat, HP/mana globes, death/restart)</td><td>Make the visual-review loop a standard step; record agent cost and time per step</td><td>Slice 1 playable from <code>dist/index.html</code>; unit + Playwright tests pass; visual verdict ≥ iterate; proxy acceptance</td></tr><tr><td>2</td><td>Circle 2. <strong>Slice 2: loot &amp; progression</strong> (rarities/affixes, inventory/equipment, XP/levels/stats, multiple floors + stairs, town lobby + vendor)</td><td>Fix what iteration 1 showed (learnings)</td><td>Same, plus a portal build for the game</td></tr><tr><td>3</td><td>Circle 3. <strong>Slice 3: sound &amp; finale</strong> (procedural SFX + music, boss, save/load, polish pass, balance)</td><td>Fix what iteration 2 showed; end-of-run summary</td><td>Same; overnight summary for the user</td></tr></tbody></table></div>
-<h2 id="log">Log</h2>
-<ul><li>[iter 0] Intake, customer-proxy and visual-reviewer agents, static-web pack done. Facilitator circle 1 done (readiness 9/20; Q1 = IP closeness, ESCALATED to the real user, safe default A in force).</li><li>[iter 1] Proxy answering circle 1 Q2–Q7 (running). Prototyper making art-direction variants A (gritty), B (pixel), C (vector) (running). Next: screenshots, then 2 visual reviewers in parallel, then a prototyper fix round, then a proxy pick.</li><li>[iter 1] Proxy answered circle 1: Q2 isometric 2:1, dark comedy, no gore; art style comes from the variant pick. Q3 default MVP scope (1 class, 8 floors in 2 zones, 2-phase boss, level cap 30). Q4 autosave in local storage. Q5 procedural SFX <strong>plus generative ambient</strong> (changed from the default because of the &quot;nice sound&quot; addendum). Q6 private. Q7 20–40 min. Q1 escalated.</li><li>[iter 1] Spec-writer running: 30-spec/ with ACs tagged S1/S2/S3. Next: architect (Sonnet, a deviation from the opus default per the user's cost preference) for ADRs + 50-plan.md, then implementer slice 1.</li><li>[iter 1] Game scaffolded from static-web (office-crawler/{package.json,build.mjs,src,test,e2e}). Core done by the orchestrator: src/core/iso.js (2:1 projection), src/core/pathfind.js (A*, 8-way, no corner cutting), 5 tests pass. Architect running (ADRs + 50-plan).</li><li>[iter 1] Spec done: 341 ACs (S1 104), 12 questions. Proxy answering them in circles/spec-questions-01.md. Learnings L-03 (AC volume) and L-04 (post-circle questions) logged.</li><li>[iter 1] Architect done: ADR-0001..0004 + 50-plan (S1-1..S1-6, S2-1..6, S3-1..6). The architect decided provisionally: QWER skills, potions on 1-4, bossDepth 8, town stairs go to the deepest floor, ?test=1 hook. Vector style is the default until the art pick. Next: implementer WP S1-1..S1-3 (core), then S1-4..S1-6 (render/playable).</li><li>[iter 1] Proxy answered 65 spec questions (circles/spec-questions-01.md). <strong>Binding over the architect's ADR-0002 §11 where they differ</strong> (L-05): potions on belt 1–4; skills on right mouse + F1–F4 selector; boss in its own arena after floor 8; town stairs → deepest floor via elevator; ground items persist within a session. Escalated to the real user: Q1 IP closeness, final title, final monster/class names.</li><li>[iter 1] Implementer S1-1..3 done: pure core under src/core, 86 tests pass. Deviations: diagonal step = straight step; regen default 1hp/120t. Prototyper art variants done (A gritty 23fps, B pixel 61fps, C vector 29fps under headless software GL). Screenshots in variants/art-direction/shots/r1. Next: 2 visual reviewers in parallel + implementer S1-4..6.</li><li>[iter 1] Flaky test fixed (L-06 applied). Running now: visual reviewer 1 (appeal) → review-r1-appeal.md, visual reviewer 2 (craft) → review-r1-craft.md, implementer S1-4+S1-5 (renderer behind Style interface, vector default, main loop, test hook, screens, e2e with playwright 1.56.1). After the reviews: proxy picks a style, the prototyper does a fix round on the pick, then a style port WP.</li><li>[iter 1] Visual review 1 (appeal): C 34 ship, A 31 iterate, B 27 iterate. Pick C, grade it darker with A's lighting; separate yellow/orange rarity. Waiting for review 2 (craft).</li><li>[iter 1] Visual review 2 (craft): C 30, A 29, B 26, all 'iterate'. Both reviewers pick C. Running: the proxy records the pick; the prototyper builds C2.html (C + A's lighting, rarity palette, globe numbers/glyphs, label clamping, phone fixes, ≥45fps). Next: re-review C2 (both reviewers), then the style port into src/render/styles.</li><li>[iter 1] Proxy picked C (graded darker, A's lighting, B's perf discipline); 12 must-fix items in variants/art-direction/decision.md. Waiting for C2 from the prototyper, then re-review.</li><li>[iter 1] Implementer S1-4+S1-5 done: playable (vector style), 96 unit tests, e2e 89/89 (Chromium). Orchestrator re-ran both: green. Screenshot docs/shots/s1-first-playable.png (actors small at 1080p). Next: C2 re-review → style port + S1-6 (HUD, feel, bot, hardening) → reviewer + visual review of the real build → proxy acceptance of S1.</li><li>[iter 1] C2 done (≈54 fps, mug/jug globes, Okabe-Ito rarity, label collision pass). Screenshots in shots/r2. Running: round-2 reviews (appeal + craft with a port checklist), code reviewer on S1.</li><li>[iter 1] Review r2 appeal: C2 33/40 SHIP; must-fix 8 fixed / 4 partly. Port fixes: hero legibility/spacing, actors tinted by light pools + contact shadows, hit punch (bigger number, flash, hit-stop), Manager neck, perf (sprite cache, 50-monster test) + a11y (16px markers, high-contrast option).</li><li>[iter 1] Code review S1: changes needed. 1 blocking (mouse-up dropped while paused, reproduced), 6 should, 6 nit. Implementer fixing the non-render items now (no src/render). The render items (per-frame alloc, atlas DPR) go to the style-port WP. Waiting for review r2 craft (port checklist).</li><li>[iter 1] Review r2 craft: C2 32 ship. STYLE FROZEN = C2. Port checklist in review-r2-craft.md (13 items; game hero ≈75px vs mock 200px, so verify at camera scale). Next: when the review-fix implementer is done → style-port implementer (src/render, + render perf items B-S4/S5) → visual review of the real game → S1-6.</li><li>[iter 1] Review fixes done: B1 fixed (verified to fail without the fix), Tab/Escape, wall-clock moved to npm run bench, CSP tightened. 99 unit tests; e2e 7 scripts. Deferred to the render port: S4 per-frame alloc (incl. hurt-flash gradient in game.js), S5 atlas DPR, N3 rs.facing, N5 pick.js import. Next: style-port implementer.</li><li>[iter 1] Style port + S1-6 done: 118 unit tests (+2 lint = 120), e2e all pass (orchestrator verified), bench 50 monsters 48 fps (lowFx 54.5), bot 30 seeds careful: 30 cleared / 0 stuck; reckless 26/3 died/1 timeout. Zoom 1.8. Screenshots docs/shots/s1-ported-*.jpg. Bot found and fixed an orbit bug (holdRadius). Next: visual review of the REAL game (2 reviewers) → proxy acceptance of S1 → iteration 1 wrap-up (learnings, portal) → iteration 2 (S2 loot &amp; progression).</li><li>[iter 1 DONE] S1 accepted with follow-ups (PROXY): 7 ACs lacked evidence. The orchestrator closed NFR-S01-2, L03-1 and L05-1 (test/build.test.js, ip-denylist-brands.txt; generic brand words excluded). AC-R-010..012 and 042-5 go to the S2-1/2 implementer. Visual review of the real game still running (docs/reviews/S1-visual-review.md). Metrics: docs/metrics-iter1.md (1 h 40 min elapsed, ≈2.4M agent tokens).</li><li>[iter 2 START] Implementer S2-1+S2-2 (core: items, affixes, uniques, inventory 10×4, equipment, belt, deriveStats, vendor logic, S1 gaps) running. Next: S2-3 (progression/skills/projectiles/champions) after S2-1/2 (shared core files), and in parallel the art/UI for S2 content (prototyper loot/inventory panel variants? Maybe skip variants and port C2 loot plates directly; inventory panel UI needs a variant round = the customer wish &quot;going over screens&quot;).</li><li>[iter 2] In-game visual review S1: 30/40 iterate (hero lost in piles, floater collision, plate clutter, title/death screens, low-HP feedback, tint). Polish implementer running (render/UI only, no src/core). Parallel: S2 core implementer (src/core only), inventory-panel prototyper.</li><li>[iter 2] S2-1+S2-2 core done: 193 tests, 38 bases / 52 affixes / 10 uniques, inventory 10×4, equipment, belt, deriveStats, vendor and stash logic; S1 gaps AC-R-010..012, 042-5 closed. Golden hash regenerated deliberately. Not yet: containers, town gating of the vendor (S2-4), XP/levels/skills (S2-3).</li><li>[iter 2] S1 visual polish done: hero ring + front-fade, floater stacking, hurt flash, low-HP vignette and mug crack, plate discipline, title/death screens with run summary; bench 47.7 fps. Orchestrator note for the next visual review: hero damage floaters sit in a column far left of the hero (disconnected).</li><li>[iter 2] NOTE: commit cceb860 has 4 failing tests caused by the in-progress S2-3 core agent (not the polish). Re-verify when S2-3 hands back.</li><li>[iter 2] Inventory-panel variants done (A classic split, B briefcase, C side drawer); shots in variants/inventory-panel/shots. Next: 1 visual reviewer (combined lens) → proxy pick → S2-5 UI implementer.</li><li>[iter 2] Inventory review: A 30, B 31, C 31, all iterate; pick C (side drawer, keeps the fight visible), fixes: tooltip anchoring, Employee File fits 800px, HUD badge collisions, 44px cells, drag feedback. Proxy picking.</li><li>[iter 2] Inventory panel decided (PROXY): C side drawer + A's Employee File layout and 44px cells + B's leather skin and phone tabs; 9 must-fix items in decision.md. Waiting for S2-3 core, then the S2 render/UI implementer (S2-5 + S2-6 + loot visuals + new monsters + town).</li><li>[iter 2] S2-3 + S2-4 core done: 274/275 tests (the 1 red needs renderer rims for 6 new monsters); skills: Strike, Stapler Throw, Reply-All, Coffee Break, Mute + 2 passives; 8 monster types + champions; Lobby (floor 0) with vendor/healer/potions/stash NPCs; floors 1–8 in 2 zones; bot 20/20 reach floor 8 (≈8.6 min, shorter than the 20–40 min target, so balance is pending). The render_needs list is in the agent report (copied to docs/reviews/S2-render-needs.md). Next: 2 parallel implementers: WORLD (src/render/styles, world, fx, labels) and UI (src/ui, hud, game.js, main.js, testhook).</li><li>[iter 2] Launched WORLD and UI implementers in parallel (file ownership split in docs/reviews/S2-render-needs.md; notes files S2-world-notes.md / S2-ui-notes.md for cross-talk).</li><li>[iter 2] WORLD done: 281 tests, bench 54.5 fps, atlas 1719 sprites (3.8 s build), 6 new monsters, projectiles, lobby/basement, NPCs, loot visuals, champions. Orchestrator saw: a damage number overlaps the Printer Demon nameplate (s2-world-basement.jpg). A stray /shots dir at the container root was created by the agent and could not be removed by it; harmless, outside the repo, user informed. UI implementer still running.</li><li>[iter 2] UI done: 312 unit tests, e2e 8 scripts (ui 103 checks) — orchestrator verified. Orchestrator spotted a BUG: Employee File 'Experience 1,080 / 1,400 (0%)' with an empty bar; the HUD also says 0% to level 8 (s2-ui-inventory.jpg). Next: S2 code review + S2 visual review + proxy S2 acceptance (parallel), then the balance pass (session 8.6 min vs the 20–40 min target).</li><li>[iter 3 EARLY] Sound-direction prototyper running (3 synthesised sound boards + OfflineAudioContext measurement JSON, so non-listening agents can judge loudness, peaks and clipping).</li><li>[iter 2] S2 visual review: 29/40 iterate. Both orchestrator suspects confirmed (the XP row mixes total XP with the within-level %; floaters cover plates). Fixes: label separation, phone toast/targets, HUD slots 44px + centred icons, pack readability, XP row + tooltip close. Waiting for the S2 code review → one combined fix round (+ balance pass for the 20–40 min target).</li><li>[iter 2] S2 code review: changes needed (3 blocking: map R-075 + Emergency Exit R-046 missing, floor-8 AC vs proxy answer, stash ungated). Corrected the orchestrator: the XP maths is right, the LABEL mixes total and within-level (L-12). Fix round in parallel: CORE-FIX (+ balance pass to 20–30 min) and UI-FIX, with a contract in docs/reviews/S2-fix-contract.md (L-13). Sound-direction prototyper also running.</li><li>[iter 3] Sound boards A (gothic) / B (chiptune) / C (foley-synth) done, all measurements pass. Decision: all three kits ship behind createSoundKit, selectable in Options; the proxy sets the default; the REAL customer is asked to listen and pick (added to STATE.md). L-14.</li><li>[iter 3] Proxy sound default = C foley (low–medium; A is close). AUDIO implementer running (src/audio only; wiring notes in docs/reviews/S3-audio-notes.md for whoever owns main.js). CORE-FIX and UI-FIX still running. Remaining S3 after the fixes: S3-1 boss arena (depth 9), S3-3 save/load, S3-4 options/remap/a11y (incl. audio kit selector), S3-5 robustness/legal, S3-6 final polish + release checks.</li><li>[iter 3] AUDIO done: src/audio (3 kits lifted, 41 cues, limiter, spatial, ambient crossfade, title lobby bed), 23 unit tests, e2e/audio.mjs 33/33. Wiring TODO after UI-FIX is done (main.js createAudio + unlock, ui:click/open/close events, hook audio.getState, options persistence, add audio to e2e/run-all). The golden-hash test is red from the in-progress CORE-FIX balance work.</li><li>[iter 3] CORE-FIX done: map data, Emergency Exit + portal, floor-8 locked stairs pinned + AC amended, stash gated, fists/caps/affix-tier weighting/vendor stock per visit/ground cap, castT guard. BALANCE: careful bot 8.6 → 23.2 min (19.7–26.4), 3.4 deaths/run; reckless 18/20 cleared. 360 tests. Golden hash regenerated. Watch: floor 1 now ~40 monsters (early-game feel). Waiting for UI-FIX → then wire audio + S3-1 boss, S3-3 save, S3-4 options.</li><li>[iter 3] CORE-S3 running (boss arena depth 9, two-phase boss, victory/keep playing, save/load core + storage adapter). UI-FIX still running. The finished CORE-FIX agent still has background bot runs (read-only) that keep notifying; ignore them.</li><li>[iter 3] UI-FIX done: label pass, pack readability, HUD 44px, phone, tooltip close, XP per contract, minimap + automap (src/render/map.js), Emergency Exit UI + portal sprite; bench 49.7; e2e ui 149/149. Caveats: phone grid cells 35px; giveItem rolls emergency-exit as rare (core follow-up); the S3 boss needs real render (fallback only). Next after CORE-S3: a UI-S3 implementer (audio wiring, boss/executive visuals, save/load UI, options S3-4, victory screen) → final reviews → proxy acceptance → overnight summary.</li><li>[iter 3] CORE-S3 done: boss 'The Regional Director' in 'The Executive Suite' (depth 9, 2 phases, telegraphs, summons, reset rules, scene 'victory', keepPlaying); save v1 (serialize/deserialize/migrate/storage adapter, export/import, checksum, RLE explored). 394 tests. Bot 20/20 wins (70% first try). render_needs in docs/reviews/S3-core-notes.md. Next: WORLD-S3 + UI-S3 in parallel.</li><li>[iter 3] WORLD-S3 done: executive boardroom tileset, Regional Director (phase 1/2 looks), telegraphs (slam circle, volley fan, summon ring), summoned badge, stairs locked/open, victory confetti. 398 tests, bench 49.3. e2e replay golden hash reported stale (check after UI-S3).</li><li>[iter 3] UI-S3 done: audio wired, save UI (continue/new/export/import/delete), options (volumes, kit, remap 12 actions, hc, reduced fx/motion, text size), victory screen, boss bar. ORCHESTRATOR VERIFIED: npm test 415/415, npm run e2e all 10 scripts (410 checks) OK as one command. A prebuilt game is at office-crawler/play/index.html. Next: final S3 code review + final visual review + proxy final acceptance (parallel), then the overnight summary.</li><li>[iter 3] Final code review: changes needed (B1 quit-to-title not saving, B2 story frame R-104 missing, B3 perf). Orchestrator re-ran the bench at lower load: 43.6 fps (PASS, thin margin; earlier ~49). FINAL-FIX launched for the code findings; final visual review still running.</li><li>[iter 3] Final visual review: 31/40 iterate (S1 30, S2 29). CRASH found (drawImpact negative radius under stepped ticks) + first-run issues → sent to FINAL-FIX. Remaining for the POLISH agent after FINAL-FIX: hc + text 1.5 bugs (white-on-white menu buttons, File labels run together, tooltip overflow), basement visibility/ghost monsters, loot labels piling on the hero, title-screen art + goal line.</li><li>[iter 3] CONTAINER RESTART killed FINAL-FIX mid-run. The partial changes in the working tree were green (427 tests) and committed as WIP; FINAL-FIX relaunched to resume (inspect the diff first). Learning L-15: long agent runs need resumable checkpoints (WIP commits + a 'done so far' note).</li><li>[iter 3] FINAL-FIX resumed and done: B1 save on quit, B2 story frame, crash clamp, first-run (rapier worn, Strike on F1, points prompt), audio suspend, save safety + hostile-save tests, reduced motion, CI template. Orchestrator verified: 427 tests, e2e OK. Next: POLISH (hc/text-size bugs, basement visibility, loot-label pile, title art) → final visual check → proxy final acceptance → morning summary.</li></ul>
-<h2 id="rounds-4-6-user-2026-10-14-3-classes-skill-trees-character-select-screen-5-save-slots-in-options-keep-improving-game-harness">Rounds 4–6 (user, 2026-10-14): 3 classes + skill trees, character-select screen, 5 save slots in options; keep improving game + harness</h2>
-<div class="tbl"><table><thead><tr><th>Round</th><th>Game</th><th>Harness</th></tr></thead><tbody><tr><td>4</td><td>Circle 2 (classes, trees, slots) → proxy; class-concept + character-select variants → visual review → pick; spec + plan; CORE: class system, skill trees, 5-slot storage</td><td>Improve from rounds 1–3 learnings (e.g. a test-engineer for adversarial e2e, L-08)</td></tr><tr><td>5</td><td>RENDER: 3 class figures + skill-tree UI + character-select screen + slot UI (options + title); reviews</td><td>Fix what round 4 shows</td></tr><tr><td>6</td><td>Balance per class (bot per class), polish, final reviews, proxy acceptance, summary</td><td>Retrospective, metrics, harness summary</td></tr></tbody></table></div>
-<ul><li>[r4] Started. POLISH agent from iteration 3 still running (render/ui).</li><li>[r4] Circle 2: R-200..R-234 (29 reqs), readiness 11/20, 7 questions (default classes: Facilities Manager melee / Sales Rep ranged / IT Wizard caster; 3 branches × ~10 skills; free respec in town; 5 slots; per-class balance within 25%). Proxy answering. Next in parallel: prototyper (class concepts + character-select variants), spec-writer (ACs for area M, ≤40/slice per L-03), architect (tree schema, slot layout).</li><li>[r4] Proxy answered circle 2: all defaults (classes Facilities Manager/Sales Rep/IT Wizard as WORKING names, names escalated; 3×~10 trees; free respec in town (low confidence); all items for all classes; carousel select; 5 slots; balance parity ±25%). Launching: prototyper (character-select variants with 3 class figures), spec-writer (area M ACs), architect (tree schema, slots, migration).</li></ul>
-<h2 id="rounds-7-12-user-2026-10-14-fourth-briefing-after-rounds-4-6">Rounds 7–12 (user, 2026-10-14, fourth briefing): after rounds 4–6</h2>
-<div class="tbl"><table><thead><tr><th>Round</th><th>Focus</th><th>Content</th></tr></thead><tbody><tr><td>7–8</td><td>Flawless gameplay</td><td>Adversarial test-engineer pass on every system; bot playtests for all 3 classes × many seeds (stuck, softlock, exploit, death-spiral detection); input/pathing/AI edge cases; game-feel review (responsiveness, hit feedback, fairness); fix everything; regression tests per bug</td></tr><tr><td>9–10</td><td>Lighting effects for gameplay</td><td>Dynamic lights from skills, projectiles, loot beams, boss telegraphs; light as gameplay information (danger, interactables); per-zone mood; shadows/occlusion where cheap; reduced-effects and perf gates (fps50 ≥ 40)</td></tr><tr><td>11–12</td><td>Overall test and polish</td><td>Full playthrough per class (bot + review), cross-cutting visual/audio/UX polish, final code + visual reviews, release checklist (DoD), proxy acceptance, summary</td></tr></tbody></table></div>
-<p>Each round also improves the harness (learnings → agent definitions/rules), as before.</p>
-<ul><li>[r4] Spec 11-classes-trees-slots.md: 70 ACs (R4 43 / R5 21 / R6 6). Its QF-11-2 'denylists missing' is wrong; they exist (L-16 applied to spec-writer). The QF-11 questions go to the proxy together with the architect's questions.</li><li>[r4] POLISH (iteration 3 leftovers) done: hc + text-size fixes, basement visibility, loot label discipline, title art + goal line; e2e polish 20 checks; bench 59. The orchestrator verified that the crash clamp and first-run fixes from FINAL-FIX survived (the polish agent wrongly said 'not done'; it only lacked context).</li><li>[r4] Architect done: ADR-0005 (skills as data: 9 delivery archetypes, ~12 effect ops; 3×10 skills), ADR-0006 (slots: index key office-crawler.slots, office-crawler.slot.1..5, .prev/.bad, Clerk → facilities-manager migration v1→v2), contract docs/reviews/R4-contract.md, plan R4-1..5, R5-W1/W2, R5-U1/U2, R6-1/2. Safe default A: renamed 'Firewall'→'Packet Filter' and 'Fire Drill'→'Evacuation Drill'; 'fire wall' added to the denylist. Launching: R4 core implementer + proxy for the QF-11 and architect questions.</li><li>[r4] Proxy spec-questions-02 done; it matches the defaults given to CORE-R4. Escalations were added to STATE.md (names/title, respec, skill-name renames).</li><li>[r4] Character-select variants done (A Lobby lineup, B Personnel files, C Elevator doors) + figures.js (front-on class figures). The prototypes use placeholder skill names (incl. Firewall/Fire Drill); the implementation uses the ADR-0005 safe names. Visual review running → proxy pick.</li><li>[r4] Character-select decided (PROXY): A Lobby lineup + borrows (C: stats row, ding pulse, elevator transition; B: SELECTED stamp, ID-badge bust in the Load dialog). Must-fix list in decision.md incl. in-world class sprites carrying class identity. Waiting for CORE-R4, then R5 WORLD (class sprites, skill FX) + R5 UI (char-select, skill-tree panel, slots).</li></ul>
-<h2 id="round-g-user-2026-10-14-fifth-briefing-graphics-detail-and-polish-inserted-right-after-r5-render-lands">Round G (user, 2026-10-14, fifth briefing): graphics detail and polish (inserted right after R5 render lands)</h2>
-<ul><li>Keep the C2 idea; add detail: materials/textures (carpet weave, wood grain, brushed metal, glass reflections), a second shade level and ambient occlusion at wall bases, denser props and decals per room kind, secondary motion (cloth, cables, monitor flicker, dust motes), finer character and monster detail (faces, props, outlines), UI chrome polish.</li><li>Loop: prototyper C3 detail tile → 2 visual reviewers (vs C2 + the current game) → proxy approves → WORLD port across all zones/classes/monsters/boss + UI chrome polish → in-game visual review → fixes. Perf gate fps50 ≥ 40, atlas ≤ 5 s (lazy atlas if needed).</li><li>Order now: R4 core → R5 (WORLD running, UI next) → <strong>G</strong> → R6 → R7–8 gameplay → R9–10 lighting → R11–12 test &amp; polish.</li></ul></div></section><section class="tab" id="tab-variants">
+    <h2>Status</h2><div class="card"><h1 id="state">STATE</h1>
+<p><em>Updated 2026-10-14 by the orchestrator.</em></p>
+<p><strong>Phase: Build. Round 4 (classes, skill trees, 5 save slots) in progress; round 5 render running; round G (graphics detail) in review.</strong> Slices S1–S3 accepted (PROXY). Harness version 0.4.0. Experiments: docs/harness-experiments.md.</p>
+<h2 id="open-questions">Open questions</h2>
+<ul><li><strong>Q1 ESCALATE - real customer (not delegated): how close names and visuals may go to the original.</strong> Safe default: strict originality.</li><li>Q2-Q7 (look and tone, MVP scope, save, audio, monetisation/hosting, session length) may be answered by <code>customer-proxy</code>; defaults proposed.</li></ul>
+<h2 id="delegation">Delegation</h2>
+<p>Gate authority for this project is delegated to <code>customer-proxy</code> while the user is away (see <code>00-brief.md</code>, &quot;Delegation record&quot;). All proxy decisions: <code>proxy-log.md</code>.</p>
+<h2 id="decided-by-the-real-customer">Decided by the real customer</h2>
+<ul><li>IP closeness: keep the current approach (mechanics/feel, everything else original). Names and title approved.</li></ul>
+<h2 id="waiting-for-the-real-customer">Waiting for the real customer</h2>
+<ul><li><strong>Graphics mood</strong>: the proxy lifted the ambient floor tone by +12 % so the new detail reads (<code>AMBIENT_LIFT</code>, 0 = the old darker look). Confirm or revert.</li><li><strong>Respec rule</strong> (proxy chose free respec in town at LOW confidence; &quot;stay close to the original&quot; may mean no respec).</li><li><strong>Listen and pick the sound kit</strong>: open docs/product/variants/sound-direction/{A,B,C}.html, play the ambients and SFX (about 2 minutes). Agents cannot judge sound by ear.</li><li><strong>G gate (2026-10-14)</strong>: the proxy passed round G at in-game 34/33 and character select 34/33 (craft 1 short of 34), with the remaining polish items as round 6 must-fix (<code>docs/reviews/R5-acceptance.md</code>). Accept or overrule.</li><li><strong>Known risk, file:// play</strong>: in automation Chromium lost saves ~4 of 23 times when the page was reloaded immediately after saving from file:// (0 of 48 on http/https). Not seen in normal play. Tell us if you want a note in play/README.md or a tiny local server script.</li><li>Review <code>proxy-log.md</code> whenever you are back.</li></ul></div></section><section class="tab" id="tab-variants">
     <section class="vset" id="variants-art-direction">
       <h2>art-direction <span class="chip agreed">picked C</span></h2>
       <details open><summary>What is being decided</summary><h1 id="brief-art-direction">Brief: art direction</h1>
@@ -3208,11 +3200,11 @@ const LOOT=[
  {x:6.0,y:9.6,ri:0,name:'Sturdy Lanyard of Focus',lh:56},
  {x:10.4,y:7.0,ri:1,name:'Ergonomic Chair of Haste',lh:66},
  {x:2.1,y:1.7,ri:2,name:'The Corner Office Keycard',lh:56}];
-const FIX={x:6.6,y:2.2,z:118};
+const FIX={x:6.6,y:2.2,z:118},FIX2={x:1.2,y:5.2,z:118};
 const MONL={x:0.62,y:1.9,z:38},MONR={x:8.4,y:0.57,z:38},COOL={x:10.7,y:1.0,z:34};
 
 /* ---------- animation state: a pure function of t ---------- */
-const ST={t:0,c:0,a:0,hit:-1,flk:1,flk2:1,th:0};
+const ST={t:0,c:0,a:0,hit:-1,flk:1,flk2:1,flkB:1,th:0};
 function computeState(t){
   ST.t=t;const c=t%2;ST.c=c;let a=0;
   if(c&gt;=1.0&amp;&amp;c&lt;1.3)a=-0.6*sstep(1.0,1.3,c);
@@ -3226,9 +3218,110 @@ function computeState(t){
   if(hash(k*3.7)&gt;0.955)v=0.3+hash(k)*0.4;
   if(b&gt;0.86&amp;&amp;b&lt;0.95&amp;&amp;hash(k*1.9+4)&gt;0.35)v=0.15+hash(k*2.3)*0.5;
   ST.flk=clamp(v+Math.sin(t*50)*0.025,0,1);
+  {const k2=Math.floor(t*22+7);let v2=1;if(hash(k2*2.9)&gt;0.965)v2=0.35+hash(k2)*0.4;ST.flkB=clamp(v2+Math.sin(t*47)*0.02,0,1);}
   ST.flk2=0.9+Math.sin(t*9.3)*0.04+Math.sin(t*23.1)*0.04+(hash(Math.floor(t*14))-0.5)*0.12; /* candle/monitor shimmer */
 }
 let FLASH=0;
+
+/* ===== ROUND 3 additions. Everything below is gated by V3 (off with ?legacy=1 = the frozen C2 look). ===== */
+/* ---------- baked material textures: 64x64 alpha overlays made once, skewed onto iso faces with pattern transforms ---------- */
+function rng(seed){let s=(seed&gt;&gt;&gt;0)||1;return()=&gt;{s^=s&lt;&lt;13;s&gt;&gt;&gt;=0;s^=s&gt;&gt;&gt;17;s^=s&lt;&lt;5;s&gt;&gt;&gt;=0;return s/4294967296;};}
+function speck(c,r,n,a){for(let i=0;i&lt;n;i++){c.fillStyle=r()&lt;0.5?'rgba(0,0,0,'+(0.07+r()*0.1)*(a||1)+')':'rgba(255,255,255,'+(0.04+r()*0.07)*(a||1)+')';c.fillRect(r()*64|0,r()*64|0,1+(r()*2|0),1);}}
+const TEXG={
+ weaveA(c,r){for(let y=0;y&lt;64;y+=4){c.fillStyle='rgba(0,0,0,0.2)';c.fillRect(0,y,64,1.6);c.fillStyle='rgba(255,255,255,0.07)';c.fillRect(0,y+2,64,1);}for(let x=0;x&lt;64;x+=4){c.fillStyle='rgba(255,255,255,0.09)';c.fillRect(x,0,1,64);}speck(c,r,200,1.6);},
+ weaveB(c,r){c.lineWidth=1.5;for(let k=-64;k&lt;64;k+=5){c.strokeStyle='rgba(0,0,0,0.2)';c.beginPath();c.moveTo(k,0);c.lineTo(k+64,64);c.stroke();}for(let k=-64;k&lt;64;k+=10){c.strokeStyle='rgba(255,255,255,0.1)';c.beginPath();c.moveTo(k+2,0);c.lineTo(k+66,64);c.stroke();}speck(c,r,170,1.5);},
+ weaveC(c,r){for(let by=0;by&lt;8;by++)for(let bx=0;bx&lt;8;bx++){if((bx+by)&amp;1){for(let x=0;x&lt;8;x+=2){c.fillStyle='rgba(0,0,0,0.2)';c.fillRect(bx*8+x,by*8,1.2,8);c.fillStyle='rgba(255,255,255,0.07)';c.fillRect(bx*8+x+1.2,by*8,0.8,8);}}else{for(let y=0;y&lt;8;y+=2){c.fillStyle='rgba(0,0,0,0.2)';c.fillRect(bx*8,by*8+y,8,1.2);c.fillStyle='rgba(255,255,255,0.07)';c.fillRect(bx*8,by*8+y+1.2,8,0.8);}}}speck(c,r,140,1.4);},
+ wood(c,r){for(let i=0;i&lt;22;i++){const y=r()*64,a=r()*0.12+0.06,dk=r()&lt;0.7,ph=r()*6,am=r()*1.6+0.4;c.strokeStyle=dk?'rgba(30,12,4,'+a*1.7+')':'rgba(255,220,170,'+a+')';c.lineWidth=0.6+r()*1.2;c.beginPath();
+   for(let x=0;x&lt;=64;x+=4){const yy=y+Math.sin(x*TAU/64*2+ph)*am;if(x)c.lineTo(x,yy);else c.moveTo(x,yy);}c.stroke();}
+  const kx=r()*44+10,ky=r()*44+10;c.strokeStyle='rgba(30,12,4,0.28)';c.lineWidth=0.8;for(let k=1;k&lt;4;k++){c.beginPath();c.ellipse(kx,ky,k*2.8,k*1.3,0,0,TAU);c.stroke();}},
+ metal(c,r){for(let i=0;i&lt;300;i++){const y=r()*64,x=r()*64,l=8+r()*40;c.fillStyle=r()&lt;0.5?'rgba(255,255,255,'+(0.04+r()*0.09)+')':'rgba(0,0,0,'+(0.05+r()*0.09)+')';c.fillRect(x,y,l,1);if(x+l&gt;64)c.fillRect(x-64,y,l,1);}},
+ concrete(c,r){for(let i=0;i&lt;34;i++){c.fillStyle=r()&lt;0.5?'rgba(0,0,0,'+(0.03+r()*0.05)+')':'rgba(255,255,255,'+(0.02+r()*0.035)+')';c.beginPath();c.ellipse(r()*64,r()*64,4+r()*9,3+r()*6,r()*3,0,TAU);c.fill();}speck(c,r,360,1.2);
+  c.strokeStyle='rgba(0,0,0,0.18)';c.lineWidth=0.8;c.beginPath();let x=r()*20,y=r()*64;c.moveTo(x,y);for(let k=0;k&lt;5;k++){x+=6+r()*8;y+=(r()-0.5)*10;c.lineTo(x,y);}c.stroke();},
+ plaster(c,r){speck(c,r,120,0.7);for(let i=0;i&lt;8;i++){c.fillStyle='rgba(0,0,0,0.025)';c.fillRect(r()*64,0,2+r()*6,64);}},
+ paper(c,r){for(let i=0;i&lt;70;i++){c.strokeStyle=r()&lt;0.5?'rgba(120,100,70,0.16)':'rgba(255,255,255,0.28)';c.lineWidth=0.6;const x=r()*64,y=r()*64,a=r()*TAU,l=1.5+r()*3;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);c.stroke();}},
+ cardboard(c,r){for(let x=0;x&lt;64;x+=3){c.fillStyle='rgba(60,30,8,0.16)';c.fillRect(x,0,1,64);c.fillStyle='rgba(255,230,180,0.08)';c.fillRect(x+1,0,1,64);}speck(c,r,160);},
+ panel(c,r){for(let x=0;x&lt;64;x+=16){c.fillStyle='rgba(0,0,0,0.22)';c.fillRect(x,0,1.4,64);c.fillStyle='rgba(255,230,190,0.08)';c.fillRect(x+1.4,0,1,64);}
+  for(let i=0;i&lt;14;i++){c.strokeStyle='rgba(20,6,10,'+(0.06+r()*0.08)+')';c.lineWidth=0.6;const x=r()*64;c.beginPath();c.moveTo(x,0);for(let y=0;y&lt;=64;y+=8)c.lineTo(x+Math.sin(y*0.2+i)*1.2,y);c.stroke();}}
+};
+const TEXC={},PATC={},PRC={};
+function tex(k){let t=TEXC[k];if(t)return t;t=document.createElement('canvas');t.width=t.height=64;TEXG[k](t.getContext('2d'),rng(k.length*977+k.charCodeAt(0)*31+k.charCodeAt(2)*7));return TEXC[k]=t;}
+function pat(k,kind){const key=k+kind;let p=PATC[key];if(p)return p;p=cx.createPattern(tex(k),'repeat');
+  const m=kind==='T'?[.5,.25,-.5,.25]:kind==='Ts'?[-.5,.25,.5,.25]:kind==='L'?[.5,.25,0,1]:kind==='R'?[-.5,.25,0,1]:[1,0,0,1];
+  p.setTransform(new DOMMatrix([m[0]*Z,m[1]*Z,m[2]*Z,m[3]*Z,0,0]));return PATC[key]=p;}
+function pr(k){return PRC[k]||(PRC[k]=cx.createPattern(tex(k),'repeat'));} /* untransformed: used inside the decal spaces below */
+let TEXM={}; /* material -&gt; [texture, alpha]; set per scene */
+let STAT=false;
+function shade2(p,m,sh){
+  const t=TEXM[m];
+  if(t){cx.fillStyle=pat(t[0],sh===0?'T':sh===1?'L':'R');cx.globalAlpha=t[1];cx.fill();cx.globalAlpha=1;}
+  if(sh&gt;0&amp;&amp;!EMIS[m]){let y0=1e9,y1=-1e9;for(let i=1;i&lt;p.length;i+=2){if(p[i]&lt;y0)y0=p[i];if(p[i]&gt;y1)y1=p[i];}
+    if(y1-y0&gt;6){const g=cx.createLinearGradient(0,y0,0,y1);g.addColorStop(0,'rgba(10,6,30,0)');g.addColorStop(0.55,'rgba(10,6,30,0.07)');g.addColorStop(1,'rgba(10,6,30,0.36)');cx.fillStyle=g;cx.fill();}}
+}
+
+/* ---------- decal spaces: floor (u along x, v along y, 64 units per tile) and wall faces (1 unit = 1 design px; v runs down from z) ---------- */
+function sp(a,b,c,d,x,y){cx.setTransform(DPR*a*Z,DPR*b*Z,DPR*c*Z,DPR*d*Z,DPR*x,DPR*y);}
+function spFloor(x,y){P(x||0,y||0,0);sp(.5,.25,-.5,.25,PX,PY);}
+function spWY(x,y,z){P(x,y,z);sp(.5,.25,0,1,PX,PY);}   /* wall along x (back wall): u runs right-down */
+function spWX(x,y,z){P(x,y,z);sp(.5,-.25,0,1,PX,PY);}  /* wall along y (left wall): origin at its larger y, u runs right-up */
+function spEnd(){cx.setTransform(DPR,0,0,DPR,0,0);}
+function ow(){return Math.max(0.7,lw()/Z*0.7);}
+function rO(x,y,w,h,fill,sw){cx.fillStyle=fill;cx.fillRect(x,y,w,h);cx.lineWidth=sw||ow();cx.strokeStyle=OUTL;cx.strokeRect(x,y,w,h);}
+function tx(s,x,y,fs,col,al,wt){cx.font=(wt||800)+' '+fs+'px '+SANS;cx.fillStyle=col;cx.textAlign=al||'left';cx.textBaseline='middle';cx.fillText(s,x,y);}
+function ln(x1,y1,x2,y2,col,w){cx.strokeStyle=col;cx.lineWidth=w||ow()*0.8;cx.beginPath();cx.moveTo(x1,y1);cx.lineTo(x2,y2);cx.stroke();}
+function dsh(x,y,w,h,a){cx.fillStyle='rgba(5,3,16,'+(a||0.4)+')';cx.fillRect(x+1.8,y+2,w,h);}
+function paperQ(x,y,w,h,fill,rot){cx.save();cx.translate(x+w/2,y+h/2);cx.rotate(rot||0);dsh(-w/2,-h/2,w,h,0.3);rO(-w/2,-h/2,w,h,fill);cx.fillStyle=pr('paper');cx.fillRect(-w/2,-h/2,w,h);cx.restore();}
+function tape(x,y,rot){cx.save();cx.translate(x,y);cx.rotate(rot||0);cx.fillStyle='rgba(235,225,170,0.78)';cx.fillRect(-3,-1.3,6,2.6);cx.restore();}
+/* wall items (call inside spWY/spWX, origin = item top-left) */
+function wFrame(x,y,w,h,inner,fr){dsh(x,y,w,h,0.4);rO(x,y,w,h,fr||'#b89040',ow()*1.2);cx.fillStyle='rgba(255,255,255,0.35)';cx.fillRect(x+0.6,y+0.6,w-1.2,0.8);rO(x+2,y+2,w-4,h-4,inner,ow()*0.8);}
+function wChart(x,y){wFrame(x,y,30,22,'#f3eddc');const b=[11,9.5,8.5,6,3.5];for(let i=0;i&lt;5;i++){cx.fillStyle=i===4?'#d0402c':'#4a78c8';cx.fillRect(x+5+i*4.4,y+18-b[i],3,b[i]);}
+  ln(x+5,y+18.5,x+27,y+18.5,'#2a2547');cx.strokeStyle='#d0402c';cx.lineWidth=ow()*0.9;cx.beginPath();cx.moveTo(x+5,y+6);cx.lineTo(x+14,y+7);cx.lineTo(x+24,y+11);cx.lineTo(x+26,y+14);cx.stroke();tx('Q3',x+15,y+4.4,3.2,'#7a1a1a','center');}
+function wPoster(x0,y0,k){
+  cx.save();cx.translate(x0,y0);cx.scale(0.76,0.76);const x=0,y=0,W=26,H=34;dsh(x,y,W,H,0.4);
+  if(k===0){rO(x,y,W,H,'#13213f');const g=cx.createLinearGradient(0,y,0,y+24);g.addColorStop(0,'#2a3f82');g.addColorStop(1,'#e08a52');cx.fillStyle=g;cx.fillRect(x+2,y+2,W-4,22);
+    cx.fillStyle='#1b1636';cx.beginPath();cx.moveTo(x+2,y+24);cx.lineTo(x+9,y+11);cx.lineTo(x+14,y+18);cx.lineTo(x+19,y+8);cx.lineTo(x+24,y+24);cx.fill();
+    tx('SYNERGY',x+W/2,y+27.2,3.6,'#ffd45c','center',900);tx('(team was taken)',x+W/2,y+31.2,2.4,'#cfd6f5','center',700);}
+  else if(k===1){rO(x,y,W,H,'#efe6cf');cx.fillStyle=pr('paper');cx.fillRect(x,y,W,H);cx.strokeStyle=OUTL;cx.lineWidth=ow();cx.lineCap='round';
+    ln(x+4,y+4,x+W-4,y+4,'#6b5a42',ow()*1.4);cx.strokeStyle='#2a2547';cx.beginPath();cx.arc(x+W/2,y+9.5,2.2,0,TAU);cx.moveTo(x+W/2,y+11.7);cx.lineTo(x+W/2,y+18);cx.moveTo(x+W/2-5,y+4);cx.lineTo(x+W/2-1.6,y+14);cx.moveTo(x+W/2+5,y+4);cx.lineTo(x+W/2+1.6,y+14);cx.moveTo(x+W/2,y+18);cx.lineTo(x+W/2-3,y+23);cx.moveTo(x+W/2,y+18);cx.lineTo(x+W/2+3,y+23);cx.stroke();cx.lineCap='butt';
+    tx('HANG IN THERE',x+W/2,y+27,3.2,'#2a2547','center',900);tx('Friday is a myth',x+W/2,y+31,2.4,'#5a4a6a','center',700);}
+  else{rO(x,y,W,H,'#d9423a');cx.fillStyle='#fff4d8';cx.fillRect(x+2.5,y+2.5,W-5,H-5);tx('PER MY',x+W/2,y+10,4.6,'#d9423a','center',900);tx('LAST',x+W/2,y+16,4.6,'#d9423a','center',900);tx('EMAIL',x+W/2,y+22,4.6,'#d9423a','center',900);ln(x+4,y+27,x+W-4,y+27,'#2a2547');tx('reply-all anyway',x+W/2,y+31,2.4,'#5a4a6a','center',700);}
+  cx.restore();
+}
+function wClock(x,y){const r=7;cx.fillStyle='rgba(5,3,16,0.4)';cx.beginPath();cx.arc(x+r+1.5,y+r+1.8,r,0,TAU);cx.fill();cx.fillStyle='#f4f0e2';cx.beginPath();cx.arc(x+r,y+r,r,0,TAU);cx.fill();cx.lineWidth=ow()*1.4;cx.strokeStyle=OUTL;cx.stroke();
+  cx.strokeStyle='#2a2547';cx.lineWidth=ow()*0.7;for(let i=0;i&lt;12;i++){const a=i*TAU/12;cx.beginPath();cx.moveTo(x+r+Math.cos(a)*(r-1.5),y+r+Math.sin(a)*(r-1.5));cx.lineTo(x+r+Math.cos(a)*(r-0.5),y+r+Math.sin(a)*(r-0.5));cx.stroke();}
+  ln(x+r,y+r,x+r+Math.cos(-1.05+Math.PI*0.0)*0,y+r-4,'#2a2547',ow()*1.2);ln(x+r,y+r,x+r+Math.cos(-1.4)*5,y+r+Math.sin(-1.4)*5,'#d0402c',ow()*0.9);cx.fillStyle='#2a2547';cx.beginPath();cx.arc(x+r,y+r,1,0,TAU);cx.fill();}
+function wBoard(x,y,w,h){dsh(x,y,w,h,0.4);rO(x,y,w,h,'#b8854e',ow()*1.2);cx.fillStyle='#d0a46c';cx.fillRect(x+1.6,y+1.6,w-3.2,h-3.2);cx.fillStyle=pr('concrete');cx.fillRect(x+1.6,y+1.6,w-3.2,h-3.2);
+  paperQ(x+4,y+4,12,15,'#f6f1e0',-0.05);tx('NO FISH',x+10,y+8.6,2.6,'#d0402c','center',900);tx('IN THE',x+10,y+11.4,2.2,'#2a2547','center',800);tx('MICROWAVE',x+10,y+14.2,2.2,'#2a2547','center',800);tape(x+10,y+4.2,0.1);
+  paperQ(x+19,y+5,10,8,'#ffe66a',0.07);ln(x+21,y+8,x+27,y+8,'#8a6a1a',0.5);ln(x+21,y+10.2,x+25,y+10.2,'#8a6a1a',0.5);
+  paperQ(x+19,y+15,9,8,'#ff9ec0',-0.06);ln(x+21,y+18,x+26,y+18,'#8a2a4a',0.5);paperQ(x+5,y+22,10,8,'#8ee0f0',0.05);ln(x+7,y+25,x+13,y+25,'#1a5a6a',0.5);
+  cx.fillStyle='#d0402c';cx.beginPath();cx.arc(x+10,y+4,1,0,TAU);cx.arc(x+24,y+5,0.9,0,TAU);cx.fill();}
+function wVent(x,y,w,h){dsh(x,y,w,h,0.35);rO(x,y,w,h,'#5a6384',ow()*1.1);for(let i=1;i&lt;6;i++){cx.fillStyle='rgba(0,0,0,0.5)';cx.fillRect(x+1.5,y+i*h/6-0.6,w-3,1.1);cx.fillStyle='rgba(255,255,255,0.18)';cx.fillRect(x+1.5,y+i*h/6+0.5,w-3,0.5);}cx.fillStyle=pr('metal');cx.fillRect(x,y,w,h);}
+function wSocket(x,y){dsh(x,y,6,8,0.3);rO(x,y,6,8,'#e4dcc8',ow());cx.fillStyle='#2a2547';cx.fillRect(x+1.3,y+1.6,1,1.6);cx.fillRect(x+3.7,y+1.6,1,1.6);cx.fillRect(x+1.3,y+5,1,1.6);cx.fillRect(x+3.7,y+5,1,1.6);cx.fillStyle=pr('plaster');cx.fillRect(x,y,6,8);}
+function wWindow(x,y,w,h,t){rO(x-1.6,y-1.6,w+3.2,h+3.2,'#2a2547',ow()*1.2);
+  const g=cx.createLinearGradient(0,y,0,y+h);g.addColorStop(0,'#14143a');g.addColorStop(0.7,'#3a2f6a');g.addColorStop(1,'#7a4a6a');cx.fillStyle=g;cx.fillRect(x,y,w,h);
+  const r=rng(41);cx.fillStyle='#0e0b24';for(let i=0;i&lt;9;i++){const bw=4+r()*5,bh=h*(0.25+r()*0.5);cx.fillRect(x+i*w/9,y+h-bh,bw,bh);}
+  cx.fillStyle='#ffd878';for(let i=0;i&lt;26;i++){cx.globalAlpha=0.5+r()*0.5;cx.fillRect(x+r()*w,y+h*0.45+r()*h*0.5,1.1,1.1);}cx.globalAlpha=1;
+  cx.save();cx.beginPath();cx.rect(x,y,w,h);cx.clip();cx.fillStyle='rgba(190,230,255,0.16)';cx.beginPath();cx.moveTo(x+w*0.1,y+h);cx.lineTo(x+w*0.42,y);cx.lineTo(x+w*0.6,y);cx.lineTo(x+w*0.28,y+h);cx.fill();cx.fillStyle='rgba(190,230,255,0.09)';cx.beginPath();cx.moveTo(x+w*0.55,y+h);cx.lineTo(x+w*0.8,y);cx.lineTo(x+w*0.88,y);cx.lineTo(x+w*0.63,y+h);cx.fill();
+  cx.fillStyle='rgba(20,16,50,0.55)';for(let i=0;i&lt;5;i++)cx.fillRect(x,y+i*3.4,w,1.7);cx.fillStyle='rgba(255,255,255,0.12)';for(let i=0;i&lt;5;i++)cx.fillRect(x,y+i*3.4,w,0.4);cx.restore();
+  ln(x+w/2,y,x+w/2,y+h,'#2a2547',ow()*1.2);ln(x,y+h*0.55,x+w,y+h*0.55,'#2a2547',ow()*1.1);rO(x-2.6,y+h+1.4,w+5.2,2.2,'#b89040',ow());}
+function wBoardW(x,y,w,h){dsh(x,y,w,h,0.4);rO(x,y,w,h,'#c5cde0',ow()*1.2);cx.fillStyle='#f6f8ff';cx.fillRect(x+1.5,y+1.5,w-3,h-3);cx.fillStyle='rgba(255,255,255,0.7)';cx.beginPath();cx.moveTo(x+w*0.1,y+h-1.5);cx.lineTo(x+w*0.4,y+1.5);cx.lineTo(x+w*0.5,y+1.5);cx.lineTo(x+w*0.2,y+h-1.5);cx.fill();
+  tx('Q3 ROADMAP',x+w/2,y+5.4,3.6,'#2a4aa0','center',900);const bx=[[5,10,12,7],[21,10,12,7],[37,10,12,7]],cl=['#d0402c','#2a8a4a','#2a4aa0'];
+  for(let i=0;i&lt;3;i++){cx.strokeStyle=cl[i];cx.lineWidth=ow()*0.9;cx.strokeRect(x+bx[i][0],y+bx[i][1],bx[i][2],bx[i][3]);if(i&lt;2)ln(x+bx[i][0]+bx[i][2],y+13.5,x+bx[i+1][0],y+13.5,'#2a2547');}
+  tx('???',x+43,y+13.6,3,'#d0402c','center',900);tx('ship it',x+11,y+13.6,2.4,'#2a2547','center',700);tx('(synergise)',x+27,y+13.6,2.1,'#2a2547','center',700);
+  ln(x+5,y+22,x+34,y+22,'#2a2547',ow()*0.7);ln(x+5,y+25,x+26,y+25,'#2a2547',ow()*0.7);cx.fillStyle='#d0402c';cx.fillRect(x+w-14,y+h-2.6,7,1.6);cx.fillStyle='#2a4aa0';cx.fillRect(x+w-6,y+h-2.6,4,1.6);}
+function wExit(x,y){dsh(x,y,22,10,0.4);rO(x,y,22,10,'#0f3a22',ow()*1.1);cx.fillStyle='#4dff9a';cx.fillRect(x+1.2,y+1.2,19.6,7.6);cx.fillStyle='#0f3a22';tx('EXIT',x+11,y+5.3,6.4,'#0f3a22','center',900);}
+/* ---------- soft contact shadows + wall-base ambient occlusion (floor pass, baked) ---------- */
+const CS=[];
+function contact(x0,y0,x1,y1,pad){CS.push([x0,y0,x1,y1,pad||0.28]);}
+function bakeContact(){
+  for(const c of CS){const s=c[4];for(let k=0;k&lt;4;k++){const e=s*(1-k*0.22);spFloor();cx.fillStyle='rgba(5,3,18,0.11)';
+    const x0=(c[0]-e)*64,y0=(c[1]-e)*64,w=(c[2]-c[0]+2*e)*64,h=(c[3]-c[1]+2*e)*64,r=Math.min(w,h)*0.3;cx.beginPath();cx.roundRect(x0,y0,w,h,r);cx.fill();}}
+  spEnd();
+}
+function wallAO(skipX,skipY){ /* dark gradient on the floor at the foot of the back wall (y) and left wall (x) */
+  spFloor();let g=cx.createLinearGradient(0,14,0,66);g.addColorStop(0,'rgba(4,2,16,0.62)');g.addColorStop(0.45,'rgba(4,2,16,0.2)');g.addColorStop(1,'rgba(4,2,16,0)');cx.fillStyle=g;cx.fillRect(14,14,N*64,52);
+  g=cx.createLinearGradient(14,0,66,0);g.addColorStop(0,'rgba(4,2,16,0.62)');g.addColorStop(0.45,'rgba(4,2,16,0.2)');g.addColorStop(1,'rgba(4,2,16,0)');cx.fillStyle=g;
+  for(let j=1;j&lt;N;j++){if(skipY&amp;&amp;skipY.indexOf(j)&gt;=0)continue;cx.fillRect(14,j*64,52,64);}spEnd();
+}
 
 /* ---------- iso primitives built on the style's G ---------- */
 function box(x0,y0,x1,y1,z0,z1,mt,ms){
@@ -3267,18 +3360,60 @@ function wallPanel(i,j){
   if(j===0)faceY(0.22,i+0.06,i+0.94,5,35,'wallPanel',1);else faceX(0.22,j+0.06,j+0.94,5,35,'wallPanel',2);
   if(G.wallDeco)G.wallDeco(i,j);
 }
-/* ---------- static layer: floor, walls, furniture ---------- */
-const SCR=[];/* monitor screen quads, filled by paintStatic */
-function paintStatic(){
-  SCR.length=0;
-  /* slab edge so the level reads as a cut-away slice */
-  box(0,0,N,N,-12,0,'slab','slab');
+/* ---------- static layer: floor, walls, furniture (per scene) ---------- */
+const SCR=[],LED=[],DEC=[];/* monitor screen quads, blinking LEDs, extra dynamic bits; filled by paintStatic */
+function floorTiles(){
   for(let j=0;j&lt;N;j++)for(let i=0;i&lt;N;i++){
-    P(i,j,0);const ax=PX,ay=PY;P(i+1,j,0);const bx=PX,by=PY;P(i+1,j+1,0);const cx=PX,cy=PY;P(i,j+1,0);
-    const pts=[ax,ay,bx,by,cx,cy,PX,PY];
+    P(i,j,0);const ax=PX,ay=PY;P(i+1,j,0);const bx=PX,by=PY;P(i+1,j+1,0);const cx_=PX,cy=PY;P(i,j+1,0);
+    const pts=[ax,ay,bx,by,cx_,cy,PX,PY];
     G.poly(pts,((i+j)&amp;1)?'carpetA':'carpetB',0);
     if(G.tileDeco)G.tileDeco(i,j,pts);
   }
+}
+function skirt(axis,k){if(axis==='y')box(k,0.22,k+1,0.3,0,5,'skirt');else box(0.22,k,0.3,k+1,0,5,'skirt');}
+function wallRun(add,collapse){
+  for(let i=0;i&lt;N;i++){
+    if(collapse&amp;&amp;i===4){add(i+0.4,()=&gt;{box(i,0,i+1,0.22,0,15,'wallFab');box(i+0.1,0,i+0.7,0.22,15,22,'wallFab');box(i+0.5,0.05,i+0.75,0.3,0,6,'trim');});continue;}
+    add(i+0.4,()=&gt;{box(i,0,i+1,0.22,0,40,'wallFab');box(i,0,i+1,0.24,40,44,'trim');wallPanel(i,0);if(V3)skirt('y',i);});
+  }
+  for(let j=1;j&lt;N;j++){
+    if(j===7||j===8)continue;
+    add(j+0.4,()=&gt;{box(0,j,0.22,j+1,0,40,'wallFab');box(0,j,0.24,j+1,40,44,'trim');wallPanel(0,j);if(V3)skirt('x',j);});
+  }
+  add(0.3,()=&gt;{box(0,0,0.3,0.3,0,48,'post');});
+  add(5.9,()=&gt;{box(0,5.2,0.36,5.8,34,42,'lampR','lampR');});
+  add(7.2,()=&gt;{box(0,7,0.3,7.3,0,46,'post');});
+  add(9.2,()=&gt;{box(0,9,0.3,9.3,0,46,'post');});
+  if(V3){add(8.2,()=&gt;{box(0,7,0.3,9.3,44,50,'trim');box(0.02,7.75,0.26,8.55,36,43,'exitS');});}
+}
+function plant(x,y,s,seed){
+  cyl(x,y,0,11*s,0.17*s,'pot','pot');P(x,y,11*s);G.ell(PX,PY,0.17*45*Z*s*0.92,0.17*22*Z*s*0.92,'soil',1,0);
+  const bx=PX,by=PY;
+  for(let k=0;k&lt;9;k++){const a=-Math.PI/2+(k-4)*0.34+(hash(k*1.7+seed)-0.5)*0.25,l=(20+hash(k*2.1+seed)*15)*s*Z,w=4.4*s*Z,ca=Math.cos(a),sa=Math.sin(a),nx=-sa,ny=ca;
+    const mx=bx+ca*l*0.45,my=by+sa*l*0.45,tx_=bx+ca*l,ty=by+sa*l+l*0.18*(Math.abs(ca));
+    G.poly([bx,by,mx+nx*w,my+ny*w,tx_,ty,mx-nx*w,my-ny*w],'leaf',k%3===0?1:k%3===1?0:2);
+    cx.strokeStyle='rgba(190,240,150,0.5)';cx.lineWidth=Math.max(0.8,Z*0.9);cx.beginPath();cx.moveTo(bx,by);cx.lineTo(tx_,ty);cx.stroke();}
+}
+function glassQ(f,a,b,z0,z1,c){ /* glass pane on a vertical plane: f='y' (plane y=c, spans x a..b) or 'x'; soft tint + two reflection streaks + outline */
+  const q=[];const pt=(u,z)=&gt;{if(f==='y')P(u,c,z);else P(c,u,z);q.push(PX,PY);};pt(a,z1);pt(b,z1);pt(b,z0);pt(a,z0);
+  cx.beginPath();cx.moveTo(q[0],q[1]);for(let i=2;i&lt;8;i+=2)cx.lineTo(q[i],q[i+1]);cx.closePath();
+  const g=cx.createLinearGradient(q[0],q[1],q[4],q[5]);g.addColorStop(0,'rgba(170,230,250,0.30)');g.addColorStop(1,'rgba(110,170,210,0.12)');cx.fillStyle=g;cx.fill();
+  cx.save();cx.clip();cx.fillStyle='rgba(255,255,255,0.2)';
+  const lerp2=(u,v)=&gt;[lerp(lerp(q[0],q[2],u),lerp(q[6],q[4],u),v),lerp(lerp(q[1],q[3],u),lerp(q[7],q[5],u),v)];
+  for(const s of[[0.12,0.2],[0.58,0.12]]){const A=lerp2(s[0],0),B=lerp2(s[0]+s[1],0),C=lerp2(s[0]+s[1]-0.28,1),D=lerp2(s[0]-0.28,1);cx.beginPath();cx.moveTo(A[0],A[1]);cx.lineTo(B[0],B[1]);cx.lineTo(C[0],C[1]);cx.lineTo(D[0],D[1]);cx.closePath();cx.fill();}
+  cx.restore();cx.lineWidth=lw()*0.8;cx.strokeStyle=OUTL;cx.stroke();cx.strokeStyle='rgba(235,250,255,0.55)';cx.lineWidth=Math.max(0.8,Z);cx.beginPath();cx.moveTo(q[0],q[1]);cx.lineTo(q[2],q[3]);cx.stroke();
+}
+function paintStatic(){
+  SCR.length=0;LED.length=0;DEC.length=0;CS.length=0;STAT=true;
+  TEXM={wallFab:['plaster',1],wallPanel:['plaster',1],wood:['wood',0.9],woodTop:['wood',1],metal:['metal',0.9],coolerBody:['metal',0.55],paperPile:['paper',1],paper:['paper',0.8],chair:['weaveA',0.8],slab:['concrete',1],cardboard:['cardboard',1],rack:['metal',0.9],pipe:['metal',0.9],label:['paper',0.8],sticky:['paper',0.5],stickyP:['paper',0.5],glass:['metal',0.25],skirt:['plaster',1]};
+  if(SCENE==='boardroom'){TEXM.wallFab=['panel',1];TEXM.wallPanel=['panel',1];TEXM.chairB=['weaveA',0.7];}
+  box(0,0,N,N,-12,0,'slab','slab');
+  floorTiles();
+  (SCENE==='basement'?paintBasement:SCENE==='boardroom'?paintBoardroom:paintOffice)();
+  STAT=false;
+}
+function paintOffice(){
+  if(V3){wallAO([7,8]);[[0.25,0.9,1.4,3.0],[1.65,2.05,2.4,2.75],[7.2,0.25,10,1.25],[10.45,0.75,10.95,1.25],[10.5,1.9,11.3,2.6],[2,5,4.2,5.25],[0.22,3.85,3.2,4.05],[6.85,0.22,7.05,3.0],[3.0,0.5,3.4,0.9],[10.8,8.7,11.7,9.5],[0.7,10.1,1.1,10.5],[10.75,5.2,11.2,5.65],[9.3,2.6,9.8,2.8],[0.3,7.0,1.5,8.2]].forEach(c=&gt;contact(c[0],c[1],c[2],c[3],0.22));bakeContact();floorFXOffice();}
   /* decals on the floor */
   const st=[[3.2,3.1,34,17],[8.4,5.2,26,13],[6.3,8.2,40,19],[1.6,6.1,30,14],[9.7,3.7,24,11],[4.4,10.3,36,16],[2.6,9.1,22,10]];
   for(let i=0;i&lt;st.length;i++){P(st[i][0],st[i][1],0);G.decal(PX,PY,st[i][2]*Z,st[i][3]*Z,i%3===1?'coffee':'stain',0.55);}
@@ -3287,10 +3422,10 @@ function paintStatic(){
   for(let i=0;i&lt;bd.length;i++){P(bd[i][0],bd[i][1],0);G.decal(PX,PY,bd[i][2]*Z,bd[i][3]*Z,'blood',0.8);}
   for(let k=0;k&lt;7;k++){P(3.6+k*0.28,6.9-k*0.2,0);G.decal(PX,PY,(7-k*0.6)*Z,(3.2-k*0.2)*Z,'blood',0.8);}
   /* cables */
-  wline([1.3,2.3,2.0,3.0,2.8,3.3,3.6,3.2,4.3,4.1,5.0,4.9,5.6,5.5],0.3,3.2,'cable');
-  wline([8.2,1.3,8.5,2.0,9.2,2.5,9.8,3.4,10.6,3.9,11.4,4.0],0.3,3.0,'cable');
-  wline([0.9,3.0,0.7,4.2,1.4,5.0,1.2,6.0,0.6,6.8],0.3,2.6,'cable');
-  wline([7.5,1.2,7.0,1.9,6.2,2.2,5.6,2.9],0.3,2.2,'cable');
+  const cab=[[1.3,2.3,2.0,3.0,2.8,3.3,3.6,3.2,4.3,4.1,5.0,4.9,5.6,5.5],[8.2,1.3,8.5,2.0,9.2,2.5,9.8,3.4,10.6,3.9,11.4,4.0],[0.9,3.0,0.7,4.2,1.4,5.0,1.2,6.0,0.6,6.8],[7.5,1.2,7.0,1.9,6.2,2.2,5.6,2.9]];
+  const cw=[3.2,3.0,2.6,2.2];
+  for(let i=0;i&lt;4;i++)wline(cab[i],0.3,cw[i],'cable');
+  if(V3)cableTape(cab);
   /* scattered paper */
   for(let i=0;i&lt;22;i++){
     const r1=hash(i*5.1),r2=hash(i*9.7+2),rot=hash(i*3.3)*TAU;
@@ -3307,21 +3442,10 @@ function paintStatic(){
   /* depth-sorted objects */
   const L=[];
   const add=(d,f)=&gt;L.push({d:d,f:f});
-  /* back walls with a collapsed segment and a doorway */
-  for(let i=0;i&lt;N;i++){
-    if(i===4){add(i+0.4,()=&gt;{box(i,0,i+1,0.22,0,15,'wallFab');box(i+0.1,0,i+0.7,0.22,15,22,'wallFab');box(i+0.5,0.05,i+0.75,0.3,0,6,'trim');});continue;}
-    add(i+0.4,()=&gt;{box(i,0,i+1,0.22,0,40,'wallFab');box(i,0,i+1,0.24,40,44,'trim');wallPanel(i,0);});
-  }
-  for(let j=1;j&lt;N;j++){
-    if(j===7||j===8)continue;
-    add(j+0.4,()=&gt;{box(0,j,0.22,j+1,0,40,'wallFab');box(0,j,0.24,j+1,40,44,'trim');wallPanel(0,j);});
-  }
-  add(0.3,()=&gt;{box(0,0,0.3,0.3,0,48,'post');});
-  add(5.9,()=&gt;{box(0,5.2,0.36,5.8,34,42,'lampR','lampR');});
-  add(7.2,()=&gt;{box(0,7,0.3,7.3,0,46,'post');});
-  add(9.2,()=&gt;{box(0,9,0.3,9.3,0,46,'post');});
+  wallRun(add,true);
   /* left cubicle: partition, desk, monitor, chair */
-  for(let k=0;k&lt;3;k++)add(2+k*1.0+1.9,()=&gt;{const x0=0.22+k*1.0,x1=x0+(k===2?0.98:1);box(x0,3.85,x1,4.05,0,34,'wallFab');box(x0,3.84,x1,4.06,34,37,'trim');});
+  for(let k=0;k&lt;3;k++)add(2+k*1.0+1.9,()=&gt;{const x0=0.22+k*1.0,x1=x0+(k===2?0.98:1);box(x0,3.85,x1,4.05,0,34,'wallFab');box(x0,3.84,x1,4.06,34,37,'trim');
+    if(V3){if(k===0){faceY(4.06,x0+0.2,x0+0.5,16,26,'sticky',1);} if(k===1){faceY(4.06,x0+0.25,x0+0.75,12,24,'pinPhoto',0);} glassQ('y',x0+0.03,x1-0.03,38,56,4.06);}});
   add(2.4,()=&gt;{
     box(0.25,0.9,1.4,3.0,19,23,'woodTop','wood');box(0.3,2.2,1.35,2.98,0,19,'wood');box(0.3,0.95,0.42,1.4,0,19,'wood');
     box(0.7,1.9,0.95,2.15,23,26,'plastic');
@@ -3331,15 +3455,18 @@ function paintStatic(){
     box(0.85,1.55,1.3,2.0,23,24,'plastic');
     cyl(1.1,2.7,23,29,0.1,'mug');
     box(0.5,1.15,0.9,1.45,23,27,'paperPile');
+    if(V3){faceX(0.67,2.12,2.3,40,47,'sticky',1);faceX(0.67,1.55,1.72,36,43,'stickyP',1);cyl(0.5,2.6,23,28,0.08,'mugB');
+      for(let k=0;k&lt;4;k++)wline([0.88,1.62+k*0.1,1.26,1.62+k*0.1],24.1,0.9,'ink',0.55);box(0.35,2.78,0.55,2.94,23,29,'plastic');plant(1.25,1.12,0.5,3);}
   });
   add(4.2,()=&gt;{ /* chair */
     cyl(2.0,2.4,0,9,0.07,'metal');
     wline([2.0,2.4,1.6,2.1,2.0,2.4,2.4,2.1,2.0,2.4,2.0,2.8,2.0,2.4,1.7,2.8,2.0,2.4,2.35,2.75],0.5,2.2,'metal');
     box(1.65,2.05,2.3,2.75,10,15,'chair','chair');
     box(2.22,2.05,2.4,2.75,15,40,'chair','chair');
+    if(V3){for(const q of[[2.0,2.4],[1.6,2.1],[2.4,2.1],[2.0,2.8],[1.7,2.8],[2.35,2.75]]){P(q[0],q[1],0);G.ell(PX,PY-Z,2.4*Z,1.6*Z,'ink',0,0);}box(2.24,2.12,2.38,2.68,19,36,'chairHi','chair');}
   });
   /* right cubicle */
-  for(let k=0;k&lt;3;k++)add(7.6+k,()=&gt;{const y0=0.22+k*0.9;box(6.85,y0,7.05,y0+0.9,0,34,'wallFab');box(6.84,y0,7.06,y0+0.9,34,37,'trim');});
+  for(let k=0;k&lt;3;k++)add(7.6+k,()=&gt;{const y0=0.22+k*0.9;box(6.85,y0,7.05,y0+0.9,0,34,'wallFab');box(6.84,y0,7.06,y0+0.9,34,37,'trim');if(V3&amp;&amp;k===1)glassQ('x',y0+0.04,y0+0.86,38,56,7.06);});
   add(9.3,()=&gt;{
     box(7.2,0.25,10.0,1.25,19,23,'woodTop','wood');box(9.1,0.3,9.95,1.2,0,19,'wood');box(7.25,0.3,7.45,1.2,0,19,'wood');
     box(7.7,0.6,8.4,0.85,23,26,'plastic');
@@ -3348,6 +3475,10 @@ function paintStatic(){
     SCR.push({y:0.57,x0:8.07,x1:8.73,z0:29,z1:44,ax:'y'});
     box(8.2,0.8,8.9,1.1,23,24,'plastic');
     box(9.3,0.5,9.6,0.9,23,25,'paperPile');
+    if(V3){faceY(0.57,8.62,8.78,38,45,'sticky',1);faceY(0.57,8.0,8.14,34,40,'stickyP',1);cyl(9.0,0.95,23,28,0.09,'mugB');cyl(7.55,0.62,23,26,0.1,'pot','pot');
+      for(let k=0;k&lt;3;k++)wline([8.25,0.9+k*0.07,8.85,0.9+k*0.07],24.1,0.9,'ink',0.55);
+      box(9.55,0.95,9.85,1.2,23,24,'plastic');cyl(9.7,1.07,24,25,0.1,'plastic');wline([9.7,1.07,9.65,0.8,9.5,0.62],34,1.6,'metal');box(9.4,0.4,9.9,0.7,23,24.5,'metal');
+      P(9.5,0.62,40);G.poly([PX-9*Z,PY+6*Z,PX+7*Z,PY+4*Z,PX+9*Z,PY+9*Z,PX-7*Z,PY+10*Z],'lampR',0);}
   });
   /* water cooler */
   add(11.8,()=&gt;{
@@ -3355,19 +3486,222 @@ function paintStatic(){
     box(10.6,1.0,10.8,1.26,10,14,'metal');
     cyl(10.7,1.0,24,50,0.2,'jug');
     G.jugWater(10.7,1.0);
+    if(V3){cyl(10.58,1.1,12,16,0.04,'ledR');cyl(10.8,1.1,12,16,0.04,'ledB');}
   });
   /* filing cabinet, fallen panel, extra desk junk */
-  add(13.2,()=&gt;{box(10.5,1.9,11.3,2.6,0,46,'metal');box(10.52,1.95,11.28,2.0,30,31,'plastic');faceX(11.3,1.95,2.55,31,45,'wood',2);});
+  add(13.2,()=&gt;{box(10.5,1.9,11.3,2.6,0,46,'metal');box(10.52,1.95,11.28,2.0,30,31,'plastic');faceX(11.3,1.95,2.55,31,45,'wood',2);
+    if(V3){for(let k=0;k&lt;3;k++){faceX(11.3,1.98,2.52,3+k*14.5,3+k*14.5+1.2,'ink',0);faceX(11.3,2.1,2.4,6+k*14.5,9.6+k*14.5,'label',0);}faceX(11.3,2.15,2.35,0,0,'ink');}});
   add(7.2,()=&gt;{box(2.0,5.0,4.2,5.25,0,3,'wallFab','trim');});
-  /* hanging fluorescent fixture (ceiling) */
-  add(8.4,()=&gt;{
-    wline([FIX.x-0.5,FIX.y,FIX.x-0.5,FIX.y],0,1,'metal',0);
-    P(FIX.x-0.35,FIX.y,FIX.z+34);const a=PX,b=PY;P(FIX.x-0.35,FIX.y,FIX.z);G.line([a,b,PX,PY],1.4*Z,'metal');
-    P(FIX.x+0.35,FIX.y,FIX.z+34);const c=PX,d=PY;P(FIX.x+0.35,FIX.y,FIX.z);G.line([c,d,PX,PY],1.4*Z,'metal');
-    box(FIX.x-0.9,FIX.y-0.28,FIX.x+0.9,FIX.y+0.28,FIX.z,FIX.z+5,'plastic','metal');
-  });
+  /* hanging fluorescent fixtures (ceiling) */
+  const fixture=(F)=&gt;{
+    wline([F.x-0.5,F.y,F.x-0.5,F.y],0,1,'metal',0);
+    P(F.x-0.35,F.y,F.z+34);const a=PX,b=PY;P(F.x-0.35,F.y,F.z);G.line([a,b,PX,PY],1.4*Z,'metal');
+    P(F.x+0.35,F.y,F.z+34);const c=PX,d=PY;P(F.x+0.35,F.y,F.z);G.line([c,d,PX,PY],1.4*Z,'metal');
+    box(F.x-0.9,F.y-0.28,F.x+0.9,F.y+0.28,F.z,F.z+5,'plastic','metal');
+  };
+  add(8.4,()=&gt;fixture(FIX));
+  if(V3){
+    add(11.2,()=&gt;fixture(FIX2));
+    /* extra props */
+    add(11.4,()=&gt;{plant(0.95,10.3,1.5,5);});add(8.0,()=&gt;plant(11.0,5.4,1.35,9));
+    add(3.9,()=&gt;{cyl(3.2,0.7,0,13,0.2,'bin');P(3.2,0.7,13);G.ell(PX,PY,0.2*45*Z,0.2*22*Z,'ink',1,0);G.ell(PX-2*Z,PY-3*Z,5*Z,4*Z,'paper',0,0.4);G.ell(PX+4*Z,PY-2*Z,4*Z,3.4*Z,'paper',1,0);});
+    add(12.0,()=&gt;{box(10.8,8.7,11.7,9.5,0,13,'cardboard','cardboard');box(10.85,8.75,11.65,9.0,13,14.5,'cardboardL');box(10.95,8.85,11.55,9.45,14.5,26,'cardboard','cardboard');faceY(9.45,11.0,11.5,16,19,'label',0);P(11.25,9.3,26.2);G.poly([PX-6*Z,PY,PX+6*Z,PY,PX+5*Z,PY+2*Z,PX-5*Z,PY+2*Z],'tapeM',0);});
+    add(9.2,()=&gt;{ /* wet floor sign, A-frame */
+      box(9.35,2.62,9.78,2.7,0,22,'sign','sign');spWY(9.35,2.72,21);tx('WET',21,9,5,'#1a1a2e','center',900);tx('FLOOR',21,17,3.8,'#1a1a2e','center',900);cx.fillStyle='#1a1a2e';cx.beginPath();cx.moveTo(14,24);cx.lineTo(28,24);cx.lineTo(21,30);cx.fill();spEnd();});
+    add(7.9,()=&gt;{box(0.3,6.92,1.15,7.0,0,41,'wood','wood');box(0.34,6.88,1.1,7.04,40,41.5,'trim');faceY(7.0,0.4,1.05,6,34,'woodDark',1);faceY(7.0,0.5,0.95,10,20,'wood',1);faceY(7.0,0.5,0.95,24,31,'wood',1);P(1.02,7.02,20);G.ell(PX,PY,2.2*Z,2.2*Z,'gold',0,0);});
+    add(1.0,()=&gt;{box(0.45,0.3,0.7,0.5,0,22,'extR','extR');box(0.5,0.34,0.66,0.46,22,25,'plastic');});
+    /* wall decor */
+    DEC.push(1);
+    const dec=(d,f)=&gt;add(d,f);
+    dec(1.9,()=&gt;{spWY(1.3,0.22,36);wPoster(0,3,0);spEnd();});
+    dec(2.5,()=&gt;{spWY(1.85,0.22,36);wChart(0,6);spEnd();});
+    dec(3.05,()=&gt;{spWY(2.55,0.22,18);wSocket(0,0);spEnd();});
+    dec(3.5,()=&gt;{spWY(3.05,0.22,36);wClock(0,2);spEnd();});
+    dec(6.1,()=&gt;{spWY(5.1,0.22,36);wBoard(0,3,40,32);spEnd();spWY(5.9,0.22,36);wVent(2,3,20,10);spEnd();});
+    dec(10.0,()=&gt;{spWY(9.18,0.22,36);wPoster(0,4,1);spEnd();});
+    dec(10.8,()=&gt;{spWY(10.2,0.22,36);wWindow(0,6,34,19);spEnd();spWY(11.45,0.22,36);wSocket(0,18);spEnd();});
+    dec(11.5,()=&gt;{spWY(11.15,0.22,36);wVent(0,3,22,10);spEnd();});
+    dec(7.0,()=&gt;{spWX(0.22,6.95,36);wPoster(0,4,2);spEnd();});
+    dec(5.5,()=&gt;{spWX(0.22,4.9,36);wSocket(0,22);spEnd();spWX(0.22,4.2,36);wVent(0,4,22,10);spEnd();});
+    dec(11.7,()=&gt;{spWX(0.22,11.95,36);wBoardW(0,3,62,30);spEnd();});
+    dec(10.1,()=&gt;{spWX(0.22,10.55,12);wSocket(0,10);spEnd();});
+    dec(3.3,()=&gt;{spWX(0.22,3.7,36);wPoster(0,4,0);spEnd();spWX(0.22,3.0,24);wSocket(0,8);spEnd();});
+    /* wall posts' stencil */
+    dec(0.9,()=&gt;{spWY(0.5,0.22,20);spEnd();});
+  }
   L.sort((p,q)=&gt;p.d-q.d);
   for(let i=0;i&lt;L.length;i++)L[i].f();
+}
+function cableTape(cab){
+  spFloor();
+  for(const c of cab){for(let k=0;k+3&lt;c.length;k+=4){const x=(c[k]+c[k+2])/2*64,y=(c[k+1]+c[k+3])/2*64,a=Math.atan2(c[k+3]-c[k+1],c[k+2]-c[k])+0.0;
+    cx.save();cx.translate(x,y);cx.rotate(a+Math.PI/2);cx.fillStyle='rgba(240,200,60,0.85)';cx.fillRect(-5,-2,10,4);cx.strokeStyle=OUTL;cx.lineWidth=ow()*0.7;cx.strokeRect(-5,-2,10,4);cx.restore();}}
+  spEnd();
+}
+function floorFXOffice(){
+  spFloor();
+  /* walkway runner (lighter, stitched) */
+  cx.fillStyle='rgba(150,165,225,0.07)';cx.fillRect(5*64,64,128,10*64);
+  cx.setLineDash([5,4]);ln(5*64+6,64,5*64+6,704,'rgba(255,255,255,0.14)',1.4);ln(7*64-6,64,7*64-6,704,'rgba(255,255,255,0.14)',1.4);cx.setLineDash([]);
+  /* hazard tape strip at the collapsed wall */
+  cx.save();cx.beginPath();cx.rect(4*64+2,26,60,11);cx.clip();cx.fillStyle='#e8c030';cx.fillRect(4*64,24,64,14);cx.fillStyle='#14121f';for(let k=-4;k&lt;12;k++){cx.beginPath();cx.moveTo(4*64+k*10,24);cx.lineTo(4*64+k*10+5,24);cx.lineTo(4*64+k*10+5-14,38);cx.lineTo(4*64+k*10-14,38);cx.fill();}cx.restore();cx.globalAlpha=0.8;cx.strokeStyle=OUTL;cx.lineWidth=ow()*1.2;cx.strokeRect(4*64+2,26,60,11);cx.globalAlpha=1;
+  /* painted chevrons pointing at the doorway */
+  cx.strokeStyle='rgba(240,205,70,0.34)';cx.lineWidth=5;cx.lineJoin='miter';for(let k=0;k&lt;3;k++){const x=8.8*64-k*26;cx.beginPath();cx.moveTo(x+10,8.2*64-14);cx.lineTo(x,8.2*64);cx.lineTo(x+10,8.2*64+14);cx.stroke();}
+  /* door mat */
+  cx.fillStyle='#4a3626';cx.fillRect(0.34*64,7.15*64,70,104);cx.fillStyle=pr('weaveC');cx.fillRect(0.34*64,7.15*64,70,104);cx.strokeStyle='#241810';cx.lineWidth=ow()*1.3;cx.strokeRect(0.34*64,7.15*64,70,104);
+  cx.save();cx.translate(0.34*64+35,7.15*64+52);cx.rotate(-Math.PI/2);tx('MIND THE GAP',0,0,7,'#d9c9a0','center',900);cx.restore();
+  /* footprints from the door */
+  const r=rng(7);for(let k=0;k&lt;14;k++){const u=k/13,x=lerp(1.5,4.8,u)*64+Math.sin(k*1.7)*4,y=lerp(8.0,6.7,u)*64+(k&amp;1?7:-7);cx.fillStyle='rgba(30,18,22,0.3)';cx.beginPath();cx.ellipse(x,y,5,2.6,-0.3,0,TAU);cx.fill();cx.beginPath();cx.ellipse(x+5,y+0.5,2.4,2,0,0,TAU);cx.fill();}
+  /* coffee rings, scuffs */
+  for(const q of[[3.6,2.6],[8.9,4.8],[5.2,8.8],[1.2,9.6]]){cx.strokeStyle='rgba(60,32,24,0.4)';cx.lineWidth=1.3;cx.beginPath();cx.arc(q[0]*64,q[1]*64,7,0.3,TAU-0.4);cx.stroke();cx.beginPath();cx.arc(q[0]*64+2,q[1]*64+1,6,0,TAU*0.6);cx.stroke();}
+  for(let k=0;k&lt;26;k++){const x=r()*N*64,y=r()*N*64,a=r()*TAU;cx.strokeStyle='rgba(4,2,14,'+(0.15+r()*0.2)+')';cx.lineWidth=1.6;cx.lineCap='round';cx.beginPath();cx.moveTo(x,y);cx.quadraticCurveTo(x+Math.cos(a)*9,y+Math.sin(a)*9+3,x+Math.cos(a+0.4)*18,y+Math.sin(a+0.4)*18);cx.stroke();}
+  cx.lineCap='butt';
+  /* left cubicle rug */
+  cx.fillStyle='rgba(60,110,150,0.22)';cx.fillRect(0.4*64,1.0*64,2.4*64,2.6*64);cx.fillStyle=pr('weaveB');cx.fillRect(0.4*64,1.0*64,2.4*64,2.6*64);cx.setLineDash([4,4]);cx.strokeStyle='rgba(255,255,255,0.18)';cx.lineWidth=1.3;cx.strokeRect(0.4*64+5,1.0*64+5,2.4*64-10,2.6*64-10);cx.setLineDash([]);cx.strokeStyle=OUTL;cx.lineWidth=ow()*1.1;cx.strokeRect(0.4*64,1.0*64,2.4*64,2.6*64);
+  spEnd();
+}
+
+function ledAdd(x,y,z,col,ph,sp_){LED.push({x:x,y:y,z:z,c:col,p:ph,s:sp_||1});}
+function rackFront(x0,x1,y,z0,z1,seed){ /* brushed front panel with 1U units, vents, handles; LEDs are dynamic */
+  const w=(x1-x0)*64,h=z1-z0,r=rng(seed);spWY(x0,y+0.002,z1);
+  cx.fillStyle='#161a30';cx.fillRect(1.5,1.5,w-3,h-3);const n=Math.floor((h-6)/8);
+  for(let k=0;k&lt;n;k++){const v=3+k*8,t=r();rO(3,v,w-6,6.4,t&lt;0.3?'#5b6489':'#3c4466',ow()*0.7);
+    if(t&lt;0.45){for(let q=0;q&lt;7;q++){cx.fillStyle='rgba(0,0,0,0.5)';cx.fillRect(5+q*3.2,v+1.4,1.6,3.6);}}else{cx.fillStyle='#10132a';cx.fillRect(w-17,v+1.2,10,4);}
+    cx.fillStyle='#8f9bc0';cx.fillRect(4,v+2.6,1.6,1.2);
+    ledAdd(x0+(w-9)/64,y+0.01,z1-v-3.2,t&lt;0.3?'#ff5a46':t&lt;0.7?'#4dff9a':'#7ad0ff',r()*TAU,0.5+r()*2);ledAdd(x0+(w-6)/64,y+0.01,z1-v-3.2,'#ffd45c',r()*TAU,1+r()*3);}
+  cx.fillStyle=pr('metal');cx.fillRect(0,0,w,h);spEnd();
+}
+function drawers(x0,x1,y,z0,z1,n,seed){ /* filing cabinet front: drawer seams, handles, label slots */
+  const w=(x1-x0)*64,h=z1-z0,dh=h/n;spWY(x0,y+0.002,z1);
+  for(let k=0;k&lt;n;k++){const v=k*dh;cx.fillStyle='rgba(255,255,255,0.08)';cx.fillRect(1,v+1,w-2,dh*0.5);ln(1,v+dh-0.5,w-1,v+dh-0.5,'rgba(10,6,30,0.8)',ow()*1.1);ln(1,v+0.8,w-1,v+0.8,'rgba(255,255,255,0.25)',0.5);
+    rO(w/2-6,v+dh*0.38,12,2.6,'#2a2f4e',ow()*0.7);rO(w/2-5,v+dh*0.12,10,dh*0.2,'#efe6cf',ow()*0.6);ln(w/2-3.5,v+dh*0.22,w/2+2,v+dh*0.22,'#7a6a5a',0.5);}
+  cx.fillStyle=pr('metal');cx.fillRect(0,0,w,h);spEnd();
+}
+function barrel(x,y,col){cyl(x,y,0,26,0.28,col,col);P(x,y,18);G.ell(PX,PY,0.28*45*Z,0.28*22*Z,'ink',1,0);P(x,y,8);G.ell(PX,PY,0.28*45*Z,0.28*22*Z,'ink',1,0);P(x,y,26);G.ell(PX,PY,0.2*45*Z,0.2*22*Z,'ink',1,0);}
+function pipeRun(x0,x1,y,z,r,m){box(x0,y,x1,y+r,z,z+r*52,m,m);for(let k=Math.ceil(x0);k&lt;x1;k+=2){box(k+0.4,y-0.02,k+0.5,y+r+0.02,z-3,z+r*52+3,'metal');}}
+function paintBasement(){
+  TEXM.slab=['concrete',1];
+  if(V3){wallAO([7,8]);[[3.0,0.26,4.9,1.2],[7.9,0.26,10.6,1.1],[0.26,0.9,0.95,2.9],[0.3,3.3,1.2,4.8],[0.6,9.7,1.8,10.9],[10.4,4.8,11.4,5.8],[10.6,8.6,11.6,9.6],[3.6,6.1,4.6,6.6],[2.1,8.8,2.8,9.5]].forEach(c=&gt;contact(c[0],c[1],c[2],c[3],0.22));bakeContact();floorFXBase();}
+  const L=[],add=(d,f)=&gt;L.push({d:d,f:f});
+  wallRun(add,false);
+  /* pipes along the back wall: one run per wall column so racks and cabinets in front of them sort correctly */
+  for(let i=0;i&lt;N;i++)add(i+0.45,()=&gt;{box(i,0.24,i+1,0.4,26,34.3,'pipe','pipe');box(i,0.24,i+1,0.36,14,20.2,'pipeR','pipeR');if(i===2||i===8){box(i+0.4,0.24,i+0.56,0.42,3,28,'pipe');box(i+0.37,0.24,i+0.59,0.44,14,17,'metal');}
+    if(i%2===0){box(i+0.7,0.23,i+0.78,0.42,24,36,'metal');box(i+0.7,0.23,i+0.78,0.38,12,22,'metal');}
+    if(i===6){P(6.5,0.46,34);G.ell(PX,PY,5*Z,5*Z,'pipeR',0,0);G.ell(PX,PY,2*Z,2*Z,'ink',0,0);}});
+  /* server racks */
+  add(3.9,()=&gt;{box(3.0,0.26,3.95,1.15,0,58,'rack','rack');box(3.0,0.26,3.95,1.15,58,60,'trim');if(V3)rackFront(3.04,3.91,1.152,2,56,5);box(4.05,0.26,5.0,1.15,0,58,'rack','rack');box(4.05,0.26,5.0,1.15,58,60,'trim');if(V3)rackFront(4.09,4.96,1.152,2,56,9);
+    for(let k=0;k&lt;6;k++)wline([3.2+k*0.12,0.25,3.2+k*0.12,0.25],58,1,'cable',0);wline([4.5,1.1,4.7,1.5,5.3,1.7,6.0,1.5,6.4,1.1],0.3,3,'cable');});
+  /* filing cabinets */
+  for(let k=0;k&lt;3;k++)add(8.2+k*0.9,()=&gt;{const x0=7.9+k*0.92;box(x0,0.26,x0+0.84,0.98,0,46,'metal','metal');if(V3)drawers(x0+0.03,x0+0.81,0.982,2,44,3,k*7+1);else faceY(0.98,x0+0.05,x0+0.8,30,31,'plastic',1);});
+  add(10.8,()=&gt;{box(10.9,0.3,11.8,1.2,0,22,'cardboard','cardboard');box(10.95,0.35,11.75,0.7,22,23.5,'cardboardL');if(V3)faceY(1.2,11.1,11.6,6,10,'label',0);});
+  /* shelving along the left wall */
+  add(2.6,()=&gt;{for(const y of[0.95,2.85])box(0.25,y,0.9,y+0.07,0,50,'metal','metal');for(const z of[10,26,42])box(0.25,0.95,0.9,2.92,z,z+2,'metal','metal');
+    const r=rng(5);for(const z of[12,28]){for(let k=0;k&lt;3;k++){const y0=1.05+k*0.62+r()*0.08;box(0.32,y0,0.82,y0+0.5,z,z+9+r()*4,'cardboard','cardboard');box(0.31,y0,0.83,y0+0.5,z+9,z+10.2,'cardboardL','cardboardL');}}
+    for(let k=0;k&lt;4;k++)box(0.34+k*0.1,1.1+k*0.4,0.44+k*0.1,1.45+k*0.4,44,52,k&amp;1?'itemA':'paperPile');});
+  /* battered desk + monitor */
+  add(4.4,()=&gt;{box(0.25,3.3,1.3,4.8,19,22,'woodTop','wood');box(0.3,3.35,0.42,3.7,0,19,'wood');box(0.3,4.4,0.42,4.75,0,19,'wood');box(1.15,3.35,1.25,4.75,0,19,'wood');
+    box(0.5,3.9,0.62,4.55,24,42,'plastic');faceX(0.62,3.95,4.5,27,40,'screen',0);SCR.push({x:0.62,y0:3.95,y1:4.5,z0:27,z1:40,ax:'x'});box(0.45,4.1,0.65,4.35,22,24,'plastic');
+    cyl(1.0,3.6,22,27,0.09,'mug');box(0.8,4.1,1.1,4.6,22,23,'plastic');if(V3){box(0.9,3.4,1.2,3.7,22,28,'paperPile');faceX(0.62,4.38,4.52,35,41,'sticky',1);}});
+  /* boiler + barrels + pallet */
+  add(11.0,()=&gt;{cyl(1.2,10.4,0,52,0.55,'rack','rack');P(1.2,10.4,52);G.ell(PX,PY,0.55*45*Z*0.8,0.55*22*Z*0.8,'metal',0,0);box(1.1,10.3,1.3,10.5,52,70,'pipe');
+    P(1.2,10.4,26);cx.strokeStyle=OUTL;cx.lineWidth=lw()*0.8;cx.beginPath();cx.ellipse(PX,PY,0.55*45*Z,0.55*22*Z,0,0.1,Math.PI-0.1);cx.stroke();
+    P(1.58,10.65,20);G.ell(PX,PY,4*Z,4*Z,'ledR',0,0);});
+  add(12.2,()=&gt;{barrel(11.0,9.0,'barrelB');barrel(11.5,9.5,'barrelG');barrel(10.6,9.6,'barrelB');});
+  add(7.8,()=&gt;{box(10.4,4.8,11.4,5.8,0,6,'wood','wood');box(10.45,4.85,11.35,5.75,6,28,'cardboard','cardboard');box(10.5,4.9,11.3,5.7,28,29.4,'cardboardL');if(V3)faceY(5.8,10.6,11.1,12,17,'label',0);});
+  add(6.6,()=&gt;{cyl(3.6,6.2,0,13,0.22,'bin');P(3.6,6.2,13);G.ell(PX,PY,0.22*45*Z,0.22*22*Z,'water',1,0);wline([3.8,6.4,4.3,6.8],0,2,'cable');box(4.0,6.5,4.1,6.6,0,38,'wood');});
+  /* caged bulbs */
+  add(8.4,()=&gt;bulbFix(FIX));if(V3)add(11.2,()=&gt;bulbFix(FIX2));
+  if(V3){
+    add(0.9,()=&gt;{spWY(0.5,0.22,36);wPoster(0,4,2);spEnd();});
+    add(5.5,()=&gt;{spWY(5.2,0.22,36);breaker();spEnd();});
+    add(2.5,()=&gt;{spWY(1.2,0.22,36);hardHat();spEnd();});
+    add(6.0,()=&gt;{spWY(6.9,0.22,36);wVent(0,3,22,10);spEnd();spWY(7.2,0.22,22);cx.fillStyle='rgba(30,10,10,0.5)';cx.fillRect(2,0,3,14);cx.fillStyle='rgba(120,60,20,0.5)';cx.fillRect(2.6,0,1.4,10);spEnd();});
+    add(11.1,()=&gt;{spWY(11.3,0.22,36);wClock(0,4);spEnd();});
+    add(7.0,()=&gt;{spWX(0.22,7.0,36);wSignTri(0,6);spEnd();});
+    add(9.9,()=&gt;{spWX(0.22,11.9,36);wBoardW(0,3,62,30);spEnd();});
+    add(5.6,()=&gt;{spWX(0.22,6.7,36);hardHat();spEnd();});
+  }
+  L.sort((p,q)=&gt;p.d-q.d);for(let i=0;i&lt;L.length;i++)L[i].f();
+}
+function bulbFix(F){
+  P(F.x,F.y,F.z+40);const a=PX,b=PY;P(F.x,F.y,F.z-6);G.line([a,b,PX,PY],1.6*Z,'cable');
+  const bx=PX,by=PY;G.poly([bx-3*Z,by-3*Z,bx+3*Z,by-3*Z,bx+2.4*Z,by+3*Z,bx-2.4*Z,by+3*Z],'metal',0);
+  G.ell(bx,by+8*Z,7*Z,7*Z,'bulb',0,0);
+  cx.strokeStyle=OUTL;cx.lineWidth=Math.max(1,Z*1.1);cx.beginPath();for(let k=-2;k&lt;=2;k++){cx.moveTo(bx+k*2.6*Z,by+2*Z);cx.quadraticCurveTo(bx+k*4.4*Z,by+8*Z,bx+k*2.6*Z,by+15*Z);}cx.moveTo(bx-6*Z,by+8*Z);cx.lineTo(bx+6*Z,by+8*Z);cx.stroke();
+}
+function breaker(){dsh(0,4,34,30,0.45);rO(0,4,34,30,'#4f5878',ow()*1.2);rO(3,7,28,24,'#232844');for(let r=0;r&lt;2;r++)for(let c=0;c&lt;6;c++){rO(5+c*4.2,9+r*10,3,7,c===3&amp;&amp;r===1?'#d0402c':'#c0c8e0',ow()*0.6);}tx('DO NOT',17,33.6,2.4,'#ffd45c','center',900);cx.fillStyle=pr('metal');cx.fillRect(0,4,34,30);}
+function hardHat(){dsh(2,8,24,20,0.35);rO(2,8,24,20,'#e8c030',ow()*1.1);cx.fillStyle='#14121f';cx.beginPath();cx.moveTo(6,22);cx.quadraticCurveTo(14,8,22,22);cx.fill();rO(5,21,18,2.4,'#14121f');tx('HARD HAT',14,13.6,2.8,'#14121f','center',900);tx('AREA',14,26.2,2.8,'#14121f','center',900);}
+function wSignTri(x,y){dsh(x,y,26,24,0.35);cx.fillStyle='#ffd24a';cx.beginPath();cx.moveTo(x+13,y);cx.lineTo(x+26,y+23);cx.lineTo(x,y+23);cx.closePath();cx.fill();cx.strokeStyle=OUTL;cx.lineWidth=ow()*1.3;cx.lineJoin='round';cx.stroke();tx('!',x+13,y+15,12,'#14121f','center',900);}
+function floorFXBase(){
+  spFloor();const r=rng(13);
+  /* painted safe lane + stencil */
+  cx.fillStyle='rgba(232,192,48,0.55)';cx.fillRect(4.9*64,64,5,10*64);cx.fillRect(7.05*64,64,5,10*64);
+  cx.save();cx.translate(3.0*64,9.4*64);cx.rotate(-Math.PI/2);tx('B5',0,0,30,'rgba(230,200,70,0.28)','center',900);cx.restore();
+  /* drain grate */
+  const gx=4.0*64,gy=8.7*64;cx.fillStyle='#10121f';cx.beginPath();cx.ellipse(gx,gy,26,16,0,0,TAU);cx.fill();cx.strokeStyle=OUTL;cx.lineWidth=ow()*1.3;cx.stroke();cx.strokeStyle='#5a6384';cx.lineWidth=2;for(let k=-3;k&lt;=3;k++){cx.beginPath();cx.moveTo(gx+k*6,gy-14);cx.lineTo(gx+k*6,gy+14);cx.stroke();}cx.fillStyle=pr('metal');cx.beginPath();cx.ellipse(gx,gy,26,16,0,0,TAU);cx.fill();
+  /* cracks */
+  cx.lineCap='round';cx.lineJoin='round';for(let n=0;n&lt;7;n++){let x=r()*N*64,y=r()*N*64;cx.strokeStyle='rgba(4,2,14,'+(0.4+r()*0.3)+')';cx.lineWidth=1.6;cx.beginPath();cx.moveTo(x,y);for(let k=0;k&lt;7;k++){x+=(r()-0.3)*18;y+=(r()-0.3)*14;cx.lineTo(x,y);if(k===3&amp;&amp;r()&lt;0.6){cx.moveTo(x,y);x+=14;y-=8;cx.lineTo(x,y);}}cx.stroke();}
+  /* oil + rust drips */
+  for(let n=0;n&lt;7;n++){const x=r()*N*64,y=r()*N*64;cx.fillStyle='rgba(8,6,16,0.35)';cx.beginPath();cx.ellipse(x,y,10+r()*16,5+r()*8,0,0,TAU);cx.fill();cx.fillStyle='rgba(140,70,30,0.16)';cx.beginPath();cx.ellipse(x+3,y+1,5+r()*8,3+r()*4,0,0,TAU);cx.fill();}
+  /* puddle with a glint */
+  for(const q of[[8.6,7.4,52],[2.8,3.8,34]]){cx.fillStyle='rgba(18,48,92,0.72)';cx.beginPath();cx.ellipse(q[0]*64,q[1]*64,q[2],q[2]*0.5,0.2,0,TAU);cx.fill();cx.strokeStyle='rgba(180,220,255,0.35)';cx.lineWidth=2;cx.beginPath();cx.ellipse(q[0]*64,q[1]*64,q[2]*0.8,q[2]*0.38,0.2,3.6,5.4);cx.stroke();cx.strokeStyle=OUTL;cx.lineWidth=ow();cx.beginPath();cx.ellipse(q[0]*64,q[1]*64,q[2],q[2]*0.5,0.2,0,TAU);cx.stroke();}
+  /* mat + footprints */
+  for(let k=0;k&lt;12;k++){const u=k/11,x=lerp(1.5,5.0,u)*64,y=lerp(8.0,6.5,u)*64+(k&amp;1?7:-7);cx.fillStyle='rgba(20,14,22,0.35)';cx.beginPath();cx.ellipse(x,y,5,2.6,-0.3,0,TAU);cx.fill();}
+  cx.lineCap='butt';spEnd();
+}
+/* ---------- boardroom ---------- */
+function chairB(x,y,fl){ /* high-back leather chair; fl=1 faces +y (front side), -1 faces the table from behind */
+  cyl(x,y,0,8,0.06,'metal');box(x-0.3,y-0.28,x+0.3,y+0.28,9,14,'chairB','chairB');
+  if(fl&gt;0)box(x-0.28,y+0.2,x+0.28,y+0.34,14,40,'chairB','chairB');else box(x-0.28,y-0.34,x+0.28,y-0.2,14,40,'chairB','chairB');
+  box(x-0.34,y-0.3,x-0.24,y+0.3,14,22,'chairBd','chairBd');box(x+0.24,y-0.3,x+0.34,y+0.3,14,22,'chairBd','chairBd');
+}
+function paintBoardroom(){
+  TEXM.wallFab=['panel',1];TEXM.wallPanel=['panel',1];TEXM.woodTop=['wood',1];TEXM.wood=['wood',1];TEXM.chairB=['weaveA',0.7];
+  if(V3){wallAO([7,8]);[[3.0,1.35,8.4,3.1],[7.9,1.35,8.3,1.7],[9.0,0.26,11.5,1.2],[0.85,10.0,1.35,10.5],[10.75,5.2,11.25,5.7]].forEach(c=&gt;contact(c[0],c[1],c[2],c[3],0.26));bakeContact();floorFXBoard();}
+  const L=[],add=(d,f)=&gt;L.push({d:d,f:f});
+  wallRun(add,false);
+  /* the table: pedestal, polished top with a glass inlay, laptops, papers, jug */
+  add(2.9,()=&gt;{for(let k=0;k&lt;4;k++){const x=3.7+k*1.25;chairB(x,1.0,-1);}});
+  add(5.6,()=&gt;{box(3.5,1.7,7.9,2.7,0,19,'wood','wood');box(3.0,1.35,8.4,3.1,19,23,'woodTop','wood');
+    if(V3){box(3.9,1.7,7.5,2.75,23,23.8,'glass','glass');
+      for(const k of[0,1,2]){const x=4.2+k*1.3;box(x,2.0,x+0.5,2.4,23.8,24.6,'plastic');box(x+0.02,1.9,x+0.48,1.94,24.6,34,'plastic');faceY(1.94,x+0.06,x+0.44,26,33,'screen',0);SCR.push({y:1.94,x0:x+0.06,x1:x+0.44,z0:26,z1:33,ax:'y'});}
+      cyl(6.9,2.4,23.8,36,0.12,'jug');cyl(7.2,2.1,23.8,28,0.07,'mugB');box(5.4,2.5,5.8,2.8,23.8,24.6,'paperPile');cyl(5.9,2.0,23.8,25.5,0.12,'metal');
+      for(let k=0;k&lt;3;k++)cyl(3.6+k*0.05,2.0+k*0.18,23.8,26,0.05,'mug');}});
+  add(5.5,()=&gt;{ /* table sheen drawn over the top face */ });
+  add(3.8,()=&gt;{for(let k=0;k&lt;4;k++){const x=3.7+k*1.25;chairB(x,3.55,1);}});
+  add(3.5,()=&gt;{chairB(8.9,2.5,1);});
+  /* credenza with trophies */
+  add(10.2,()=&gt;{box(9.0,0.26,11.5,1.2,0,22,'wood','wood');box(8.95,0.24,11.55,1.25,22,24,'woodTop','wood');if(V3){for(let k=0;k&lt;3;k++){faceY(1.2,9.1+k*0.8,9.8+k*0.8,3,19,'woodDark',1);faceY(1.2,9.4+k*0.8,9.5+k*0.8,10,13,'gold',0);}
+      for(let k=0;k&lt;3;k++){const x=9.4+k*0.8;cyl(x,0.7,24,28,0.12,'gold');G.ell((P(x,0.7,32),PX),PY,0.1*45*Z,0.06*22*Z,'gold',0,0);cyl(x,0.7,28,34,0.05,'gold');}box(10.6,0.6,11.2,1.0,24,25,'paperPile');}});
+  add(1.2,()=&gt;{plant(0.95,10.3,1.6,4);});add(8.0,()=&gt;plant(11.0,5.4,1.5,2));
+  add(8.4,()=&gt;chandelier(FIX));if(V3)add(11.2,()=&gt;chandelier(FIX2));
+  if(V3){
+    /* back wall: projector screen, portraits; left wall: curtained windows */
+    add(7.9,()=&gt;{spWY(4.0,0.22,36);cx.save();dsh(0,3,256,30,0.4);rO(0,3,256,30,'#d9d4e8',ow()*1.4);cx.fillStyle='#f4f6ff';cx.fillRect(3,6,250,24);
+      tx('Q4: FEWER ALL-HANDS',128,12,9,'#2a4aa0','center',900);const b=[9,13,17,21,15];for(let i=0;i&lt;5;i++){cx.fillStyle=i===4?'#d0402c':'#4a78c8';cx.fillRect(40+i*34,28-b[i]*0.62,20,b[i]*0.62);}tx('synergy: down 12%',210,20,4,'#5a4a6a','center',700);cx.fillStyle='rgba(255,255,255,0.3)';cx.beginPath();cx.moveTo(10,6);cx.lineTo(70,6);cx.lineTo(40,30);cx.lineTo(3,30);cx.fill();cx.restore();spEnd();});
+    add(3.4,()=&gt;{for(let k=0;k&lt;2;k++){spWY(1.0+k*0.9,0.22,36);wFrame(0,6,30,22,'#2a2040','#d9a441');cx.fillStyle='#8a6a9a';cx.beginPath();cx.arc(15,15,4.2,0,TAU);cx.fill();cx.beginPath();cx.moveTo(6,25);cx.quadraticCurveTo(15,12,24,25);cx.fill();spEnd();}spWY(1.0,0.22,36);tx('FOUNDER',15,31,2.8,'#d9a441','center',900);spEnd();});
+    add(9.9,()=&gt;{spWY(9.4,0.22,36);wClock(0,2);spEnd();spWY(10.0,0.22,36);wFrame(0,4,44,28,'#14143a','#d9a441');cx.fillStyle='#3a2f6a';cx.fillRect(3,6,38,18);cx.fillStyle='#d9a441';tx('QUARTERLY VALUES',22,29,3,'#d9a441','center',900);cx.fillStyle='#f3eddc';cx.fillRect(8,10,26,2);cx.fillRect(8,15,22,2);cx.fillRect(8,20,16,2);spEnd();});
+    for(let k=0;k&lt;2;k++)add(2.5+k*3.0,()=&gt;{const y1=k?5.3:2.6;spWX(0.22,y1,38);wWindow(0,3,62,26);spEnd();
+      /* drapes */cx.save();spWX(0.22,y1,38);for(const dx of[-9,64]){const g=cx.createLinearGradient(dx,0,dx+9,0);g.addColorStop(0,'#5a1c34');g.addColorStop(0.5,'#8a2c4a');g.addColorStop(1,'#4a1428');cx.fillStyle=g;cx.fillRect(dx,0,9,34);cx.strokeStyle=OUTL;cx.lineWidth=ow();cx.strokeRect(dx,0,9,34);for(let q=1;q&lt;3;q++)ln(dx+q*3,2,dx+q*3,32,'rgba(0,0,0,0.3)',0.7);}rO(-12,0,87,2.6,'#d9a441');cx.restore();spEnd();});
+    add(6.6,()=&gt;{spWX(0.22,11.9,36);wFrame(0,6,30,22,'#14143a','#d9a441');cx.fillStyle='#e0b050';tx('EMPLOYEE',15,12,3,'#d9a441','center',900);tx('OF THE',15,17,3,'#d9a441','center',900);tx('MONTH?',15,22,3,'#d9a441','center',900);spEnd();});
+  }
+  L.sort((p,q)=&gt;p.d-q.d);for(let i=0;i&lt;L.length;i++)L[i].f();
+}
+function chandelier(F){
+  P(F.x,F.y,F.z+44);const a=PX,b=PY;P(F.x,F.y,F.z+4);G.line([a,b,PX,PY],1.6*Z,'metal');
+  const cx0=PX,cy0=PY,R=24*Z;cx.strokeStyle=OUTL;cx.lineWidth=Math.max(3.4,Z*4.6);cx.beginPath();cx.ellipse(cx0,cy0+8*Z,R,R*0.42,0,0,TAU);cx.stroke();cx.strokeStyle=MC.gold.base;cx.lineWidth=Math.max(2,Z*2.6);cx.stroke();
+  for(let k=0;k&lt;6;k++){const an=k*TAU/6+0.3,x=cx0+Math.cos(an)*R,y=cy0+8*Z+Math.sin(an)*R*0.42;cx.fillStyle=OUTL;cx.fillRect(x-1.6*Z,y-6*Z,3.2*Z,7*Z);cx.fillStyle='#fff0c0';cx.beginPath();cx.ellipse(x,y-8*Z,2.6*Z,3.8*Z,0,0,TAU);cx.fill();cx.strokeStyle=OUTL;cx.lineWidth=Math.max(1,Z*1.1);cx.stroke();}
+}
+function floorFXBoard(){
+  spFloor();const r=rng(21);
+  /* central rug with a gold braided border + medallion */
+  const x0=2.3*64,y0=3.5*64,w=7.4*64,h=6.3*64;cx.fillStyle='rgba(88,20,44,0.7)';cx.fillRect(x0,y0,w,h);cx.fillStyle=pr('weaveB');cx.fillRect(x0,y0,w,h);
+  cx.strokeStyle=OUTL;cx.lineWidth=ow()*1.5;cx.strokeRect(x0,y0,w,h);cx.strokeStyle='#d9a441';cx.lineWidth=3;cx.strokeRect(x0+9,y0+9,w-18,h-18);cx.setLineDash([6,5]);cx.strokeStyle='rgba(255,230,160,0.8)';cx.lineWidth=1.4;cx.strokeRect(x0+16,y0+16,w-32,h-32);cx.setLineDash([]);
+  const mx=x0+w/2,my=y0+h/2;cx.strokeStyle='rgba(217,164,65,0.8)';cx.lineWidth=2.4;for(let k=0;k&lt;3;k++){cx.beginPath();cx.ellipse(mx,my,58-k*16,30-k*8,0,0,TAU);cx.stroke();}cx.fillStyle='rgba(217,164,65,0.7)';cx.beginPath();for(let i=0;i&lt;16;i++){const a=i*TAU/16,rr=i&amp;1?9:20;cx.lineTo(mx+Math.cos(a)*rr,my+Math.sin(a)*rr*0.5);}cx.fill();
+  /* spilled coffee + scattered paperwork + scuffs */
+  cx.fillStyle='rgba(40,20,20,0.55)';cx.beginPath();cx.ellipse(3.4*64,5.0*64,26,12,0.3,0,TAU);cx.fill();cx.fillStyle='rgba(140,80,50,0.35)';cx.beginPath();cx.ellipse(3.4*64+3,5.0*64,16,7,0.3,0,TAU);cx.fill();
+  for(let k=0;k&lt;26;k++){const x=r()*N*64,y=r()*N*64,a=r()*TAU;cx.strokeStyle='rgba(4,2,14,'+(0.15+r()*0.2)+')';cx.lineWidth=1.6;cx.lineCap='round';cx.beginPath();cx.moveTo(x,y);cx.quadraticCurveTo(x+Math.cos(a)*9,y+Math.sin(a)*9+3,x+Math.cos(a+0.4)*18,y+Math.sin(a+0.4)*18);cx.stroke();}cx.lineCap='butt';
+  spEnd();
 }
 
 /* ---------- dynamic entities ---------- */
@@ -3388,16 +3722,28 @@ function drawHero(t){
   setXf(PX,PY,Z*cs,0,1);
   G.shadow(PX,PY,18*Z*cs,8*Z*cs,0.55);
   const br=Math.sin(t*TAU/2.4),bob=br*1.3,lun=a&gt;0?a*6:a*3,tx=lun*0.6;
+  const DT=V3&amp;&amp;!SIL,tsw=V3?Math.sin(t*2.6)*1.4-a*2.4+br*0.5:0,hb=V3?Math.sin(t*3.1+1)*0.8:0;
   cLmb(-5,-28,-9,-2,8,'pants',1);cEll(-10,-1,7,3.3,'shoe',1);
   cLmb(-7+tx,-56+bob,-13+tx*0.4,-40+bob,6,'shirt',1);cEll(-13+tx*0.4,-38+bob,3.3,3.3,'skin',1);
   cLmb(4,-28,8+a*3,-2,8,'pants',0);cEll(12+a*3,-1,7.5,3.4,'shoe',0);
+  if(DT){cLine([5,-22,7+a*3,-6],0.9,'ink',0.35);cLine([-6,-20,-8.4,-6],0.9,'ink',0.3);cLine([-16,1.6,-4,1.9],1.1,'ink',0.7);cLine([5+a*3,1.8,19+a*3,1.4],1.1,'ink',0.7);
+    cLine([9+a*3,-3.6,12.6+a*3,-2.8],0.8,'badge',0.9);cLine([8+a*3,-2.2,11.6+a*3,-1.4],0.8,'badge',0.9);cEll(8+a*3,-4.6,2,1.1,'shoeHi',0);cLine([-1,-27,2,-19],0.9,'ink',0.25);}
   cPly([-9.5+tx,-60+bob,9.5+tx,-60+bob,8.5+tx*0.3,-27,-8.5+tx*0.3,-27],'shirt',0);
   cPly([-9.5+tx,-60+bob,-3.5+tx,-60+bob,-3.2+tx*0.3,-27,-8.5+tx*0.3,-27],'suit',1);
   cPly([3.5+tx,-60+bob,9.5+tx,-60+bob,8.5+tx*0.3,-27,3.2+tx*0.3,-27],'suit',2);
   cRect(-8.5+tx*0.3,-30,17,3,'pants',2);
-  cPly([tx,-59+bob,3+tx,-56.5+bob,2.4+tx*0.7,-40,tx*0.6,-34,-2.4+tx*0.6,-40,-3+tx,-56.5+bob],'tie',0);
+  cPly([tx,-59+bob,3+tx,-56.5+bob,2.4+tx*0.7+tsw*0.5,-40,tx*0.6+tsw,-34,-2.4+tx*0.6+tsw*0.5,-40,-3+tx,-56.5+bob],'tie',0);
   cPly([-2.2+tx,-60.5+bob,2.2+tx,-60.5+bob,1.6+tx,-56.6+bob,-1.6+tx,-56.6+bob],'tie',2);
+  if(DT){ /* tie stripes, knot light, collar, lapel notches, pocket square, belt buckle, cloth folds */
+    for(let k=0;k&lt;4;k++){const yy=-52+k*4.2,f=k/4;cLine([-2.2+tx*(0.9-f*0.3)+tsw*f*0.5,yy+2,2.4+tx*(0.9-f*0.3)+tsw*f*0.5,yy-1.2],1.1,'tieS');}
+    cLine([-1.2+tx,-59.6+bob,0.6+tx,-57.4+bob],0.9,'tieHi');
+    cPly([-5.4+tx,-62+bob,-0.2+tx,-59.4+bob,-3.4+tx,-54.4+bob],'shirt',0);cPly([5.8+tx,-62+bob,0.2+tx,-59.4+bob,3.8+tx,-54.4+bob],'shirt',0);
+    cLine([-3.6+tx,-55+bob,-4.8+tx*0.8,-42+bob],1,'suitD');cLine([3.6+tx,-55+bob,5+tx*0.8,-42+bob],1,'suitD');cLine([-4.6+tx,-50+bob,-7.4+tx,-52.6+bob],0.9,'suitD');
+    cPly([-8.2+tx*0.4,-47+bob,-4.8+tx*0.4,-47.6+bob,-5,-44.8+bob,-8.2+tx*0.4,-45+bob],'badge',0);cLine([-8,-47.6+bob,-6.4,-49.6+bob,-5,-47.6+bob],0.8,'badge');
+    cRect(-1.6+tx*0.3,-30.2,3.4,3.4,'steel',0);cLine([-8,-39+bob,-5,-37.4+bob],0.9,'ink',0.3);cLine([4.4,-41+bob,8,-38.6+bob],0.9,'ink',0.3);cLine([-8,-32,-4,-30.6],0.9,'ink',0.3);
+  }
   cLine([-4+tx,-60+bob,-3+tx*0.8,-46+bob],1.1,'cord');cRect(-6+tx*0.8,-47+bob,5,6.5,'badge',0);
+  if(DT){cEll(-3.5+tx*0.8,-45+bob,1.15,1.15,'skin',0);cLine([-5.4+tx*0.8,-42.6+bob,-1.4+tx*0.8,-42.6+bob],0.7,'ink',0.7);cLine([-5.4+tx*0.8,-41.6+bob,-2.6+tx*0.8,-41.6+bob],0.7,'ink',0.5);cLine([-3+tx*0.8,-47+bob,-3.4+tx*0.8,-48.2+bob],0.8,'cord');}
   cLmb(2+tx,-63+bob,2+tx,-58+bob,5,'skin',1);
   const hx=2+tx*1.1,hy=-71+bob*0.8;
   cEll(hx,hy,8.7*H,9.3*H,'skin',0);
@@ -3405,11 +3751,21 @@ function drawHero(t){
   cEll(hx-1.2,hy+1,2.2,2.8,'skin',1);
   cEll(hx+5.2*H,hy+0.2,2.7*H,2.7*H,'glass',0);cEll(hx+5.4*H,hy+0.3,1.1,1.4,'ink',0);
   cLine([hx+4*H,hy+5.2*H,hx+7*H,hy+5*H],1.1,'ink');
+  if(DT){ /* face: brow, nose, smile, blush, lens glint, hair strands + a bobbing cowlick, headset band, mic boom and a cable that swings */
+    cLine([hx+2.8*H,hy-4.6*H,hx+7.2*H,hy-5.4*H],1.5,'hair');cEll(hx+8.6*H,hy+1.6*H,1.5,1.2,'skinD',0);cLine([hx+9.1*H,hy+1.2*H,hx+9.3*H,hy+2.4*H],0.7,'ink',0.55);
+    cLine([hx+5.2*H,hy+5.8*H,hx+6.4*H,hy+6.6*H,hx+7.6*H,hy+5.6*H],0.9,'ink');cEll(hx+3.8*H,hy+3.9*H,2.3,1.3,'blush',0);cEll(hx+6.2*H-1.5,hy-1.2,0.9,0.9,'badge',0);
+    cLine([hx-7,hy-5,hx-3,hy-9.5*H],0.9,'hairHi');cLine([hx-1,hy-9.8*H,hx+4,hy-8.2*H],0.9,'hairHi');
+    cPly([hx-1,hy-11.6*H,hx+2.4+hb*2.4,hy-17.2*H,hx+4.4+hb*1.6,hy-11*H],'hair',0);
+    cLine([hx-8.6,hy-3,hx-6,hy-12.4,hx,hy-14.8,hx+6.4,hy-13.4,hx+10.6,hy-6.4],1.5,'plastic');cEll(hx-9.4,hy+1.8,3.1,4.3,'plastic',1);
+    cLine([hx-9.2,hy+5,hx-6,hy+11.2,hx+2.6,hy+12.8],1.2,'plastic');cEll(hx+4,hy+13,1.8,1.4,'plastic',0);
+  }
   /* front arm + keyboard-sword */
   const th=swingAngle()+Math.sin(t*1.9)*0.03*(1-Math.abs(a));
   const sx=6+tx*0.8,sy=-56+bob,al=17;
   const hx2=sx+Math.cos(th*0.85)*al,hy2=sy+Math.sin(th*0.85)*al;
-  cLmb(sx,sy,hx2,hy2,6.4,'shirt',0);cEll(hx2,hy2,3.6,3.6,'skin',0);
+  cLmb(sx,sy,hx2,hy2,6.4,'shirt',0);
+  if(DT){const mx=(sx+hx2)/2,my=(sy+hy2)/2;cLine([mx-2.4,my-1,mx+0.6,my+2],0.9,'ink',0.35);cLine([mx-1,my-3,mx+2.4,my],0.9,'ink',0.25);const ux=hx2-sx,uy=hy2-sy,ul=Math.hypot(ux,uy)||1;cLmb(hx2-ux/ul*3.2,hy2-uy/ul*3.2,hx2-ux/ul*1.2,hy2-uy/ul*1.2,7.6,'badge',0);cEll(hx2-ux/ul*2.2,hy2-uy/ul*2.2-2.4,0.9,0.9,'steel',0);}
+  cEll(hx2,hy2,3.6,3.6,'skin',0);
   const cth=Math.cos(th),sth=Math.sin(th);
   const pt=(d,w)=&gt;[hx2+cth*d-sth*w,hy2+sth*d+cth*w];
   let p1=pt(-7,0),p2=pt(3,0);cLmb(p1[0],p1[1],p2[0],p2[1],4,'cord',0);
@@ -3431,7 +3787,7 @@ function drawHero(t){
 function drawZombie(t){
   const hr=ST.hit,rec=hr&gt;=0&amp;&amp;hr&lt;0.3?Math.pow(1-hr/0.3,2)*9:0;
   FLASH=hr&gt;=0&amp;&amp;hr&lt;0.13?1-hr/0.13:0;
-  const sh=Math.sin(t*2.3),st=Math.sin(t*4.6);
+  const sh=Math.sin(t*2.3),st=Math.sin(t*4.6),DT=V3&amp;&amp;!SIL,zs=V3?Math.sin(t*3.4)*1.8:0,zh=V3?Math.sin(t*5.1)*1.2:0;
   P(ZOM.x,ZOM.y,0);
   setXf(PX+rec*Z+sh*2*Z,PY+Math.abs(st)*-1.5*Z,Z*STYLE.cs,-(0.1+sh*0.04),-1);
   G.shadow(PX+rec*Z,PY,17*Z,7.5*Z,0.5);
@@ -3442,14 +3798,17 @@ function drawZombie(t){
   cPly([-8,-26,-5.5,-22,-3,-26,-0.5,-21,2,-26,5,-22,7.5,-26],'zshirt',1);
   cPly([-9,-54,-4,-55.5,-3,-26,-8,-26],'zshirtD',1);
   cLine([2,-58,4,-45],1.1,'zcord');cRect(2,-46,5,6.5,'badge',0);
-  cPly([1,-57,3.5,-55,3,-45,1.2,-44],'ztie',1);
+  cPly([1,-57,3.5,-55,3+zs*0.6,-45,1.2+zs,-43.6],'ztie',1);
+  if(DT){cPly([-4,-40,-1,-36,-6,-33],'zskinD',1);cPly([5,-34,8,-30,3,-28],'zskinD',1);cLine([-8,-47,-5,-44],1,'zskinD');cLine([-2,-52,3,-49,6,-52],0.9,'ink',0.4);cLine([1.4+zs*0.4,-52.4,1.6+zs*0.8,-47],0.9,'ztieD');cEll(-2,-30,3,2,'zdark',0,0.3);cLine([-7,-39,-3,-37],0.9,'ink',0.35);cLine([0,-46,3,-43],0.9,'ink',0.3);}
   const hx=8+sh*1.2,hy=-66+st*0.8;
   cLmb(3,-58,hx-1,hy+4,6,'zskin',1);
   cEll(hx,hy,8.8*STYLE.head,9.3*STYLE.head,'zskin',0,0.2);
-  cEll(hx-2,hy-5,9.2,5.3,'zhair',0,0.2);cPly([hx-9,hy-6,hx-8,hy-15,hx-4,hy-9,hx-1,hy-17,hx+2,hy-9,hx+6,hy-14,hx+8,hy-6],'zhair',0);
+  cEll(hx-2,hy-5,9.2,5.3,'zhair',0,0.2);cPly([hx-9,hy-6,hx-8+zh*0.4,hy-15,hx-4,hy-9,hx-1+zh,hy-17-zh,hx+2,hy-9,hx+6+zh*1.4,hy-14,hx+8,hy-6],'zhair',0);
+  if(DT)cLine([hx-6,hy-9,hx-4+zh*0.6,hy-13],0.8,'zdark');
   cEll(hx+5.2,hy+0.6,2.6,2.6,'zdark',0);cEll(hx+5.2,hy+0.4,1.4,1.4,'zeye',0);
   cEll(hx+0.4,hy+0.8,2.3,2.3,'zdark',0);cEll(hx+0.4,hy+0.6,1.2,1.2,'zeye',0);
   cEll(hx+5,hy+6.4,3.2,2.2,'zmouth',0);
+  if(DT){cPly([hx+3,hy+5.6,hx+4,hy+5.2,hx+4.2,hy+6.6,hx+3.2,hy+6.8],'badge',0);cPly([hx+6,hy+5.4,hx+7,hy+5.6,hx+6.8,hy+6.8,hx+5.8,hy+6.8],'badge',0);cLine([hx-3,hy-6.6,hx-1,hy-4.8,hx+1,hy-6.4,hx+3,hy-4.6],0.9,'zdark');cLine([hx+3.2,hy+2.2,hx+7.4,hy+3],0.9,'zskinD');cLine([hx-0.8,hy+2.8,hx+1.8,hy+3.4],0.9,'zskinD');cLine([hx+4.6,hy+8.4,hx+4.8+zs*0.3,hy+13],0.9,'water',0.8);cEll(hx+6.6,hy+1.8,1.2,0.9,'zskinD',0);cLine([hx-5,hy-1,hx-3,hy-5,hx-1,hy-2],0.8,'ink',0.5);}
   cLmb(5,-50,18,-49,5.6,'zshirt',0);cLmb(18,-49,29+sh*2,-45-st*1.2,5.2,'zskin',0);cEll(30+sh*2,-45-st*1.2,3.8,3.8,'zskin',0);
   cPly([16,-52,19,-44,21,-51,24,-43,26,-50,25,-55],'zshirtD',1);
   cPly([27+sh*2,-52-st*1.2,33+sh*2,-52-st*1.2,32+sh*2,-41-st*1.2,28+sh*2,-41-st*1.2],'mug',0);
@@ -3494,10 +3853,21 @@ function drawDemon(t){
   for(let k=0;k&lt;6;k++){const u0=0.1+k*0.8/6,u1=u0+0.8/6,a=fp(u0,0.46),b=fp(u1,0.46),c=fp((u0+u1)/2,0.46-open*0.85);
     G.poly([a[0],a[1],b[0],b[1],c[0],c[1]],'paper',0);}
   const sl=fp(0.5,0.1),sl2=fp(0.84,0.1);G.line([sl[0]-14*Z,sl[1],sl2[0],sl2[1]],1.6*Z,'ink',0.6);
+  if(V3&amp;&amp;!SIL){ /* control panel on the left face: bezel, flickering LCD, buttons, blinking LED, vents, toner stripes on the lid */
+    const fq=(u,v)=&gt;{P(x0+u*(x1-x0),y1,z0+v*h);return[PX,PY];};
+    const qd=(a,b,c,d,m)=&gt;{G.poly([a[0],a[1],b[0],b[1],c[0],c[1],d[0],d[1]],m,0);};
+    qd(fq(0.1,0.92),fq(0.9,0.92),fq(0.9,0.5),fq(0.1,0.5),'ptray');
+    const fk=hash(Math.floor(t*18))&gt;0.8?0.55:1;cx.globalAlpha=fk;qd(fq(0.16,0.86),fq(0.84,0.86),fq(0.84,0.56),fq(0.16,0.56),'lcd');cx.globalAlpha=1;
+    for(let k=0;k&lt;3;k++){const a=fq(0.2,0.8-k*0.08),b=fq(0.2+(0.35+hash(k+Math.floor(t*2))*0.35),0.8-k*0.08);G.line([a[0],a[1],b[0],b[1]],1.3*Z,'ink',0.7);}
+    for(let k=0;k&lt;4;k++){const c=fq(0.18+k*0.1,0.4);G.ell(c[0],c[1],1.5*Z,1.1*Z,k===3?'eye':'metal',0,0);}
+    const lc=fq(0.82,0.4);cx.globalAlpha=Math.sin(t*5)&gt;0?1:0.25;G.ell(lc[0],lc[1],1.8*Z,1.3*Z,'eye',0,0);cx.globalAlpha=1;
+    for(let k=0;k&lt;4;k++){const a=fq(0.14,0.28-k*0.055),b=fq(0.7,0.28-k*0.055);G.line([a[0],a[1],b[0],b[1]],0.9*Z,'ink',0.5);}
+    const ts=[['toC',0.12],['toM',0.38],['toY',0.64]];for(const q of ts){P(x0+q[1]*(x1-x0)+0.04,y0+0.1,z0+h+4);const a=[PX,PY];P(x0+(q[1]+0.2)*(x1-x0),y0+0.1,z0+h+4);const b=[PX,PY];G.line([a[0],a[1],b[0],b[1]],2.6*Z,q[0],1);}
+  }
   for(let k=0;k&lt;6;k++)if(Math.sin(t*1.7+k*TAU/6)&gt;=0)sheet(k);
 }
 function drawManager(t){
-  const br=Math.sin(t*1.6),bob=br*1.6,sw=Math.sin(t*1.25);
+  const br=Math.sin(t*1.6),bob=br*1.6,sw=Math.sin(t*1.25),DT=V3&amp;&amp;!SIL,ms=V3?Math.sin(t*1.9)*2.4+br*0.8:0,ch=V3?Math.sin(t*2.7)*1.2:0;
   P(MGR.x,MGR.y,0);
   setXf(PX,PY,Z*STYLE.cs*1.18,0,-1);
   G.shadow(PX,PY,30*Z*STYLE.cs,12*Z*STYLE.cs,0.55);
@@ -3510,9 +3880,13 @@ function drawManager(t){
   cPly([22,-82+bob,8,-84+bob,6,-34,22,-40],'msuit',2);
   cEll(8,-52+bob,15,17,'mshirt',0);
   cRect(-20,-40,40,4,'pants',2);cRect(-3,-40,6,4,'badge',0);
-  cPly([-4,-84+bob,6,-84+bob,10,-60+bob,13,-46+bob,3,-35+bob,-3,-48+bob,-2,-68+bob],'mtie',0);
+  cPly([-4,-84+bob,6,-84+bob,10+ms*0.4,-60+bob,13+ms,-46+bob,3+ms*0.8,-35+bob,-3+ms*0.3,-48+bob,-2,-68+bob],'mtie',0);
+  if(DT){ /* pinstripes, belly folds, buttons, belt buckle */
+    for(let k=-3;k&lt;=3;k++){cLine([k*5.6-1,-80+bob,k*5.2-1,-42],0.8,'suitP',0.35);}
+    cLine([-18,-52+bob,-9,-49+bob],1.2,'msuitD');cLine([-19,-60+bob,-10,-58+bob],1.2,'msuitD');cLine([9,-46+bob,19,-48+bob],1.2,'msuitD');cLine([8,-56+bob,18,-58+bob],1.1,'msuitD');
+    for(let k=0;k&lt;3;k++)cEll(-5+ms*0.1,-66+k*9+bob,1.6,1.6,'mskinD',0);cRect(-4,-41,8,3,'gold',0);cLine([-15,-44,-8,-42],1,'ink',0.35);}
   cPly([-4,-84+bob,6,-84+bob,3,-79+bob,-1,-79+bob],'mtie',2);
-  cLine([-4,-70+bob,10,-58+bob],1.3,'mtieS');cLine([-2,-58+bob,12,-47+bob],1.3,'mtieS');
+  cLine([-4,-70+bob,10+ms*0.3,-58+bob],1.3,'mtieS');cLine([-2+ms*0.2,-58+bob,12+ms*0.8,-47+bob],1.3,'mtieS');
   cLmb(0,-90+bob,0,-84+bob,10,'mskin',1);
   const hy=-104+bob*0.8;
   cEll(2,hy,13.5*STYLE.head,13.5*STYLE.head,'mskin',0);
@@ -3520,6 +3894,9 @@ function drawManager(t){
   cEll(-7,hy-4,4,7,'mhair',1);
   cPly([3,hy-5,13,hy-8,13,hy-6,3,hy-2],'mskinD',1);
   cEll(9,hy-1.5,2.6,1.8,'eye',0);cEll(3.4,hy-1,2.2,1.6,'eye',0);
+  if(DT){cEll(9.4,hy-1.4,1.1,1.1,'ink',0);cEll(3.8,hy-0.9,1,1,'ink',0);cEll(6.8,hy+3.2,2.1,1.7,'mskinH',0);cLine([5.6,hy+4,8,hy+4.2],0.8,'mskinD');cLine([-3,hy-9,3,hy-11,9,hy-10.4,12,hy-7],0.9,'mhair');cLine([-4,hy-6.4,4+ch,hy-12.6,12+ch*1.4,hy-9],0.9,'mhair');
+    for(let k=0;k&lt;9;k++)cEll(3+k*1.3,hy+7.6+((k*7)%3)*0.6,0.35,0.35,'stub',0);cEll(-5,hy+4,3.2,2.4,'mskinD',1);
+    const dr=(t*0.8)%1;if(dr&lt;0.8){cEll(14.6,hy-6+dr*14,1.4*(1-dr*0.3),2*(1-dr*0.3),'glass',0);}}
   cPly([1,hy-5.5,6,hy-3.5,6,hy-2.3,1,hy-3.5],'mskinD',2);cPly([14,hy-7,8,hy-4.5,8,hy-3.2,14,hy-5.4],'mskinD',2);
   cRect(3,hy+6,11,3.2,'white',0);cLine([3,hy+7.6,14,hy+7.6],0.7,'ink');
   cLine([-11,hy-2,-12,hy+8,-3,hy+13],1.8,'plastic');cEll(-3,hy+13,2.8,2.2,'plastic',0);
@@ -3534,6 +3911,7 @@ function drawManager(t){
   cLine([qx(17,-1),qy(17,-1),qx(27,-1),qy(27,-1)],0.9,'ink');cLine([qx(17,2),qy(17,2),qx(25,2),qy(25,2)],0.9,'ink');
   for(let k=0;k&lt;3;k++)cEll(qx(-2,-4+k*5.5),qy(-2,-4+k*5.5),1.6,1.6,'metal',0);
   cEll(ex,ey,5,5,'mskin',0);
+  if(DT){cLine([ex-3,ey-1.2,ex-3.4,ey+3],0.8,'ink',0.4);cRect(ex-5.4,ey+5,10,3.4,'steel',0);cEll(ex,ey+6.7,1.2,1.2,'ink',0);cPly([qx(2,-2),qy(2,-2),qx(8,-2),qy(8,-2),qx(8,4),qy(8,4),qx(2,4),qy(2,4)],'sticky',0);}
 }
 /* loot */
 function lootProp(L,t){
@@ -3633,48 +4011,81 @@ function drawHitFx(t){
   G.dmg('63',ix+(26+rise*14)*Z,iy-(14+rise*72)*Z,pop*Z,clamp(1-(u-0.55)/0.4,0,1));
 }
 
-/* ---------- lights: static pools are baked into the world layer; only flicker is drawn per frame ---------- */
+/* ---------- lights: static pools are baked into the world layer; only flicker + dust are drawn per frame ---------- */
 const BL=[];
 function bl(k,wx,wy,wz,rx,ry,i){P(wx,wy,wz);BL.push({k:k,x:PX,y:PY,rx:rx*Z,ry:ry*Z,i:i||0});}
 function buildLights(){
   BL.length=0;
   bl('hero',HERO.x,HERO.y,34,270,185);
-  bl('fluor',FIX.x,FIX.y,0,200,100);
-  bl('mon',MONL.x,MONL.y,MONL.z,150,105,0);bl('mon',MONR.x,MONR.y,MONR.z,150,105,1);
-  bl('cool',COOL.x,COOL.y,COOL.z,95,70);
-  bl('demon',DEM.x,DEM.y,40,150,100);
-  bl('lamp',0.3,5.5,36,120,85);
-  bl('mgr',MGR.x,MGR.y,70,70,70);
+  if(SCENE==='basement'){
+    bl('bulb',FIX.x,FIX.y,0,210,105);
+    if(V3){bl('bulb',FIX2.x,FIX2.y,0,170,88);bl('rack',3.5,1.4,30,130,85);bl('rack',4.5,1.4,30,130,85);bl('spill',0.9,4.1,0,90,55);bl('exit',0.3,8,36,60,45);}
+    bl('mon',0.62,4.2,34,120,90,0);
+    bl('demon',DEM.x,DEM.y,40,150,100);bl('lamp',0.3,5.5,36,120,85);bl('mgr',MGR.x,MGR.y,70,70,70);
+  }else if(SCENE==='boardroom'){
+    bl('warm',FIX.x,FIX.y,0,230,118);if(V3)bl('warm',FIX2.x,FIX2.y,0,175,92);
+    bl('proj',6.0,1.0,34,250,115);bl('mon',4.7,2.1,30,95,70,0);
+    bl('demon',DEM.x,DEM.y,40,150,100);bl('lamp',0.3,5.5,36,120,85);bl('mgr',MGR.x,MGR.y,70,70,70);
+  }else{
+    bl('fluor',FIX.x,FIX.y,0,200,100);
+    if(V3)bl('fluor2',FIX2.x,FIX2.y,0,165,85);
+    bl('mon',MONL.x,MONL.y,MONL.z,150,105,0);bl('mon',MONR.x,MONR.y,MONR.z,150,105,1);
+    bl('cool',COOL.x,COOL.y,COOL.z,95,70);
+    bl('demon',DEM.x,DEM.y,40,150,100);
+    bl('lamp',0.3,5.5,36,120,85);
+    bl('mgr',MGR.x,MGR.y,70,70,70);
+    if(V3){bl('spill',1.7,2.0,0,95,52);bl('spill',8.4,1.7,0,100,55);bl('dlamp',9.5,0.9,22,80,55);bl('exit',0.3,8,36,60,45);}
+  }
   for(let i=0;i&lt;3;i++)bl('loot',LOOT[i].x,LOOT[i].y,10,(66+i*14),(46+i*8),i);
 }
-const LCOL={hero:['#ffb36b',0.05],fluor:['#7ff0c8',0.07],mon:['#45d9ff',0.17],cool:['#3fd0ff',0.14],demon:['#ff3a2a',0.2],lamp:['#ff3a2a',0.15],mgr:['#ffb347',0.08]};
-const LHOLE={hero:0.95,fluor:0.42,mon:0.62,cool:0.32,demon:0.42,lamp:0.34,mgr:0.2,loot:0.5};
+const LCOL={hero:['#ffb36b',0.05],fluor:['#7ff0c8',0.07],fluor2:['#7ff0c8',0.06],mon:['#45d9ff',0.17],cool:['#3fd0ff',0.14],demon:['#ff3a2a',0.2],lamp:['#ff3a2a',0.15],mgr:['#ffb347',0.08],
+ bulb:['#ffd9a0',0.08],rack:['#44ffaa',0.13],warm:['#ffc46b',0.1],proj:['#a8c8ff',0.12],exit:['#4dff9a',0.22],dlamp:['#ffc060',0.18],spill:['#45d9ff',0.1]};
+const LHOLE={hero:0.95,fluor:0.42,fluor2:0.38,mon:0.62,cool:0.32,demon:0.42,lamp:0.34,mgr:0.2,loot:0.5,bulb:0.45,rack:0.5,warm:0.46,proj:0.5,exit:0.24,dlamp:0.4,spill:0.3};
+const CORE={fluor:1,fluor2:1,bulb:1,warm:1};
+const SHAFTS={office:[['y',10.15,10.65,2.9,0.8]],boardroom:[['x',1.64,2.6,3.4,1.0],['x',4.34,5.3,3.4,1.0]],basement:[]};
 function bakeMask(){
   const d=dctx;d.setTransform(0.5,0,0,0.5,0,0);d.globalCompositeOperation='source-over';d.globalAlpha=1;d.clearRect(0,0,W,H);
   d.fillStyle='rgba(7,5,24,0.9)';d.fillRect(0,0,W,H);
   d.globalCompositeOperation='destination-out';
   for(let i=0;i&lt;BL.length;i++){const l=BL[i];d.globalAlpha=LHOLE[l.k];d.drawImage(radSprite('#ffffff',l.k==='hero'?HEROP:HOLE),l.x-l.rx,l.y-l.ry,l.rx*2,l.ry*2);}
+  if(V3)shafts(d,true);
   d.globalAlpha=1;d.globalCompositeOperation='source-over';
   d.drawImage(vig,0,0,W,H);
   for(let i=0;i&lt;BL.length;i++){const l=BL[i];let c,a;
     if(l.k==='loot'){c=STYLE.rar[l.i].glow;a=0.12;}else{c=LCOL[l.k][0];a=LCOL[l.k][1];}
-    d.globalAlpha=a;d.drawImage(radSprite(c,BAND),l.x-l.rx*0.95,l.y-l.ry*0.95,l.rx*1.9,l.ry*1.9);}
+    d.globalAlpha=a;d.drawImage(radSprite(c,BAND),l.x-l.rx*0.95,l.y-l.ry*0.95,l.rx*1.9,l.ry*1.9);
+    if(V3&amp;&amp;CORE[l.k]){d.globalAlpha=a*0.9;d.drawImage(radSprite(c,BAND),l.x-l.rx*0.5,l.y-l.ry*0.5,l.rx,l.ry);}}
   d.globalAlpha=1;
+  if(V3)shafts(d,false);
   sctx.drawImage(dark,0,0,W,H);
+}
+function shafts(d,hole){ /* window light falling across the floor: a soft parallelogram that fades away from the wall */
+  for(const q of SHAFTS[SCENE]){
+    const f=q[0]==='y',pp=(u,v)=&gt;{if(f)P(u,v,0);else P(v,u,0);return[PX,PY];};
+    const a=pp(q[1],0.3),b=pp(q[2],0.3),c2=pp(q[2]+q[4],q[3]),e=pp(q[1]+q[4],q[3]);
+    const g=d.createLinearGradient(a[0],a[1],(a[0]+e[0])/2+(b[0]-a[0])*0.0,(a[1]+e[1])/2);g.addColorStop(0,hole?'rgba(0,0,0,0.5)':'rgba(150,190,255,0.16)');g.addColorStop(1,hole?'rgba(0,0,0,0)':'rgba(150,190,255,0)');
+    d.globalCompositeOperation=hole?'destination-out':'source-over';d.fillStyle=g;d.beginPath();d.moveTo(a[0],a[1]);d.lineTo(b[0],b[1]);d.lineTo(c2[0],c2[1]);d.lineTo(e[0],e[1]);d.closePath();d.fill();d.globalCompositeOperation='source-over';}
 }
 function dynLights(){
   cx.globalCompositeOperation='lighter';
   for(let i=0;i&lt;BL.length;i++){const l=BL[i];let c,a;
-    if(l.k==='fluor'){c='#9bf5d0';a=0.2*ST.flk;}else continue; /* only the buzzing tube is dynamic; every other pool is baked */
+    if(l.k==='fluor'||l.k==='bulb'&amp;&amp;i===1){c=l.k==='bulb'?'#ffe2b0':'#9bf5d0';a=0.2*ST.flk;}else if(V3&amp;&amp;(l.k==='fluor2'||l.k==='bulb')){c=l.k==='bulb'?'#ffe2b0':'#9bf5d0';a=0.18*ST.flkB;}else continue;
     cx.globalAlpha=a;cx.drawImage(radSprite(c,BAND),l.x-l.rx*0.95,l.y-l.ry*0.95,l.rx*1.9,l.ry*1.9);}
   cx.globalCompositeOperation='source-over';
   /* tube dips: darken the pool a little when the fluorescent flickers off */
-  if(ST.flk&lt;0.9){const l=BL[1];cx.globalAlpha=(1-ST.flk)*0.5;cx.drawImage(radSprite('#070518',BAND),l.x-l.rx,l.y-l.ry,l.rx*2,l.ry*2);}
+  if(SCENE!=='boardroom'&amp;&amp;ST.flk&lt;0.9){const l=BL[1];cx.globalAlpha=(1-ST.flk)*0.5;cx.drawImage(radSprite('#070518',BAND),l.x-l.rx,l.y-l.ry,l.rx*2,l.ry*2);}
+  if(V3&amp;&amp;ST.flkB&lt;0.9){let l=null;for(let i=2;i&lt;BL.length;i++)if(BL[i].k==='fluor2'||(BL[i].k==='bulb')){l=BL[i];break;}if(l){cx.globalAlpha=(1-ST.flkB)*0.45;cx.drawImage(radSprite('#070518',BAND),l.x-l.rx,l.y-l.ry,l.rx*2,l.ry*2);}}
   cx.globalAlpha=1;
 }
 
 /* ---------- skill icons (shared geometry, drawn through G) ---------- */
 function drawIcon(i,x,y,s){
+  if(V3){cx.save();cx.shadowColor='rgba(5,2,25,0.75)';cx.shadowBlur=Math.max(2,s*2.4);cx.shadowOffsetY=Math.max(1,s*1.2);drawIcon0(i,x,y,s);cx.restore();drawIcon0(i,x,y,s);cx.strokeStyle='rgba(255,255,255,0.6)';cx.lineWidth=Math.max(1,s*1.1);cx.lineCap='round';cx.beginPath();
+    if(i===0){cx.moveTo(x-8*s,y-1*s);cx.lineTo(x+8*s,y-7*s);}else if(i===1){cx.moveTo(x-8*s,y-0.5*s);cx.lineTo(x-1*s,y-7*s);}else if(i===2){cx.moveTo(x-5*s,y-2*s);cx.lineTo(x-4.5*s,y+6*s);}else if(i===3){cx.moveTo(x-7*s,y-6*s);cx.lineTo(x-7*s,y);}else{cx.moveTo(x-7*s,y-4.6*s);cx.lineTo(x+6*s,y-4.6*s);}
+    cx.stroke();cx.lineCap='butt';return;}
+  drawIcon0(i,x,y,s);
+}
+function drawIcon0(i,x,y,s){
   const L=(a,b,c,d,w,m)=&gt;G.limb(x+a*s,y+b*s,x+c*s,y+d*s,w*s,m,0);
   if(i===0){ /* stapler strike */
     G.poly([x-10*s,y+2*s,x+10*s,y-2*s,x+11*s,y+3*s,x-10*s,y+7*s],'icA',1);
@@ -3718,16 +4129,36 @@ function render(t){
     DIM=e.dim;e.f(t);DIM=0;}
   for(let i=0;i&lt;3;i++)drawLootGroundFx(LOOT[i],t);
   G.postGlow(t);
-  monsterPlates(t);
+  if(!QS.has('zoom')){monsterPlates(t);}
   drawHitFx(t);
-  drawLootLabels(t);
+  if(!QS.has('zoom'))drawLootLabels(t);
   G.hud(t);
   G.end();
 }
+function compareBoot(){
+  /* ?compare=1: C2 (this file with every round-3 addition off) on the left of the divider, C3 on the right. Same scene, same frame. */
+  const q=new URLSearchParams(location.search);q.delete('compare');const base=location.href.split('?')[0].split('#')[0];
+  const q2=new URLSearchParams(q);q2.set('legacy','1');
+  const mk=(qs,title)=&gt;{const f=document.createElement('iframe');f.className='cmp';f.title=title;f.src=base+'?'+qs.toString();return f;};
+  const cv0=document.getElementById('c');if(cv0)cv0.remove();
+  const a=mk(q2,'C2 (frozen style)'),b=mk(q,'C3 (round 3)');document.body.append(a,b);
+  const dv=document.createElement('div');dv.id='dv';dv.innerHTML='&lt;i&gt;&lt;/i&gt;';
+  const t1=document.createElement('div');t1.className='tg';t1.style.left='10px';t1.textContent='C2  frozen style';
+  const t2=document.createElement('div');t2.className='tg';t2.style.right='10px';t2.textContent='C3  more detail and polish';
+  const rg=document.createElement('input');rg.type='range';rg.min=5;rg.max=95;rg.value=50;rg.id='rg';rg.setAttribute('aria-label','Divider position between C2 and C3');
+  const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:4;cursor:ew-resize;touch-action:none';
+  document.body.append(dv,t1,t2,ov,rg);
+  const set=(v)=&gt;{v=clamp(v,5,95);rg.value=v;b.style.clipPath='inset(0 0 0 '+v+'%)';dv.style.left=v+'%';};set(+(QS.get('split')||50));
+  let drag=false;ov.addEventListener('pointerdown',e=&gt;{drag=true;ov.setPointerCapture(e.pointerId);set(e.clientX/innerWidth*100);});
+  ov.addEventListener('pointermove',e=&gt;{if(drag)set(e.clientX/innerWidth*100);});ov.addEventListener('pointerup',()=&gt;{drag=false;});
+  rg.addEventListener('input',()=&gt;set(+rg.value));
+  let n=0;addEventListener('message',e=&gt;{if(e.data&amp;&amp;e.data.oc3ready&amp;&amp;++n&gt;=2)window.__ready=true;});
+}
 function boot(){
+  if(CMP){compareBoot();return;}
   G.init();
   render(getT());
-  window.__ready=true;
+  window.__ready=true;if(window.parent!==window)try{window.parent.postMessage({oc3ready:1},'*');}catch(e){}
   if(FRAME===null){const loop=()=&gt;{render(getT());requestAnimationFrame(loop);};requestAnimationFrame(loop);}
   else addEventListener('resize',()=&gt;render(getT()));
 }
@@ -3748,7 +4179,12 @@ const MATS={slab:'#16142e',carpetA:'#2f3766',carpetB:'#292f5a',wallFab:'#237681'
  mskin:'#e57e5c',mskinD:'#9f403a',mhair:'#2b1d25',mshirt:'#f4ecd6',msuit:'#3d4078',mtie:'#e2362f',mtieS:'#8f1f2b',mbinder:'#cb372f',white:'#ffffff',
  itemA:'#56b4e9',itemAhi:'#d4ecfb',itemB:'#f0e442',itemBhi:'#fffbc4',itemC:'#e8590c',itemCd:'#8e3406',itemCgold:'#ffe47c',
  icA:'#a3b3d4',icB:'#ffd05c',icC:'#ffffff',sparkW:'#fff2b4'};
-const EMIS={screen:1,eye:1,zeye:1,sparkW:1,lampR:1};
+Object.assign(MATS,{skirt:'#24213f',sticky:'#ffe66a',stickyP:'#ff9ec0',pinPhoto:'#e8e0cc',mugB:'#d65a4a',pot:'#b4602e',soil:'#2a1a14',leaf:'#3fae62',bin:'#59608a',sign:'#ffd24a',extR:'#d9382c',
+ cardboard:'#b98a58',cardboardL:'#d9a870',label:'#efe6cf',tapeM:'#d9c890',chairHi:'#e0645a',ledR:'#ff5a46',ledB:'#6ad8ff',exitS:'#4dff9a',pipe:'#7f879f',pipeR:'#c0402c',rack:'#3b4262',bulb:'#ffe7a8',
+ msuitD:'#2a2c58',tieS:'#d98f12',tieHi:'#ffe08a',hairHi:'#5b4260',pantsH:'#3a4382',shoeHi:'#4a4668',blush:'#ff9a8a',skinD:'#d9966e',zskinD:'#4f8a52',ztieD:'#5a2424',mskinH:'#f0a080',stub:'#8a4a3a',toC:'#2ec4e8',toM:'#ec3f9a',toY:'#f5d84a',lcd:'#9be8a8',suitP:'#5a85ff',suitD:'#2b3f9c',barrelB:'#2e6fa8',barrelG:'#4f8a3a',woodDark:'#5a321c',gold:'#d9a441',chairB:'#7a2b3a',chairBd:'#4a1824',glass:'#4f7d98',woodDoor:'#8a5a34'});
+if(SCENE==='basement')Object.assign(MATS,{carpetA:'#3e445c',carpetB:'#383d55',wallFab:'#35435f',wallPanel:'#41526f',trim:'#8a7a4a',slab:'#12101f',post:'#40356c'});
+if(SCENE==='boardroom')Object.assign(MATS,{carpetA:'#4e2240',carpetB:'#46193a',wallFab:'#42315c',wallPanel:'#52407a',trim:'#d9a441',slab:'#16142e',woodTop:'#9a5630',wood:'#6e3a20',post:'#2c2048'});
+const EMIS={screen:1,eye:1,zeye:1,sparkW:1,lampR:1,exitS:1,bulb:1,ledR:1,ledB:1};
 const MC={};
 for(const k in MATS){const b=MATS[k],s1=mixc(b,'#1b1038',0.24),s2=mixc(b,'#1b1038',0.42);
   MC[k]={base:b,s1:s1,s2:s2,rim:mixc(b,'#ffffff',0.5),d:[null,[mixc(b,'#120a30',0.16),mixc(s1,'#120a30',0.16),mixc(s2,'#120a30',0.16)],[mixc(b,'#120a30',0.3),mixc(s1,'#120a30',0.3),mixc(s2,'#120a30',0.3)]]};}
@@ -3763,7 +4199,7 @@ const BAND=[0,0.9,0.4,0.9,0.43,0.5,0.7,0.5,0.73,0.2,0.98,0.2,1,0];
 function fillC(m,sh){const c=MC[m];let v;
   if(EMIS[m])v=c.base;else if(DIM&gt;0)v=c.d[DIM][sh|0];else v=sh===0?c.base:sh===1?c.s1:c.s2;
   if(FLASH&gt;0)v=mixc(v,'#ffffff',FLASH*0.9);return v;}
-function lw(){return Math.max(1.2,Z*2.4);}
+function lw(){return V3?clamp(Z*2.0,1.6,4.2):Math.max(1.2,Z*2.4);}
 function mkSprite(w,h,fn){const c=document.createElement('canvas');c.width=Math.ceil(w*DPR);c.height=Math.ceil(h*DPR);const k=c.getContext('2d');k.setTransform(DPR,0,0,DPR,0,0);const keep=cx;cx=k;fn(k);cx=keep;return{c:c,w:w,h:h};}
 const G={
  init(){
@@ -3781,6 +4217,7 @@ const G={
   HG=hudGeom();SCH=HG.panelTop-6;
   const crop=W&lt;H*0.8;
   Z=Math.min(W/(crop?445:520),SCH/350);OX=W/2-(crop?14*Z:0);OY=SCH*(crop?0.57:0.5)-136*Z+2;
+  const zk=parseFloat(QS.get('zoom'))||1;if(zk!==1){const T={hero:HERO,zom:ZOM,dem:DEM,mgr:MGR}[QS.get('focus')]||HERO;Z*=zk;OX=W/2-(T.x-T.y)*32*Z;OY=SCH/2-(T.x+T.y)*16*Z+(T===MGR?90:60)*Z;} /* review aid: ?zoom=2.4&amp;focus=hero|zom|dem|mgr centres an actor */
   const v=vig.getContext('2d');v.setTransform(0.5,0,0,0.5,0,0);v.clearRect(0,0,W,H);
   const g=v.createRadialGradient(W/2,SCH*0.5,Math.min(W,H)*0.2,W/2,SCH*0.5,Math.hypot(W,H)*0.55);
   g.addColorStop(0,'rgba(4,3,14,0)');g.addColorStop(0.55,'rgba(4,3,14,0.38)');g.addColorStop(1,'rgba(4,3,14,0.94)');v.fillStyle=g;v.fillRect(0,0,W,H);
@@ -3804,6 +4241,7 @@ const G={
   cx.lineJoin='round';
   if(SIL){cx.fillStyle=SIL;cx.fill();cx.lineWidth=lw()+RIMW*2;cx.strokeStyle=SIL;cx.stroke();return;}
   cx.fillStyle=fillC(m,sh);cx.fill();
+  if(V3&amp;&amp;STAT)shade2(p,m,sh);
   cx.lineWidth=lw();cx.strokeStyle=OUTL;cx.stroke();
   if(sh===0&amp;&amp;!EMIS[m]&amp;&amp;n&gt;=3&amp;&amp;FLASH&lt;=0){ /* rim light on the up-left facing edges */
     sx/=n;sy/=n;cx.strokeStyle=MC[m].rim;cx.lineWidth=Math.max(0.8,Z*1.1);cx.lineCap='round';
@@ -3839,6 +4277,7 @@ const G={
  decal(x,y,rx,ry,m,a){cx.globalAlpha=a*0.9;cx.fillStyle=MATS[m];cx.beginPath();cx.ellipse(x,y,rx,ry,0,0,TAU);cx.fill();cx.globalAlpha=1;
    cx.globalAlpha=a*0.7;cx.beginPath();cx.ellipse(x+rx*0.12,y+ry*0.1,rx*0.55,ry*0.55,0,0,TAU);cx.fillStyle=mixc(MATS[m],'#000000',0.3);cx.fill();cx.globalAlpha=1;},
  tileDeco(i,j,p){
+  if(V3)return tileDeco3(i,j,p);
   cx.strokeStyle='rgba(8,6,20,0.6)';cx.lineWidth=Math.max(1,Z*1.4);cx.beginPath();cx.moveTo(p[0],p[1]);cx.lineTo(p[2],p[3]);cx.lineTo(p[4],p[5]);cx.lineTo(p[6],p[7]);cx.closePath();cx.stroke();
   const mx=(p[0]+p[4])/2,my=(p[1]+p[5])/2,s=0.18;cx.fillStyle=(i+j)&amp;1?'rgba(255,255,255,0.04)':'rgba(255,255,255,0.025)';
   cx.beginPath();cx.moveTo(mx,my-(p[5]-p[1])*s);cx.lineTo(mx+(p[2]-p[0])*s,my);cx.lineTo(mx,my+(p[5]-p[1])*s);cx.lineTo(mx-(p[2]-p[0])*s,my);cx.closePath();cx.fill();
@@ -3853,6 +4292,7 @@ const G={
  },
  jugWater(x,y){P(x,y,46);G.ell(PX,PY,7*Z,3.5*Z,'water',0,0);},
  screen(q,f,i,t){
+  if(V3)return screen3(q,f,i,t);
   cx.beginPath();cx.moveTo(q[0],q[1]);cx.lineTo(q[2],q[3]);cx.lineTo(q[4],q[5]);cx.lineTo(q[6],q[7]);cx.closePath();
   cx.fillStyle=f&gt;0.92?'#b9fbff':'#8ff3ff';cx.fill();cx.strokeStyle=OUTL;cx.lineWidth=lw();cx.stroke();
   cx.strokeStyle='#27708a';cx.lineWidth=Math.max(1,Z*1.6);cx.lineCap='round';
@@ -3883,6 +4323,7 @@ const G={
     cx.beginPath();cx.moveTo(x-10*Z,yy+6*Z);cx.lineTo(x,yy-4*Z);cx.lineTo(x+10*Z,yy+6*Z);cx.strokeStyle=OUTL;cx.lineWidth=Math.max(3,Z*5);cx.stroke();cx.strokeStyle=R.col;cx.lineWidth=Math.max(1.5,Z*2.6);cx.stroke();}cx.globalAlpha=1;}
  },
  postGlow(t){
+  if(V3)return postGlow3(t);
   const fl=ST.flk;cx.lineCap='round';
   for(let k=-1;k&lt;=1;k+=2){P(FIX.x-0.7,FIX.y+k*0.12,FIX.z-1);const ax=PX,ay=PY;P(FIX.x+0.7,FIX.y+k*0.12,FIX.z-1);
     cx.strokeStyle=OUTL;cx.lineWidth=Math.max(3,Z*6);cx.beginPath();cx.moveTo(ax,ay);cx.lineTo(PX,PY);cx.stroke();
@@ -3932,6 +4373,71 @@ const G={
  },
  hud(t){hudDyn(t);}
 };
+/* ---------- round 3 renderers: tiles, screens, fixtures, dust ---------- */
+function tileDeco3(i,j,p){
+  const h=hash(i*7+j*13),h2=hash(i*3.1+j*5.7);
+  const path=()=&gt;{cx.beginPath();cx.moveTo(p[0],p[1]);cx.lineTo(p[2],p[3]);cx.lineTo(p[4],p[5]);cx.lineTo(p[6],p[7]);cx.closePath();};
+  const k=SCENE==='office'?(h&lt;0.34?'weaveA':h&lt;0.67?'weaveB':'weaveC'):SCENE==='basement'?'concrete':(h&lt;0.5?'weaveB':'weaveA');
+  path();cx.fillStyle=pat(k,(i+j)&amp;1?'T':'Ts');cx.globalAlpha=1;cx.fill();cx.globalAlpha=1;
+  /* per-tile tone drift: a third tile stays plain, some lighter or darker, so the floor is not a wallpaper */
+  if(h2&lt;0.34){path();cx.fillStyle='rgba(2,0,14,'+(0.06+h2*0.4)+')';cx.fill();}else if(h2&gt;0.66){path();cx.fillStyle='rgba(150,170,255,'+((h2-0.66)*0.22)+')';cx.fill();}
+  const mx=(p[0]+p[4])/2,my=(p[1]+p[5])/2,hw=(p[2]-p[0]),hh=(p[5]-p[1]);
+  if(SCENE==='boardroom'){ /* gold lattice inlay */
+    cx.strokeStyle='rgba(217,164,65,0.42)';cx.lineWidth=Math.max(1,Z*1.1);cx.beginPath();cx.moveTo(mx,my-hh*0.36);cx.lineTo(mx+hw*0.36,my);cx.lineTo(mx,my+hh*0.36);cx.lineTo(mx-hw*0.36,my);cx.closePath();cx.stroke();
+    cx.fillStyle='rgba(217,164,65,0.5)';cx.beginPath();cx.arc(mx,my,Math.max(1,Z*1.3),0,TAU);cx.fill();
+  }else{const s0=0.18;cx.fillStyle=(i+j)&amp;1?'rgba(255,255,255,0.04)':'rgba(255,255,255,0.025)';cx.beginPath();cx.moveTo(mx,my-hh*s0);cx.lineTo(mx+hw*s0,my);cx.lineTo(mx,my+hh*s0);cx.lineTo(mx-hw*s0,my);cx.closePath();cx.fill();}
+  /* seams: dark joint, lit up-left edge (bevel) */
+  cx.lineJoin='round';cx.strokeStyle=SCENE==='basement'?'rgba(6,4,18,0.75)':'rgba(8,6,20,0.62)';cx.lineWidth=Math.max(1,Z*1.2);path();cx.stroke();
+  cx.strokeStyle='rgba(255,255,255,'+(SCENE==='basement'?0.1:0.09)+')';cx.lineWidth=Math.max(0.8,Z*0.8);cx.beginPath();cx.moveTo(p[6]+0.6,p[7]-0.5);cx.lineTo(p[0]+0.6,p[1]+Z*0.9);cx.lineTo(p[2]-Z*0.8,p[3]+Z*0.5);cx.stroke();
+  if(h&gt;0.78){cx.strokeStyle='rgba(6,4,16,0.45)';cx.lineWidth=Math.max(1,Z*1.2);cx.lineCap='round';cx.beginPath();const o=hash(i+j*3)*0.5+0.2;
+    cx.moveTo(lerp(p[0],p[4],o),lerp(p[1],p[5],o));cx.lineTo(lerp(p[2],p[6],o+0.12),lerp(p[3],p[7],o+0.12)+Z*3);cx.stroke();cx.lineCap='butt';}
+  if(SCENE==='basement'&amp;&amp;h2&gt;0.55&amp;&amp;h2&lt;0.7){cx.strokeStyle='rgba(4,2,12,0.55)';cx.lineWidth=Math.max(0.8,Z);cx.beginPath();cx.moveTo(mx-hw*0.2,my-hh*0.1);cx.lineTo(mx-hw*0.05,my+hh*0.05);cx.lineTo(mx+hw*0.1,my-hh*0.04);cx.lineTo(mx+hw*0.25,my+hh*0.15);cx.stroke();}
+}
+function screen3(q,f,i,t){
+  cx.beginPath();cx.moveTo(q[0],q[1]);cx.lineTo(q[2],q[3]);cx.lineTo(q[4],q[5]);cx.lineTo(q[6],q[7]);cx.closePath();
+  const gl=hash(Math.floor(t*30)+i*17)&gt;0.955,fl=clamp(f+(gl?0.12:0),0,1.1);
+  cx.fillStyle=fl&gt;0.96?'#c8fcff':fl&gt;0.9?'#a9f7ff':'#8ff3ff';cx.fill();cx.strokeStyle=OUTL;cx.lineWidth=lw();cx.stroke();
+  cx.save();cx.clip();
+  const q2=(u,v)=&gt;[lerp(lerp(q[0],q[2],u),lerp(q[6],q[4],u),v),lerp(lerp(q[1],q[3],u),lerp(q[7],q[5],u),v)];
+  /* window chrome, text lines in two colours, a rolling scan band, a glitch row */
+  let a=q2(0,0),b=q2(1,0),c2=q2(1,0.14),d=q2(0,0.14);cx.fillStyle='#2f8ca8';cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.lineTo(c2[0],c2[1]);cx.lineTo(d[0],d[1]);cx.fill();
+  cx.lineCap='round';cx.lineWidth=Math.max(1,Z*1.5);
+  for(let k=0;k&lt;5;k++){const v=0.26+k*0.15,L=0.3+hash(k+i*7+Math.floor(t*0.7))*0.45,A=q2(0.1,v),B=q2(0.1+L*0.8,v);cx.strokeStyle=k===2?'#d0402c':k&amp;1?'#2a7a9a':'#27708a';cx.beginPath();cx.moveTo(A[0],A[1]);cx.lineTo(B[0],B[1]);cx.stroke();}
+  const sv=((t*0.5+i*0.37)%1);a=q2(0,sv);b=q2(1,sv);c2=q2(1,Math.min(1,sv+0.13));d=q2(0,Math.min(1,sv+0.13));cx.fillStyle='rgba(255,255,255,0.28)';cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.lineTo(c2[0],c2[1]);cx.lineTo(d[0],d[1]);cx.fill();
+  if(gl){a=q2(0,0.55);b=q2(1,0.55);c2=q2(1,0.63);d=q2(0,0.63);cx.fillStyle='rgba(255,80,70,0.55)';cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.lineTo(c2[0],c2[1]);cx.lineTo(d[0],d[1]);cx.fill();}
+  /* glass reflection */
+  cx.fillStyle='rgba(255,255,255,0.22)';a=q2(0.0,0.0);b=q2(0.34,0);c2=q2(0.1,1);d=q2(0.0,1);cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.lineTo(c2[0],c2[1]);cx.lineTo(d[0],d[1]);cx.fill();
+  cx.restore();cx.lineCap='butt';
+  /* light spill onto the desk below the screen */
+  const sx=(q[4]+q[6])/2,sy=(q[5]+q[7])/2;cx.globalCompositeOperation='lighter';cx.globalAlpha=0.2*f*(gl?1.5:1);cx.drawImage(radSprite('#45d9ff',BAND),sx-34*Z,sy-4*Z,68*Z,26*Z);cx.globalCompositeOperation='source-over';cx.globalAlpha=1;
+}
+/* fixtures: every scene has its own light source with its own flicker character */
+function postGlow3(t){
+  const fx=[[FIX,ST.flk],[FIX2,ST.flkB]];
+  cx.lineCap='round';
+  for(let n=0;n&lt;2;n++){const F=fx[n][0],fl=fx[n][1];
+    if(SCENE==='office'){
+      for(let k=-1;k&lt;=1;k+=2){P(F.x-0.7,F.y+k*0.12,F.z-1);const ax=PX,ay=PY;P(F.x+0.7,F.y+k*0.12,F.z-1);
+        cx.strokeStyle=OUTL;cx.lineWidth=Math.max(3,Z*6);cx.beginPath();cx.moveTo(ax,ay);cx.lineTo(PX,PY);cx.stroke();
+        cx.strokeStyle=fl&gt;0.6?'#f1fff6':'#6c7f78';cx.lineWidth=Math.max(2,Z*3.4);cx.stroke();}
+    }
+    if(fl&gt;0.6||SCENE!=='office'){const a=SCENE==='office'?0.28*fl:SCENE==='basement'?0.34*fl:0.2*ST.flk2;
+      cx.globalCompositeOperation='lighter';cx.globalAlpha=a;P(F.x,F.y,F.z-1);cx.drawImage(radSprite(SCENE==='office'?'#c8ffe8':'#ffe0a8',BAND),PX-70*Z,PY-34*Z,140*Z,68*Z);cx.globalAlpha=1;cx.globalCompositeOperation='source-over';}
+  }
+  cx.lineCap='butt';
+  /* blinking LEDs (racks) */
+  if(LED.length){cx.globalCompositeOperation='lighter';
+    for(let i=0;i&lt;LED.length;i++){const e=LED[i],on=Math.sin(t*e.s*3+e.p)&gt;-0.2;if(!on)continue;P(e.x,e.y,e.z);cx.fillStyle=e.c;cx.globalAlpha=0.9;cx.fillRect(PX-1.3*Z,PY-1.1*Z,2.6*Z,2.2*Z);cx.globalAlpha=0.22;cx.fillRect(PX-3.4*Z,PY-3*Z,6.8*Z,6*Z);}
+    cx.globalAlpha=1;cx.globalCompositeOperation='source-over';}
+  /* dust motes drifting through the light pools */
+  cx.globalCompositeOperation='lighter';cx.fillStyle='#fff3d0';
+  for(let n=0;n&lt;BL.length;n++){const l=BL[n];if(!MOTEK[l.k])continue;const cnt=l.k==='hero'?10:12;
+    for(let i=0;i&lt;cnt;i++){const sd=n*31+i*7.3,ph=t*(0.05+hash(sd)*0.06)+hash(sd+1),a=ph*TAU;
+      const x=l.x+Math.cos(a+hash(sd+2)*6)*l.rx*0.55*hash(sd+3)+Math.sin(t*0.7+sd)*3*Z,y=l.y+Math.sin(a*1.3+hash(sd+4)*6)*l.ry*0.5*hash(sd+5)+((t*2.2*Z+hash(sd)*50)%30)-15;
+      cx.globalAlpha=(0.15+0.3*hash(sd+6))*(0.6+0.4*Math.sin(t*1.5+sd));cx.beginPath();cx.arc(x,y,Math.max(0.7,Z*(0.45+hash(sd+7)*0.5)),0,TAU);cx.fill();}}
+  cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
+}
+const MOTEK={hero:1,fluor:1,fluor2:1,bulb:1,warm:1,proj:1};
 const LBL={};
 function mkC(ri,x,y,r,col){
   cx.beginPath();
@@ -3963,6 +4469,37 @@ function hudGeom(){
   for(const v of g.ves)v.path=vesselPath(v.k,v.gx,v.gy,v.r);
   return g;
 }
+function panelFx(x,y,w,h,r){
+  cx.save();cx.beginPath();cx.roundRect(x,y,w,h,r);cx.clip();
+  let g=cx.createLinearGradient(0,y,0,y+h);g.addColorStop(0,'rgba(255,255,255,0.1)');g.addColorStop(0.5,'rgba(255,255,255,0.0)');g.addColorStop(1,'rgba(0,0,0,0.28)');cx.fillStyle=g;cx.fillRect(x,y,w,h);
+  cx.globalAlpha=0.3;cx.fillStyle=pr('metal');cx.fillRect(x,y,w,h);cx.globalAlpha=1;
+  cx.shadowColor='rgba(0,0,0,0.65)';cx.shadowBlur=12;cx.fillStyle='#000';cx.beginPath();cx.rect(x-30,y-30,w+60,h+60);cx.roundRect(x+3,y+3,w-6,h,r-2);cx.fill('evenodd');cx.shadowBlur=0;cx.shadowColor='transparent';
+  cx.strokeStyle='rgba(255,255,255,0.28)';cx.lineWidth=1.4;cx.beginPath();cx.moveTo(x+r,y+1.2);cx.lineTo(x+w-r,y+1.2);cx.stroke();
+  cx.setLineDash([5,4]);cx.strokeStyle='rgba(8,4,30,0.7)';cx.lineWidth=1.6;cx.beginPath();cx.roundRect(x+8,y+9.5,w-16,h,10);cx.stroke();cx.strokeStyle='rgba(190,175,255,0.55)';cx.lineWidth=1.3;cx.beginPath();cx.roundRect(x+8,y+8.5,w-16,h,10);cx.stroke();cx.setLineDash([]);
+  cx.restore();
+}
+function slotFx(sx,sy,ss,act){
+  cx.save();cx.beginPath();cx.roundRect(sx,sy,ss,ss,ss*0.2);cx.clip();
+  let g=cx.createLinearGradient(0,sy,0,sy+ss);g.addColorStop(0,'rgba(0,0,0,0.45)');g.addColorStop(0.35,'rgba(0,0,0,0.0)');g.addColorStop(0.8,'rgba(255,255,255,0)');g.addColorStop(1,act?'rgba(255,230,120,0.3)':'rgba(190,180,255,0.16)');cx.fillStyle=g;cx.fillRect(sx,sy,ss,ss);
+  cx.shadowColor='rgba(0,0,0,0.6)';cx.shadowBlur=ss*0.1;cx.fillStyle='#000';cx.beginPath();cx.rect(sx-20,sy-20,ss+40,ss+40);cx.roundRect(sx+ss*0.03,sy+ss*0.05,ss*0.94,ss*0.95,ss*0.17);cx.fill('evenodd');cx.shadowBlur=0;cx.shadowColor='transparent';
+  cx.globalAlpha=0.18;cx.fillStyle=pr('metal');cx.fillRect(sx,sy,ss,ss);cx.globalAlpha=1;cx.restore();
+  cx.fillStyle=act?'#ffe9a0':'#a89cf0';for(const q of[[0.17,0.17],[0.83,0.17],[0.17,0.83],[0.83,0.83]]){cx.beginPath();cx.arc(sx+ss*q[0],sy+ss*q[1],Math.max(0.8,ss*0.022),0,TAU);cx.fill();}
+}
+function vesselFx(v){ /* glaze / ribbed plastic shading drawn inside the glass outline */
+  const r=v.r,gx=v.gx,gy=v.gy;cx.save();cx.clip(v.path);
+  let g=cx.createLinearGradient(gx-r,0,gx+r,0);g.addColorStop(0,'rgba(255,255,255,0.22)');g.addColorStop(0.3,'rgba(255,255,255,0.02)');g.addColorStop(0.75,'rgba(0,0,20,0.1)');g.addColorStop(1,'rgba(0,0,20,0.32)');cx.fillStyle=g;cx.fillRect(gx-r*1.2,gy-r*1.2,r*2.4,r*2.4);
+  g=cx.createLinearGradient(0,gy-r,0,gy-r*0.55);g.addColorStop(0,'rgba(0,0,20,0.4)');g.addColorStop(1,'rgba(0,0,20,0)');cx.fillStyle=g;cx.fillRect(gx-r*1.2,gy-r,r*2.4,r*0.45);
+  if(v.k===0){ /* mug: stitched band + glaze speckle */
+    const mx=gx-0.17*r;cx.strokeStyle='rgba(255,255,255,0.55)';cx.lineWidth=Math.max(1.4,r*0.045);cx.setLineDash([r*0.09,r*0.07]);cx.beginPath();cx.moveTo(mx-r,gy-0.62*r);cx.lineTo(mx+r,gy-0.62*r);cx.moveTo(mx-r,gy+0.68*r);cx.lineTo(mx+r,gy+0.68*r);cx.stroke();cx.setLineDash([]);
+    const rr=rng(3);cx.fillStyle='rgba(255,255,255,0.25)';for(let i=0;i&lt;26;i++)cx.fillRect(mx-0.7*r+rr()*1.4*r,gy-0.78*r+rr()*1.5*r,1.4,1.4);
+  }else{ /* jug: ribbed plastic */
+    for(let k=0;k&lt;7;k++){const y=gy-0.32*r+k*0.17*r;cx.fillStyle='rgba(0,0,30,0.22)';cx.fillRect(gx-r,y,r*2,Math.max(1.2,r*0.03));cx.fillStyle='rgba(255,255,255,0.2)';cx.fillRect(gx-r,y+Math.max(1.2,r*0.03),r*2,Math.max(1,r*0.02));}
+  }
+  cx.restore();
+}
+function rivets(v){const r=v.r,gx=v.gx,gy=v.gy;cx.fillStyle='#e6ecfa';cx.strokeStyle=OUTL;cx.lineWidth=1.2;
+  const pts=v.k===0?[[gx-0.17*r-0.8*r,gy-0.82*r],[gx-0.17*r+0.62*r,gy-0.82*r],[gx-0.17*r-0.8*r,gy+0.92*r],[gx-0.17*r+0.62*r,gy+0.92*r]]:[[gx-0.8*r,gy-0.5*r],[gx+0.8*r,gy-0.5*r],[gx-0.8*r,gy+0.96*r],[gx+0.8*r,gy+0.96*r]];
+  for(const q of pts){cx.beginPath();cx.arc(q[0]+(q[0]&lt;gx?r*0.1:-r*0.1),q[1]+(q[1]&lt;gy?r*0.1:-r*0.1),Math.max(1.6,r*0.04),0,TAU);cx.fill();cx.stroke();}}
 /* health = coffee mug (handle, steam), mana = water-cooler jug (neck, cap): different outline, not only different hue */
 function vesselPath(k,gx,gy,r){
   const p=new Path2D();
@@ -3982,17 +4519,20 @@ function bakeHud(){
   const pt=g.panelTop,ss=g.ss;
   cx.lineJoin='round';cx.beginPath();cx.roundRect(g.px,pt,g.pw,H-pt+14,14);cx.fillStyle='#241d4e';cx.fill();cx.lineWidth=Math.max(3,HH*0.03);cx.strokeStyle=OUTL;cx.stroke();
   cx.strokeStyle='#5d4fa8';cx.lineWidth=Math.max(1.5,HH*0.012);cx.beginPath();cx.roundRect(g.px+4,pt+4,g.pw-8,H-pt+6,11);cx.stroke();
+  if(V3)panelFx(g.px,pt,g.pw,H-pt+14,14);
   const xx=g.px+g.padx,xw=g.pw-g.padx*2,ly=pt+8+g.lfs/2,xy=pt+8+g.lfs+3;
   otext('LEVEL 7',xx,ly,g.lfs,'#ffe27a','left');otext('38% to level 8',xx+xw,ly,g.lfs,'#d9d0ff','right');
   cx.beginPath();cx.roundRect(xx,xy,xw,g.xh,g.xh/2);cx.fillStyle='#120e29';cx.fill();cx.lineWidth=Math.max(2,g.xh*0.3);cx.strokeStyle=OUTL;cx.stroke();
   cx.save();cx.beginPath();cx.roundRect(xx,xy,xw,g.xh,g.xh/2);cx.clip();cx.fillStyle='#ffc83a';cx.fillRect(xx,xy,xw*0.38,g.xh);cx.fillStyle='rgba(255,255,255,0.4)';cx.fillRect(xx,xy,xw*0.38,g.xh*0.4);
-  cx.fillStyle='rgba(255,255,255,0.35)';for(let i=1;i&lt;10;i++)cx.fillRect(xx+xw*i/10-0.5,xy,1,g.xh);cx.restore();
+  cx.fillStyle='rgba(255,255,255,0.35)';for(let i=1;i&lt;10;i++)cx.fillRect(xx+xw*i/10-0.5,xy,1,g.xh);
+  if(V3){const gg=cx.createLinearGradient(0,xy,0,xy+g.xh);gg.addColorStop(0,'rgba(0,0,0,0.5)');gg.addColorStop(0.45,'rgba(0,0,0,0)');gg.addColorStop(1,'rgba(255,255,255,0.14)');cx.fillStyle=gg;cx.fillRect(xx,xy,xw,g.xh);cx.fillStyle='rgba(120,70,0,0.5)';cx.fillRect(xx+xw*0.38-1.5,xy,1.5,g.xh);}cx.restore();
   const tot=6*ss+5*g.gap,sx0=g.px+(g.pw-tot)/2,sy=xy+g.xh+6,names=['Staple','Reply-All','Coffee','Mute','Invite','Empty'];
   for(let i=0;i&lt;6;i++){
     const sx=sx0+i*(ss+g.gap);
     cx.beginPath();cx.roundRect(sx,sy,ss,ss,ss*0.2);cx.fillStyle=i===0?'#4a3b94':'#1e1845';cx.fill();cx.lineWidth=Math.max(2.5,ss*0.07);cx.strokeStyle=OUTL;cx.stroke();
+    if(V3)slotFx(sx,sy,ss,i===0);
     cx.lineWidth=Math.max(1.4,ss*0.035);cx.strokeStyle=i===0?'#ffd43b':'#7a6cd0';cx.beginPath();cx.roundRect(sx+ss*0.05,sy+ss*0.05,ss*0.9,ss*0.9,ss*0.15);cx.stroke();
-    if(i&lt;5)drawIcon(i,sx+ss/2,sy+ss*0.54,ss/29);else{cx.fillStyle='#5a4fa0';cx.font='800 '+ss*0.5+'px '+SANS;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('+',sx+ss/2,sy+ss/2+1);}
+    if(i&lt;5)drawIcon(i,V3?Math.round(sx+ss/2):sx+ss/2,V3?Math.round(sy+ss*0.54):sy+ss*0.54,ss/29);else{cx.fillStyle='#5a4fa0';cx.font='800 '+ss*0.5+'px '+SANS;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('+',sx+ss/2,sy+ss/2+1);}
     /* key badge on the corner, outside the icon area */
     const br=Math.max(7,ss*0.15);cx.beginPath();cx.arc(sx+ss*0.02,sy+ss*0.02,br,0,TAU);cx.fillStyle='#0d0a1c';cx.fill();cx.lineWidth=1.6;cx.strokeStyle='#cfc2ff';cx.stroke();
     otext(String(i+1),sx+ss*0.02,sy+ss*0.02+0.5,Math.max(9,br*1.3),'#ffffff');
@@ -4012,8 +4552,10 @@ function vesselFront(v){
   }else{ /* jug cap */
     cx.beginPath();cx.roundRect(gx-0.36*r,gy-1.06*r,0.72*r,0.16*r,r*0.05);cx.fillStyle='#2f78d8';cx.fill();cx.lineWidth=ol*0.9;cx.strokeStyle=OUTL;cx.stroke();
   }
+  if(V3)vesselFx(v);
   cx.strokeStyle=OUTL;cx.lineWidth=ol*2.2;cx.stroke(v.path);
   cx.strokeStyle='#b8c4dc';cx.lineWidth=ol*0.9;cx.stroke(v.path);
+  if(V3){cx.strokeStyle=pr('metal');cx.lineWidth=ol*0.9;cx.globalAlpha=0.55;cx.stroke(v.path);cx.globalAlpha=1;cx.strokeStyle='rgba(255,255,255,0.65)';cx.lineWidth=Math.max(0.8,ol*0.22);cx.save();cx.translate(-ol*0.28,-ol*0.28);cx.stroke(v.path);cx.restore();rivets(v);}
   cx.strokeStyle='#eef3ff';cx.lineWidth=ol*0.3;cx.save();cx.clip(v.path);cx.beginPath();cx.moveTo(gx-r*0.7,gy-r*0.2);cx.lineTo(gx-r*0.7,gy-r*0.6);cx.stroke();cx.restore();
   /* glass sheen */
   cx.fillStyle='rgba(255,255,255,0.4)';const sxm=v.k===0?gx-0.17*r-0.55*r:gx-0.58*r;
@@ -4069,7 +4611,11 @@ boot();
 <ul><li>All three met the stated constraints: single file, no external assets or fonts, drawn in code, original names, 390 px wide up, <code>?frame=N</code>, <code>window.__ready</code>.</li><li>File sizes: A about 49 KB, B about 44 KB, C about 47 KB (the harness rule of ~60 KB is met).</li><li>All three share one scene engine (scene description, animation, hit effect, lighting inputs). A real game would keep that split: a style-independent scene and a swappable renderer. That makes a later style change (or a high-contrast accessibility mode) cheaper.</li><li>Performance is likely fine for all three on a laptop with a GPU-backed canvas, but only measured in software rendering (see brief.md). A and C each use two half-resolution light layers composed once per frame; the full game needs a test with 50 monsters (NFR).</li><li>Not covered: sound, character art beyond the one hero, tile variety, fonts for localisation, large-screen performance at 4K.</li></ul>
 <h2 id="c2-stylised-vector-round-2-c2-html">C2: stylised vector, round 2 (<code>C2.html</code>)</h2>
 <p>Copy of C with the combined round-1 review fixes (<code>review-r1-appeal.md</code>, <code>review-r1-craft.md</code>). A, B, C and decision.md are unchanged.</p>
-<ul><li><strong>Tone:</strong> world graded dark with A's lighting model. One baked mask holds a 90 % darkness layer, a toon-banded hero-radius light, a heavier vignette, and coloured pools (cold fluorescent, cyan monitor glow, red emergency lamp and demon glow, loot glow). Blood decals, wall smears and tile scuffs added. Outlines, flat colours and silhouettes are kept.</li><li><strong>Readability:</strong> each actor gets a 2 px rim ring drawn from a silhouette pass under the normal pass (hero near-white, zombie lime, demon red, manager amber). Hero is bigger (+10 %), brightest and warmest (white shirt, royal-blue suit, yellow tie, cyan lanyard); the zombie is a darker, ragged green. Loot labels are about 60 % of nameplate size (serif italic for Unique) and are placed once per layout by a small collision pass against actors, nameplates, the damage-number zone and the HUD, with a leader line when displaced. The damage number drifts up-right, and the Zombie nameplate sits under its feet.</li><li><strong>Rarity (NFR-A03):</strong> Okabe-Ito sky blue / yellow / vermillion. Simulated deuteranopia: Rare-vs-Unique colour difference dE 30 (C: 18), lightness 90 vs 61; protanopia dE 49 (C: 30). Markers (diamond, star, hexagon), border styles (plain, double, notched with white inner line) and beam shapes are kept.</li><li><strong>HUD:</strong> health is a coffee mug with a heart glyph and bubbles, mana is a water-cooler jug with a drop glyph and ripples; both show <code>current/max</code>. XP bar shows <code>LEVEL 7</code> and <code>38% to level 8</code>; skill bar has key badges outside the icon area, names under the icons (desktop), and a cooldown number.</li><li><strong>Phone (390 and 360 px):</strong> all 6 slots, full-width skill bar, globes above the bar corners, labels clamped 8 px inside the viewport, no horizontal scroll. The scene is cropped to the action, which leaves empty dark area above it on tall phones (deliberate; no extra tiles drawn).</li><li><strong>Performance:</strong> world, light mask and HUD frame are baked per layout; labels and nameplates are pre-rendered sprites; only the fluorescent flicker, actors, liquid, effects and the cooldown are drawn per frame. Measured in headless Chromium software GL, 1280x800: C2 about 54 fps (range 45 to 60 over repeated runs), C 27 to 30 fps in the same run. Still a pessimistic number, not real hardware.</li><li><strong>Trade-offs:</strong> actors are drawn after the darkness (self-lit, with only a small dimming for the far ones), so they do not receive the coloured pools; the look is &quot;cel-lit&quot; rather than physically lit. Each actor is drawn twice (ring + body), which is the main per-frame cost (about 8 fps) and the thing to watch with 50 monsters; a sprite cache per monster type would remove it. File size 58 KB (limit about 60 KB).</li><li><strong>Effort for a whole game:</strong> M, unchanged from C; the lighting bake and the placement pass are reusable engine parts.</li></ul></details>
+<ul><li><strong>Tone:</strong> world graded dark with A's lighting model. One baked mask holds a 90 % darkness layer, a toon-banded hero-radius light, a heavier vignette, and coloured pools (cold fluorescent, cyan monitor glow, red emergency lamp and demon glow, loot glow). Blood decals, wall smears and tile scuffs added. Outlines, flat colours and silhouettes are kept.</li><li><strong>Readability:</strong> each actor gets a 2 px rim ring drawn from a silhouette pass under the normal pass (hero near-white, zombie lime, demon red, manager amber). Hero is bigger (+10 %), brightest and warmest (white shirt, royal-blue suit, yellow tie, cyan lanyard); the zombie is a darker, ragged green. Loot labels are about 60 % of nameplate size (serif italic for Unique) and are placed once per layout by a small collision pass against actors, nameplates, the damage-number zone and the HUD, with a leader line when displaced. The damage number drifts up-right, and the Zombie nameplate sits under its feet.</li><li><strong>Rarity (NFR-A03):</strong> Okabe-Ito sky blue / yellow / vermillion. Simulated deuteranopia: Rare-vs-Unique colour difference dE 30 (C: 18), lightness 90 vs 61; protanopia dE 49 (C: 30). Markers (diamond, star, hexagon), border styles (plain, double, notched with white inner line) and beam shapes are kept.</li><li><strong>HUD:</strong> health is a coffee mug with a heart glyph and bubbles, mana is a water-cooler jug with a drop glyph and ripples; both show <code>current/max</code>. XP bar shows <code>LEVEL 7</code> and <code>38% to level 8</code>; skill bar has key badges outside the icon area, names under the icons (desktop), and a cooldown number.</li><li><strong>Phone (390 and 360 px):</strong> all 6 slots, full-width skill bar, globes above the bar corners, labels clamped 8 px inside the viewport, no horizontal scroll. The scene is cropped to the action, which leaves empty dark area above it on tall phones (deliberate; no extra tiles drawn).</li><li><strong>Performance:</strong> world, light mask and HUD frame are baked per layout; labels and nameplates are pre-rendered sprites; only the fluorescent flicker, actors, liquid, effects and the cooldown are drawn per frame. Measured in headless Chromium software GL, 1280x800: C2 about 54 fps (range 45 to 60 over repeated runs), C 27 to 30 fps in the same run. Still a pessimistic number, not real hardware.</li><li><strong>Trade-offs:</strong> actors are drawn after the darkness (self-lit, with only a small dimming for the far ones), so they do not receive the coloured pools; the look is &quot;cel-lit&quot; rather than physically lit. Each actor is drawn twice (ring + body), which is the main per-frame cost (about 8 fps) and the thing to watch with 50 monsters; a sprite cache per monster type would remove it. File size 58 KB (limit about 60 KB).</li><li><strong>Effort for a whole game:</strong> M, unchanged from C; the lighting bake and the placement pass are reusable engine parts.</li></ul>
+<h2 id="c3-stylised-vector-round-3-more-detail-and-polish-c3-html">C3: stylised vector, round 3 &quot;more detail and polish&quot; (<code>C3.html</code>)</h2>
+<p>Answers the real customer's fifth briefing (&quot;idea is good but more details and polishing&quot;, 2026-10-14). C2 stays the frozen identity (bold outlines, readable silhouettes, dark grade, Okabe-Ito rarity, same actors, loot, hit FX and HUD layout); C3 adds a detail layer on top. Switches: <code>?scene=office|basement|boardroom</code>, <code>?frame=N</code> (+ <code>window.__ready</code>), <code>?compare=1</code> (C2 | C3 wipe, draggable divider or the range input, <code>&amp;split=NN</code>), <code>?legacy=1</code> (every round-3 addition off, matches C2 pixel for pixel apart from 6 e-5 of the pixels; it is what the compare view uses for the left half), <code>?zoom=3&amp;focus=hero|zom|dem|mgr</code> (review aid, hides labels). <strong>What read as flat or bare in the current game shots</strong> (final-lobby, polish-basement, s3-boss-phase2, final-champion-fight, final-inventory-compare): one repeated floor diamond with no tile-to-tile variation; wall panels as flat slabs with only a small framed picture; grey cabinets and desks with no material feel; props sparse and floating (no contact shadow or occlusion at wall bases); hero and monsters single-tone cel with no cloth, face or secondary motion; HUD panels flat purple with no depth.</p>
+<p>What changed, and what each costs when ported to the game engine (S/M/L = small/medium/large, against the C2 renderer):</p>
+<ol><li><strong>Baked material textures</strong> (carpet plain/twill/basket weave with mirrored tile orientation and per-tile tone drift, wood grain, brushed metal, concrete, plaster, wall panel, paper, cardboard): 11 procedural 64x64 alpha overlays, created once into offscreen canvases and applied as <code>createPattern</code> fills with a skew matrix per face type (top, left, right). Per-frame cost 0 (static layer). Port: S, one <code>texture(name)</code> + <code>patternFor(face)</code> helper, material table maps material to texture.</li><li><strong>Second shade level + ambient occlusion:</strong> every static vertical face gets a base-darkening gradient on top of the existing flat shade steps; floor gets wall-base AO strips and soft contact shadows (four stacked rounded rects) under every prop; bevelled tile seams (dark joint, lit up-left edge). Baked. Port: S for the gradient, S for contact shadows if props already have footprints.</li><li><strong>Light spill and pools:</strong> extra baked pools in the existing light mask (second fixture pool, monitor floor spill, desk-lamp pool, green exit-sign pool, window light shaft across the floor, a brighter inner band on fixture pools); screens spill a cyan glow onto the desk (additive, per frame, 2 sprites). Cost: M-/S (more entries in the same bake; the dynamic part is 2 additive draws). Port: S, the bake already exists.</li><li><strong>Density (office):</strong> a second fixture, door ajar, door mat, runner carpet with stitch lines, hazard tape, painted chevrons, footprints from the door, coffee rings, scuffs, cable tape wraps, plants, bin with paper, wet-floor A-frame sign, box stack, extinguisher, desk lamp, mugs, sticky notes, keyboard keys, filing-cabinet drawers with labels, glass partition panes, skirting boards, sockets, vents, wall clock, framed chart, three humour posters, cork board with notices and sticky notes, whiteboard, a skyline window with reflections, exit sign. All static. Port: M. This is content, not engine: a prop kit of about 40 sprites or draw functions plus a decal/wall-item placement list per room. Wall items draw in a small &quot;wall space&quot; transform (1 unit = 1 design px), which is the reusable piece (S).</li><li><strong>Two more scenes</strong> from the same engine and actors: <strong>basement</strong> (concrete, cracked and stained, safe-lane paint, drain, puddles with glint, pipe runs, server racks with blinking LEDs, filing cabinets, shelving, boiler, barrels, caged bulbs, breaker panel, signage) and <strong>boardroom</strong> (burgundy lattice carpet with gold inlay and a bordered rug, panelled walls, glass-topped table with laptops, high-back chairs, credenza with trophies, projector slide, framed founders, curtained windows, chandeliers). Port: M each (content) on top of the shared S engine work; a per-scene table holds palette overrides, textures, fixtures and light list.</li><li><strong>Characters:</strong> hero gets eyebrow, nose, smile, blush, lens glint, hair highlight strands and cowlick, headset band and boom, collar, lapel notches, pocket square, tie stripes, belt buckle, cuffs, trouser creases, shoe laces and soles, badge photo; zombie gets tears, stitches, eye bags, fangs, drool, skin mottling; manager gets nose, stubble, comb-over strands, sweat drop, pinstripes, buttons, folds, belt buckle, sticky note on the binder; the printer demon gets a control panel (flickering LCD, buttons, blinking LED), vents and CMY toner stripes. Detail is skipped in the silhouette (rim) pass. <strong>Secondary motion:</strong> tie sway (hero, zombie, manager), cowlick and zombie hair-tuft bob, comb-over sway and sweat drip, LCD flicker, monitor scan band and glitch rows, rack LEDs. Cost: about +2 ms per frame for four actors (see below). Port: M, and the right place to cache: per-monster-type sprite caches of the static detail with only the swaying parts drawn live (that was already the recommended fix for 50 monsters, and it now matters a little more).</li><li><strong>Outline weight</strong> is clamped (<code>clamp(2.0*zoom, 1.6, 4.2)</code> px) instead of growing linearly, so at game scale (hero about 100 px) the line stays about 2.4 px and does not get heavier on big screens. Port: S.</li><li><strong>UI chrome:</strong> panel with top-to-bottom sheen, brushed-metal grain, inner shadow, top bevel and a stitched dashed border; skill slots with inner shadow, bottom light, corner rivets; XP bar with inner shadow and divider; mug with glaze gradient, stitched bands, speckle, rivets; jug with ribbed plastic, rivets, brushed rim; icons snapped to whole pixels, with drop shadow and a specular stroke. Baked once per layout, 0 per frame. Port: S (needs the HUD bake that C2 already has).</li><li><strong>Ambient motion:</strong> dust motes drifting and twinkling inside fixture and hero pools (about 40 tiny additive dots per frame), a second fluorescent with its own flicker pattern, cage-bulb and chandelier glow, blinking rack LEDs. Cost S.</li><li><strong>Performance</strong> (headless Chromium, software GL, 1280x800; compositor-capped at 60): C3 office 58, basement 59, boardroom 60 fps; C2 60 fps on the same machine. Render cost per frame including a forced flush: C2 11.7 ms, C3 office 13.5 ms, basement 13.8 ms, boardroom 12.3 ms (so about 74 fps uncapped for C3, against about 85 for C2). Layout/bake on resize: C2 9 ms, C3 14 to 15 ms (textures are built once, patterns re-created per zoom); not per frame.</li><li><strong>File size:</strong> 124 KB, over the ~60 KB guideline for variant files, because it carries three scenes, the texture generators, the compare view and a legacy path. It is a style reference, not a product file; the port does not carry the legacy path or the compare view.</li><li><strong>Checks:</strong> single self-contained file, no network references (no urls, fetch, link or script src), no ip-denylist terms, no console errors, <code>window.__ready</code> set (compare mode sets it when both iframes report ready), phone width 390 renders without horizontal scroll. The compare view loads this same file twice in iframes (<code>?legacy=1</code> and normal).</li><li><strong>Trade-offs and risks:</strong> (a) the grade is still dark, so floor weave and wall materials show mostly inside light pools; a brighter ambient floor is a one-number change but would dilute the C2 mood; (b) actors are still drawn after the darkness and do not receive pool colour, so monsters can look a touch &quot;pasted on&quot; next to the richer floors; (c) the humour posters and signs are tiny text that is readable at 1280x800 but not at game scale: they are texture, not copy to localise; (d) the basement wall pipes are busy behind the racks; (e) review at 100% size, the compare divider cuts through the hero at the default 50% split (use <code>&amp;split=30</code> or drag).</li><li><strong>Screenshots:</strong> <code>shots/r3/C3-default-f92.jpg</code>, <code>C3-basement-f92.jpg</code>, <code>C3-boardroom-f92.jpg</code>, <code>C3-compare-f92.jpg</code>.</li></ol></details>
       <details><summary>Decision</summary><h1 id="decision-art-direction">Decision: art direction</h1>
 <p>Status: decided (PROXY), style frozen after round-2 review (appeal 33 ship, craft 32 ship) Date: 2026-10-13 Picked: C (stylised vector), graded darker with A's lighting model (&quot;C-dark&quot;) Confidence: medium (high that C is the right base; medium on how dark the grade goes)</p>
 <p><strong>PROXY</strong> decision, provisional until the real customer reviews it. Overrule any part in <code>proxy-log.md</code>.</p>
@@ -4096,7 +4642,26 @@ boot();
 <p>Risk to watch</p>
 <ol><li>C looking generic: keep the distinctive palette (indigo base, teal walls, warm accents) and the office-comedy proportions; the reviewers should check distinctiveness in round 2.</li></ol>
 <h2 id="next">Next</h2>
-<p>One round-2 pass of C-dark on the same tile (fixes 1 to 12), reviewed by both visual reviewers, then freeze the style. No new variants.</p><p class="muted small">To pick: tell Claude "pick art-direction variant X because …", or edit <code>variants/art-direction/decision.md</code>.</p></details>
+<p>One round-2 pass of C-dark on the same tile (fixes 1 to 12), reviewed by both visual reviewers, then freeze the style. No new variants.</p>
+<h2 id="round-g-c3-graphics-detail-round">Round G (C3): graphics detail round</h2>
+<p>Date: 2026-10-14 Status: decided (PROXY) Confidence: high on direction (port, no mock-up); medium on the exact lift (12 %)</p>
+<p><strong>PROXY</strong> decision, provisional until the real customer reviews it. Overrule any part in <code>proxy-log.md</code>. Input: fifth briefing (verbatim, 00-brief.md): &quot;the style idea is good but more details and polishing&quot; (real customer, agreed). Reviews: appeal C2 28 / C3 31, craft C2 29 / C3 31, both &quot;iterate&quot;. Viewed C3-default-f92 and C3-boardroom-f92 myself.</p>
+<h3 id="decision-on-the-orchestrator-s-proposal-approved-with-two-adjustments">Decision on the orchestrator's proposal: APPROVED, with two adjustments</h3>
+<ul><li>No C4 mock-up round. The customer said the style idea is good; the style is frozen and the reviews give a concrete port list. Port straight into the game, then review in-game at real scale (hero about 100 to 135 px), not at the 200 px of the mock-up. A further mock-up would only re-argue a settled style.</li><li>Adjustment 1: the in-game review is the gate. Both reviewers re-score in the game with the same 8 criteria; target 34+ (appeal reviewer's estimate with items 1 to 5). If under 33, one more fix pass, still no new variants.</li><li>Adjustment 2: every item below is checked at game scale; anything under about 2 px that does not read at 1x is dropped, not ported &quot;for later&quot;.</li></ul>
+<h3 id="mood-question-lift-12-ambient-mid-tone-outside-the-light-pools">Mood question: LIFT, +12 % ambient mid-tone outside the light pools</h3>
+<p>Reasons:</p>
+<ol><li>The customer asked for &quot;more details&quot;; both reviewers independently found the dark grade hides the new materials (floor weave, wall panels, bevels) everywhere except inside pools. Detail the player cannot see does not answer the brief.</li><li>&quot;Stay close to the original&quot; is about mechanics and feel (brief); the moody read comes from pools, vignette, coloured light and contrast between lit and unlit, not from near-black corners. A modest lift keeps all of that.</li><li>Round-1 decision (C-dark) already made the grade darker with medium confidence; this is a refinement within the same Q2 call, not a reversal. The boardroom shot already shows that materials plus dark mood work together.</li></ol>
+<p>Limits (keep the mood):</p>
+<ul><li>Lift only the ambient floor/wall mid-tones, about +12 % luminance (allowed range 10 to 15 %). Do NOT lift the vignette corners or the pool-to-ambient ratio: pools must stay clearly brighter and more saturated. The darkest 15 % of the frame stays dark.</li><li>Prefer hue shift per tile (warm/cool alternate) and texture alpha 1.5x inside pools over pure brightness, so the lift can stay small.</li><li>Make it one named constant (AMBIENT_LIFT) so the real customer can turn it back to 0 in one edit. Record the before/after screenshots.</li><li>Floor-to-wall separation stays at least 3:1 inside the hero's radius (round-1 rule).</li></ul>
+<p>This is an identity call; flagged for the real customer in <code>proxy-log.md</code> to confirm or revert.</p>
+<h3 id="merged-port-checklist-world-implementer-order-matters">Merged port checklist (WORLD implementer; order matters)</h3>
+<p>Port as is (baked, 0 per frame)</p>
+<ol><li>Outline clamp <code>clamp(2.0*zoom, 1.6, 4.2)</code>.</li><li>Contact shadows under props and wall-base AO strips in the static bake.</li><li>Bevelled tile seams plus per-tile tone drift and mirrored orientation (breaks the repeated diamond).</li><li>HUD chrome bake: panel sheen, inner shadow, stitched border, rivets, mug and jug glaze, snapped icons.</li><li>Extra baked light pools, second fixture, window light shaft, exit-sign pool, brighter inner band; max 4 dynamic lights still holds.</li><li>Basement and boardroom scene tables (palette, textures, fixtures, lights) on the shared engine; boardroom lattice carpet as is.</li><li>Baked material textures (11 procedural 64x64 overlays, patterns re-created only on zoom change).</li></ol>
+<p>Amplify so it reads at 1x</p>
+<ol><li>AMBIENT_LIFT +12 % (above), hue-shifted tiles, texture alpha 1.5x inside pools (light mask above about 40 %).</li><li>Actors receive pool colour: multiply tint 15 to 25 % from the light colour at the feet plus a soft coloured ground shadow (both reviewers' top gap).</li><li>Characters: 2-tone shading (light/shadow side) and 2 to 3 large colour blocks per type (hero white shirt panel, cyan lanyard, contrasting shoes; zombie torn sleeve in a second green, grey-purple trousers; manager lighter lapel); faces 1.5x larger and darker; detail strokes at least 1.5 px at zoom 1.8. Keep hero headset, tie stripes, badge; zombie crown tuft, torn hem, one big mouth with two fangs; demon CMY stripes and LCD; manager pinstripes, buttons, brow and mouth bar.</li><li>Props: 3 to 4 distinctive large silhouettes per room kind at about 40 to 70 px (office: coffee machine, water cooler, plant, copier; basement: barrel, valve wheel, pallet; boardroom: podium, trophy case); top face or outline one value step lighter; rim-light 1 px edges on wall tops, desk and table edges facing light; per-area wall-base glow (teal / rust / burgundy). Props and floor paint never overlap loot spawn zones.</li><li>Secondary motion that reads at 1x: tie sway 2 to 3x, 2 px idle breathing bob on hero and manager, visible mug steam; live-draw only the swaying parts over a per-type cached sprite.</li><li>Cache first: per-monster-type sprite cache of static detail before any live detail; budget atlas bake at most 5 s, fps50 p50 at least 40 with 50 monsters.</li></ol>
+<p>Drop (do not port)</p>
+<ol><li>Posters, cork-board notices, framed-chart text, signs and the wall-space transform (unless needed for window/board panels).</li><li>Manager stubble, sweat drip, comb-over strands, nose; zombie tears, eye bags, mottling, drool; hero laces, trouser creases, cuffs.</li><li>Dust motes (keep only if fps50 has slack after item 12), second flicker pattern, LCD flicker.</li><li>White fixture glint slashes (drop or tone to about 40 %, they out-shout loot labels).</li><li>Fine pixel decals: door mat, coffee rings, footprints, cable tape, scuffs, sockets, vents, keyboard keys, drawer labels. Keep 3 to 4 larger decal types.</li><li>Yellow safe-lane colour: ochre, outside the loot band, never near the yellow rarity colour.</li><li>Legacy switch, compare view, zoom aid, inlined three-scene generator file.</li></ol>
+<p>Acceptance: every must-fix of round 1 still holds (no label covers the damage number, hero separates from zombie, rarity not by colour alone), then in-game review by both visual reviewers.</p><p class="muted small">To pick: tell Claude "pick art-direction variant X because …", or edit <code>variants/art-direction/decision.md</code>.</p></details>
     </section>
     <section class="vset" id="variants-character-select">
       <h2>character-select <span class="chip agreed">picked A</span></h2>
@@ -8913,7 +9478,7 @@ else window.__ready=true;
 <h3 id="nfr-p06-selection-screen-performance">NFR-P06 Selection screen performance</h3>
 <ul><li>The animated class-selection screen holds 60 fps on the reference laptop (NFR-P01) and does not leak memory when switching classes 200 times.</li><li>Provenance: ASSUMED | Priority: should | Status: draft</li></ul>
 <h3 id="nfr-a07-selection-screen-and-tree-accessibility">NFR-A07 Selection screen and tree accessibility</h3>
-<ul><li>Class selection, name entry, slot list and skill tree are fully keyboard-operable, never rely on colour alone (NFR-A03), honour reduced motion (NFR-A05) and meet NFR-A04 contrast and text size.</li><li>Provenance: INFERRED (extends NFR-A01..A05) | Priority: must | Status: draft</li></ul></details></section><section class="tab" id="tab-previews"><p class="muted">No preview environments yet. They appear here once CI writes <code>previews.json</code> (milestone M3).</p></section><section class="tab" id="tab-scorecard"><p class="muted">No scorecard yet. The proposed measures are in <a href="../11-operating-model.md">11-operating-model.md</a>.</p></section><section class="tab" id="tab-activity"><div class="tbl"><table><thead><tr><th>When</th><th>Commit</th><th>What</th></tr></thead><tbody><tr><td class="nowrap small">2026-10-14 02:19</td><td><code>ce3e0c0</code></td><td>office-crawler: fifth briefing — graphics detail and polish round (G) after R5<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 02:13</td><td><code>5ea1a77</code></td><td>office-crawler: work in progress (CORE-R4 and WORLD-R5 running)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 02:12</td><td><code>970ae18</code></td><td>office-crawler: character-select decided (PROXY: A Lobby lineup)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 02:12</td><td><code>855bb84</code></td><td>office-crawler: character-select review (A 34 / C 30 / B 28); work in progress<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 02:09</td><td><code>dde8423</code></td><td>office-crawler: character-select variants A/B/C + class figures (prototyper)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 02:05</td><td><code>239512d</code></td><td>office-crawler: proxy answers to spec questions 02; escalations listed in STATE<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 02:04</td><td><code>846e9b4</code></td><td>office-crawler: work in progress (R4 core, proxy, character-select prototyper running)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 02:04</td><td><code>5910be3</code></td><td>office-crawler: ADR-0005/0006 + R4 contract + plan R4-R6; safe-default renames<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 02:03</td><td><code>25bda36</code></td><td>office-crawler: polish — high-contrast/text-size fixes, basement visibility, loot label discipline, title screen art<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 01:59</td><td><code>ccc420f</code></td><td>office-crawler: spec for classes/trees/slots (70 ACs); learning L-16<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 01:57</td><td><code>de40f52</code></td><td>office-crawler: fourth briefing — rounds 7-12 (flawless gameplay, lighting, overall test and polish)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 01:57</td><td><code>ead654a</code></td><td>office-crawler: circle 2 answered (PROXY)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 01:56</td><td><code>2a799e1</code></td><td>office-crawler: circle 2 (classes, skill trees, save slots)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 01:53</td><td><code>12c74df</code></td><td>harness: adversarial test-engineer pass in Verify (L-08 applied)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 01:52</td><td><code>f18a5c2</code></td><td>office-crawler: third briefing (3 classes with skill trees, character select, 5 save slots); rounds 4-6 plan<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 01:47</td><td><code>c1be6f3</code></td><td>office-crawler: final fixes — save on quit, story frame, impact crash clamp, first-run kit, audio suspend, save hardening, reduced motion, CI template<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 01:17</td><td><code>b59b587</code></td><td>harness: implementer writes resumable progress lines (L-15)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 01:16</td><td><code>2dc9e17</code></td><td>office-crawler: WIP from interrupted FINAL-FIX (green, 427 tests); learning L-15<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 01:10</td><td><code>c25959d</code></td><td>office-crawler: final visual review (31/40)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 00:47</td><td><code>b5c6790</code></td><td>office-crawler: final S3 code review; bench re-run passes at lower load (43.6 fps)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 00:42</td><td><code>3b0bc9d</code></td><td>office-crawler: work in progress (final reviews running)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 00:32</td><td><code>37b5985</code></td><td>office-crawler: S3 UI — audio wired, save/continue/export/import, options (volumes, sound kit, key remap, accessibility), victory screen, boss bar; prebuilt play/index.html<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 00:22</td><td><code>b9ae6ef</code></td><td>office-crawler: S3 WORLD — executive boardroom, The Regional Director (two looks), telegraphs, stairs states, victory confetti<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 23:51</td><td><code>a97ae04</code></td><td>office-crawler: metrics for iterations 2-3 (so far)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 23:51</td><td><code>8931893</code></td><td>office-crawler: S3 core — boss arena (The Regional Director, two phases, telegraphs), victory and keep-playing, versioned save/load with storage adapter<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 23:42</td><td><code>58f9f26</code></td><td>office-crawler: S2 UI fixes — label separation, pack readability, HUD 44px, phone layout, XP label, minimap/automap, Emergency Exit UI<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 23:30</td><td><code>c4bdcca</code></td><td>office-crawler: notes<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 23:30</td><td><code>2f0a9a0</code></td><td>office-crawler: S2 core fixes (map data, Emergency Exit portal, stash gating, caps, affix tiers, vendor stock) + balance pass to ~23 min runs<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 23:17</td><td><code>8d74c21</code></td><td>office-crawler: work in progress (CORE-FIX, UI-FIX running)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 23:16</td><td><code>1ed9eeb</code></td><td>office-crawler: S3-2 audio engine (3 synthesised kits, cue mapping, limiter, spatial, ambient)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 23:10</td><td><code>4597619</code></td><td>office-crawler: provisional sound default (PROXY: foley-synth); audio WP started<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 23:09</td><td><code>04687aa</code></td><td>office-crawler: work in progress (CORE-FIX, UI-FIX, proxy sound default running)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 23:09</td><td><code>443c3d0</code></td><td>office-crawler: sound-direction variants A/B/C with offline measurements; all kits swappable, customer to pick by ear (L-14)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 23:06</td><td><code>332ef17</code></td><td>harness: learnings L-12 (orchestrator observations are suspects) and L-13 (data contracts before parallel packages)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 23:06</td><td><code>b71d526</code></td><td>office-crawler: S2 code review (changes needed) + fix-round contract<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 23:04</td><td><code>6e88f0b</code></td><td>office-crawler: S2 visual review (29/40 iterate)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 22:58</td><td><code>07d0ef2</code></td><td>office-crawler: notes<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 22:58</td><td><code>a76ae4f</code></td><td>office-crawler: S2 UI — side-drawer inventory/Employee File/skills, vendor, stash, dialogs, Lobby start, right-mouse casting, HUD, cheats in test hook<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 22:34</td><td><code>0ed37c2</code></td><td>office-crawler: S2 WORLD render — 6 new monsters, projectiles, lobby/basement tilesets, NPCs, champion visuals, ground loot, single floater source<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-13 22:05</td><td><code>d43024c</code></td><td>harness: parallel work-package rules and render_needs handoff (learnings L-10, L-11)<div class="muted small">Claude</div></td></tr></tbody></table></div></section><section class="tab" id="tab-concept"></section></main>
+<ul><li>Class selection, name entry, slot list and skill tree are fully keyboard-operable, never rely on colour alone (NFR-A03), honour reduced motion (NFR-A05) and meet NFR-A04 contrast and text size.</li><li>Provenance: INFERRED (extends NFR-A01..A05) | Priority: must | Status: draft</li></ul></details></section><section class="tab" id="tab-previews"><p class="muted">No preview environments yet. They appear here once CI writes <code>previews.json</code> (milestone M3).</p></section><section class="tab" id="tab-scorecard"><p class="muted">No scorecard yet. The proposed measures are in <a href="../11-operating-model.md">11-operating-model.md</a>.</p></section><section class="tab" id="tab-activity"><div class="tbl"><table><thead><tr><th>When</th><th>Commit</th><th>What</th></tr></thead><tbody><tr><td class="nowrap small">2026-10-14 08:15</td><td><code>2512655</code></td><td>office-crawler: ledger usage G3<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 08:15</td><td><code>d5db9d5</code></td><td>office-crawler: G3 visual review (34/33 both areas)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 08:07</td><td><code>3c4e25a</code></td><td>office-crawler: notes, G3 review and proxy acceptance launched<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 08:07</td><td><code>7a008df</code></td><td>office-crawler: orchestrator verification after R5 fix round (all green)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 07:49</td><td><code>088d9b7</code></td><td>office-crawler: ledger usage<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 07:48</td><td><code>c460154</code></td><td>office-crawler: adv-r5 deterministic (https route), flake root-caused<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 07:22</td><td><code>f05f5d0</code></td><td>office-crawler: ledger usage<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 07:22</td><td><code>55a67dd</code></td><td>office-crawler: SAVE-FIX ADV-R5-12/14 (affix range schema, hpMax floor, price guard)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 06:38</td><td><code>9de4fbc</code></td><td>office-crawler: SAVE-FIX WIP snapshot<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 06:38</td><td><code>b2bc015</code></td><td>office-crawler: ledger usage ADV round 2<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 06:37</td><td><code>3ab55a0</code></td><td>office-crawler: ADV-R5 round 2 (11 fixes verified, 2 new minor)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 06:04</td><td><code>8be9ba1</code></td><td>office-crawler: ledger usage<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 06:03</td><td><code>dcae5ab</code></td><td>office-crawler: SAVE-FIX follow-up (undo replace, future-beat owner)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:56</td><td><code>3230eab</code></td><td>office-crawler: notes, ledger; SAVE-FIX follow-up and ADV round 2 launched<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:55</td><td><code>d6598ea</code></td><td>office-crawler: UI-FIX (escaping, dialog focus, load confirm, save status UI, char select polish)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:35</td><td><code>9b1fd52</code></td><td>office-crawler: SAVE-FIX (tab lock with heartbeat, strict import schema, safe migration, save notices)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:35</td><td><code>6ab5ee0</code></td><td>office-crawler: fix-round WIP snapshot<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:34</td><td><code>1e56020</code></td><td>office-crawler: WORLD-FIX (G3) in-game fixes F1-F4, FM face, skill VFX, loot-plate perf<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:23</td><td><code>a975042</code></td><td>office-crawler: fix-round WIP snapshot<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:23</td><td><code>fb7db37</code></td><td>office-crawler: fix-round WIP snapshot<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:23</td><td><code>a22bb7d</code></td><td>harness: record repo-layout decision<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:14</td><td><code>1ee9988</code></td><td>office-crawler: fix-round WIP snapshot<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:13</td><td><code>3443db7</code></td><td>office-crawler: fix-round WIP snapshot<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:13</td><td><code>b789ff4</code></td><td>office-crawler: human-log entry<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:13</td><td><code>9260eb6</code></td><td>office-crawler: R5 fix-round contract, fix packages launched<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:10</td><td><code>9a2238c</code></td><td>office-crawler: human-log entry<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 05:08</td><td><code>af7712d</code></td><td>office-crawler: ADV-R5 adversarial pass (4 major, 7 minor) with demonstrating tests<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 04:23</td><td><code>900c1ca</code></td><td>office-crawler: code review R4+R5+G (2 blocking, 13 should)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 04:21</td><td><code>cbbe589</code></td><td>office-crawler: ledger row G2 review<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 04:21</td><td><code>8282d5d</code></td><td>office-crawler: G2 visual review (G 33/32, char select 33/30, iterate)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 04:17</td><td><code>0d9a421</code></td><td>office-crawler: review agents WIP<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 04:16</td><td><code>9562612</code></td><td>office-crawler: notes, verification agents launched<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 04:16</td><td><code>0034514</code></td><td>office-crawler: UI-R5 done (char select, skill trees, 5 save slots, audio cues), verified suite<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 03:43</td><td><code>df99778</code></td><td>office-crawler: UI-R5 WIP snapshot<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 03:43</td><td><code>e9428c5</code></td><td>office-crawler: G-FIX hand-back (in-game review findings), UI-R5 WIP, ledger row<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 03:10</td><td><code>8309ac5</code></td><td>office-crawler: work in progress (UI-R5, G-FIX running)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 03:10</td><td><code>fc84194</code></td><td>office-crawler: G craft review (31/40); harness learning L-024 (visual claims need 1x evidence)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 03:09</td><td><code>9e24979</code></td><td>office-crawler: G in-game appeal review (32/40)<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 03:09</td><td><code>8d80129</code></td><td>notes: RESUME HERE block for context-compression survival; playbook rule<div class="muted small">Claude</div></td></tr><tr><td class="nowrap small">2026-10-14 03:06</td><td><code>c38e63a</code></td><td>office-crawler: round G — C3 detail ported into the game (materials, textures, light shafts, coloured shadows, decor, faces, HUD chrome module)<div class="muted small">Claude</div></td></tr></tbody></table></div></section><section class="tab" id="tab-concept"></section></main>
 <footer>Snapshot. Regenerate with <code>node portal/build.mjs</code>. Answers and choices go to Claude (or into the files), not into this page.</footer>
 <script>
 (function(){
