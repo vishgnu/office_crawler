@@ -66,7 +66,7 @@ const potionList = [
 
 // Consumables that are not potions (R-046): kind "consumable", 1x1, belt-able, one per item. effect names what using it does.
 const consumable = (id, name, effect, minIlvl, value) => ({ id, name, kind: "consumable", slot: "consumable", effect, w: 1, h: 1, minIlvl, value, reqs: {} });
-const consumableList = [consumable("emergency-exit", "Emergency Exit", "portal", 1, 25)];
+const consumableList = [consumable("emergency-exit", "Emergency Exit", "portal", 1, 5)];
 
 export const bases = Object.fromEntries([...list, ...potionList, ...consumableList].map((b) => [b.id, b]));
 export const consumableBases = consumableList;

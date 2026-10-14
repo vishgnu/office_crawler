@@ -65,10 +65,10 @@ export function fmtStamp(e) {
 // `deepest` is always >= 1 (the core cannot tell the Lobby from floor 1): "Lobby only" means standing in the Lobby at deepest 1.
 const deepestOf = (e) => (Number.isFinite(e.deepest) ? (e.deepest <= 1 && !(e.depth > 0) ? 0 : e.deepest) : e.depth ?? 0);
 const where = (e) => (deepestOf(e) > 0 ? `${T.slDeepest} ${T.slFloor.toLowerCase()} ${deepestOf(e)}` : `${T.slDeepest}: ${T.slLobby}`);
-/** The quest line of an occupied card: "<main step title> · N/M" (AC-R-252-1), "" when the entry carries no quest fields (an empty, damaged or newer slot, or an index not yet backfilled). */
+/** The quest line of an occupied card: "<title of the current global main step> · N/M" (AC-R-252-1, ten steps over three main quests, M = sideCount), "" when the entry carries no quest fields (an empty, damaged or newer slot, or an index not yet backfilled). */
 export function slotQuestText(e) {
   if (!e || e.state !== "ok" || !Number.isInteger(e.mainStep)) return "";
-  const steps = content.quests.main.steps, step = e.mainDone ? T.slotMainDone : steps[Math.min(steps.length, Math.max(1, e.mainStep)) - 1].title;
+  const steps = content.mainSteps, step = e.mainDone ? T.slotMainDone : steps[Math.min(steps.length, Math.max(1, e.mainStep)) - 1].title;
   return T.slotQuestLine.replace("{step}", step).replace("{n}", String(e.sidesDone ?? 0)).replace("{m}", String(config.quests.sideCount));
 }
 export const slotSummary = (e) => `${CLASS_NAME[e.class] ?? e.class} · ${T.slLevel} ${e.level} · ${where(e)} · ${fmtPlay(e.playSec)} ${T.slPlayed}`;

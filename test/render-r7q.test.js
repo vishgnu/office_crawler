@@ -27,7 +27,7 @@ test("NPC marker shapes: two distinct non-colour shapes, exposed as the model [{
   assert.notEqual(NPC_SHAPE.available, NPC_SHAPE.handin);
   const core = lobby(), list = [], fx = createFx(style);
   drawNpcMarkers(ctx(), cam, core, bodiesOf(core), list, style, false, 0);
-  assert.deepEqual(list.map((r) => `${r.id}:${r.shape}`).sort(), ["healer:exclamation", "potions:exclamation", "vendor:exclamation"], "the stash keeper has no marker");
+  assert.deepEqual(list.map((r) => `${r.id}:${r.shape}`).sort(), ["healer:exclamation", "potions:exclamation", "stash:exclamation", "vendor:exclamation"], "the stash keeper offers sq4 (R7-4)");
   assert.equal(setQuestStep(core, "sq2", 2).ok, true);
   drawNpcMarkers(ctx(), cam, core, bodiesOf(core), list, style, false, 0);
   assert.equal(list.find((r) => r.id === "healer").shape, "question");
@@ -105,3 +105,32 @@ test("warm: the quest elite's type is warmed while sq3 is active, once, and not 
   while (counts.size < all.size && calls++ < 2000) warmFrames(atlas, core, 0);
   for (const k of all) assert.equal(counts.get(k), 1, `${k} drawn once`);
 });
+
+test("warm (R7-4): the Consultant frames are warmed while sq5 is active, once, and not before", async () => {
+  const { warmFrames } = await import("../src/render/world.js");
+  const type = config.quests.sq5.kill.monster, counts = new Map();
+  assert.equal(type, "consultant");
+  const all = new Set(); for (const a of ["idle", "walk", "attack"]) for (let d = 0; d < DIRS; d++) for (let f = 0; f < ANIMS[a]; f++) all.add(keys.mon(type, a, d, f));
+  const atlas = { isDrawn: (k) => (all.has(k) ? counts.has(k) : undefined), get: (k) => { counts.set(k, (counts.get(k) ?? 0) + 1); return {}; } };
+  const core = { depth: 0, monsters: [], player: { class: "it-wizard" }, quests: { sq3: { s: "available", p: 0 }, sq5: { s: "available", p: 0 } } };
+  for (let i = 0; i < 50; i++) warmFrames(atlas, core, 0);
+  assert.ok(![...counts.keys()].some((k) => k.startsWith(`mon:${type}:`)), "not warmed while the quest is not active");
+  core.quests.sq5.s = "active";
+  let calls = 0;
+  while (counts.size < all.size && calls++ < 2000) warmFrames(atlas, core, 0);
+  for (const k of all) assert.equal(counts.get(k), 1, `${k} drawn once`);
+});
+
+test("map pin (R7-4): the stash keeper gets a pin while sq4 is offered, and the ledger entry gets the quest colour and plate", () => withDom(() => {
+  const core = lobby(), map = createMap(style);
+  const run = (draw) => { const r = rec(); draw(r.g); return r.calls.join("|"); };
+  core.quests.pinned = "sq4";
+  const keeper = content.npcs.stash && run((g) => map.drawFull(g, core, 1280, 720, 0, false));
+  assert.ok(keeper.includes("#f0e442"), "a pin for the stash keeper");
+  const entry = { id: "qi-sq4", quest: "sq4", label: "Misfiled Ledger", rarity: "normal", mark: "!", border: "none", color: "#f0e442", keep: true, tile: { x: 10, y: 10 } };
+  const fx = createFx(style); fx.heroType = "facilities-manager"; fx.reducedMotion = true; fx.heroS = { x: 640, y: 380 }; fx.bodies = [];
+  const c2 = { player: { tile: { x: 10, y: 8 } }, groundItems: [entry] };
+  fx.drawLoot(ctx(), cam, c2, 1000); fx.drawLootPlates(ctx(), cam, c2, 1000);
+  assert.equal(fx.lt.pool[0].colour, "#f0e442");
+  assert.equal(fx.platesPlaced.length, 2);
+}));

@@ -47,7 +47,7 @@ export function messageFor(ev, state) {
     case "stairsUnlocked": return S.bossStairsUnlocked;
     case "floorEnter": return ev.depth === 0 ? S.lobbyName : `${T.floorWord} ${ev.depth}: ${state.floor.name}`;
     // R7 (contract 4.3): accepted, a main step or a side quest ready, completed; quest.item has no line of its own (the quest.step that follows toasts); the refusal shows the bag-full notice
-    case "quest.accepted": case "quest.step": return ev.next ? T.toastQuest.replace("{title}", ev.title).replace("{next}", ev.next) : null;
+    case "quest.accepted": case "quest.step": if (ev.unlocked && content.quests[ev.id]?.unlock) return content.quests[ev.id].unlock; /* R7-4: the next main quest opened */ return ev.next ? T.toastQuest.replace("{title}", ev.title).replace("{next}", ev.next) : null;
     case "quest.completed": { const r = ev.rewards, parts = r ? [r.gold > 0 && T.rewardGold.replace("{n}", r.gold), r.xp > 0 && T.rewardXp.replace("{n}", r.xp), ...(r.items ?? [])].filter(Boolean) : []; return (parts.length ? T.toastQuestRewards.replace("{rewards}", parts.join(", ")) : T.toastQuestDone).replace("{title}", ev.title); }
     case "quest.handInRefused": return T.bagFullNotice;
     default: return null;

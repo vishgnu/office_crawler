@@ -59,17 +59,19 @@ for (const how of ["key", "dock", "pause"]) {
   let s = await g.state();
   check("AC-R-248-1 new game: tracker is the main next step", s.ui.tracker?.id === "main" && s.ui.tracker.text === "Take the lift down." && s.ui.tracker.text === s.quests.main.nextStep, s.ui.tracker);
   check("AC-R-248-1 the tracker DOM line shows it, in one line, with the full text as title", await g.page.evaluate(() => { const t = document.querySelector('[data-testid="tracker"]'), x = t.querySelector('[data-testid="tracker-text"]'); return !t.hidden && x.textContent === "Take the lift down." && t.title.includes("Take the lift down.") && x.getBoundingClientRect().height < 30; }));
-  await g.app("quests.setStep", "main", 3); await g.app("quests.setStep", "sq2", 1); await g.app("quests.setStep", "sq1", 3);
+  await g.app("quests.setStep", "main2", 2); await g.app("quests.setStep", "sq2", 1); await g.app("quests.setStep", "sq1", 3); await g.app("quests.setStep", "sq4", 1); // main done, main2 at step 2, main3 locked, sq1 completed, sq4 active (AC-R-257-5)
   await g.app("ui.open", "journal");
   s = await g.state();
   const q = s.quests;
   const dom = await g.page.evaluate(() => {
     const t = (id) => document.querySelector(`[data-testid="${id}"]`)?.textContent ?? null;
-    return { order: [...document.querySelectorAll('[data-testid="journal-active"] > li')].map((l) => l.dataset.quest), done: [...document.querySelectorAll('[data-testid="journal-completed"] > li')].map((l) => l.dataset.quest), next: ["main", "sq2", "sq3"].map((i) => t(`journal-next-${i}`)), prog: t("journal-progress-sq2"), progMain: t("journal-progress-main"), giver: t("journal-giver-sq2"), pinned: !!document.querySelector('[data-testid="journal-pinned-main"]'), doneNext: t("journal-next-sq1"), state: ["main", "sq2", "sq3", "sq1"].map((i) => t(`journal-state-${i}`)), hs: document.documentElement.scrollWidth <= innerWidth };
+    return { order: [...document.querySelectorAll('[data-testid="journal-active"] > li')].map((l) => l.dataset.quest), done: [...document.querySelectorAll('[data-testid="journal-completed"] > li')].map((l) => l.dataset.quest), next: ["main2", "sq2", "sq3"].map((i) => t(`journal-next-${i}`)), prog: t("journal-progress-sq2"), progMain: t("journal-progress-main2"), giver: t("journal-giver-sq2"), pinned: !!document.querySelector('[data-testid="journal-pinned-main2"]'), doneNext: t("journal-next-sq1"), state: ["main2", "sq2", "sq3", "sq1", "main3"].map((i) => t(`journal-state-${i}`)), blurb: t("journal-blurb-main2"), lock: t("journal-lock-main3"), lockedNext: t("journal-next-main3"), lockedPin: !!document.querySelector('[data-testid="journal-pin-main3"]'), lockedProg: t("journal-progress-main3"), mainDone: t("journal-state-main"), hs: document.documentElement.scrollWidth <= innerWidth };
   });
-  check("AC-R-243-2 active list: main first, then the side quests; completed list holds sq1", JSON.stringify(dom.order) === '["main","sq2","sq3"]' && JSON.stringify(dom.done) === '["sq1"]', dom);
-  check("AC-R-243-2 next-step lines equal quests[id].nextStep; completed has none", dom.next[0] === q.main.nextStep && dom.next[1] === q.sq2.nextStep && dom.next[2] === q.sq3.nextStep && dom.doneNext === null, dom);
-  check("AC-R-243-2 progress, giver, pin state and state words are text", dom.prog === "0/1" && dom.progMain === "Step 3/6" && dom.giver === q.sq2.giver && dom.pinned && dom.state.join() === "Active,Active,Available,Completed", dom);
+  check("AC-R-257-5 the list: the active main quest first, then the sides in order, the locked main3 last; the Completed list holds main and sq1", JSON.stringify(dom.order) === '["main2","sq2","sq3","sq4","sq5","main3"]' && JSON.stringify(dom.done) === '["main","sq1"]', dom);
+  check("AC-R-243-2 next-step lines equal quests[id].nextStep; completed has none", dom.next[0] === q.main2.nextStep && dom.next[1] === q.sq2.nextStep && dom.next[2] === q.sq3.nextStep && dom.doneNext === null, dom);
+  check("AC-R-243-2 progress, giver, pin state and state words are text", dom.prog === "0/1" && dom.progMain === "Step 2/3" && dom.giver === q.sq2.giver && dom.pinned && dom.state.join() === "Active,Active,Available,Completed,Locked" && dom.mainDone === "Completed", dom);
+  check("AC-R-257-5 the active arc shows its blurb; the locked arc shows 'Locked. Finish The Paper Trail first.' and no next step, no pin, no progress", dom.blurb === "The cables lead to a paper trail, and the paper trail leads down." && dom.lock === "Locked. Finish The Paper Trail first." && dom.lockedNext === null && !dom.lockedPin && dom.lockedProg === null, dom);
+  await g.page.screenshot({ path: "docs/shots/r74-ui-journal-arcs-d.jpg", type: "jpeg", quality: 82 });
   check("AC-R-244-1 desktop: a side panel, no horizontal scroll", dom.hs && (await g.page.evaluate(() => { const r = document.querySelector("#pleft").getBoundingClientRect(); return r.left <= 0 && r.width < 400; })));
   const tr = await g.page.evaluate(() => { const t = document.querySelector('[data-testid="tracker"]').getBoundingClientRect(), p = document.querySelector("#pleft").getBoundingClientRect(), ctl = [...document.querySelectorAll("#pleft button")].map((b) => b.getBoundingClientRect()); return { clear: ctl.every((c) => c.right <= t.left || t.right <= c.left || c.bottom <= t.top || t.bottom <= c.top) && (t.left >= p.right - 1 || t.right <= p.left || t.bottom <= p.top), box: [t.left, t.top, t.right, t.bottom] }; });
   check("AC-R-244-1 the tracker does not overlap the open journal", tr.clear, tr);
@@ -80,13 +82,19 @@ for (const how of ["key", "dock", "pause"]) {
   check("AC-R-248-2 the tracker DOM line follows", (await g.page.locator(T("tracker-text")).innerText()) === s.quests.sq2.nextStep);
   await g.page.click(T("journal-pin-sq2"));
   s = await g.state();
-  check("AC-R-248-2 unpinning returns the tracker to main", s.quests.pinned === "main" && s.ui.tracker.id === "main", s.quests.pinned);
+  check("AC-R-248-2 unpinning returns the tracker to the active main quest (main2)", s.quests.pinned === "main2" && s.ui.tracker.id === "main2", s.quests.pinned);
   await g.page.click(T("journal-pin-sq3"));
-  await g.app("quests.setStep", "main", 4);
-  check("AC-R-243-2 the open journal updates without reopening when a step completes", (await g.page.locator(T("journal-next-main")).innerText()) === (await quests(g)).main.nextStep && (await g.page.locator(T("journal-progress-main")).innerText()) === "Step 4/6");
+  await g.app("quests.setStep", "main2", 3);
+  check("AC-R-243-2 the open journal updates without reopening when a step completes", (await g.page.locator(T("journal-next-main2")).innerText()) === (await quests(g)).main2.nextStep && (await g.page.locator(T("journal-progress-main2")).innerText()) === "Step 3/3");
   await g.app("cheat.completeQuest", "sq3");
   s = await g.state();
-  check("AC-R-248-2 a pinned quest that completes reverts the tracker to main", s.quests.sq3.state === "completed" && s.quests.pinned === "main" && s.ui.tracker.id === "main", [s.quests.pinned, s.ui.tracker]);
+  check("AC-R-248-2 a pinned quest that completes reverts the tracker to the active main quest", s.quests.sq3.state === "completed" && s.quests.pinned === "main2" && s.ui.tracker.id === "main2", [s.quests.pinned, s.ui.tracker]);
+  // arc pin controls: with a side quest pinned the active arc can be pinned, the locked one cannot
+  await g.page.click(T("journal-pin-sq2"));
+  check("AC-R-257-4 an active arc has a pin control while a side quest is pinned; a locked arc has none", (await g.page.locator(T("journal-pin-main2")).count()) === 1 && (await g.page.locator(T("journal-pin-main3")).count()) === 0);
+  await g.page.click(T("journal-pin-main2"));
+  s = await g.state();
+  check("AC-R-257-4 pinning the arc moves the tracker to it", s.quests.pinned === "main2" && s.ui.tracker.id === "main2", s.quests.pinned);
   // pin survives save and reload
   await g.page.click(T("journal-pin-sq2"));
   await g.app("save.write");
@@ -113,6 +121,23 @@ for (const how of ["key", "dock", "pause"]) {
   await g.context.close();
 }
 
+// ---- AC-R-257-5 / AC-R-254-2: the toasts of an arc change: the reward line and the "new assignment" line, one after the other through the queue
+{
+  const g = await fresh();
+  const seen = [];
+  const poll = async (ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { const t = (await g.state()).ui.toast; if (t && seen[seen.length - 1] !== t) seen.push(t); await g.app("step", 30); await g.page.waitForTimeout(30); } };
+  await g.app("quests.setStep", "main2", 1); // main completes, main2 opens
+  await poll(9500);
+  check("AC-R-257-3 / 254-2 completing arc 1 toasts its reward (gold and experience)", seen.some((t) => /Why the Lights Went Out: completed \(50 gold, 65 experience\)/.test(t)), seen);
+  check("AC-R-257-5 the unlock toast names the new assignment", seen.some((t) => t === "A new assignment is on your desk: The Paper Trail."), seen);
+  const st = await g.state();
+  check("the tracker and the pin moved to main2 with the unlock", st.quests.pinned === "main2" && st.ui.tracker.id === "main2" && st.quests.main3.state === "unavailable", [st.quests.pinned, st.ui.tracker]);
+  await g.app("quests.setStep", "main3", 1); seen.length = 0; await poll(9500);
+  check("AC-R-257-5 completing arc 2 toasts its reward and the Final Notice assignment", seen.some((t) => /The Paper Trail: completed \(80 gold, 110 experience\)/.test(t)) && seen.some((t) => t === "A new assignment is on your desk: Final Notice."), seen);
+  check("B1 no page errors (unlock toasts)", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
+
 // ---- keyboard: focus into the journal, arrows over entries, Enter on a pin control, Escape returns focus
 {
   const g = await fresh();
@@ -126,7 +151,9 @@ for (const how of ["key", "dock", "pause"]) {
   await g.page.focus(T("journal-pin-sq2")); await g.page.keyboard.press("Enter");
   check("AC-R-244-2 Enter on a pin control pins", (await g.state()).quests.pinned === "sq2");
   const names = await g.page.evaluate(() => [...document.querySelectorAll(".jq")].map((l) => l.getAttribute("aria-label")));
-  check("AC-R-244-2 every quest state is in the accessible name as text", names.length === 4 && /Active/.test(names[2]) && /Available/.test(names[1]) && /Pinned/.test(names[2]), names);
+  check("AC-R-244-2 every quest state is in the accessible name as text (eight entries, the two locked arcs last)", names.length === 8 && /Active/.test(names[2]) && /Available/.test(names[1]) && /Pinned/.test(names[2]) && /Locked/.test(names[6]) && /Locked\. Finish The Paper Trail first/.test(names[7]), names);
+  await g.page.focus(`${T("journal-quest-main3")}`); await g.page.keyboard.press("ArrowUp");
+  check("AC-R-244-2 the locked rows are in the arrow order", (await g.page.evaluate(() => document.activeElement?.dataset?.quest)) === "main2");
   await g.page.keyboard.press("Escape");
   const back = await g.page.evaluate(() => document.activeElement?.dataset?.testid);
   check("AC-R-244-2 Escape closes and returns focus to the previous element", (await g.state()).ui.panels.journal === false && back === "dock-inventory", back);
@@ -140,10 +167,13 @@ for (const how of ["key", "dock", "pause"]) {
   check("AC-R-244-1 phone: the journal button is as large as the other HUD buttons and on screen", dock.h >= dock.oh && dock.w >= 44 && dock.inside, dock);
   const t0 = await g.page.evaluate(() => { const t = document.querySelector('[data-testid="tracker"]'); const x = t.querySelector('[data-testid="tracker-text"]'); return { hidden: t.hidden, h: x.getBoundingClientRect().height, w: t.getBoundingClientRect().width, ok: t.getBoundingClientRect().right <= innerWidth && document.documentElement.scrollWidth <= innerWidth }; });
   check("AC-R-248-1 phone: tracker is one line within the screen", !t0.hidden && t0.h < 30 && t0.ok, t0);
-  await g.app("quests.setStep", "main", 4); await g.app("quests.setStep", "sq2", 1);
+  await g.app("quests.setStep", "main2", 1); await g.app("quests.setStep", "sq2", 1); await g.app("quests.setStep", "sq4", 1);
   await g.page.click(T("dock-journal"));
   const r = await g.page.evaluate(() => { const d = document.querySelector("#pleft").getBoundingClientRect(), x = document.querySelector('[data-testid="close-journal"]').getBoundingClientRect(), pb = document.querySelector("#pleft .pb"); return { full: d.width >= innerWidth - 16 && d.height > innerHeight * 0.5, close: x.width >= 44 && x.height >= 44 && x.right <= innerWidth && x.top >= 0, hs: document.documentElement.scrollWidth <= innerWidth, overflowX: pb.scrollWidth <= pb.clientWidth + 1, scroll: pb.scrollHeight >= pb.clientHeight }; });
   check("AC-R-244-1 phone: full-screen panel, visible 44 px close, no horizontal scroll", r.full && r.close && r.hs && r.overflowX, r);
+  check("AC-R-244-1 phone: the locked row is on screen inside the panel width, no horizontal overflow", await g.page.evaluate(() => { const l = document.querySelector('[data-testid="journal-quest-main3"]'), pb = document.querySelector("#pleft .pb"); l.scrollIntoView(); const r = l.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && pb.scrollWidth <= pb.clientWidth + 1; }));
+  await g.page.evaluate(() => document.querySelector('[data-testid="journal-quest-main3"]').scrollIntoView({ block: "end" }));
+  await g.page.screenshot({ path: "docs/shots/r74-ui-journal-locked-m.jpg", type: "jpeg", quality: 82 });
   check("AC-R-244-1 phone: pin buttons are 44 px targets", await g.page.evaluate(() => [...document.querySelectorAll(".jpin")].every((b) => { const r = b.getBoundingClientRect(); return r.height >= 44 && r.width >= 44; })));
   await g.page.click(T("close-journal"));
   check("AC-R-244-1 phone: the close control closes", (await g.state()).ui.panels.journal === false);
@@ -159,14 +189,16 @@ for (const how of ["key", "dock", "pause"]) {
   await g.page.click(T("story-continue"));
   const s = await g.state();
   check("AC-R-241 dismissing the start story sends storyRead: main step 1 is done (memo)", s.quests.main.m.memo === true && s.quests.main.step === 2, s.quests.main);
-  await g.app("quests.setStep", "main", 6);
+  await g.app("quests.setStep", "main3", 3);
   await g.page.keyboard.press("KeyJ");
-  check("journal: step 6 offers Read the verdict", (await g.page.locator(T("journal-verdict")).count()) === 1);
+  check("journal: step 3 of main3 does not offer Read the verdict", (await g.page.locator(T("journal-verdict")).count()) === 0);
+  await g.app("quests.setStep", "main3", 4);
+  check("journal: the last step of main3 offers Read the verdict", (await g.page.locator(T("journal-verdict")).count()) === 1);
   await g.page.click(T("journal-verdict"));
   const s2 = await g.state();
-  check("journal: Read the verdict completes the main quest and shows the closing text", s2.quests.main.state === "completed" && s2.ui.menu === "story" && (await g.page.locator(".screen.story-screen").count()) === 1, [s2.quests.main.state, s2.ui.menu]);
+  check("journal: Read the verdict completes main3 (and with it all three) and shows the closing text", s2.quests.main3.state === "completed" && s2.quests.main.state === "completed" && s2.quests.main2.state === "completed" && s2.ui.menu === "story" && (await g.page.locator(".screen.story-screen").count()) === 1, [s2.quests.main3.state, s2.ui.menu]);
   await g.page.click(T("story-continue"));
-  check("journal: afterwards no verdict action, main is under Completed", (await g.page.locator(T("journal-verdict")).count()) === 0 && (await g.page.locator(`${T("journal-completed")} [data-quest="main"]`).count()) === 1);
+  check("journal: afterwards no verdict action, main is under Completed", (await g.page.locator(T("journal-verdict")).count()) === 0 && (await g.page.locator(`${T("journal-completed")} [data-quest="main3"]`).count()) === 1);
   check("B1 no page errors (story)", g.errors.length === 0, g.errors);
   await g.context.close();
 }

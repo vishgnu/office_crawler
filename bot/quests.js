@@ -17,6 +17,15 @@ export const QBOT = {
   bagFullRounds: 4 // sell or stash rounds after a bagFull refusal before the bot gives the quest up
 };
 
+/** The Emergency Exit (R7-3): opens a door at the hero's tile and takes it to the Lobby; the Lobby door leads back to the same tile. A trip with one in the bag skips the climb through the floors above. */
+export const EXIT = "emergency-exit";
+const exitOf = (view) => view.inventory?.items.find((i) => i.base === EXIT) ?? (view.belt ?? []).find((i) => i && i.base === EXIT);
+/** In the Lobby before a trip stage the run still has to make: buy one Emergency Exit (the vendor sells them without limit). */
+export function questWantsExit(view, mem) {
+  if (!on(mem) || !view.quests || mem.q.trips >= QBOT.maxTrips || (mem.profile.depth ?? 1) <= 1 || mem.profile.exitTrips === false) return false;
+  return !exitOf(view) && QBOT.trips.some((st, i) => !mem.q.stagesDone[i] && (mem.profile.depth ?? 1) > st.depth);
+}
+
 /** Returned by questTown while an order of the quest part is under way (the rest of the Lobby routine must not start another one). */
 export const WAIT = Object.freeze({ t: "wait" });
 const SIDE = content.sideIds, giverOf = (id) => content.quests[id].giver;
@@ -93,5 +102,6 @@ export function questTrip(view, mem) {
   if (i < 0 || mem.q.stagesDone[i]) return null;
   if (!SIDE.some((id) => !mem.q.gaveUp[id] && view.quests[id].s === "ready")) return null;
   mem.q.stagesDone[i] = true; mem.q.stage = i; mem.q.climb = true; mem.q.tripStart = view.tick;
-  return { t: "useStairs", dir: "up" };
+  const ex = exitOf(view);
+  return ex && mem.profile.exitTrips !== false ? { t: "useItem", id: ex.id } : { t: "useStairs", dir: "up" };
 }

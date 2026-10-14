@@ -674,6 +674,10 @@ html.hc .tnode { border-color: #fff; }
 .jq:focus-visible,.jpouch li:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .jq.pinned{border-color:var(--gold)}
 .jq.s-completed{opacity:.9}
+.jq.s-unavailable{border-style:dashed;background:transparent}
+.jq.s-unavailable .jt{color:#cfc9ee}
+.jb{margin:0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:14px;overflow-wrap:anywhere}
+.jlock{font-weight:700}
 .jh{display:flex;align-items:baseline;gap:8px;justify-content:space-between}
 .jt{font-size:16px;color:#fff}
 .jk{font-size:14px;color:#b4abe0;white-space:nowrap}

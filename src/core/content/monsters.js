@@ -1,4 +1,5 @@
 // Monster registry (data only). Names are original office characters, never from the denylist.
+// R7-3: hpBase is 2.3 x the pre-R7-3 value (the early floors carry the difficulty; config.depthMult.hp is divided by the same factor).
 // Values are for depth 1; monsterStats(type, depth) scales them (R-031). behaviour: swarmer | ranged | elite (R-030).
 // speed: 1 = player pace; ticks per tile = moveTicksPerTile / speed.
 // damage: base value, rolled as base +/- config.monsterDamageSpread. attackRating feeds hitChance.
@@ -10,44 +11,44 @@ import { config } from "../config.js";
 export const monsters = {
   "zombie-intern": {
     id: "zombie-intern", name: "Zombie Intern", behaviour: "swarmer",
-    hpBase: 14, damage: 3, defense: 4, attackRating: 25, xp: 6, speed: 0.75, sightRange: 9,
+    hpBase: 32, damage: 3, defense: 4, attackRating: 25, xp: 6, speed: 0.75, sightRange: 9,
     minDepth: 1, weight: 3, pack: [2, 4], cost: 2,
   },
   "printer-imp": {
     id: "printer-imp", name: "Printer Imp", behaviour: "swarmer",
-    hpBase: 8, damage: 2, defense: 8, attackRating: 30, xp: 5, speed: 1.2, sightRange: 10,
+    hpBase: 18, damage: 2, defense: 8, attackRating: 30, xp: 5, speed: 1.2, sightRange: 10,
     minDepth: 1, weight: 2, pack: [2, 3], cost: 1.5, resist: { fire: 0.25 },
   },
   "temp-worker": {
     id: "temp-worker", name: "Temp Worker", behaviour: "swarmer", canFlee: true,
-    hpBase: 10, damage: 2, defense: 3, attackRating: 24, xp: 5, speed: 0.9, sightRange: 9,
+    hpBase: 23, damage: 2, defense: 3, attackRating: 24, xp: 5, speed: 0.9, sightRange: 9,
     minDepth: 1, weight: 2, pack: [2, 3], cost: 1.5,
   },
   "printer-demon": {
     id: "printer-demon", name: "Printer Demon", behaviour: "ranged", range: 7,
     projectile: { kind: "toner", speed: 0.22 },
-    hpBase: 12, damage: 4, defense: 5, attackRating: 32, xp: 9, speed: 0.8, sightRange: 11,
+    hpBase: 28, damage: 4, defense: 5, attackRating: 32, xp: 9, speed: 0.8, sightRange: 11,
     minDepth: 2, weight: 2, pack: [2, 2], cost: 3,
   },
   "middle-manager": {
     id: "middle-manager", name: "Middle Manager", behaviour: "elite",
-    hpBase: 60, damage: 8, defense: 12, attackRating: 40, xp: 30, speed: 0.85, sightRange: 10,
+    hpBase: 138, damage: 8, defense: 12, attackRating: 40, xp: 30, speed: 0.85, sightRange: 10,
     minDepth: 3, weight: 1, pack: [1, 1], cost: 8,
   },
   "vending-machine": {
     id: "vending-machine", name: "Vending Machine", behaviour: "elite",
-    hpBase: 90, damage: 10, defense: 25, attackRating: 35, xp: 40, speed: 0.5, sightRange: 8,
-    minDepth: 4, weight: 1, pack: [1, 1], cost: 10, resist: { cold: 0.25, shock: 0.25 },
+    hpBase: 207, damage: 10, defense: 25, attackRating: 35, xp: 40, speed: 0.5, sightRange: 8,
+    minDepth: 5, weight: 1, pack: [1, 1], cost: 10, resist: { cold: 0.25, shock: 0.25 },
   },
   consultant: {
     id: "consultant", name: "Consultant", behaviour: "ranged", range: 8,
     projectile: { kind: "slide", speed: 0.26 },
-    hpBase: 22, damage: 7, defense: 8, attackRating: 40, xp: 18, speed: 0.9, sightRange: 12,
+    hpBase: 51, damage: 7, defense: 8, attackRating: 40, xp: 18, speed: 0.9, sightRange: 12,
     minDepth: 5, weight: 2, pack: [2, 3], cost: 4,
   },
   auditor: {
     id: "auditor", name: "Auditor", behaviour: "elite",
-    hpBase: 70, damage: 11, defense: 20, attackRating: 50, xp: 45, speed: 1, sightRange: 10,
+    hpBase: 161, damage: 11, defense: 20, attackRating: 50, xp: 45, speed: 1, sightRange: 10,
     minDepth: 5, weight: 1, pack: [1, 1], cost: 10,
   },
 };
@@ -63,14 +64,14 @@ export const bosses = {
 };
 export const allMonsters = { ...monsters, ...bosses };
 
-const scale = (base, pct, depth) => Math.round((base * (100 + pct * (Math.max(1, depth) - 1))) / 100);
+const scale = (base, pct, depth, mult = 1) => Math.round((base * (100 + pct * (Math.max(1, depth) - 1)) * mult) / 100);
 
 /** Stats of a normal monster of `type` at `depth` (R-031): non-decreasing in depth, depth 1 equals the registry values. */
 export function monsterStats(type, depth) {
-  const d = allMonsters[type], k = config.scaling;
+  const d = allMonsters[type], k = config.scaling, m = config.depthMult, at = (a) => (d.boss ? 1 : a[Math.min(Math.max(1, depth), a.length) - 1]);
   return {
     level: Math.max(1, depth),
-    hp: scale(d.hpBase, k.hpPct, depth), damage: scale(d.damage, k.damagePct, depth), defense: scale(d.defense, k.defensePct, depth),
+    hp: scale(d.hpBase, k.hpPct, depth, at(m.hp)), damage: scale(d.damage, k.damagePct, depth, at(m.damage)), defense: scale(d.defense, k.defensePct, depth),
     attackRating: scale(d.attackRating, k.attackRatingPct, depth), xp: scale(d.xp, k.xpPct, depth),
   };
 }

@@ -77,11 +77,12 @@ export function warmFrames(atlas, core, budgetMs = 1.5) {
     w.types.add(t);
     for (const anim of WARM_ORDER) for (let d = 0; d < DIRS; d++) for (let f = 0; f < ANIMS[anim]; f++) w.queue.push(keys.mon(t, anim, d, f));
   }
-  // the quest elite's type may not be in the floor's spawn set (R7-0.7): warm it while its quest is active so its first sight is not a cold draw
-  const et = config.quests?.elite?.type;
-  if (et && core.quests?.sq3?.s === "active" && !w.types.has(et) && content.monsters[et]) {
-    w.types.add(et);
-    for (const anim of WARM_ORDER) for (let d = 0; d < DIRS; d++) for (let f = 0; f < ANIMS[anim]; f++) w.queue.push(keys.mon(et, anim, d, f));
+  // the quest elite's type (sq3) and the sq5 kill type may not be in the floor's spawn set (R7-0.7, R7-4): warm them while their quest is active so the first sight is not a cold draw
+  for (const [qid, t] of [["sq3", config.quests?.elite?.type], ["sq5", config.quests?.sq5?.kill?.monster]]) {
+    if (t && core.quests?.[qid]?.s === "active" && !w.types.has(t) && content.monsters[t]) {
+      w.types.add(t);
+      for (const anim of WARM_ORDER) for (let d = 0; d < DIRS; d++) for (let f = 0; f < ANIMS[anim]; f++) w.queue.push(keys.mon(t, anim, d, f));
+    }
   }
   const cls = heroType(core.player.class);
   if (w.hero !== cls) { // the hero's frames go to the front of what is left

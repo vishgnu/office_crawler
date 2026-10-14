@@ -122,8 +122,16 @@ test("[R7-ai] the recorded golden runs play identically with the new AI rules sw
   } finally { config.retargetTicks = keep.r; config.holdMaxTicks = keep.h; }
 });
 
-// ADV-R7-03: the bot leaves the badge (sq2) behind on floor 4 and its single Lobby trip is gone before it picks it up again: the quest never completes.
-test("[R7-bot] ADV-R7-03 every run completes all three side quests (AC-R-256-2): Sales Rep seed 104 in the runOne setup", () => {
+// ADV-R7-03 (fixed): the bot leaves the badge (sq2) behind; since R7-4 AC-R-259-3 asks for all eight quests: main, main2, main3 and sq1..sq5.
+test("[R7-bot] ADV-R7-03 every run completes all eight quests (AC-R-256-2 and AC-R-259-3 as amended): Sales Rep seed 104 in the runOne setup", () => {
   const r = runOne(104, 400000, { depth: 9, respawn: true, maxDeaths: 12, class: "sales-rep" });
   assert.equal(r.quests.all, true, `quests done: ${r.quests.done.join("+")} (trips ${r.quests.trips})`);
+  assert.deepEqual(["main", "main2", "main3", "sq1", "sq2", "sq3", "sq4", "sq5"].filter((id) => !r.quests.done.includes(id)), [], "all eight");
+  assert.ok(r.quests.trips <= 2, `at most two Lobby trips: ${r.quests.trips}`);
+});
+
+// ADV-R7-10: on 15 of 1000 seeds floors 5 and 6 hold fewer than 6 consultants (seed 102: 3 + 2, seed 105: 0 + 2), so sq5 can never be completed and the bot (and a player) ends the run with it open.
+test("[R7-bot] ADV-R7-10 every run completes all eight quests: Sales Rep seed 102 (floors 5 and 6 spawn 5 consultants, sq5 asks for 6)", { todo: "ADV-R7-10: sq5 unwinnable on seeds 102, 105, 173, 183, 194, ... (AC-R-258-3 only checks seeds 1 to 100); the bot ends with sq5 active 5/6" }, () => {
+  const r = runOne(102, 400000, { depth: 9, respawn: true, maxDeaths: 12, class: "sales-rep" });
+  assert.equal(r.quests.all, true, `quests done: ${r.quests.done.join("+")}`);
 });

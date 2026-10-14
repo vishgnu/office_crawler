@@ -15,7 +15,7 @@ import { serialize, deserialize } from "../src/save/index.js";
 import { replay } from "./helpers.js";
 
 const CLASSES = content.classes.map((c) => c.id);
-const GIVER = { sq1: "vendor", sq2: "healer", sq3: "potions" };
+const GIVER = { sq1: "vendor", sq2: "healer", sq3: "potions", sq4: "stash", sq5: "vendor" };
 const hero = (seed = 5, cls = "facilities-manager") => newGame(seed, { class: cls, name: "Adv", start: "town", wearStartKit: true });
 const types = (s) => s.events.map((e) => e.type);
 const qEvents = (s) => s.events.filter((e) => e.type.startsWith("quest."));
@@ -71,18 +71,22 @@ function rewardCells(s, id) {
 const gearOf = (s) => s.inventory.items.filter((i) => i.kind === "gear");
 
 // =============================================================================================== the step machine
-test("[R7-step] catch-up: Lobby straight to floor 4 gives exactly one quest.step (to step 4: 1 to 3 are done) and never goes back", { todo: "R7-4: a catch-up over a finished quest is one quest.completed per quest plus one quest.step (AC-R-257-2) and moves the pin (quest.pinned); the test counts six steps" }, () => {
+test("[R7-step] catch-up (R7-4 model): Lobby straight to floor 4 finishes arc 1 once (one quest.completed, one quest.step to main2 step 2 with unlocked, the pin moves) and never goes back", () => {
   const s = hero();
   assert.equal(mainStep(s.quests.main.m), 1);
+  const gold0 = s.player.gold;
   enterFloor(s, 4, { at: "entry" });
   const q = qEvents(s);
-  assert.deepEqual(q.map((e) => [e.type, e.step]), [["quest.step", 4]], "one event for the catch-up, naming the step that is now current");
-  assert.equal(mainStep(s.quests.main.m), 4, "steps 1 to 3 are done, step 4 is next");
-  const before = JSON.stringify(s.quests.main);
+  assert.deepEqual(q.map((e) => [e.type, e.id, e.step ?? null]), [["quest.completed", "main", null], ["quest.step", "main2", 2], ["quest.pinned", "main2", null]], "arc 1 completes, main2 is the active arc, the pin follows");
+  assert.equal(q[1].unlocked, true, "the active quest changed: unlocked");
+  assert.equal(mainStep(s.quests.main.m), 5, "steps 1 to 4 are done (global), step 5 is next");
+  assert.equal(s.player.gold, gold0 + q[0].rewards.gold, "the event names what was paid");
+  const before = JSON.stringify(s.quests.main), goldAfter = s.player.gold, xpAfter = s.player.xp;
   s.events.length = 0;
   enterFloor(s, 1, { at: "exit" }); enterFloor(s, 0, { at: "entry" }); enterFloor(s, 2, { at: "entry" });
   assert.equal(JSON.stringify(s.quests.main), before, "climbing back changes no milestone");
-  assert.equal(s.events.filter((e) => e.type === "quest.step").length, 0, "no further step event for lower floors");
+  assert.equal(qEvents(s).length, 0, "no further quest event for lower floors");
+  assert.equal(s.player.gold, goldAfter); assert.equal(s.player.xp, xpAfter);
 });
 
 test("[R7-step] the quest event follows the event that caused it, and a repeated memo read is silent", () => {
@@ -98,26 +102,32 @@ test("[R7-step] the quest event follows the event that caused it, and a repeated
   assert.equal(s.quests.main.m.depth, 1);
 });
 
-test("[R7-step] the verdict needs the boss down; storyRead victory and keepPlaying complete the main quest once, together or alone", { todo: "R7-4: completeQuest(main) finishes the first of three main quests, completeQuest(main3) finishes all (AC-R-256-1); the test expects one main quest of six steps" }, () => {
+test("[R7-step] the verdict needs the boss down; storyRead victory and keepPlaying complete main3 once, together or alone; completeQuest(main) is arc 1 only, completeQuest(main3) all three", () => {
+  const c = hero(9);
+  assert.ok(completeQuest(c, "main").ok);
+  assert.equal(c.quests.main.m.depth, 3);
+  assert.equal(mainStep(c.quests.main.m), 4, "completeQuest(main) finishes the first of three main quests");
+  assert.ok(completeQuest(c, "main3").ok);
+  assert.equal(mainStep(c.quests.main.m), 11, "completeQuest(main3) finishes all three");
+  rt(c);
   for (const path of ["read", "keep", "both-read-first", "both-keep-first"]) {
     const s = hero(9);
     assert.deepEqual(applyInput(s, { t: "storyRead", id: "victory" }), { ok: false, error: "not defeated" });
-    completeQuest(s, "main"); // not via the verdict: set everything but the verdict
-    const m = s.quests.main.m;
-    assert.ok(m.verdict, "completeQuest(main) finishes all six");
-    // a fresh run of the same state, with the boss down but the verdict open
+    // a state with the boss down and the verdict open, as the migration of a v4 save derives it
     const t = hero(9);
     t.bossDefeated = true; t.bossUnlocked = true; t.deepestDepth = config.bossDepth;
     t.quests.main.m = { memo: true, depth: config.bossDepth, unlocked: true, defeated: true, verdict: false };
-    assert.equal(mainStep(t.quests.main.m), 6);
+    t.quests.pinned = "main3";
+    assert.equal(mainStep(t.quests.main.m), 10);
     rt(t); // the hand-built state is checked by the same schema validator as a real save (L-038)
     if (path === "read") applyInput(t, { t: "storyRead", id: "victory" });
     if (path === "keep") { t.scene = "victory"; t.victory = { t: 0, done: true, stats: {} }; applyInput(t, { t: "keepPlaying" }); }
     if (path === "both-keep-first") { t.scene = "victory"; t.victory = { t: 0, done: true, stats: {} }; applyInput(t, { t: "keepPlaying" }); applyInput(t, { t: "storyRead", id: "victory" }); }
     if (path === "both-read-first") { applyInput(t, { t: "storyRead", id: "victory" }); t.scene = "victory"; t.victory = { t: 0, done: true, stats: {} }; applyInput(t, { t: "keepPlaying" }); }
-    const done = t.events.filter((e) => e.type === "quest.completed" && e.id === "main");
-    assert.equal(done.length, 1, `${path}: exactly one quest.completed`);
-    assert.equal(mainStep(t.quests.main.m), 7);
+    const done = t.events.filter((e) => e.type === "quest.completed");
+    assert.deepEqual(done.map((e) => e.id), ["main3"], `${path}: exactly one quest.completed, for main3 only (arcs 1 and 2 were done before)`);
+    assert.deepEqual(done[0].rewards, { gold: 0, xp: 0, items: [] }, "the last arc pays nothing");
+    assert.equal(mainStep(t.quests.main.m), 11);
     applyInput(t, { t: "storyRead", id: "victory" });
     assert.equal(t.events.filter((e) => e.type === "quest.completed").length, 1, `${path}: a second read is silent`);
   }
@@ -176,7 +186,7 @@ test("[R7-kill] the eighth kill makes sq1 ready exactly once and later kills cha
 
 test("[R7-step] cheat results are legal states: every (quest, step) of setQuestStep survives the save schema, from a fresh hero and from an advanced one", () => {
   for (const base of ["fresh", "floor4"]) {
-    for (const id of ["main", "sq1", "sq2", "sq3"]) for (let n = (id === "main" ? 1 : 0); n <= (id === "main" ? 6 : 3); n++) {
+    for (const id of ["main", "main2", "main3", "sq1", "sq2", "sq3", "sq4", "sq5"]) for (let n = (id.startsWith("main") ? 1 : 0); n <= (id === "main3" ? 4 : id.startsWith("main") ? 3 : 3); n++) {
       const s = hero(3);
       if (base === "floor4") enterFloor(s, 4, { at: "entry" });
       const r = setQuestStep(s, id, n);
@@ -189,14 +199,16 @@ test("[R7-step] cheat results are legal states: every (quest, step) of setQuestS
   }
 });
 
-test("[R7-step] completeQuest of every quest, in every order, ends in a legal state with the pouch empty", { todo: "R7-4: the finished main state is mainStep 11 over ten steps, not 7 (AC-R-241-2 as amended); the test expects the six-step numbers" }, () => {
-  const orders = [["sq1", "sq2", "sq3", "main"], ["main", "sq3", "sq2", "sq1"], ["sq2", "main", "sq1", "sq3"]];
+test("[R7-step] completeQuest of every quest, in every order, ends in a legal state with the pouch empty and each arc reward paid once", () => {
+  const orders = [["sq1", "sq2", "sq3", "sq4", "sq5", "main3"], ["main", "main2", "main3", "sq5", "sq4", "sq3", "sq2", "sq1"], ["sq4", "main", "sq1", "main3", "sq3", "sq2", "main2", "sq5"]];
   for (const o of orders) {
     const s = hero(8);
-    for (const id of o) { const r = completeQuest(s, id); assert.ok(r.ok, `${o} ${id}: ${JSON.stringify(r)}`); }
+    let completed = [];
+    for (const id of o) { s.events.length = 0; const r = completeQuest(s, id); assert.ok(r.ok, `${o} ${id}: ${JSON.stringify(r)}`); completed.push(...s.events.filter((e) => e.type === "quest.completed" && e.id.startsWith("main")).map((e) => e.id)); }
     assert.deepEqual(s.player.pouch, []);
-    for (const id of ["sq1", "sq2", "sq3"]) assert.equal(s.quests[id].s, "completed");
-    assert.equal(mainStep(s.quests.main.m), 7);
+    for (const id of content.sideIds) assert.equal(s.quests[id].s, "completed");
+    assert.equal(mainStep(s.quests.main.m), 11);
+    assert.deepEqual(completed, ["main", "main2", "main3"], `${o}: one completion per arc, in order, never twice`);
     rt(s);
   }
 });
@@ -585,13 +597,20 @@ test("[R7-markers] a map marker exists only for the pinned quest's known target:
   }
 });
 
-test("[R7-markers] npcMarker: hand-in beats offer, the stash keeper never has one, a floor has none, and the call allocates nothing new", { todo: "R7-4: the stash keeper gives sq4 (AC-R-245-1 as amended, AC-R-258-1); the test expects none from the stash keeper" }, () => {
+test("[R7-markers] npcMarker: hand-in beats offer, the stash keeper now offers sq4, a giver with two quests keeps its marker until both are done, a floor has none", () => {
   const s = hero(5);
-  assert.deepEqual(["vendor", "healer", "potions", "stash"].map((n) => npcMarker(s, n)), ["available", "available", "available", "none"]);
+  assert.deepEqual(["vendor", "healer", "potions", "stash"].map((n) => npcMarker(s, n)), ["available", "available", "available", "available"]);
   accept(s, "sq1"); setQuestStep(s, "sq1", 2);
   assert.equal(npcMarker(s, "vendor"), "handin");
   assert.equal(npcMarker(s, "vendor"), npcMarker(s, "vendor"));
   completeQuest(s, "sq1");
-  assert.equal(npcMarker(s, "vendor"), "none", "completed: no marker any more");
+  assert.equal(npcMarker(s, "vendor"), "available", "sq1 is done but sq5 is still on offer (the vendor has two quests)");
+  setQuestStep(s, "sq5", 2);
+  assert.equal(npcMarker(s, "vendor"), "handin");
+  completeQuest(s, "sq5");
+  assert.equal(npcMarker(s, "vendor"), "none", "both quests completed: no marker any more");
+  assert.equal(npcMarker(s, "stash"), "available");
+  setQuestStep(s, "sq4", 1);
+  assert.equal(npcMarker(s, "stash"), "none", "active, not ready: nothing to say");
   assert.equal(npcMarker(s, "nobody"), "none");
 });

@@ -115,3 +115,11 @@ Three runs of `e2e/adv-r7.mjs` in a row gave the same 163 results (two checks we
 ## Verification
 
 `npm test` three times: 990 tests, 985 pass, 0 fail, 5 todo (ADV-R7-01 x4, ADV-R7-03) every time; `npm run build` ok; `npm run e2e` once as one command: all 17 scripts ok (adv-r7 165/165 with 5 XFAIL, adv-r6 429/429, adv-r5 150/150, r7quest 54/54, r7journal 59/59). No process left running.
+
+## Addendum R7-4 (2026-10-14): defects found against the three-arc, five-side-quest model
+| id | where | what | repro | status |
+|---|---|---|---|---|
+| ADV-R7-07 | `systems/quests.js` `questPin` (pre-existing, missed in R7) | the id is looked up with `quests[id]`, so `constructor`, `toString`, `__proto__` pass as quests and are written to `quests.pinned`; the next save fails the schema ("bad pinned quest") and cannot be loaded | `test/adv-r74-quests.test.js` "[R74-xss] ADV-R7-07", `e2e/adv-r7.mjs` "[R74-pin]" (todo / XFAIL) | open; fix: `Object.hasOwn(quests, id)` in `questPin` (and the same guard in `setQuestStep`/`completeQuest`) |
+| ADV-R7-08 | `save/format.js` quest block | `sq5` `{active, p: 3}` with `deepestDepth` 4 loads (ready and completed are tied to floor 5, a partial progress is not) | `test/adv-r74-save.test.js` "ADV-R7-08" (todo) | open, low (the hero can reach floor 5 anyway) |
+| ADV-R7-09 | `save/format.js` quest block | `sq1` ready (8 kills) and `sq5` ready (6 kills) load with `stats.kills` 8: each kill quest is checked against the shared counter on its own, not their sum | `test/adv-r74-save.test.js` "ADV-R7-09" (todo) | open, low |
+| ADV-R7-10 | `config.quests.sq5` / population | floors 5 and 6 spawn fewer than 6 consultants on 15 of 1000 seeds (102: 3+2, 105: 0+2, 173, 183, 194, 412, 446, ...): the revive rule only returns killed spawns, so `sq5` can never be completed; AC-R-258-3 checks seeds 1 to 100 only; the bot (all three classes) ends seeds 102 and 105 with `sq5` active 5/6 and 2/6, so AC-R-259-3 fails on them | `test/adv-r74-quests.test.js` "ADV-R7-10" (700 seeds), `test/adv-r7-ai.test.js` "ADV-R7-10", `e2e/adv-r7.mjs` "[R7-nocheat] ... seeds 101, 102 and 105" (todo / XFAIL) | open; fix options: lower `count` in config to the smallest total over a wide seed range, or make the generator guarantee `count` consultants on floors 5 and 6 when `sq5` is accepted (as the elite does) |

@@ -9,6 +9,7 @@ import { toSave, checksumOf, deserialize, migrate, serialize, check } from "../s
 import { createSlotStore, createMemoryAdapter } from "../src/save/index.js";
 import { canonical } from "../src/core/hash.js";
 import { itemFloorOf } from "../src/core/systems/quests.js";
+import { mainStep } from "../src/core/systems/questview.js";
 import { BOT, createBotMemory, decide, noteResult } from "../bot/policy.js";
 import { v3Text, sealText } from "./helpers.js";
 
@@ -55,11 +56,15 @@ const REJECT = [
   ["pouch is an object", (o) => { o.quests.pouch = {}; }],
   ["pouch too long", (o) => { o.quests.pouch = [1, 2, 3, 4]; }],
   ["side quest with extra key", (o) => { o.quests.sq3.label = "<i>"; }],
-  ["unknown side quest key", (o) => { o.quests.sq4 = { s: "available", p: 0 }; }],
+  ["unknown side quest key (sq4 and sq5 are legal since v5; sq6 is not)", (o) => { o.quests.sq6 = { s: "available", p: 0 }; }],
+  ["main2 stored as a key (the arcs have no stored entry, AC-R-257-1)", (o) => { o.quests.main2 = { m: o.quests.main.m }; }],
+  ["main3 stored as a key", (o) => { o.quests.main3 = { s: "available", p: 0 }; }],
+  ["sq4 missing (a v5 block holds all five side quests)", (o) => { delete o.quests.sq4; }],
+  ["sq5 missing", (o) => { delete o.quests.sq5; }],
   ["quests.main extra key", (o) => { o.quests.main.title = "x"; }],
 ];
 for (const [name, mut] of REJECT) {
-  test(`[R7-forge] rejected: ${name}`, { todo: name === "unknown side quest key" ? "R7-4: sq4 is a legal key since save v5; a forged key would be sq6" : false }, () => {
+  test(`[R7-forge] rejected: ${name}`, () => {
     let text;
     if (mut === null) { // JSON.parse keeps __proto__ as an own key
       const o = base(); const { checksum, ...rest } = o;
@@ -134,16 +139,17 @@ test("[R7-legal] the quest block stays small: all quests done, pouch full, under
 });
 
 // ---------------------------------------------------------------------------------------------------- migration from real v0..v3 files
-test("[R7-migrate] every real fixture (v0, v1, v2, v3) loads; the derived main step follows the world flags and no side quest starts anything", { todo: "R7-4: the migrated pin is the derived active main quest (main2 at depth 4, main3 from depth 6), not the alias main (AC-R-259-1)" }, () => {
+test("[R7-migrate] every real fixture (v0 to v4) loads; the derived main step follows the world flags, the pin is the derived active main quest and no side quest starts anything", () => {
   assert.ok(fixtures.length >= 10, fixtures.join());
   for (const f of fixtures) {
     const raw = JSON.parse(read(f));
     const r = deserialize(read(f));
     assert.ok(r.ok, `${f}: ${r.message}`);
     const q = r.state.quests, m = q.main.m;
-    for (const id of content.sideIds) assert.deepEqual(q[id], { s: "available", p: 0 }, `${f}: ${id} is untouched`);
-    assert.deepEqual(r.state.player.pouch, []);
-    assert.equal(q.pinned, "main");
+    for (const id of content.sideIds) if (!raw.quests || !raw.quests[id] || raw.quests[id].s === "available") assert.deepEqual(q[id], { s: "available", p: 0 }, `${f}: ${id} is untouched`);
+    assert.deepEqual(r.state.player.pouch, raw.quests?.pouch ?? []);
+    if (raw.quests && raw.quests.pinned !== "main") assert.equal(q.pinned, raw.quests.pinned, `${f}: a pinned side quest stays`);
+    else assert.equal(q.pinned, m.depth >= 6 || m.defeated || m.unlocked ? "main3" : m.depth >= 3 ? "main2" : "main", `${f}: pin on the derived active main quest`);
     assert.equal(m.depth, Math.max(raw.deepestDepth >= 2 ? raw.deepestDepth : 0, m.depth), `${f}: depth never below deepest`);
     if (raw.bossDefeated) assert.ok(m.defeated && m.unlocked, f);
     if (raw.bossUnlocked) assert.ok(m.unlocked, f);
@@ -152,7 +158,7 @@ test("[R7-migrate] every real fixture (v0, v1, v2, v3) loads; the derived main s
     const p = r.state.player, rp = raw.player ?? {};
     if (rp.gold !== undefined) { assert.equal(p.gold, rp.gold, f); assert.equal(p.xp, rp.xp, f); }
     if (raw.inventory?.items) assert.equal(r.state.inventory.items.length, raw.inventory.items.length, f);
-    // writing it again gives a version 4 save that loads to the same quest state
+    // writing it again gives a current-version save that loads to the same quest state
     const again = deserialize(serialize(r.state));
     assert.ok(again.ok, `${f}: ${again.message}`);
     assert.deepEqual(again.state.quests, q);
@@ -182,15 +188,14 @@ test("[R7-migrate] a v3 file that carries a forged quests block gets the derived
   }
 });
 
-test("[R7-migrate] the five v3 states of real play (Lobby, floor 1, floor 4, boss unlocked, boss defeated) derive steps 1, 3, 4, 5, 6 and keep the hero on the same floor", () => {
-  const want = { "save-v3-lobby.json": [1, 0], "save-v3-floor1.json": [3, 1], "save-v3-floor4.json": [4, 4], "save-v3-boss-unlocked.json": [5, 0], "save-v3-boss-defeated.json": [6, 0] };
-  for (const [f, [stepWanted]] of Object.entries(want)) {
+test("[R7-migrate] the five v3 states of real play (Lobby, floor 1, floor 4, boss unlocked, boss defeated) derive the global steps 1, 3, 5, 9, 10 and keep the hero on the same floor (AC-R-259-1)", () => {
+  const want = { "save-v3-lobby.json": 1, "save-v3-floor1.json": 3, "save-v3-floor4.json": 5, "save-v3-boss-unlocked.json": 9, "save-v3-boss-defeated.json": 10 };
+  for (const [f, stepWanted] of Object.entries(want)) {
+    const raw = JSON.parse(read(f));
     const r = deserialize(read(f));
     assert.ok(r.ok, f);
-    const m = r.state.quests.main.m;
-    const done = [m.memo || m.depth >= 1 || m.depth >= 4 || m.unlocked || m.defeated, m.depth >= 1 || m.depth >= 4 || m.unlocked || m.defeated, m.depth >= 4 || m.unlocked || m.defeated, m.unlocked || m.defeated, m.defeated, m.verdict];
-    const cur = done.indexOf(false) < 0 ? 7 : done.indexOf(false) + 1;
-    assert.equal(cur, stepWanted === 1 && f.includes("lobby") ? 1 : stepWanted, `${f}: main step`);
+    assert.equal(mainStep(r.state.quests.main.m), stepWanted, `${f}: global main step`);
+    assert.equal(r.state.depth, raw.resume?.depth ?? r.state.depth, `${f}: same floor`);
   }
 });
 

@@ -43,6 +43,13 @@ export function observe(view, rec) {
   }
   observeEvents(view, rec);
   rec.hpMin = Math.min(rec.hpMin, view.player.hp); rec.hpLast = view.player.hp;
+  // R7-3: per-floor feel numbers (0 = Lobby, 9 = boss arena): ticks spent, damage taken, near-deaths (hp falls below 25 % of the maximum: one count per dip).
+  const fl = ((rec.floors ??= {})[view.depth] ??= { ticks: 0, dmg: 0, near: 0 });
+  fl.ticks++;
+  for (const ev of view.events ?? []) if (ev.type === "hit" && ev.target === "player" && !(rec.hitSeen ??= new WeakSet()).has(ev)) { rec.hitSeen.add(ev); fl.dmg += ev.value; }
+  const low = view.player.hp > 0 && view.player.hp < view.player.hpMax * 0.25;
+  if (low && !rec.low) fl.near++;
+  rec.low = low;
   const boss = view.monsters.find((m) => m.boss);
   if (boss) { // the finale: when the fight started, how low the hero got, when phase 2 began and when the boss fell
     const b = rec.boss;
@@ -60,7 +67,7 @@ export function finish(view, mem, rec, maxTicks) {
     if (mem.done) { rec.result = "cleared"; rec.clearTick = view.tick; }
     else if (view.tick >= maxTicks) rec.result = "timeout";
   }
-  return { seed: rec.seed, result: rec.result, deathDepths: rec.deathDepths ?? [], dmg: rec.dmg, casts: rec.casts, ticks: rec.tick, kills: rec.kills, total: rec.total, ttk: rec.ttk, stuck: mem.stuck, waitGaveUp: mem.waitGaveUp, watchdogFired: mem.watchdogFired ?? 0, watchdogQuiet: mem.watchdogQuiet ?? 0, watchdogLog: mem.watchdogLog ?? [], failedMoves: mem.failedMoves, hpMin: rec.hpMin, boss: { ...rec.boss, hpMin: rec.boss.hpMin === Infinity ? null : rec.boss.hpMin, fightTicks: rec.boss.killed !== null && rec.boss.engaged !== null ? rec.boss.killed - rec.boss.engaged : null }, victory: rec.victory ?? null, quests: { done: Object.keys(rec.qDone ?? {}), all: QUEST_IDS.every((id) => rec.qDone?.[id] !== undefined), ticks: rec.qDone ?? {}, mainSteps: rec.mainSteps ?? [], arcs: rec.arcsDone ?? [], trips: mem.q?.trips ?? 0, tripTicks: mem.q?.tripTicks ?? 0, tripStages: (mem.q?.stageTicks ?? []).map((t, i) => (t === undefined ? null : { depth: QBOT.trips[i].depth, ticks: t })).filter(Boolean), gaveUp: Object.keys(mem.q?.gaveUp ?? {}) }, depth: view.deepestDepth ?? 1, level: rec.maxLevel, deaths: rec.deaths + (rec.result === "died" ? 1 : 0), gold: view.player.gold - (rec.gold0 ?? 0), worn: Object.values(view.equipment ?? {}).filter(Boolean).length, loot: (view.groundItems ?? []).length };
+  return { seed: rec.seed, result: rec.result, deathDepths: rec.deathDepths ?? [], dmg: rec.dmg, casts: rec.casts, ticks: rec.tick, kills: rec.kills, total: rec.total, ttk: rec.ttk, stuck: mem.stuck, waitGaveUp: mem.waitGaveUp, watchdogFired: mem.watchdogFired ?? 0, watchdogQuiet: mem.watchdogQuiet ?? 0, watchdogLog: mem.watchdogLog ?? [], failedMoves: mem.failedMoves, hpMin: rec.hpMin, boss: { ...rec.boss, hpMin: rec.boss.hpMin === Infinity ? null : rec.boss.hpMin, fightTicks: rec.boss.killed !== null && rec.boss.engaged !== null ? rec.boss.killed - rec.boss.engaged : null }, floors: rec.floors ?? {}, victory: rec.victory ?? null, quests: { done: Object.keys(rec.qDone ?? {}), all: QUEST_IDS.every((id) => rec.qDone?.[id] !== undefined), ticks: rec.qDone ?? {}, mainSteps: rec.mainSteps ?? [], arcs: rec.arcsDone ?? [], trips: mem.q?.trips ?? 0, tripTicks: mem.q?.tripTicks ?? 0, tripStages: (mem.q?.stageTicks ?? []).map((t, i) => (t === undefined ? null : { depth: QBOT.trips[i].depth, ticks: t })).filter(Boolean), gaveUp: Object.keys(mem.q?.gaveUp ?? {}) }, depth: view.deepestDepth ?? 1, level: rec.maxLevel, deaths: rec.deaths + (rec.result === "died" ? 1 : 0), gold: view.player.gold - (rec.gold0 ?? 0), worn: Object.values(view.equipment ?? {}).filter(Boolean).length, loot: (view.groundItems ?? []).length };
 }
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);

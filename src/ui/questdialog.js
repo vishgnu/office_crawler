@@ -6,7 +6,8 @@ import { progressText, rewardLines } from "./journal.js";
 
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-/** The quests this NPC gives, with the line to show for the quest's state: [{id, title, state, text, progress, rewards, accept, handIn}]. `qv` is snapshot.quests. */
+/** The quests this NPC gives, in id order, with the line to show for the quest's state: [{id, title, state, text, progress, rewards, accept, handIn}]. `qv` is snapshot.quests.
+ *  Every quest that is not completed is listed (the vendor can hold two, sq1 and sq5); the completed ones only when nothing else is left, as the "done" line. */
 export function questDialogModel(qv, npcId) {
   if (!qv) return [];
   const out = [];
@@ -19,7 +20,8 @@ export function questDialogModel(qv, npcId) {
       progress: st === "active" ? progressText(q) : "", rewards: st === "completed" ? [] : rewardLines(id), accept: st === "available", handIn: st === "ready",
     });
   }
-  return out;
+  const open = out.filter((e) => e.state !== "completed");
+  return open.length ? open : out;
 }
 
 const STATE_TEXT = () => ({ available: T.stateAvailable, active: T.stateActive, ready: T.stateReady, completed: T.stateCompleted });

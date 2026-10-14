@@ -24,9 +24,9 @@ export function createMap(style) {
     if (!qs) return qm.list.length ? (qm.list = []) : qm.list;
     const t = core.player.tile, pin = qs.pinned ?? "";
     let sig = 0;
-    for (const id of ["sq1", "sq2", "sq3"]) sig = sig * 4 + (qs[id]?.s === "available" ? 1 : qs[id]?.s === "active" ? 2 : qs[id]?.s === "ready" ? 3 : 0);
+    for (const id of ["sq1", "sq2", "sq3", "sq4", "sq5"]) sig = sig * 4 + (qs[id]?.s === "available" ? 1 : qs[id]?.s === "active" ? 2 : qs[id]?.s === "ready" ? 3 : 0);
     const m = qs.main?.m;
-    if (m) sig = sig * 64 + (m.memo ? 1 : 0) + ((m.depth | 0) >= 1 ? 2 : 0) + ((m.depth | 0) >= 4 ? 4 : 0) + (m.unlocked ? 8 : 0) + (m.defeated ? 16 : 0) + (m.verdict ? 32 : 0);
+    if (m) sig = (sig * 16 + Math.min(15, m.depth | 0)) * 16 + (m.memo ? 1 : 0) + (m.unlocked ? 2 : 0) + (m.defeated ? 4 : 0) + (m.verdict ? 8 : 0); // ten steps over three arcs: the depth itself moves the active arc's target
     if (qm.depth !== core.depth || qm.pin !== pin || qm.sig !== sig || qm.hx !== t.x || qm.hy !== t.y) {
       qm.depth = core.depth; qm.pin = pin; qm.sig = sig; qm.hx = t.x; qm.hy = t.y;
       qm.list = mapMarkers(core);

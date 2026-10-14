@@ -125,12 +125,15 @@ export const config = {
   fleeHpFraction: 0.25,              // QF-03-2: weak swarmers flee below this health share, once per life
   fleeTicks: 150,
   championMaxMods: 3,
-  championChance: 0.3,               // chance that a populated floor from depth 2 on carries a champion pack
+  championChance: 0.4,               // chance that a populated floor from depth 2 on carries a champion pack
   championPackSize: [3, 4],
   tierFactor: { normal: 1, champion: 3, boss: 10 },
 
   // Depth scaling of monster stats, percent per depth beyond the first (depth 1 = registry values).
-  scaling: { hpPct: 88, damagePct: 19, defensePct: 16, attackRatingPct: 12, xpPct: 20 },
+  scaling: { hpPct: 88, damagePct: 19, defensePct: 16, attackRatingPct: 12, xpPct: 26 },
+  // R7-3 (customer decision: spread the difficulty): per-depth multiplier (index depth - 1, depths past the end use the last entry) on the depth-scaled hp and damage of normal monsters; bosses are not touched.
+  // Floors 1 to 8 start from the linear scaling above; the early floors get teeth and the deep ones lose some, so no floor stands out in deaths.
+  depthMult: { hp: [1, 0.72, 0.56, 0.48, 0.43, 0.365, 0.375, 0.35], damage: [2.3, 1.98, 1.74, 1.53, 1.37, 1.24, 1.2, 1.21] }, // effective hp (times hpBase) 1.0 to 2.5, effective damage 2.3 to 2.8 x the old registry; never falls with depth (AC-R-031-1); floors 4 and 6 stay level with 3 and 5 because the quest rewards of the Lobby trips arrive after them
   // Floor population budget (AC-R-034-3): sum of cost * tierFactor stays within it.
   budgetBase: 120, budgetPerDepth: 32,
   population: { packsWanted: [12, 16], maxPacks: 50, tries: 400, stopAtBudget: 0.6 }, // how many packs a floor tries to place before it stops
@@ -152,7 +155,7 @@ export const config = {
     guaranteedDrops: 3,              // QF-04-7: at least this many items ...
     minRarity: "rare",               // ... each of at least this rarity
     guaranteedUnique: 1,             // the first drop is a unique (a taken unique falls back to a rare of the same base)
-    hpMult: 3, damageMult: 0.7,     // on top of the depth scaled registry values (tuned with the careful bot, 2026-10-13)
+    hpMult: 2.5, damageMult: 0.62,     // on top of the depth scaled registry values (tuned with the careful bot, 2026-10-13)
     slam: { windup: 54, radius: 2.6, radius2: 3.4, damageMult: 1.8, cd1: 270, cd2: 200, recover: 24 },
     volley: { windup: 36, shots: 5, spread: 0.2, damageMult: 0.55, cd: 300, recover: 20, speed: 0.2, range: 14 }, // spread: sine of the angle between shots
     summon: { windup: 60, types: ["zombie-intern", "consultant"], count: 2, max: 4, cd: 720, radius: 4, level: 6 },

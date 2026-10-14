@@ -6,7 +6,7 @@ import { hasLineOfSight, rayClear } from "../src/core/los.js";
 import { skills as SKILLS, manaCost } from "../src/core/content/skills.js";
 import { classById, defaultClass } from "../src/core/content/classes.js";
 import { config as CORE } from "../src/core/config.js";
-import { questMemory, questNewFloor, noteQuest, questTown, WAIT, questClimb, questTrip } from "./quests.js";
+import { questMemory, questNewFloor, noteQuest, questTown, WAIT, questClimb, questTrip, questWantsExit, EXIT } from "./quests.js";
 
 export const BOT = {
   decideEvery: 6,       // ticks between decisions (10 Hz at 60 ticks/s)
@@ -293,7 +293,10 @@ function decideTown(view, mem) {
       return { t: "interact", id: "vendor" };
     }
   }
+  const wantExit = questWantsExit(view, mem); // R7-3: the Emergency Exit saves the climb through the floors above (see bot/quests.js)
   if (dlg?.npc === "potions" && view.vendor) {
+    const ex = wantExit && view.vendor.stock.map((e, i) => ({ e, i })).find(({ e }) => e.unlimited && e.item.base === EXIT && e.price <= p.gold);
+    if (ex) return { t: "buy", index: ex.i };
     const potion = view.inventory.items.find((i) => i.kind === "potion" && i.restores === "hp");
     if (potion && free >= 0) return { t: "toBelt", id: potion.id, index: free };
     const best = view.vendor.stock.map((e, i) => ({ e, i })).filter(({ e }) => e.unlimited && e.item.restores === "hp" && e.price <= p.gold).sort((a, b) => b.e.item.restore - a.e.item.restore)[0];
@@ -301,11 +304,12 @@ function decideTown(view, mem) {
     mem.shopped = true;
     return { t: "closeDialog" };
   }
-  if (!mem.shopped && free >= 0 && p.gold >= BOT.shopMinGold) {
+  if (!mem.shopped && (wantExit || free >= 0) && p.gold >= (wantExit ? 40 : BOT.shopMinGold)) {
     if (p.interact === "potions" || p.next || p.path.length) return null;
     return { t: "interact", id: "potions" };
   }
   if (p.stairs || p.next || p.path.length) return null;
+  if (view.portal && view.portal.depth > 0) return { t: "usePortal" }; // the door the Emergency Exit left open: back to the very tile on the floor
   return { t: "useStairs", dir: "down" };
 }
 
@@ -383,10 +387,11 @@ export function decide(view, mem) {
   for (const r of mem.rooms) if (!r.done && cheb(r, p.tile) <= BOT.arriveRadius) r.done = true;
   if (mem.goal?.done) mem.goal = null;
 
+  if (target && mem.skip.has(target.id) && target.ai !== "attack") return { t: "moveTo", tile: { x: p.tile.x, y: p.tile.y } }; // R7-3: a monster written off (watchdog) is not chased on: the open attack order is dropped (hero and chaser orbited a block of cabinets for 85 000 ticks, parity seed 6)
   const kite = kiteMove(view, mem, live);
   if (kite) return kite;
   // 1. awake monsters nearby: fight the nearest
-  const awake = live.filter((m) => m.ai !== "idle" && !mem.skip.has(m.id)), a = nearest(awake, p.tile);
+  const awake = live.filter((m) => m.ai !== "idle" && (!mem.skip.has(m.id) || m.ai === "attack")), a = nearest(awake, p.tile); // a written-off monster that reaches the hero and strikes is fought again
   // a chaser on its way: stand still and let it come (the hero holds position; a moveTo on the own tile cancels walking)
   if (!mem.profile.reckless && a && (a.m.ai === "chase" || a.m.ai === "notice") && a.d >= 2 && a.d <= BOT.waitRange && !live.some((m) => m.ai === "attack")) {
     if (mem.waitSince < 0) mem.waitSince = t;

@@ -328,10 +328,13 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   // floor name, potion, healed: they come from the world, not from what the player just did) wait behind it and are then shown, and announced by the live region,
   // one after the other. Direct feedback (a refusal, a hint, a stairs lock) and quest lines still show at once, as before. The wait list is short on purpose: only the
   // latest passive line of a kind waits, so a backlog of stale floor names never builds up.
-  const tq = { q: [], timer: 0, until: 0 };
+  // R7-4: the quest lines of one burst (an arc completes: its reward line, then the "new assignment" line of the next arc, in one tick) queue behind each other and show one
+  // after the other; a quest line that comes later than QUEST_BURST_MS after the shown one still replaces it at once.
+  const QUEST_BURST_MS = 250;
+  const tq = { q: [], timer: 0, until: 0, at: 0 };
   const showToast = (n) => {
     game.ui.toast = { text: n.text, id: (game.ui.toast?.id ?? 0) + 1, ...(n.ms ? { ms: n.ms } : {}) };
-    clearTimeout(tq.timer); tq.timer = 0; tq.until = 0;
+    clearTimeout(tq.timer); tq.timer = 0; tq.until = 0; tq.at = performance.now();
     if (n.hold) {
       tq.until = performance.now() + (n.ms ?? 3200);
       tq.timer = setTimeout(() => { tq.timer = 0; tq.until = 0; const nx = tq.q.shift(); if (nx) { showToast({ ...nx, hold: true }); emitChange(); } }, n.ms ?? 3200);
@@ -345,6 +348,10 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
       if (game.ui.toast.text === text) return;
       tq.q = tq.q.filter((w) => w.kind !== n.kind && w.text !== text);
       if (tq.q.length < 4) tq.q.push(n);
+      return;
+    }
+    if (opt.quest && game.ui.toast && tq.until > performance.now() && performance.now() - tq.at < QUEST_BURST_MS) { // same burst as the quest line on show: wait behind it
+      if (game.ui.toast.text !== text && tq.q.length < 4) { const i = tq.q.findIndex((w) => !w.hold); tq.q.splice(i < 0 ? tq.q.length : i, 0, n); } // before the waiting world lines
       return;
     }
     showToast(n); emitChange();

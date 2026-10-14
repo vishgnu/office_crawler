@@ -17,17 +17,22 @@ test("AC-R-247-4 reward text: gold, experience, gear kind with its minimum rarit
   assert.ok(sq1.some((l) => /gold/.test(l)) && sq1.some((l) => /experience/.test(l)) && sq1.some((l) => /potions/.test(l)) && !sq1.some((l) => /magic/i.test(l)));
   assert.ok(sq2.some((l) => /armour piece.*magic/i.test(l)) && !sq2.some((l) => /potions/.test(l)));
   assert.ok(sq3.some((l) => /weapon.*magic/i.test(l)) && sq3.some((l) => /potions/.test(l)));
-  assert.deepEqual(rewardLines("main"), []);
   assert.ok(sq1[0].includes(String(config.quests.sq1.gold.base + config.quests.sq1.gold.perDepth * config.quests.sq1.refDepth)));
+  const sq4 = rewardLines("sq4"), sq5 = rewardLines("sq5");
+  assert.ok(sq4.some((l) => /gold/.test(l)) && sq4.some((l) => /experience/.test(l)) && sq4.some((l) => /potions/.test(l)) && !sq4.some((l) => /magic|armour|weapon|ring/i.test(l)));
+  assert.ok(sq5.some((l) => /a ring, amulet or belt \(magic\)/i.test(l)) && !sq5.some((l) => /potions/.test(l)), sq5.join("|"));
+  assert.ok(rewardLines("main").length === 2 && rewardLines("main2").length === 2 && rewardLines("main3").length === 0, "the arcs pay gold and experience, the last pays nothing");
 });
 
-test("AC-R-249-2 the dialog model offers each giver its own quest and follows the state", () => {
+test("AC-R-249-2 / AC-R-258-1 the dialog model lists every non-completed quest of a giver in id order and follows the state", () => {
   const s = town();
-  assert.deepEqual(questDialogModel(qv(s), "vendor").map((e) => e.id), ["sq1"]);
+  assert.deepEqual(questDialogModel(qv(s), "vendor").map((e) => e.id), ["sq1", "sq5"], "the vendor gives two");
   assert.deepEqual(questDialogModel(qv(s), "healer").map((e) => e.id), ["sq2"]);
   assert.deepEqual(questDialogModel(qv(s), "potions").map((e) => e.id), ["sq3"]);
-  assert.deepEqual(questDialogModel(qv(s), "stash"), [], "the stash keeper gives no quest");
-  assert.equal(questDialogHtml(questDialogModel(qv(s), "stash")), "");
+  assert.deepEqual(questDialogModel(qv(s), "stash").map((e) => e.id), ["sq4"], "the stash keeper gives sq4");
+  assert.ok(questDialogHtml(questDialogModel(qv(s), "stash")).includes('data-qaccept="sq4"'));
+  const two = questDialogHtml(questDialogModel(qv(s), "vendor"));
+  assert.ok(two.includes('data-qaccept="sq1"') && two.includes('data-qdecline="sq1"') && two.includes('data-qaccept="sq5"') && two.includes('data-qdecline="sq5"') && two.indexOf("sq1") < two.indexOf("sq5"));
   const off = questDialogModel(qv(s), "vendor")[0];
   assert.equal(off.text, content.quests.sq1.text.offer); assert.ok(off.accept && !off.handIn && off.rewards.length >= 3);
   const html = questDialogHtml([off]);
@@ -43,9 +48,12 @@ test("AC-R-249-2 the dialog model offers each giver its own quest and follows th
   assert.ok(questDialogHtml([rdy]).includes('data-qhandin="sq1"'));
   assert.ok(questDialogHtml([rdy], "sq1").includes('data-testid="quest-bagfull"') && !questDialogHtml([rdy], null).includes("quest-bagfull"));
   setQuestStep(s, "sq1", 3);
-  const done = questDialogModel(qv(s), "vendor")[0];
-  assert.equal(done.text, content.quests.sq1.text.done); assert.deepEqual(done.rewards, []);
-  assert.ok(!/<button/.test(questDialogHtml([done])));
+  assert.deepEqual(questDialogModel(qv(s), "vendor").map((e) => e.id), ["sq5"], "with sq1 completed the vendor shows only sq5");
+  setQuestStep(s, "sq5", 3);
+  const done = questDialogModel(qv(s), "vendor");
+  assert.deepEqual(done.map((e) => e.id), ["sq1", "sq5"], "when nothing is left the done lines show");
+  assert.equal(done[0].text, content.quests.sq1.text.done); assert.deepEqual(done[0].rewards, []);
+  assert.ok(!/<button/.test(questDialogHtml(done)));
 });
 
 test("AC-R-254-2 quest toasts through messageFor: accepted, step, completed; hand-in refusal; quest.item and pinned stay silent", () => {
@@ -54,16 +62,23 @@ test("AC-R-254-2 quest toasts through messageFor: accepted, step, completed; han
   assert.equal(messageFor({ type: "quest.step", id: "main", title: "Why the Lights Went Out", next: "Go deeper." }, s), "Why the Lights Went Out: Go deeper.");
   const done = messageFor({ type: "quest.completed", id: "sq1", title: "Intern Overflow", rewards: { gold: 60, xp: 90, items: ["Health Potion"] } }, s);
   assert.ok(done.startsWith("Intern Overflow: completed") && done.includes("60 gold") && done.includes("90 experience") && done.includes("Health Potion"), done);
+  assert.equal(messageFor({ type: "quest.step", id: "main2", step: 1, title: "The Paper Trail", next: "Reach floor 4.", unlocked: true }, s), "A new assignment is on your desk: The Paper Trail.", "an unlock toast names the new assignment");
+  assert.equal(messageFor({ type: "quest.step", id: "main3", step: 1, title: "Final Notice", next: "Reach floor 7 by the back stairs.", unlocked: true }, s), "A new assignment is on your desk: Final Notice.");
+  const arc = messageFor({ type: "quest.completed", id: "main", title: "Why the Lights Went Out", rewards: { gold: 50, xp: 65, items: [] } }, s);
+  assert.ok(arc.includes("completed") && arc.includes("50 gold") && arc.includes("65 experience"), arc);
   assert.equal(messageFor({ type: "quest.completed", id: "main", title: "Why", rewards: { gold: 0, xp: 0, items: [] } }, s), "Why: completed");
   assert.equal(messageFor({ type: "quest.handInRefused", id: "sq2", reason: "bagFull" }, s), T.bagFullNotice);
   assert.equal(messageFor({ type: "quest.item", id: "qi-sq2", quest: "sq2", name: "x" }, s), null);
   assert.equal(messageFor({ type: "quest.pinned", id: "sq2" }, s), null);
 });
 
-test("AC-R-252-1 slot card quest line: step title and N/3; none for entries without quest fields", () => {
-  const base = { state: "ok", mainStep: 3, mainDone: false, sidesDone: 1 };
-  assert.equal(slotQuestText(base), `${content.quests.main.steps[2].title} · 1/${config.quests.sideCount}`);
-  assert.equal(slotQuestText({ ...base, mainStep: 6, mainDone: true, sidesDone: 3 }), `${T.slotMainDone} · 3/3`);
+test("AC-R-252-1 / AC-R-259-2 slot card quest line: the title of the global step (1..10) and N/5; none for entries without quest fields", () => {
+  const base = { state: "ok", qv: 5, mainStep: 3, mainDone: false, sidesDone: 1 };
+  assert.equal(config.quests.sideCount, 5);
+  assert.equal(slotQuestText(base), `${content.mainSteps[2].title} · 1/5`);
+  assert.equal(slotQuestText({ ...base, mainStep: 4, sidesDone: 0 }), "Go deeper · 0/5", "step 4 is the first step of The Paper Trail");
+  assert.equal(slotQuestText({ ...base, mainStep: 10, sidesDone: 4 }), `${content.mainSteps[9].title} · 4/5`);
+  assert.equal(slotQuestText({ ...base, mainStep: 10, mainDone: true, sidesDone: 5 }), `${T.slotMainDone} · 5/5`);
   assert.equal(slotQuestText({ state: "empty" }), ""); assert.equal(slotQuestText({ state: "bad" }), ""); assert.equal(slotQuestText({ state: "newer" }), "");
   assert.equal(slotQuestText({ state: "ok" }), "");
 });

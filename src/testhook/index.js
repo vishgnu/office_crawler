@@ -141,7 +141,7 @@ export function installTestHook(game, extras = {}, win = window) {
     slots: "Slots: list() index, raw(n), keys(), fail(on), view() = game.slots, open(), close(), run({t:'deleteSlot'|'renameSlot'|'importSlot'|'exportSlot'|'loadSlot'|'continue'|...}).",
     character: "Character: create({slot, class, name}) starts a new character in a slot, cards() class cards, openCreate({slot}), closeCreate().",
     tree: "Skill tree: get() treeView of the running game, learn(id), respec().",
-    quests: "Quests: state() = snapshot.quests, talk(npcId) (interact), accept(id), handIn(id), pin(id), setStep(id, n) (main 1..6 forward only; side 0 available, 1 active, 2 ready, 3 completed via hand-in), readVerdict(); cheat.completeQuest(id).",
+    quests: "Quests: state() = snapshot.quests (main, main2, main3, sq1..sq5, pinned), talk(npcId) (interact), accept(id), handIn(id), pin(id) ('main' = the active main quest), setStep(id, n) (a main quest main|main2|main3: step inside it, 1..3 / 1..3 / 1..4, forward only, a later arc finishes the earlier ones; a side quest sq1..sq5: 0 available, 1 active, 2 ready, 3 completed via hand-in), readVerdict() (last step of main3, boss down); cheat.completeQuest(id) ('main3' completes all three).",
     perf: "Frame and simulation timing, atlas completeness, fx flags, nameplate rects.",
   };
   function describe() {
