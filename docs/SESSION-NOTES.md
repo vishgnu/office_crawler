@@ -1,7 +1,7 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
-_Last updated 2026-10-14T05:13:00Z. Keep this block current after every step; the log below is history._
+_Last updated 2026-10-14T05:56:23Z. Keep this block current after every step; the log below is history._
 
-**Where we are:** R5 verification done (ADV-R5 4 major/7 minor, code review 2 blocking/13 should, G2 visual 33/32 + char select 33/30). Orchestrator re-run green: 616 tests (10 todo = ADV defects), e2e 13/13. **Fix round in flight:** SAVE-FIX (`docs/reviews/R5-savefix-progress.md`), UI-FIX (`R5-uifix-progress.md`), WORLD-FIX (`G3-world-progress.md`); contract + ownership `docs/reviews/R5-fix-contract.md`. After: orchestrator full suite + bench, re-run adversarial on fixes, G re-review (target 34), proxy acceptance, harness-retro R5 (round-05.json).
+**Where we are:** R5 fix round: WORLD-FIX, SAVE-FIX, UI-FIX done and committed (649 tests per agents). **In flight:** SAVE-FIX follow-up (undo replace over occupied slot, owner 'other' after reload suspect; `R5-savefix-progress.md`) and ADV-R5 round 2 (rewrites adv-r5.mjs ADV-R5-02 block, re-attacks fixes; `R5-adversarial-progress.md`). After: orchestrator full suite + bench on a quiet machine, G re-review (target 34; char select too), proxy acceptance, harness-retro R5 (round-05.json; candidate learnings: reviewer key map (Digit1 vs F1), contract field not satisfiable by core (deepest), in-flight messages worked).
 
 **In flight (check the files, not memory):**
 - ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
