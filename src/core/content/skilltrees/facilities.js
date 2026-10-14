@@ -13,7 +13,7 @@ export const facilities = {
     { id: "pallet-slam", class: C, branch: "maintenance", tier: 1, col: 0, name: "Pallet Slam", textKey: "skillPalletSlamText", kind: "active", archetype: "area",
       maxLevel: 5, reqLevel: 1, requires: [], tags: ["physical", "area", "heavy"], cost: { mana: [6, 1], cooldown: 0, reservePct: 0 },
       delivery: { shape: "burst", radius: [2, 0.2, 3], at: "self", los: true },
-      effects: [{ op: "damage", type: "physical", min: [6, 2], max: [10, 3], weaponShare: 0.5 }, { op: "status", kind: "stun", ticks: [20, 4] }],
+      effects: [{ op: "damage", type: "physical", min: [5, 2], max: [9, 3], weaponShare: 0.5 }, { op: "status", kind: "stun", ticks: [20, 4] }],
       fx: { cast: "fx:slam", hit: "fx:dust", icon: "pallet-slam" } },
     { id: "floor-buffer", class: C, branch: "maintenance", tier: 2, col: 1, name: "Floor Buffer Sweep", textKey: "skillFloorBufferText", kind: "active", archetype: "area",
       maxLevel: 5, reqLevel: 8, requires: [{ id: "pallet-slam", level: 1 }], tags: ["physical", "area", "heavy"], cost: { mana: [8, 2], cooldown: 0, reservePct: 0 },
