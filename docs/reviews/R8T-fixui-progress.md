@@ -8,3 +8,4 @@
 - done: R8-Q2/Q3 were already in src/game.js (invByDialog closes the bag with the NPC window; toastDrop drops the stale "return for your reward" line). Verified by real UI at 1920x1080 and 1280x720: sq1 + sq5 hand-ins show their own lines in order (60 gold line, then 120 gold line, then level-up), and Escape closes the NPC window and the Desk Drawer. No change needed.
 - done: wish: respawn toast with an empty belt reads "Back in the Lobby. Your belt is empty: restock potions at the Break Room Barista." (ui/messages.js, ui/text.js).
 - tests: test/ui-r8t.test.js (7).
+- verify: node --test full run 1310 tests, 1309 pass, 0 fail (1 todo, ADV-R7-10); two further full runs were killed by the timeout under load from parallel agents (not red); build ok; e2e/ui.mjs 174/175 (stale: phone Map button assertion).
