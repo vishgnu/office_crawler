@@ -2,11 +2,10 @@
 import { chromium, firefox, webkit } from "playwright";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
-import { mkdirSync } from "node:fs";
+import { shotsDir } from "./shots-dir.mjs";
 
 export const DIST = pathToFileURL(resolve("dist/index.html")).href;
-export const SHOTS = resolve(process.env.E2E_SHOTS || "e2e/shots"); // L-042: runs by agents set E2E_SHOTS to a temp dir
-mkdirSync(SHOTS, { recursive: true });
+export const SHOTS = shotsDir(); // L-042: E2E_SHOTS, else a temp dir outside the repo; docs/shots only with E2E_SHOTS=docs/shots or --publish
 export const engines = { chromium, firefox, webkit };
 
 export async function launch(name = "chromium") {

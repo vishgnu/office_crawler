@@ -1,11 +1,12 @@
 // Screenshots for R6 UI (N5 slots Close, N6/N7 pause take-over, N8 tree, character select, respec confirm); 1280x720 and 390x844, JPEG < 300 KB.
 // Not asserted by run-all. Usage: node e2e/r6-ui-shots.mjs [outDir=docs/shots] [prefix=r6-ui]
+import { shotsDir } from "./shots-dir.mjs";
 import { launch, open, startNew } from "./helpers.mjs";
 import { resolve } from "node:path";
 import { statSync } from "node:fs";
 import { content } from "../src/core/index.js";
 
-const out = resolve(process.argv[2] ?? "docs/shots"), pre = process.argv[3] ?? "r6-ui";
+const out = shotsDir(process.argv[2]), pre = process.argv[3] ?? "r6-ui";
 const T = (id) => `[data-testid="${id}"]`;
 const browser = await launch();
 const sizes = { d: { width: 1280, height: 720 }, m: { width: 390, height: 844 } };

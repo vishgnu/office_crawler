@@ -1,8 +1,9 @@
 // G-FIX motion strip: three frames, 1920x1080 at default zoom, 1x crops (no scaling) side by side. node e2e/world-gfix-strip.mjs <tag> [monster] [floor] [type]
-import { launch, open, freeTilesNear } from "./helpers.mjs";
+import { mkdirSync } from "node:fs";
+import { launch, open, freeTilesNear, SHOTS } from "./helpers.mjs";
 import { chromium } from "playwright";
 import { writeFileSync } from "node:fs";
-const tag = process.argv[2] ?? "strip", type = process.argv[3] ?? "middle-manager", depth = Number(process.argv[4] ?? 1), out = "docs/shots/g-fix/";
+const tag = process.argv[2] ?? "strip", type = process.argv[3] ?? "middle-manager", depth = Number(process.argv[4] ?? 1), out = SHOTS + "/g-fix/"; mkdirSync(out, { recursive: true });
 const browser = await launch();
 const g = await open(browser, { query: "test=1&seed=5" + (process.env.Q ?? ""), viewport: { width: 1920, height: 1080 } });
 await g.app("newGame", { seed: 5 });

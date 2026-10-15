@@ -1,10 +1,11 @@
 // Screenshots for FIX-R7-UI: the toast sequence (quest line holds, level-up waits, then shows) and the phone focus return. JPEG, not asserted by run-all.
 // Usage: node e2e/r7fix-ui-shots.mjs [outDir=docs/shots] [prefix=r7fix-ui]
+import { shotsDir } from "./shots-dir.mjs";
 import { launch, open, startNew } from "./helpers.mjs";
 import { resolve } from "node:path";
 import { statSync } from "node:fs";
 
-const out = resolve(process.argv[2] ?? "docs/shots"), pre = process.argv[3] ?? "r7fix-ui";
+const out = shotsDir(process.argv[2]), pre = process.argv[3] ?? "r7fix-ui";
 const T = (id) => `[data-testid="${id}"]`;
 const browser = await launch();
 const shot = async (g, name, clip) => { const path = `${out}/${pre}-${name}.jpg`; await g.page.waitForTimeout(150); await g.page.screenshot({ path, type: "jpeg", quality: 82, ...(clip ? { clip } : {}) }); console.log(name, Math.round(statSync(path).size / 1024) + " KB"); };

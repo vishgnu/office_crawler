@@ -2,11 +2,11 @@
 // Real time (?realtime=1), served from an https origin (L-027); the dialogue buttons are clicked like a player does; the badge pick-up is a real walk,
 // the elite kill and the bag filling use cheats (documented per check). Desktop 1280x720 and phone 390x844.
 import { readFileSync } from "node:fs";
-import { launch, check, finish, startNew } from "./helpers.mjs";
+import { launch, check, finish, startNew, SHOTS } from "./helpers.mjs";
 import { T as UT } from "../src/ui/text.js";
 import { config, content } from "../src/core/index.js";
 
-const SH = process.env.E2E_SHOTS || "docs/shots"; // L-042: runs by agents set E2E_SHOTS to a temp dir
+const SH = SHOTS; // L-042: shots-dir.mjs decides (E2E_SHOTS, else a temp dir)
 const T = (id) => `[data-testid="${id}"]`;
 const browser = await launch();
 const D = { width: 1280, height: 720 }, M = { width: 390, height: 844 };

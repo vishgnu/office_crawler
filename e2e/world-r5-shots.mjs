@@ -1,5 +1,6 @@
 // R5 WORLD screenshots: node e2e/world-r5-shots.mjs [outDir=docs/shots] [scene]
 // Real core states (class heroes, real casts) staged by e2e/world-harness.js; shoots docs/shots/r5-world-{classes,fm-skills,sales-skills,it-skills}.jpg (JPEG q85).
+import { shotsDir } from "./shots-dir.mjs";
 import { build } from "esbuild";
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync, statSync } from "node:fs";
@@ -7,7 +8,7 @@ import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
 
-const outDir = resolve(process.argv[2] ?? "docs/shots");
+const outDir = shotsDir(process.argv[2]);
 const only = process.argv[3];
 const work = join(process.env.WORLD_TMP ?? tmpdir(), "world-harness-r5");
 mkdirSync(work, { recursive: true });

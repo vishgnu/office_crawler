@@ -1,5 +1,6 @@
 // WORLD-G screenshots (graphics detail round): node e2e/world-g-shots.mjs [outDir=docs/shots] [prefix=g] [scene] [size=both|1920|1280]
 // Harness scenes at real game scale (default zoom, 1920x1080 and 1280x720): office, basement, lobby, boardroom, classes. JPEG q85.
+import { shotsDir } from "./shots-dir.mjs";
 import { build } from "esbuild";
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync, statSync } from "node:fs";
@@ -7,7 +8,7 @@ import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
 
-const outDir = resolve(process.argv[2] ?? "docs/shots"), prefix = process.argv[3] ?? "g", only = process.argv[4], sizes = process.argv[5] === "1920" ? [[1920, 1080]] : process.argv[5] === "1280" ? [[1280, 720]] : [[1920, 1080], [1280, 720]];
+const outDir = shotsDir(process.argv[2]), prefix = process.argv[3] ?? "g", only = process.argv[4], sizes = process.argv[5] === "1920" ? [[1920, 1080]] : process.argv[5] === "1280" ? [[1280, 720]] : [[1920, 1080], [1280, 720]];
 const work = join(process.env.WORLD_TMP ?? tmpdir(), "world-harness-g-" + prefix);
 mkdirSync(work, { recursive: true });
 const js = await build({ entryPoints: ["e2e/world-harness.js"], bundle: true, format: "iife", write: false, target: "es2022" });

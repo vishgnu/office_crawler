@@ -2,15 +2,13 @@
 // Every `xfail(name, ok, "ADV-R5-NN")` is a demonstrated defect from docs/reviews/R5-adversarial.md: it is printed as XFAIL (or XPASS once fixed)
 // and never fails the script. Screenshots: docs/shots/adv-r5-*.jpg (JPEG, below 300 KB).
 import { mkdirSync, statSync, writeFileSync, readFileSync } from "node:fs";
-import { launch, open, check, finish, startNew, DIST } from "./helpers.mjs";
+import { launch, open, check, finish, startNew, DIST, SHOTS } from "./helpers.mjs";
 import { toSave, checksumOf } from "../src/save/index.js";
 import { newGame } from "../src/core/state.js";
 import { canonical } from "../src/core/hash.js";
 
 const browser = await launch();
 const T = (id) => `[data-testid="${id}"]`;
-const SHOTS = "docs/shots";
-mkdirSync(SHOTS, { recursive: true });
 const CL = { fm: "facilities-manager", sr: "sales-rep", it: "it-wizard" };
 const V1 = readFileSync("test/fixtures/save-v1.json", "utf8");
 const xres = [];

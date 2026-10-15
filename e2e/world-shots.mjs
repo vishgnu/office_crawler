@@ -1,5 +1,6 @@
 // WORLD work package screenshots: node e2e/world-shots.mjs [outDir=docs/shots]
 // Bundles e2e/world-harness.js (real renderer modules, staged core states) and shoots docs/shots/s2-world-{basement,lobby,champions,loot}.jpg.
+import { shotsDir } from "./shots-dir.mjs";
 import { build } from "esbuild";
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync, statSync } from "node:fs";
@@ -7,7 +8,7 @@ import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
 
-const outDir = resolve(process.argv[2] ?? "docs/shots");
+const outDir = shotsDir(process.argv[2]);
 const only = process.argv[3];
 const work = join(process.env.WORLD_TMP ?? tmpdir(), "world-harness");
 mkdirSync(work, { recursive: true });

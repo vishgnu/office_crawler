@@ -2,13 +2,11 @@
 // (full, replace with confirmation, delete, undo, rename), class per slot, the skill tree (learn, tooltips, respec, aura, bar assignment),
 // phone layouts. Screenshots (JPEG q85) go to docs/shots/r5-ui-{charselect,charselect-390,tree-fm,tree-it,slots-options}.jpg.
 import { mkdirSync, statSync, readFileSync } from "node:fs";
-import { launch, open, check, finish, startNew, DIST } from "./helpers.mjs";
+import { launch, open, check, finish, startNew, DIST, SHOTS } from "./helpers.mjs";
 import { content } from "../src/core/index.js";
 
 const browser = await launch();
 const T = (id) => `[data-testid="${id}"]`;
-const SHOTS = "docs/shots";
-mkdirSync(SHOTS, { recursive: true });
 const shot = async (page, name) => { const path = `${SHOTS}/r5-ui-${name}.jpg`; await page.screenshot({ path, type: "jpeg", quality: 85 }); const kb = statSync(path).size / 1024; check(`screenshot r5-ui-${name}.jpg is at most 300 KB`, kb <= 300, kb); };
 const [FM, SR, IT] = content.classes;
 const lobby = (viewport = { width: 1280, height: 720 }, query = "test=1&seed=1") => open(browser, { query, viewport, lobby: true });

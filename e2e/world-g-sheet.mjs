@@ -1,11 +1,12 @@
 // WORLD-G art-review contact sheet: node e2e/world-g-sheet.mjs <out.jpg> [k=2.2] [group=monsters|heroes|npcs]
+import { shotsDir } from "./shots-dir.mjs";
 import { build } from "esbuild";
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
-const out = process.argv[2] ?? "/tmp/g-sheet.jpg", k = +(process.argv[3] ?? 2.2), group = process.argv[4] ?? "monsters";
+const out = process.argv[2] ?? join(shotsDir(), "g-sheet.jpg"), k = +(process.argv[3] ?? 2.2), group = process.argv[4] ?? "monsters";
 const work = join(tmpdir(), "world-harness-sheet"); mkdirSync(work, { recursive: true });
 const js = await build({ entryPoints: ["e2e/world-harness.js"], bundle: true, format: "iife", write: false, target: "es2022" });
 writeFileSync(join(work, "index.html"), `<!doctype html><meta charset="utf-8"><body style="margin:0"><canvas id="game"></canvas><script>${js.outputFiles[0].text.replace(/<\/script/gi, "<\\/script")}</script>`);

@@ -1,6 +1,7 @@
 // G-FIX shots: real build, default zoom, 1920x1080; full frame + 1x crops around the hero. node e2e/world-gfix-shots.mjs <tag> [floor...]
-import { launch, open, freeTilesNear } from "./helpers.mjs";
-const tag = process.argv[2] ?? "after", floors = process.argv.slice(3).map(Number), out = "docs/shots/g-fix/";
+import { mkdirSync } from "node:fs";
+import { launch, open, freeTilesNear, SHOTS } from "./helpers.mjs";
+const tag = process.argv[2] ?? "after", floors = process.argv.slice(3).map(Number), out = SHOTS + "/g-fix/"; mkdirSync(out, { recursive: true });
 const browser = await launch();
 async function scene(depth, name, opts = {}) {
   const g = await open(browser, { query: "test=1&seed=" + (opts.seed ?? 5) + (opts.q ?? ""), viewport: { width: 1920, height: 1080 }, lobby: !!process.env.LOBBY });

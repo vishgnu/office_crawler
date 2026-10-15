@@ -1,6 +1,7 @@
 // G-FIX: actors standing beside wall tops (south / east of them) at default zoom: node e2e/world-gfix-wall.mjs <tag>
-import { launch, open } from "./helpers.mjs";
-const tag = process.argv[2] ?? "wall", out = "docs/shots/g-fix/";
+import { mkdirSync } from "node:fs";
+import { launch, open, SHOTS } from "./helpers.mjs";
+const tag = process.argv[2] ?? "wall", out = SHOTS + "/g-fix/"; mkdirSync(out, { recursive: true });
 const browser = await launch();
 const g = await open(browser, { query: "test=1&seed=5", viewport: { width: 1920, height: 1080 } });
 await g.app("newGame", { seed: 5 });

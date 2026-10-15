@@ -6,7 +6,7 @@ import { mkdirSync, statSync, readFileSync, writeFileSync, mkdtempSync } from "n
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { build } from "esbuild";
-import { launch, check, finish, startNew, freeTilesNear, tileScreen } from "./helpers.mjs";
+import { launch, check, finish, startNew, freeTilesNear, tileScreen, SHOTS } from "./helpers.mjs";
 import { toSave, checksumOf } from "../src/save/index.js";
 import { newGame } from "../src/core/state.js";
 import { config } from "../src/core/config.js";
@@ -16,8 +16,6 @@ import { canonical } from "../src/core/hash.js";
 
 const browser = await launch();
 const T = (id) => `[data-testid="${id}"]`;
-const SHOTS = "docs/shots";
-mkdirSync(SHOTS, { recursive: true });
 const CL = { fm: "facilities-manager", sr: "sales-rep", it: "it-wizard" };
 const CLASSES_ALL = Object.values(CL);
 const xres = [];

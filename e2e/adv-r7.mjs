@@ -5,7 +5,7 @@
 // ready, and to the end of the game; the game's own save writer turns those states into slot texts that the page imports.
 // Screenshots: docs/shots/adv-r7-*.jpg (JPEG, below 300 KB).
 import { mkdirSync, statSync } from "node:fs";
-import { launch, check, finish } from "./helpers.mjs";
+import { launch, check, finish, SHOTS } from "./helpers.mjs";
 import { startNew, tileScreen } from "./helpers.mjs";
 import { newGame, step, applyInput } from "../src/core/index.js";
 import { serialize, deserialize } from "../src/save/index.js";
@@ -13,8 +13,6 @@ import { BOT, createBotMemory, decide, noteResult } from "../bot/policy.js";
 
 const browser = await launch();
 const T = (id) => `[data-testid="${id}"]`;
-const SHOTS = process.env.E2E_SHOTS || "docs/shots"; // L-042: agents run with E2E_SHOTS set to a temp dir
-mkdirSync(SHOTS, { recursive: true });
 const sec = (name) => !process.env.SEC || process.env.SEC.split(",").includes(name);
 const CLASSES = ["facilities-manager", "sales-rep", "it-wizard"];
 const xres = [];

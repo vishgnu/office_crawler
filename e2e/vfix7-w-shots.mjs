@@ -1,6 +1,6 @@
 // VFIX-R7-WORLD shots: real build, 1x. node e2e/vfix7-w-shots.mjs <tag>  -> docs/shots/vfix7-w-<tag>-*.jpg (full frames + 1x crops)
-import { launch, open, freeTilesNear, tileScreen } from "./helpers.mjs";
-const tag = process.argv[2] ?? "after", out = "docs/shots/vfix7-w-";
+import { launch, open, freeTilesNear, tileScreen, SHOTS } from "./helpers.mjs";
+const tag = process.argv[2] ?? "after", out = SHOTS + "/vfix7-w-";
 const browser = await launch();
 const D = { width: 1280, height: 720 }, M = { width: 390, height: 844 };
 const clamp = (c, v) => ({ x: Math.max(0, Math.min(v.w - c.w, c.x)), y: Math.max(0, Math.min(v.h - c.h, c.y)), width: c.w, height: c.h });

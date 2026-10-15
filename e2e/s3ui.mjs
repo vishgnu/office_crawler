@@ -2,7 +2,7 @@
 // options (sound, key remapping, accessibility), audio cues for the boss events, the victory screen and keep playing.
 // Screenshots (JPEG q85) go to docs/shots/s3-ui-{title,options,victory,boss-bar}.jpg.
 import { readFileSync, mkdirSync, statSync } from "node:fs";
-import { launch, open, check, finish, startNew } from "./helpers.mjs";
+import { launch, open, check, finish, startNew, SHOTS } from "./helpers.mjs";
 import { content, config } from "../src/core/index.js";
 import { DEFAULT_KEYS } from "../src/input/keymap.js";
 import { T as UT } from "../src/ui/text.js";
@@ -12,8 +12,6 @@ const FM = content.classes[0];
 const SLOT_KEY = (n) => `office-crawler.slot.${n}`, INDEX_KEY = "office-crawler.slots";
 const browser = await launch();
 const T = (id) => `[data-testid="${id}"]`;
-const SHOTS = "docs/shots";
-mkdirSync(SHOTS, { recursive: true });
 const shot = async (page, name) => { const path = `${SHOTS}/s3-ui-${name}.jpg`; await page.screenshot({ path, type: "jpeg", quality: 85 }); const kb = statSync(path).size / 1024; check(`screenshot ${name}.jpg is at most 300 KB`, kb <= 300, kb); };
 const start = async (query = "test=1&seed=1", viewport = { width: 1280, height: 720 }) => {
   const g = await open(browser, { query, viewport, lobby: true });

@@ -1,6 +1,6 @@
 // R7-0.5 e2e: journal panel (J, dock button, pause entry), key remap, tracker, pin, badge, phone layout, memo read, Read the verdict, quest ground entries.
 // Real-time pages are not needed here: the manual clock is enough for the UI wiring (the NPC and toast flows are R7-0.6, e2e/r7quest.mjs).
-import { launch, open, startNew, check, finish } from "./helpers.mjs";
+import { launch, open, startNew, check, finish, SHOTS } from "./helpers.mjs";
 import { T as UT } from "../src/ui/text.js";
 
 const T = (id) => `[data-testid="${id}"]`;
@@ -71,7 +71,7 @@ for (const how of ["key", "dock", "pause"]) {
   check("AC-R-243-2 next-step lines equal quests[id].nextStep; completed has none", dom.next[0] === q.main2.nextStep && dom.next[1] === q.sq2.nextStep && dom.next[2] === q.sq3.nextStep && dom.doneNext === null, dom);
   check("AC-R-243-2 progress, giver, pin state and state words are text", dom.prog === "0/1" && dom.progMain === "Step 2/3" && dom.giver === q.sq2.giver && dom.pinned && dom.state.join() === "Active,Active,Available,Completed,Locked" && dom.mainDone === "Completed", dom);
   check("AC-R-257-5 the active arc shows its blurb; the locked arc shows 'Locked. Finish The Paper Trail first.' and no next step, no pin, no progress", dom.blurb === "The cables lead to a paper trail, and the paper trail leads down." && dom.lock === "Locked. Finish The Paper Trail first." && dom.lockedNext === null && !dom.lockedPin && dom.lockedProg === null, dom);
-  await g.page.screenshot({ path: "docs/shots/r74-ui-journal-arcs-d.jpg", type: "jpeg", quality: 82 });
+  await g.page.screenshot({ path: `${SHOTS}/r74-ui-journal-arcs-d.jpg`, type: "jpeg", quality: 82 });
   check("AC-R-244-1 desktop: a side panel, no horizontal scroll", dom.hs && (await g.page.evaluate(() => { const r = document.querySelector("#pleft").getBoundingClientRect(); return r.left <= 0 && r.width < 400; })));
   const tr = await g.page.evaluate(() => { const t = document.querySelector('[data-testid="tracker"]').getBoundingClientRect(), p = document.querySelector("#pleft").getBoundingClientRect(), ctl = [...document.querySelectorAll("#pleft button")].map((b) => b.getBoundingClientRect()); return { clear: ctl.every((c) => c.right <= t.left || t.right <= c.left || c.bottom <= t.top || t.bottom <= c.top) && (t.left >= p.right - 1 || t.right <= p.left || t.bottom <= p.top), box: [t.left, t.top, t.right, t.bottom] }; });
   check("AC-R-244-1 the tracker does not overlap the open journal", tr.clear, tr);
@@ -173,7 +173,7 @@ for (const how of ["key", "dock", "pause"]) {
   check("AC-R-244-1 phone: full-screen panel, visible 44 px close, no horizontal scroll", r.full && r.close && r.hs && r.overflowX, r);
   check("AC-R-244-1 phone: the locked row is on screen inside the panel width, no horizontal overflow", await g.page.evaluate(() => { const l = document.querySelector('[data-testid="journal-quest-main3"]'), pb = document.querySelector("#pleft .pb"); l.scrollIntoView(); const r = l.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && pb.scrollWidth <= pb.clientWidth + 1; }));
   await g.page.evaluate(() => document.querySelector('[data-testid="journal-quest-main3"]').scrollIntoView({ block: "end" }));
-  await g.page.screenshot({ path: "docs/shots/r74-ui-journal-locked-m.jpg", type: "jpeg", quality: 82 });
+  await g.page.screenshot({ path: `${SHOTS}/r74-ui-journal-locked-m.jpg`, type: "jpeg", quality: 82 });
   check("AC-R-244-1 phone: pin buttons are 44 px targets", await g.page.evaluate(() => [...document.querySelectorAll(".jpin")].every((b) => { const r = b.getBoundingClientRect(); return r.height >= 44 && r.width >= 44; })));
   await g.page.click(T("close-journal"));
   check("AC-R-244-1 phone: the close control closes", (await g.state()).ui.panels.journal === false);

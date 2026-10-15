@@ -1,9 +1,10 @@
 // WORLD-G before/after pairs from the real game: node e2e/world-g-pairs.mjs [outDir=docs/shots]
 // After-shots of the lobby (1280x800) and the basement (1280x720) in the real game (HUD included), then side-by-side pairs with docs/shots/final-lobby.jpg and polish-basement.jpg.
+import { shotsDir, PUBLISHED_SHOTS } from "./shots-dir.mjs";
 import { launch, open, freeTilesNear } from "./helpers.mjs";
 import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
-const out = resolve(process.argv[2] ?? "docs/shots");
+const out = shotsDir(process.argv[2]);
 const browser = await launch();
 { // lobby
   const g = await open(browser, { query: "test=1&seed=11", lobby: true, viewport: { width: 1280, height: 800 } });
@@ -30,7 +31,7 @@ const browser = await launch();
 const b64 = (f) => "data:image/jpeg;base64," + readFileSync(f).toString("base64");
 for (const [name, before, after, w, h] of [["lobby", "final-lobby.jpg", "g-after-lobby.jpg", 1280, 800], ["basement", "polish-basement.jpg", "g-after-basement.jpg", 1280, 720]]) {
   const p = await browser.newPage({ viewport: { width: w * 2 + 8, height: h } });
-  await p.setContent(`<body style="margin:0;background:#222;display:flex;gap:8px"><img src="${b64(`${out}/${before}`)}"><img src="${b64(`${out}/${after}`)}">`);
+  await p.setContent(`<body style="margin:0;background:#222;display:flex;gap:8px"><img src="${b64(`${PUBLISHED_SHOTS}/${before}`)}"><img src="${b64(`${out}/${after}`)}">`);
   await p.waitForTimeout(300);
   await p.screenshot({ path: `${out}/g-pair-${name}.jpg`, type: "jpeg", quality: 82 });
   await p.close();

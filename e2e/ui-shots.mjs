@@ -1,10 +1,11 @@
 // Screenshots of the S2 UI for visual review (not asserted). Usage: node e2e/ui-shots.mjs [outDir=docs/shots]
 // Writes s2-ui-{inventory,employee-file,vendor,skills,lobby}.jpg (JPEG q85) plus the 1024 px and phone variants.
+import { shotsDir } from "./shots-dir.mjs";
 import { launch, open, tileScreen, startNew } from "./helpers.mjs";
 import { resolve } from "node:path";
 import { statSync } from "node:fs";
 
-const out = resolve(process.argv[2] ?? "docs/shots");
+const out = shotsDir(process.argv[2]);
 const T = (id) => `[data-testid="${id}"]`;
 const browser = await launch();
 const shot = async (g, name) => { const path = `${out}/s2-ui-${name}.jpg`; await g.page.waitForTimeout(150); await g.page.screenshot({ path, type: "jpeg", quality: 85 }); console.log(name, Math.round(statSync(path).size / 1024) + " KB"); };

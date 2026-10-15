@@ -1,9 +1,10 @@
 // After-screenshots for the S1 visual polish pass: docs/shots/s1-polish-{fight,pile-lowhp,death,title}.jpg (1920x1080) and a 390x844 fight.
 // Usage: node e2e/polish-shots.mjs [outDir=docs/shots]
+import { shotsDir } from "./shots-dir.mjs";
 import { launch, open, freeTilesNear } from "./helpers.mjs";
 import { resolve } from "node:path";
 
-const outDir = resolve(process.argv[2] ?? "docs/shots");
+const outDir = shotsDir(process.argv[2]);
 const shot = (g, name) => g.page.screenshot({ path: `${outDir}/s1-polish-${name}.jpg`, type: "jpeg", quality: 85 });
 const browser = await launch();
 

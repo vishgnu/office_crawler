@@ -5,7 +5,8 @@
 // set  : per class, bare / full normal kit / full rare kit / full unique kit in 4 facings.
 // check: no image; pixel checks of AC-R-260-2 / 261-1 on real canvases (prints one JSON line {ok, failures, stats}; exit code 1 when not ok).
 // Paints each class directly through render/figure.js (the character-select path with a `look`), so no game state and no core change is involved.
-// Writes to the given directory only (default: the OS temp dir); the committed docs/shots files are written by passing docs/shots explicitly.
+// Directory: argument, else E2E_SHOTS, else `--publish` (docs/shots), else a temp dir (e2e/shots-dir.mjs). Committed docs/shots files are written by passing docs/shots or --publish.
+import { shotsDir } from "./shots-dir.mjs";
 import { build } from "esbuild";
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -13,7 +14,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
 
-const out = process.argv[2] ?? join(tmpdir(), "r8g2-sheets"), mode = process.argv[3] ?? "cats", scale = +(process.argv[4] ?? 1), classes = (process.argv[5] ?? "fm,sr,it").split(","), dirs = (process.argv[6] ?? "0,2,4,6").split(",").map(Number);
+const out = shotsDir(process.argv[2]), mode = process.argv[3] ?? "cats", scale = +(process.argv[4] ?? 1), classes = (process.argv[5] ?? "fm,sr,it").split(","), dirs = (process.argv[6] ?? "0,2,4,6").split(",").map(Number);
 const CLS = { fm: "facilities-manager", sr: "sales-rep", it: "it-wizard" };
 mkdirSync(out, { recursive: true });
 const entry = `

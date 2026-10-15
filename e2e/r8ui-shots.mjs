@@ -1,7 +1,7 @@
 // R8-0.3 / R8-Q1 UI screenshots (docs/shots/r8ui-*.jpg): Employee File bust with gear, slot cards with three geared characters, the owed-reward dialog on desktop and phone.
-import { launch, open, startNew } from "./helpers.mjs";
+import { launch, open, startNew, SHOTS } from "./helpers.mjs";
 import { mkdirSync } from "node:fs";
-const OUT = process.env.R8UI_OUT || "docs/shots"; mkdirSync(OUT, { recursive: true });
+const OUT = process.env.R8UI_OUT || SHOTS; mkdirSync(OUT, { recursive: true });
 const T = (id) => `[data-testid="${id}"]`;
 const browser = await launch();
 const jpg = (page, name, opts = {}) => page.screenshot({ path: `${OUT}/r8ui-${name}.jpg`, type: "jpeg", quality: 85, ...opts });

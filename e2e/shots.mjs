@@ -1,10 +1,11 @@
 // Screenshots of the real game for the visual reviewer (not asserted, not part of `npm run e2e`).
 // Usage: node e2e/shots.mjs [outDir=docs/shots] [query="test=1&seed=1"] [ext=jpg]. Writes s1-ported-<w>x<h>.<ext>
 // (JPEG quality 85 keeps each file under 400 KB). The scene: a short fight, caught on the tick a hit lands.
+import { shotsDir } from "./shots-dir.mjs";
 import { launch, open, freeTilesNear } from "./helpers.mjs";
 import { resolve } from "node:path";
 
-const outDir = resolve(process.argv[2] ?? "docs/shots"), query = process.argv[3] ?? "test=1&seed=1", ext = process.argv[4] ?? "jpg";
+const outDir = shotsDir(process.argv[2]), query = process.argv[3] ?? "test=1&seed=1", ext = process.argv[4] ?? "jpg";
 const sizes = [[1920, 1080], [1280, 720], [390, 844]];
 const browser = await launch();
 for (const [width, height] of sizes) {

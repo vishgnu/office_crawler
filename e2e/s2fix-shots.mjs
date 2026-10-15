@@ -1,10 +1,11 @@
 // Screenshots of the S2 fix round (UI-FIX): docs/shots/s2-fix-{fight,inventory,map,phone}.jpg (JPEG q85, <= 300 KB).
 // Usage: node e2e/s2fix-shots.mjs [outDir=docs/shots]. Not asserted; the e2e scripts check the behaviour.
+import { shotsDir } from "./shots-dir.mjs";
 import { launch, open, freeTilesNear, startNew } from "./helpers.mjs";
 import { resolve } from "node:path";
 import { statSync } from "node:fs";
 
-const out = resolve(process.argv[2] ?? "docs/shots");
+const out = shotsDir(process.argv[2]);
 const T = (id) => `[data-testid="${id}"]`;
 const browser = await launch();
 const shot = async (g, name) => {

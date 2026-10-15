@@ -1,10 +1,11 @@
 // Screenshots for R7-0.5 (journal desktop and phone, tracker, pause menu entry); JPEG < 300 KB. Not asserted by run-all.
 // Usage: node e2e/r7-ui-journal-shots.mjs [outDir=docs/shots]
+import { shotsDir } from "./shots-dir.mjs";
 import { launch, open, startNew } from "./helpers.mjs";
 import { resolve } from "node:path";
 import { statSync } from "node:fs";
 
-const out = resolve(process.argv[2] ?? "docs/shots");
+const out = shotsDir(process.argv[2]);
 const T = (id) => `[data-testid="${id}"]`;
 const browser = await launch();
 const shot = async (g, name, clip) => { const path = `${out}/r7-ui-${name}.jpg`; await g.page.waitForTimeout(250); await g.page.screenshot({ path, type: "jpeg", quality: 82, ...(clip ? { clip } : {}) }); console.log(name, Math.round(statSync(path).size / 1024) + " KB"); };

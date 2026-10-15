@@ -1,10 +1,11 @@
 // Screenshots for VFIX-R7-UI (U1-U6, N12, N14). JPEG, not asserted by run-all.
 // Usage: node e2e/vfix7-ui-shots.mjs [prefix=vfix7-ui] [only]
+import { shotsDir } from "./shots-dir.mjs";
 import { launch, open, startNew } from "./helpers.mjs";
 import { resolve } from "node:path";
 import { statSync } from "node:fs";
 
-const out = resolve("docs/shots"), pre = process.argv[2] ?? "vfix7-ui", only = process.argv[3];
+const out = shotsDir(), pre = process.argv[2] ?? "vfix7-ui", only = process.argv[3];
 const T = (id) => `[data-testid="${id}"]`;
 const sizes = { d: { width: 1280, height: 720 }, m: { width: 390, height: 844 }, s: { width: 360, height: 740 }, t: { width: 320, height: 640 } };
 const browser = await launch();

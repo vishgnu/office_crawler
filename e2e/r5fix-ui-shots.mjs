@@ -1,11 +1,12 @@
 // Screenshots for the R5 fix round (UI-FIX): class selection per class, the skill tree, the slot manager with a notice and with the
 // take-over action; 1280x720 and 390x844, JPEG < 300 KB. Not asserted by run-all. Usage: node e2e/r5fix-ui-shots.mjs [outDir=docs/shots]
+import { shotsDir } from "./shots-dir.mjs";
 import { launch, open, startNew } from "./helpers.mjs";
 import { resolve } from "node:path";
 import { statSync } from "node:fs";
 import { content } from "../src/core/index.js";
 
-const out = resolve(process.argv[2] ?? "docs/shots");
+const out = shotsDir(process.argv[2]);
 const T = (id) => `[data-testid="${id}"]`;
 const browser = await launch();
 const sizes = { d: { width: 1280, height: 720 }, m: { width: 390, height: 844 } };

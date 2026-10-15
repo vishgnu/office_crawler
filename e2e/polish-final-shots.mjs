@@ -1,8 +1,9 @@
 // Final visual polish: after-shots docs/shots/polish-{title,basement,loot,hc-text}.jpg (JPEG q85).
 // Usage: node e2e/polish-final-shots.mjs [outDir=docs/shots]
+import { shotsDir } from "./shots-dir.mjs";
 import { launch, open, freeTilesNear } from "./helpers.mjs";
 import { resolve } from "node:path";
-const out = resolve(process.argv[2] ?? "docs/shots");
+const out = shotsDir(process.argv[2]);
 const browser = await launch();
 const shot = (g, n) => g.page.screenshot({ path: `${out}/polish-${n}.jpg`, type: "jpeg", quality: 85 });
 const only = process.argv[3];
