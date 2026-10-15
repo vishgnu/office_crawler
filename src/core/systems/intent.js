@@ -64,7 +64,9 @@ function issueAttack(state, id) {
   const p = state.player;
   // R8-AI1: a hero that stands blocked keeps its stand count across a new attack click (re-clicking an unreachable monster must not keep it from answering an attacker);
   // the retarget needs the order to have been planned once (p.goal), so a fresh reachable click is never replaced on its first tick.
-  p.target = id; p.path = []; p.goal = null; p.repathT = 0; p.standT = p.next ? 0 : (p.standT ?? 0); p.pickup = null; p.stairs = null; p.interact = null; p.toPortal = false;
+  // ADV-R8-03: a re-click of the very same target is not a new order: keep p.goal (the "planned once" mark) so a click every 1-2 ticks cannot defeat the retarget.
+  const same = p.target === id;
+  p.target = id; p.path = []; p.goal = same ? p.goal : null; p.repathT = 0; p.standT = p.next ? 0 : (p.standT ?? 0); p.pickup = null; p.stairs = null; p.interact = null; p.toPortal = false;
   return OK;
 }
 

@@ -392,6 +392,7 @@ export const OWED_MAX = 4 * sideIds.length;
 export function settleOwed(state) {
   const owed = state.player.owed;
   if (!owed) return;
+  if (state.cursorItem) return; // CR8-01: the hero holds an item (it left a cell on purpose); owed waits until the hand is empty so it cannot take that cell
   for (let i = 0; i < owed.length;) {
     if (!autoplace(state.inventory, owed[i])) { i++; continue; }
     const [it] = owed.splice(i, 1);
