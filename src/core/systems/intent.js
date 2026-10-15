@@ -66,11 +66,16 @@ function issueAttack(state, id) {
   // the retarget needs the order to have been planned once (p.goal), so a fresh reachable click is never replaced on its first tick.
   // ADV-R8-03: a re-click of the very same target is not a new order: keep p.goal (the "planned once" mark) so a click every 1-2 ticks cannot defeat the retarget.
   const same = p.target === id;
+  // R11-F03: three or more attack clicks, each within spamTicks of the one before (a tapped mouse at 3 to 10 Hz), mark click spam; see the strike-back rule in playerIntent.
+  // Kept outside the game state (not hashed, not saved: a loaded game simply starts counting again), so recorded runs and goldens without spam do not move.
+  const ck = clicks.get(state), run = ck && state.tick - ck.t <= config.spamTicks ? ck.n + 1 : 1;
+  clicks.set(state, { t: state.tick, n: run });
   p.target = id; p.path = []; p.goal = same ? p.goal : null; p.repathT = 0; p.standT = p.next ? 0 : (p.standT ?? 0); p.pickup = null; p.stairs = null; p.interact = null; p.toPortal = false;
   return OK;
 }
 
 const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+const clicks = new WeakMap(); // state -> { t: tick of the last attack click, n: clicks in the current run }
 
 /** Pick up a ground entry: at once when in reach, else walk to it first (QF: the order completes in loot.js pickups). */
 function issuePickup(state, id) {
@@ -251,6 +256,18 @@ function reachableAttacker(state, ctx, p, skip) {
   return best;
 }
 
+/** R11-F03: the nearest awake monster within spamRange tiles of the hero that is nearer than `m`; null when none. Ties break by list order. */
+function nearAggressor(state, p, m) {
+  const dm = cheb(p.tile, m.tile);
+  let best = null, bd = Math.min(config.spamRange, dm - 1);
+  for (const o of state.monsters) {
+    if (o === m || o.ai === "dead" || o.ai === "idle") continue;
+    const d = cheb(p.tile, o.tile);
+    if (d <= bd && (best === null || d < bd)) { best = o; bd = d; }
+  }
+  return best;
+}
+
 /** Per-tick intent upkeep. */
 export function playerIntent(state) {
   const ctx = getCtx(state), p = state.player;
@@ -286,6 +303,14 @@ export function playerIntent(state) {
   if (!p.next && p.goal && p.standT >= config.retargetTicks && (p.standT - config.retargetTicks) % config.retargetEvery === 0 && !mouse.down) {
     const a = reachableAttacker(state, ctx, p, m);
     if (a) { p.target = a.id; p.goal = null; p.path = []; p.repathT = 0; p.standT = 0; return; }
+  }
+  // R11-F03: while attack clicks keep coming (spam) at a target that is not in reach, an awake monster that is in reach, or within spamRange tiles and
+  // nearer than the clicked one, is struck first. Every click restarts the walk to the far target, so a hero that is hit from behind would otherwise keep
+  // walking away from its attackers and never swing (FM 168-300 ticks to a first hit); the clicked monster is still hit once nothing is near.
+  const ck = clicks.get(state);
+  if (ck && ck.n >= 3 && state.tick - ck.t <= config.spamTicks) {
+    const a = reachableAttacker(state, ctx, p, m) ?? nearAggressor(state, p, m);
+    if (a) { if (p.target !== a.id) { p.target = a.id; p.goal = null; p.path = []; p.repathT = 0; p.standT = 0; } return; }
   }
   const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)), coming = m.ai === "chase" && (m.next || m.path.length > 0);
   if (p.standT < config.holdMaxTicks && coming && cheb(m.tile, at) <= config.holdRadius) { p.path = []; return; }

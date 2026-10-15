@@ -1,0 +1,1 @@
+- done: F-03 rule (intent.js spam strike-back; config spamTicks 30, spamRange 3), tests in core-r8t1; next: full suite, goldens, F-01

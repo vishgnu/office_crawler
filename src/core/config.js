@@ -22,6 +22,8 @@ export const config = {
   meleeRange: 1,
   holdRadius: 2,       // a hero whose target is already chasing it waits once the target is this close (no mutual-pursuit orbits)
   retargetTicks: 60,   // a standing hero whose held target has not come into reach for this long (a second) strikes an adjacent attacker instead (R7-3)
+  spamTicks: 30,       // R11-F03: attack clicks closer together than this (half a second) count as click spam: an aggressor in reach is struck while the click points at something farther
+  spamRange: 3,        // R11-F03: ... and so is a monster this many tiles away or nearer
   retargetEvery: 10,   // ... looking for that attacker once then, and every this many ticks while the hero stays blocked (not every tick)
   holdFarTicks: 180,   // R7 fix: a chaser that comes round a block (no line to it) is waited for at most this long (3 s; was 480, CR7L-04: the hero stood 4 s in plain corridors): two equal-speed actors that each walk the shorter way round a ring orbit it for ever; 150 is too short to break the staged ring
   holdMaxTicks: 120,   // ... and stops waiting for a chasing target after this long and walks to it itself (a blocked chaser must not freeze the pair)
