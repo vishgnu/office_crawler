@@ -99,3 +99,4 @@
 {"round": "R8", "role": "reviewer", "pkg": "code review R8", "tokensK": 217.5, "minutes": 6.4, "status": "done", "findings": {"blocking": 0, "should": 7, "nit": 7}, "source": "task usage"}
 {"round": "R8", "role": "test-engineer", "pkg": "ADV-R8", "tokensK": 322.0, "minutes": 76.0, "status": "done", "findings": {"minor": 3}, "e2e": "19/19 (adv-r8 39, adv-r7 257)", "tests": 1281, "source": "task usage"}
 {"round": "R8", "role": "implementer", "pkg": "FIX-R8-CORE", "tokensK": 145.0, "minutes": 45.5, "status": "done", "tests": 1295, "fixed": ["CR8-01","ADV-R8-01","ADV-R8-03","CR8-04","CR8-06","CR8-07 (saveVersion 6)"], "golden": "unchanged", "source": "task usage"}
+{"round": "R8", "role": "test-engineer", "pkg": "ADV adv-r5 fixture fix", "tokensK": null, "minutes": null, "status": "done", "e2e": "adv-r5 150/150, adv-r7 257/257, adv-r8 39/39", "source": "agent report; usage pending"}
