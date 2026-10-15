@@ -32,15 +32,23 @@ function pips(n) {
   return h;
 }
 
-function nodeHtml(n, c, bar, row, parents, kids) {
+// FIX-R8T-3 L-5: the column a card is drawn at. A tier-1 card that is alone in its tier and has exactly two children in adjacent columns sits between them (half a column off its own).
+export function effCol(n, b, tierCount) {
+  const ch = b.edges.filter((e) => e.from === n.id).map((e) => b.nodes.find((x) => x.id === e.to)).filter(Boolean);
+  if (tierCount.get(n.tier) !== 1 || ch.length !== 2) return n.col;
+  const a = Math.min(ch[0].col, ch[1].col), z = Math.max(ch[0].col, ch[1].col);
+  return z - a === 1 && n.col !== a && n.col !== z ? (a + z) / 2 : n.col;
+}
+
+function nodeHtml(n, c, bar, row, parents, kids, eff) {
   const learned = n.level > 0, canLearn = n.canLearn, p = c.player;
   const verb = learned ? T.upgrade : T.learn;
   const needs = n.requires.length ? `. ${T.trNeeds}: ${n.requires.map((r) => `${r.name} ${r.level}`).join(", ")}` : "";
   const label = `${n.name}. ${T.trTier} ${n.tier}. ${T.trLevelOf} ${n.level} / ${n.maxLevel}. ${STATE_WORD[n.state]}${n.lockReason ? `. ${n.lockReason}` : ""}${needs}${n.signature ? `. ${T.trSignature}` : ""}`;
-  let h = `<li class="tnode st-${n.state}${n.signature ? " sig" : ""}${n.assigned !== null ? " bar" : ""}" data-testid="skill-${esc(n.id)}" data-state="${esc(n.state)}" data-tier="${Number(n.tier)}" style="--col:${Number(n.col) || 0};--row:${row}">`;
+  let h = `<li class="tnode st-${n.state}${eff.get(n.id) !== n.col ? ` ctr2 ctr-a${Math.floor(eff.get(n.id))}` : ""}${n.signature ? " sig" : ""}${n.assigned !== null ? " bar" : ""}" data-testid="skill-${esc(n.id)}" data-state="${esc(n.state)}" data-tier="${Number(n.tier)}" style="--col:${Number(n.col) || 0};--row:${row}">`;
   // R6 tier connector (G2 #14 / N8): drawn from n.requires over the fixed column grid; CSS only, no measuring. The first prerequisite sets the elbow.
   const from = n.requires.map((r) => parents.get(r.id)).find((x) => x);
-  if (from) { const dx = (Number(n.col) || 0) - from.col; h += `<i class="lk ${dx > 0 ? "l" : dx < 0 ? "r" : "s"}${n.requires.every((r) => r.met) ? " ok" : ""}" style="--span:${Math.abs(dx)}" aria-hidden="true"></i>`; }
+  if (from) { const dx = (Number(n.col) || 0) - from.col, pe = eff.get(from.id) ?? from.col; h += `<i class="lk ${dx > 0 ? "l" : dx < 0 ? "r" : "s"}${n.requires.every((r) => r.met) ? " ok" : ""}" style="--span:${Math.abs(dx)}"${pe !== from.col ? ` data-ctr="${(Number(n.col) || 0) < pe ? "r" : "l"}"` : ""} aria-hidden="true"></i>`; } // a centred parent (L-5): the elbow is half a column long and points at it
   if (kids.has(n.id)) h += `<i class="kd${n.level > 0 ? " ok" : ""}" aria-hidden="true"></i>`;
   h += `<button type="button" class="tn-main" data-tip="node:${esc(n.id)}" data-fk="n.${esc(n.id)}" data-testid="node-${esc(n.id)}" aria-label="${esc(label)}"><span class="tn-ic">${skillIcon(n.iconKey)}${learned ? '<em class="mk" aria-hidden="true">✓</em>' : ""}</span>`;
   h += `<span class="tn-name">${esc(n.name)}</span><span class="tn-lv"><span class="pp" aria-hidden="true">${pips(n)}</span><span data-testid="level-${esc(n.id)}">${n.level}</span>/${n.maxLevel}</span>`;
@@ -96,10 +104,11 @@ export function renderTree(c, opts = {}) {
     const parents = new Map(b.nodes.map((n) => [n.id, n])), kids = new Set(b.edges.map((e) => e.from));
     // VFIX-R7 N12: a branch that is one chain (one node per tier, at most three) is laid out as one row of cards left to right, not a staircase that leaves two thirds of the panel empty
     const chain = tiers.every((t) => b.nodes.filter((n) => n.tier === t).length === 1) && b.nodes.every((n) => n.col <= 1);
+    const tierCount = new Map(tiers.map((t) => [t, b.nodes.filter((n) => n.tier === t).length])), eff = new Map(b.nodes.map((n) => [n.id, effCol(n, b, tierCount)]));
     h += `<ul class="tnodes${chain ? " chain" : ""}">`;
     tiers.forEach((t, i) => {
       h += `<li class="tl" style="--row:${i + 1}">${esc(T.trTier)} ${Number(t)}</li>`;
-      h += b.nodes.filter((n) => n.tier === t).sort((a, z) => a.col - z.col).map((n) => nodeHtml(n, c, bar, i + 1, parents, kids)).join("");
+      h += b.nodes.filter((n) => n.tier === t).sort((a, z) => a.col - z.col).map((n) => nodeHtml(n, c, bar, i + 1, parents, kids, eff)).join("");
     });
     h += `</ul></section>`;
   }

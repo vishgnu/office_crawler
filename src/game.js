@@ -25,7 +25,8 @@ import { damageMonster } from "./core/systems/damage.js";
 
 const MAX_CATCHUP_TICKS = 8;
 const QUEST_LINES = new Set(["quest.accepted", "quest.step", "quest.completed"]); // the toasts that keep the lane (CR7-04)
-const PASSIVE_LINES = new Set(["levelup", "floorEnter", "potion", "healed", "respawn", "skillLearned"]); // world lines that wait behind a quest line instead of replacing it
+const PASSIVE_LINES = new Set(["levelup", "floorEnter", "potion", "healed", "skillLearned"]); // world lines that wait behind a quest line instead of replacing it
+const URGENT_LINES = new Set(["respawn", "portalOpen", "portalUse"]); // FIX-R8T-3: shown at once, ahead of older queued toasts (see ui/toastqueue.js)
 
 export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed, atlasMs = 0, lowFx = false, hc = false, story = false }) {
   const g = canvas.getContext("2d");
@@ -77,8 +78,10 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (ev.type === "floorEnter" && portalToast) return;
     const m = messageFor(ev, game.core);
     if (ev.type === "quest.completed") game.toastDrop(ev.id); // R8-Q3: a "return for your reward" line still waiting for this quest would show after it is handed in and look like a repeat
-    if (m) game.toast(m, ev.type.startsWith("quest.") ? config.quests.toastMs : undefined, { quest: QUEST_LINES.has(ev.type), passive: PASSIVE_LINES.has(ev.type), kind: ev.type, qid: ev.type.startsWith("quest.") ? ev.id : undefined }); // a quest line stays for config.quests.toastMs (AC-R-254-2)
+    if (m) game.toast(m, ev.type.startsWith("quest.") ? config.quests.toastMs : undefined, { quest: QUEST_LINES.has(ev.type), passive: PASSIVE_LINES.has(ev.type), urgent: URGENT_LINES.has(ev.type), kind: ev.type, qid: ev.type.startsWith("quest.") ? ev.id : undefined }); // a quest line stays for config.quests.toastMs (AC-R-254-2)
     if (ev.type === "portalOpen" || ev.type === "portalUse") portalToast = true;
+    // FIX-R8T-3 (acceptance follow-up 2): arriving on floor 2 with attribute or skill points unspent gets one low line, once per visit (a passive line: it waits behind the floor name and any quest line)
+    if (ev.type === "floorEnter" && ev.depth === 2 && (game.core.player.attrPoints > 0 || game.core.player.skillPoints > 0)) game.toast(T.pointsHint, undefined, { passive: true, kind: "pointsHint" });
   });
   // R7: a new, advanced or completed quest lights the journal badge (cleared when the journal opens); the open journal and the tracker redraw on every change
   bus.on("*", (ev) => {

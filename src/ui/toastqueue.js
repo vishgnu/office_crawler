@@ -8,8 +8,9 @@
 // Every line that goes on screen is passed to show() exactly once, which is where the live region is written; a line that never goes on screen is a duplicate by text (the same text already shown or waiting) or a dropped world/direct line.
 // The cap (CR8-05) drops the oldest waiting world line first, then the oldest direct line; a quest line is never dropped (its live-region announcement may be the only channel a player has), so
 // the waiting list can exceed the cap by quest lines only.
-const QP = [1, 0, 2]; // queue order by class (quest 0, direct 1, passive 2 -> rank): direct, quest, passive
-const PRI = (opt) => (opt.quest ? 0 : opt.passive ? 2 : 1);
+//   urgent line  (FIX-R8T-3: the respawn / belt-empty line, the Emergency Exit door line) shows at once, even over a held quest line, and clears the stale passive lines that wait (a potion or floor name from before it); waiting quest lines stay.
+const QP = [1, 0, 2, -1]; // queue order by class (quest 0, direct 1, passive 2, urgent 3 -> rank): urgent, direct, quest, passive
+const PRI = (opt) => (opt.urgent ? 3 : opt.quest ? 0 : opt.passive ? 2 : 1);
 
 export function createToastQueue({ show, now = () => performance.now(), setT = setTimeout, clearT = clearTimeout, burstMs = 250, cap = 8, holdMs = 3200, minMs = 700 }) {
   const tq = { q: [], timer: 0, until: 0, at: 0, text: null, quest: false, pri: 2 };
@@ -24,6 +25,11 @@ export function createToastQueue({ show, now = () => performance.now(), setT = s
     show(n);
   }
   function place(n) {
+    if (n.pri === 3) { // urgent: on screen now; stale world lines that wait are dropped, quest and direct lines keep their place
+      if (n.text === tq.text) return;
+      tq.q = tq.q.filter((w) => w.pri !== 2 && w.text !== n.text);
+      return display({ ...n, hold: true }); // it keeps the lane for its time: the lines of the same dispatch wait behind it
+    }
     if (!held() || (n.pri === 0 && now() - tq.at >= burstMs)) return display(n);
     if (n.pri === 1 && !tq.quest && (tq.pri === 2 || now() - tq.at >= minMs) && n.text !== tq.text) return display(n); // direct feedback only waits behind a quest line; a world line on show is replaced (the waiting list is kept)
     if (n.text === tq.text || tq.q.some((w) => w.text === n.text)) return;
@@ -48,7 +54,7 @@ export function createToastQueue({ show, now = () => performance.now(), setT = s
     end() {
       if (depth === 0 || --depth > 0) return;
       const items = batch; batch = [];
-      if (items.length > 1) items.sort((a, b) => a.pri - b.pri); // stable: event order inside a class
+      if (items.length > 1) items.sort((a, b) => (a.pri === 3 ? -1 : a.pri) - (b.pri === 3 ? -1 : b.pri)); // stable: event order inside a class
       if (items.length > 1 && !held()) items[0].hold = true; // the first line of a burst keeps the lane so the others take their turn behind it
       for (const n of items) place(n);
     },

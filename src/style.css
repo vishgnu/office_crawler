@@ -776,3 +776,56 @@ html.hc .tr-in{background:#000;border-color:#fff;color:#fff}
 #ui.phone .dock .hbtn { flex: 0 0 auto; min-width: 44px; }
 #ui.phone .dock { flex-wrap: wrap; row-gap: 3px; }
 #ui.scene-dead .dock { visibility: hidden; }
+
+/* ---- FIX-R8T-3 (R8-T polish round 3) ---- */
+/* L-3: nothing of the play HUD shows over the death screen (the quest pill, a toast, a tooltip) */
+#ui.scene-dead .tracker, #ui.scene-dead .toast, #ui.scene-dead .tip { visibility: hidden; }
+/* L-2: portrait phone: the equipment and the belt sit side by side at the bag's cell size, so the bag keeps room for several rows under them */
+#ui.phone:not(.short) .dollrow { flex-direction: row; align-items: flex-start; justify-content: center; gap: 8px; }
+#ui.phone:not(.short) .doll { grid-template-columns: repeat(7, var(--cw)); grid-template-rows: repeat(6, var(--cw)); }
+#ui.phone:not(.short) .side { width: auto; flex: none; flex-direction: column; flex-wrap: nowrap; gap: 4px; }
+#ui.phone:not(.short) .beltbox { flex: none; padding: 3px 4px 4px; }
+#ui.phone:not(.short) .beltbox h4 { letter-spacing: 0; }
+#ui.phone:not(.short) .bgrid { grid-template-columns: repeat(2, var(--cw)); grid-auto-rows: var(--cw); }
+#ui.phone:not(.short) .inv { gap: 4px; }
+/* L-1: short landscape phones. One header row (the tabs sit in it), the panel runs down to a one-line toast strip, the hotbar/belt/orbs buttons hide while it is open; the Desk Drawer puts the bag beside the equipment */
+#ui.short .ph { padding: 2px 6px 2px 8px; gap: 6px; min-height: 0; }
+#ui.short .ph:has(.tabs) h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#ui.short .ph:has(.tabs) .phi { display: none; }
+#ui.short .ph .tabs { flex: 1; margin: 0; gap: 6px; min-width: 0; }
+#ui.short .ph .tab { min-height: 44px; font-size: 15px; }
+#ui.short .ph .xbtn { margin-left: 0; flex: none; }
+#ui.short .drawer { border-width: 3px; }
+#ui.short-panel .hudui { visibility: hidden; }
+#ui.short-panel .toast { -webkit-line-clamp: 1; padding: 2px 10px; max-width: 96vw; }
+#ui.short .inv { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; row-gap: 4px; padding: 4px 6px 0; align-items: start; }
+#ui.short .dollrow { display: contents; }
+#ui.short .doll { grid-column: 1; grid-row: 1 / span 2; grid-template-columns: repeat(7, 34px); grid-template-rows: repeat(6, 34px); }
+#ui.short .side { grid-column: 2; grid-row: 1; width: auto; flex-direction: row; }
+#ui.short .beltbox { flex: none; display: flex; align-items: center; gap: 8px; padding: 2px 8px 2px 6px; }
+#ui.short .beltbox h4 { margin: 0; white-space: nowrap; }
+#ui.short .bgrid { grid-template-columns: repeat(4, 34px); grid-auto-rows: 34px; }
+#ui.short .keyhint { display: none; }
+#ui.short .gridwrap { grid-column: 2; grid-row: 2; align-self: start; justify-self: start; }
+#ui.short .inv .footrow { grid-column: 1 / -1; grid-row: 3; }
+#ui.short #pright .footrow { margin-bottom: 0; padding: 4px 0 2px; }
+#ui.short .sheet { margin: 2px 4px; padding: 6px 8px; }
+#ui.short .dstats { grid-template-columns: 1fr 1fr; }
+#ui.short .tree .tnodes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* L-5: a tier-1 card whose two children are in columns 1 and 2 is centred over them (the staircase left it at the left with an empty right half) */
+#ui:not(.phone) .tree .tnode.ctr2 { justify-self: center; width: calc((100% - var(--gx)) / 2); box-sizing: border-box; }
+#ui:not(.phone) .tree .tnode.ctr-a0 { grid-column: 2 / span 2; }
+#ui:not(.phone) .tree .tnode.ctr-a1 { grid-column: 3 / span 2; }
+.tree .lk[data-ctr]::after { width: calc(0.5 * (100% + var(--gx) + 4px) + 1.5px); }
+.tree .lk[data-ctr="r"]::after { left: calc(50% - 1.5px); right: auto; }
+.tree .lk[data-ctr="l"]::after { right: calc(50% - 1.5px); left: auto; }
+/* acceptance (R8-A1): while an item is held the footer is two rows (the "In hand" line, then gold and the two buttons) instead of three, so it covers less of the bag, and it casts a soft edge so the last visible bag row is never cut under text */
+.footrow .notice { display: contents; }
+.footrow .heldline { order: -1; flex: 1 0 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; font-size: 15px; }
+.footrow .reason { order: -1; flex: 1 0 100%; }
+.footrow .reason:empty { display: none; }
+#pright .footrow { box-shadow: 0 -6px 6px -2px var(--panel); }
+#ui.short .sk-note, #ui.short .basic-h { display: none; }
+#ui.short .tree .tr-head { margin-bottom: 2px; }
+/* L-2: on a small portrait phone (<= 700 px high) the drag hint is dropped so the bag keeps its rows; the tooltip and the Esc key still teach it */
+@media (max-height: 700px) { #ui.phone:not(.short) .keyhint { display: none; } #ui.phone:not(.short) .inv { padding-top: 4px; } }

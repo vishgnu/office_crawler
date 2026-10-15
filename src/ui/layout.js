@@ -67,17 +67,21 @@ export const isPhone = (w, h) => w <= PHONE_MAX_W || h <= PHONE_MAX_H;
  * health mug and mana jug so the vessels stay visible; the world camera re-centres the hero in the gap that stays free.
  * Cells are 44 px from 1024 px up (the decision's minimum), 40 px on the narrow desktop band; on a phone the grid fits the width.
  */
+export const SHORT_MAX_H = 430, SHORT_LANE = 36, SHORT_CELL = 34; // short landscape phone (667x375, 740x360, 844x390): a 36 px toast strip under the panel, 34 px cells
 export const TOAST_LANE = 48; // phone: a strip under an open drawer where the toast (at most two lines) sits, so it never covers the panel's action buttons or the potion belt
 export function drawerLayout(w, h) {
   const L = hudLayout(w, h), phone = isPhone(w, h);
   const vesselTop = Math.min(L.health.rect.y, L.mana.rect.y), hudTop = Math.min(L.panel.y, L.beltPanel.y, vesselTop);
   if (phone) {
+    // FIX-R8T-3 L-1: on a short landscape phone the panel runs down to a one-line toast strip at the bottom (the hotbar, belt and dock hide while it is open), the grid cells stay small
+    // and the bag sits beside the equipment; without this the hotbar left only ~100-140 px of body
+    if (h <= SHORT_MAX_H && w > h) return { phone, short: true, top: 6, bottom: h - 6 - SHORT_LANE, left: 6, right: 6, leftW: w - 12, rightW: w - 12, cell: SHORT_CELL, hudTop, lane: SHORT_LANE };
     const cell = Math.max(24, Math.floor((w - 36) / 10)); // the grid is the one part that cannot reach 44 px on a 390 px phone (10 columns)
-    return { phone, top: 6, bottom: Math.floor(hudTop - 6 - TOAST_LANE), left: 6, right: 6, leftW: w - 12, rightW: w - 12, cell, hudTop };
+    return { phone, short: false, top: 6, bottom: Math.floor(hudTop - 6 - TOAST_LANE), left: 6, right: 6, leftW: w - 12, rightW: w - 12, cell, hudTop };
   }
   const cell = w >= 1024 ? 44 : 40;
   const leftW = w >= 1024 ? 340 : 320, rightW = cell * 10 + 44;
-  return { phone, top: 8, bottom: Math.floor(Math.min(vesselTop, hudTop) - 8), left: 0, right: 0, leftW, rightW, cell, hudTop };
+  return { phone, short: false, top: 8, bottom: Math.floor(Math.min(vesselTop, hudTop) - 8), left: 0, right: 0, leftW, rightW, cell, hudTop };
 }
 
 /** Horizontal camera shift (px) that keeps the hero centred in the gap left by the open drawers. */

@@ -245,6 +245,10 @@ export function createPanels(root, game) {
     const fk = root.contains(doc.activeElement) && node.contains(doc.activeElement) ? doc.activeElement.dataset.fk : null;
     const body = node.querySelector(".pb"), top = body ? body.scrollTop : 0;
     node.innerHTML = html;
+    if (drawerLayout(game.w, game.h).short) { // FIX-R8T-3 L-1: title and tabs share one row on a short landscape phone (the tabs move into the header, before the close button)
+      const ph = node.querySelector(".ph"), tabs = node.querySelector(".pb .tabs"), x = ph?.querySelector(".xbtn");
+      if (ph && tabs && x) ph.insertBefore(tabs, x);
+    }
     const nb = node.querySelector(".pb");
     if (nb) nb.scrollTop = top;
     restoreFocus(fk, node);
@@ -267,6 +271,7 @@ export function createPanels(root, game) {
     st.setProperty("--top", D.top + "px"); st.setProperty("--bottom", D.bottom + "px"); st.setProperty("--lw", D.leftW + "px"); st.setProperty("--rw", D.rightW + "px"); st.setProperty("--cw", D.cell + "px");
     st.setProperty("--hudtop", Math.floor(D.hudTop) + "px");
     root.classList.toggle("phone", D.phone);
+    root.classList.toggle("short", !!D.short); // FIX-R8T-3 L-1: short landscape phone
     root.classList.toggle("scene-dead", c.scene === "dead"); // R8-T N2: the dock goes away behind the death screen
     const u = game.ui, p = c.player, held = c.cursorItem;
     const leftOpen = !!u.left, rightOpen = u.inventory;
@@ -278,6 +283,7 @@ export function createPanels(root, game) {
     if (view.respecAsk && (u.left !== "skills" || c.scene !== "town")) view.respecAsk = false; // the confirmation never outlives the panel or the Lobby
     root.classList.toggle("map-open", !!u.map); // N16: on the phone the full map keeps only its own dock button, so the map title (a canvas band at the top) is not covered
     root.classList.toggle("open-left", leftOpen); root.classList.toggle("open-right", rightOpen);
+    root.classList.toggle("short-panel", !!D.short && (leftOpen || rightOpen)); // the hotbar, belt and orbs' buttons hide under the full-height panel
     const frontLeft = leftOpen && (u.front === "left" || !rightOpen);
     root.classList.toggle("front-left", frontLeft); root.classList.toggle("front-right", rightOpen && !frontLeft);
     el.left.classList.toggle("open", leftOpen); el.right.classList.toggle("open", rightOpen);
@@ -361,7 +367,8 @@ export function createPanels(root, game) {
     const w = game.w, L = D.phone ? 0 : (game.ui.left ? D.leftW : 0), R = D.phone ? 0 : (game.ui.inventory ? D.rightW : 0);
     const free = Math.max(200, w - L - R), cx = L + (w - L - R) / 2;
     const st = el.toast.style;
-    st.setProperty("--tb", Math.max(0, game.h - Math.floor(D.hudTop) + (D.phone ? 4 : 8)) + "px");
+    const stripToast = D.short && (game.ui.left || game.ui.inventory); // a short phone with a panel open: the toast sits in the strip under the panel
+    st.setProperty("--tb", stripToast ? "3px" : Math.max(0, game.h - Math.floor(D.hudTop) + (D.phone ? 4 : 8)) + "px");
     st.setProperty("--tw", (D.phone ? Math.round(w * 0.96) : Math.round(Math.min(560, free - 24))) + "px");
     st.left = ((cx / w) * 100).toFixed(2) + "%";
   }
