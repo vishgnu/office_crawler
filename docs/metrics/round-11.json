@@ -1,0 +1,295 @@
+{
+ "project": "office-crawler",
+ "harnessVersion": "0.5.1",
+ "round": "R11",
+ "slice": "R11 overall test and polish (LAST round; harness 0.5.1 in force, 0.6.0 apply part A ran in parallel late in the round): R11-0 test infra (E2E_SHOTS), R11-1 delta code review of the R8-T polish code, R11-2 motion and overall visual review, R11-3 regression sweep (frozen worktree), fix round 1 (FIX-RENDER, FIX-UI), fix round 2 (FIX2-UI, FIX2-CORE), orchestrator quiet verify, final customer-proxy acceptance. Orchestrator verify row has no usage; the retro row, the post-mortem (261.0 k) and 0.6.0 apply part A (148.5 k) are ledger round 'end' and not included.",
+ "elapsedMin": 342,
+ "elapsedNote": "2026-10-15 16:58Z (R11 plan written, SESSION-NOTES) to 22:40Z (final acceptance logged): 342 min wall clock, about 5.7 h. Sum of agent minutes (507.9) counts parallel work. The user was present for 2 status questions and 2 instructions; at 20:57Z the user set the deadline 2026-10-16 04:00Z and accepted open bugs.",
+ "humanMin": null,
+ "humanMessages": 4,
+ "humanMessagesNote": "human-log.jsonl 17:00:56Z-20:57:05Z on 2026-10-15 (after the R8-T retro): 2 questions ('how long is the expected rest runtime?', 'sorry we lost internet where are we?'), 2 instructions ('update in tods and runtime left pls' 19:38:42Z, which had no entry in 00-brief.md before this retro: added late, L-037, counted as an incident; and the deadline instruction 20:57:05Z, which has its briefing). 0 rework requests. The 16:49:54Z go belongs to R8-T.",
+ "wallClockUtc": {
+  "start": "16:58Z",
+  "R11-1": "17:07Z",
+  "R11-2": "17:13Z",
+  "R11-0": "17:45Z",
+  "R11-FIX-RENDER": "18:36Z",
+  "R11-FIX-UI": "20:01Z",
+  "R11-3": "20:17Z",
+  "R11-FIX2-UI": "20:48Z",
+  "R11-FIX2-CORE": "21:18Z",
+  "quietVerify": "22:28Z",
+  "finalAcceptance": "22:40Z"
+ },
+ "agents": [
+  {
+   "role": "reviewer",
+   "pkg": "R11-1 delta code review",
+   "tokensK": 170.2,
+   "minutes": 8.9,
+   "status": "changes_needed",
+   "note": "1 major, 6 minor, 3 nit on the R8-T polish code (about 823 k tokens never reviewed, L-049)"
+  },
+  {
+   "role": "visual-reviewer",
+   "pkg": "R11-2 motion + overall visual",
+   "tokensK": 178.4,
+   "minutes": 14.6,
+   "status": "done",
+   "note": "38/36 and 37/35; 1 High (M-1 Journal dock button under the quest pill at 360x640), 3 medium, 1 low-medium, 5 low; motion acceptable, iterate-light"
+  },
+  {
+   "role": "implementer",
+   "pkg": "R11-0 test infra (E2E_SHOTS)",
+   "tokensK": 105.8,
+   "minutes": 46.6,
+   "status": "done",
+   "note": "shots-dir resolver, about 30 scripts moved, lint test with 5 cases proven red; run-all with E2E_SHOTS unset left 949 committed shots unchanged (sha1)"
+  },
+  {
+   "role": "implementer",
+   "pkg": "R11-FIX-RENDER",
+   "tokensK": 245.4,
+   "minutes": 49.6,
+   "status": "done"
+  },
+  {
+   "role": "implementer",
+   "pkg": "R11-FIX-UI",
+   "tokensK": 307.8,
+   "minutes": 134.8,
+   "status": "done",
+   "note": "134.8 min for 307.8 k at machine load about 25 (0.44 min per k, others 0.15-0.20); second unit run killed (L-020, L-057)"
+  },
+  {
+   "role": "test-engineer",
+   "pkg": "R11-3 regression sweep (worktree)",
+   "tokensK": 365.2,
+   "minutes": 150.6,
+   "status": "done",
+   "note": "frozen worktree; 9 findings (1 medium-low, 4 low, 4 info); full runs 3/3 won; real-mouse floors 1-4 6/6; floor 2 36 runs, 2 FM deaths"
+  },
+  {
+   "role": "implementer",
+   "pkg": "R11-FIX2-UI",
+   "tokensK": 154.3,
+   "minutes": 30.8,
+   "status": "done",
+   "note": "1 unit red from the parallel core package (labelled)"
+  },
+  {
+   "role": "implementer",
+   "pkg": "R11-FIX2-CORE",
+   "tokensK": 138.0,
+   "minutes": 60.3,
+   "status": "partial",
+   "note": "partial: F-03 done (click-spam rule), F-01 deferred and reverted; time-boxed to 22:00Z"
+  },
+  {
+   "role": "customer-proxy",
+   "pkg": "R11 final acceptance",
+   "tokensK": 131.8,
+   "minutes": 11.7,
+   "status": "done",
+   "note": "accept with follow-ups (medium); 4 follow-ups listed in R11-acceptance.md (ledger row says 5)"
+  }
+ ],
+ "tokensKTotal": 1796.9,
+ "tokensKNote": "sum of the 9 ledger rows with usage for R11 (the orchestrator verify row has none); R8-T was 2106.3 k, so R11 is about 0.85 of R8-T. Excludes round 'end' rows (post-mortem 261.0 k, apply part A 148.5 k) and the retro.",
+ "agentMinutesTotal": 507.9,
+ "harnessWork": [
+  {
+   "item": "independent post-mortem (harness-reviewer, read-only, R11 provisional)",
+   "tokensK": 261.0,
+   "minutes": 9.3,
+   "ledgerRound": "end"
+  },
+  {
+   "item": "harness 0.6.0 apply part A (playbook, 13, 02, 06, 9 agent defs, tools deny-git, subagent-stop-log, log-user with 8 tests, portal stale banner; hooks not installed)",
+   "tokensK": 148.5,
+   "minutes": 2.7,
+   "ledgerRound": "end"
+  },
+  {
+   "item": "benchmark B1 on 0.6.0",
+   "tokensK": 343.0,
+   "minutes": 8.5,
+   "ledgerRound": "harness/benchmarks/runs/B1-0.6.0 (not in the project ledger)",
+   "note": "ACs 15/15 verified (0.5.0: 14/15), visual 29/40 = 29/40, 8 findings 0 serious, +18 % tokens; the step-1 agent read the 0.5.0 run, so not like for like (L-061: blind score equals the anchored one)"
+  }
+ ],
+ "defects": {
+  "adversarial": {
+   "total": 9,
+   "mediumLow": 1,
+   "low": 4,
+   "info": 4,
+   "ids": [
+    "F-01 floor 2 vs a level-2 Facilities Manager: 2 deaths in 12 FM runs (medium-low, deferred)",
+    "F-02 floor 4 near-death at 2 hp (low)",
+    "F-03 click spam on a changing far target: FM first hit 3-6x slower (low, fixed in FIX2-CORE)",
+    "F-04 options overwritten by a stale tab (low, fixed)",
+    "F-05 focus stays on body after opening File or Options (low, fixed)",
+    "F-06 skills tier 2/3 below the fold at 1280x720 (info/low, fixed)",
+    "F-07 floor-2 nudge duplicates the level-up hint (info)",
+    "F-08 M-1 evidence (info, known)",
+    "F-09 two-tab and offline checks fail only under load (info, environment)"
+   ],
+   "uniqueToAdversarial": [
+    "F-01",
+    "F-03",
+    "F-04",
+    "F-05",
+    "F-06"
+   ],
+   "note": "found by a real-mouse translator and real keys, not by the bot (bot parity 72/72 wins, 0 deaths): L-059"
+  },
+  "codeReview": {
+   "blocking": 0,
+   "major": 1,
+   "minor": 6,
+   "nit": 3,
+   "verdict": "changes_needed",
+   "ids": [
+    "R11-01 short-landscape skill tree pinned to column 1 (major)",
+    "R11-02..R11-07 minor (toast queue drops, closeDialog on dead scene, floor-2 nudge, source-text tests, short toast strip)",
+    "R11-08..R11-10 nit"
+   ],
+   "note": "delta review ran FIRST on the R8-T polish code that R8-T never reviewed (L-049 good). The four R11 fix packages (FIX-RENDER 245.4 k, FIX-UI 307.8 k, FIX2-UI 154.3 k, FIX2-CORE 138.0 k = 845.5 k, 47.1 % of the round) have no review row and were not delta-reviewed."
+  },
+  "visualReview": {
+   "count": 10,
+   "high": 1,
+   "medium": 3,
+   "lowMedium": 1,
+   "low": 5,
+   "note": "M-1 High found at the start of the round (parallel with the delta review) and fixed in FIX-UI before the end; scores 38/36 and 37/35; stair transition, death collapse and reduced motion not driven"
+  },
+  "customer": {
+   "count": 4,
+   "note": "accept with follow-ups (medium): r11-play script race in spendUi, FM far-changing click spam 2.4 s to first hit, F-01 deferred, finger-drag on landscape skill lists unchecked; ledger row says 5, the review file lists 4"
+  },
+  "escaped": 0,
+  "escapedNote": "none shipped as High; F-01 (medium-low) is deferred by the user's deadline decision and sits in the backlog in 50-plan.md"
+ },
+ "quality": {
+  "unitTests": 1366,
+  "unitTestsStart": 1334,
+  "unitTestsNote": "1366/0 x3 at the quiet verify; 1339 at R11-0; 1358 after FIX-RENDER and FIX-UI; 1366/1367 in FIX2-UI (1 red from the parallel core package)",
+  "e2eChecks": null,
+  "e2eScripts": 39,
+  "e2eDetail": "quiet verify 39/39 scripts; frozen-tree sweep: r8t-reach 147/147, r8t3-fix 134/134, adv-r7 261/261, r8t-offline 14/15 under load 25 and 3/3 below load 4; r8t-fullrun (no-cheat) 3/3 won, 0 deaths",
+  "visualScore": {
+   "inGame": [
+    38,
+    36
+   ],
+   "uiTreeSlotsPause": [
+    37,
+    35
+   ],
+   "note": "[appeal, craft]; R8-T was 37/35 and 36/34; reviewer saw the previous score (L-061); B1 blind score equals the anchored one (29 = 29)"
+  },
+  "fps50": 58.1,
+  "fps50Runs": [
+   56.7,
+   56.7,
+   60,
+   58.1,
+   58.5
+  ],
+  "fps50Min": 56.7,
+  "fps50GearedHero": {
+   "median": 59.0,
+   "runs": [
+    59,
+    59.5,
+    59,
+    59,
+    54.5
+   ]
+  },
+  "fps50BenchGearScene": {
+   "median": 58.1,
+   "runs": [
+    53.3,
+    58.1,
+    59
+   ],
+   "target": 48,
+   "note": "3 runs again, not 5 for this scene (L-034); not comparable with R8-T 51.8 (changed measurement, L-020)"
+  },
+  "loadFinal": "1.1-3.5",
+  "loadNote": "quiet verify exceeded the playbook's load <= 1.5 again (maximum 3.5); heavy packages ran at load about 25 earlier in the round (L-057)",
+  "botWinRate": {
+   "all": "72/72 (parity after FIX2-CORE); 3 no-cheat browser full runs won"
+  },
+  "parity": {
+   "clearTimeMin": {
+    "FM": 24.3,
+    "SR": 23.5,
+    "IT": 23.6
+   },
+   "change": "F-03 click-spam rule (3+ clicks within 30 ticks; mouse clicks only; not hashed)",
+   "goldens": "unchanged",
+   "floor2Deaths": {
+    "realMouse36runs": 2,
+    "class": "Facilities Manager, seed 3, level 2"
+   },
+   "note": "F-01 tried (minDist 14), mixed on n=4 seeds, reverted and deferred"
+  }
+ },
+ "rework": {
+  "fixRounds": 2,
+  "reverts": 1,
+  "detail": "fix round 1 = FIX-RENDER + FIX-UI from the delta review, visual review and R11-0..2 findings; fix round 2 = FIX2-UI + FIX2-CORE from the regression sweep. 1 revert: F-01 balance change tried in FIX2-CORE and reverted (deferred).",
+  "fixTokensK": 845.5,
+  "fixShare": "845.5 k tokens, 47.1 % of the round (R8-T 34.1 %, R8 8.4 %), a polish round by design"
+ },
+ "contract": {
+  "build": "No architect ADR in R11; the plan gave disjoint file ownership per package; FIX2-CORE ran alone in src/core",
+  "deviations": null,
+  "note": "cross-package reds labelled and fixed in-round: 2 e2e checks stale after FIX-UI (r8t3-fix [points] x2, fixed in FIX2-UI), 1 unit red in FIX2-UI from the parallel core package; cost small each time (L-022)"
+ },
+ "incidents": [
+  "human-log 19:38:42Z instruction ('update in tods and runtime left pls') had no entry in 00-brief.md until this retro: added late (L-037, fifth round with a gap, 1 entry); the 20:57:05Z deadline instruction was recorded correctly",
+  "RESUME block 'Last updated 19:39:06Z' is older than the newest ledger row (22:40Z) and its In flight and Next steps lists still show FIX-UI, the sweep and 'FIX2-CORE at ~22:00' as pending: stale handover again (L-060). The 19:39Z rewrite fixed the lists that had been unchanged since R5",
+  "R11-FIX-UI ran 134.8 min at load about 25, one unit run killed; TE e2e flaked at load 20-25 (5 of about 70 two-tab runs, 0 of 48 at load 1-3): L-057",
+  "M-1 (dock button 70 % under the quest pill at 360x640) passed r8t-reach (147 checks, 7 sizes) because the pill only shows with an active quest: L-058",
+  "ledger rows R11: 0 rule_breach, 0 stopped, 0 duplicate hand-backs (L-032: the three review hand-backs end with 'processes: none'; implementer hand-back text is not in the files, so not checkable for them); no git slip in any R11 file read (L-033)",
+  "the R11 fix rounds FIX-RENDER, FIX-UI, FIX2-UI and FIX2-CORE were not delta-reviewed (845.5 k tokens, 47 %): L-049 stays reopened"
+ ],
+ "learnings": [
+  "L-057",
+  "L-058",
+  "L-059",
+  "L-060",
+  "L-061",
+  "L-042",
+  "L-049",
+  "L-037",
+  "L-032",
+  "L-033",
+  "L-020",
+  "L-022",
+  "L-019",
+  "L-018",
+  "L-048",
+  "L-053",
+  "L-055",
+  "L-056",
+  "L-008",
+  "L-011",
+  "L-016",
+  "L-027",
+  "L-030",
+  "L-047",
+  "L-054",
+  "L-040"
+ ],
+ "experiments": {
+  "E1": "CONFIRMED on yield, ordering clause never tested (post-mortem): adversary findings per round 14, 7, 10, 3, 7, 9 (R5, R6, R7, R8, R8-T, R11), at least 1 in 6 of 6 rounds; reviewer blocking 2, 0, 1, 0, 0, 0 (met in 5 of 6); R11: adversary 9 (1 medium-low, 4 low, 4 info), delta review 0 blocking, 1 major; adversary and review always ran in parallel, so 'before the reviewer' was never measured; the two passes are complementary (L-030)",
+  "E2": "REFUTED as stated (fewer fix rounds than R2/R3: after contracts 0, 3, 2, 2, 3, 1, 3, at least 2), NARROWER CLAIM SUPPORTED (names and fields held: 0 renames in R4-R8, deviations additive); a fairer metric is cross-package red hand-backs per package (L-022). R11: no ADR, 2 fix rounds, fix share 47.1 %",
+  "E3": "CONFIRMED with a measurement caveat (post-mortem): in-game 32/31 at G1, gate met in 2 rounds; 38/36 at R11, no port drop after L-023; the score rose monotonically over 14 reviews by the same reviewer type with the previous score printed in the review, no anchor shots or human taste check (L-061); proves no regression and gates met, not that 38 is better than 34 to a person"
+ }
+}

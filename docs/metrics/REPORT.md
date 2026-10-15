@@ -18,10 +18,11 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R7 | 29 | 5941.5 | 1105.7 | 5766.3 | 1154 | inGame 35/34, charselect null, uiTreeSlotsPause 35/34, note [appeal, craft]; R7 first review iterate: in-game 35/33, UI 35/32; after the visual fix round R7b pass 35/34 both; R6 was 35/34 | adversarial: 10; codeReview: 16; visualReview: 25; customer: 8; escaped: 0; escapedNote: none shipped; the R7 acceptance feel items (bag full, early deaths) are open for R8 |
 | R8 | 17 | 3375.6 | 699.7 | 3238.9 | 1295 | inGame 36/34, uiTreeSlotsPause 35/34, note [appeal, craft]; first review pass, no iterate; R7 first review was 35/33 and 35/32, R7b 35/34 | adversarial: 3; codeReview: 0; visualReview: 22; customer: 6; escaped: 0; escapedNote: none shipped; T1 and T2 are product defects found only by the proxy (L-052) |
 | 8T | 15 | 2280.4 | 484.3 | 2106.3 | 1334 | inGame 37/35, uiTreeSlotsPause 36/34, note [appeal, craft]; first review pass, motion not judged; R8 was 36/34 and 35/34 | adversarial: 7; codeReview: 10; visualReview: 18; customer: 5; escaped: 0; escapedNote: none shipped; L-1 (High) was found by the visual review, not by the TE's reachability e2e (L-055) |
-| R11 | 4 | 699.8 | 119.7 | – | – | – | – |
+| R11 | 9 | 1796.9 | 507.9 | 1796.9 | 1366 | inGame 38/36, uiTreeSlotsPause 37/35, note [appeal, craft]; R8-T was 37/35 and 36/34; reviewer saw the previous score (L-061); B1 blind score equals the anchored one (29 = 29) | adversarial: 9; codeReview: 10; visualReview: 20; customer: 4; escaped: 0; escapedNote: none shipped as High; F-01 (medium-low) is deferred by the user's deadline decision and sits in the backlog in 50-plan.md |
+| end | 2 | 409.5 | 12.0 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 131 rows, 21006.0 k subagent tokens. **Your messages logged:** 42.
+**Ledger total:** 139 rows, 22512.6 k subagent tokens. **Your messages logged:** 43.
 
 ## Round R3
 
@@ -213,6 +214,21 @@ Retro summary (`round-08T.json`): incidents 9, learnings L-054, L-055, L-056, L-
 | visual-reviewer | R11-2 motion + overall visual | 178.4 | 14.6 | done | score: {"g":[38,36],"ui":[37,35]}; motion: acceptable, iterate-light; findings: {"high":1,"medium":3,"low-medium":1,"low":5} |
 | implementer | R11-0 test infra (E2E_SHOTS) | 105.8 | 46.6 | done | lint_test: 5 tests, proven red; shots_hash_check: 949 unchanged; unit: 1339 x3; e2e: 32/32 |
 | implementer | R11-FIX-RENDER | 245.4 | 49.6 | done | items: ["M-2","M-3","M-4","M-5","M-6","G-R1 verified","R11-10"]; unit: 1358/0 x2 |
+| implementer | R11-FIX-UI | 307.8 | 134.8 | done | items: ["R11-01..07","R11-09","R11-10 (partly)","M-1","U-1..U-4","L-5 verified"]; unit: 1358/1358 x1 (2nd run killed under load ~25); e2e_stale: ["e2e/r8t3-fix.mjs [points] x2"] |
+| test-engineer | R11-3 regression sweep (worktree) | 365.2 | 150.6 | done | findings: {"medium-low":1,"low":4,"info":4}; full_runs: 3/3 won, 0 deaths; floor2: 36 runs, 2 FM deaths; new_scripts: 8 |
+| implementer | R11-FIX2-UI | 154.3 | 30.8 | done | items: ["F-04","F-05","F-06","R11-08","r8t3-fix points","run-all +5"]; unit: 1366/1367 x2 (1 red from parallel core) |
+| implementer | R11-FIX2-CORE | 138.0 | 60.3 | partial | items: {"F-03":"done","F-01":"deferred, reverted"}; parity: {"wins":"72/72","medians_min":[24.3,23.5,23.6]}; goldens: unchanged; unit: 1366/1366 x3 |
+| orchestrator | verify R11 (quiet) | – | – | green | tests: 1366/0 x3; e2e: 39/39 scripts; fps50: [56.7,56.7,60,58.1,58.5]; fps50GearedHero: [59,59.5,59,59,54.5]; benchGear_fps50Geared: [53.3,58.1,59]; load: 1.1-3.5 |
+| customer-proxy | R11 final acceptance | 131.8 | 11.7 | done | verdict: accept with follow-ups; follow_ups: 5 |
+
+Retro summary (`round-11.json`): incidents 6, learnings L-057, L-058, L-059, L-060, L-061, L-042, L-049, L-037, L-032, L-033, L-020, L-022, L-019, L-018, L-048, L-053, L-055, L-056, L-008, L-011, L-016, L-027, L-030, L-047, L-054, L-040, rework {"fixRounds":2,"reverts":1,"detail":"fix round 1 = FIX-RENDER + FIX-UI from the delta review, visual review and R11-0..2 findings; fix round 2 = FIX2-UI + FIX2-CORE from the regression sweep. 1 revert: F-01 balance change tried in FIX2-CORE and reverted (deferred).","fixTokensK":845.5,"fixShare":"845.5 k tokens, 47.1 % of the round (R8-T 34.1 %, R8 8.4 %), a polish round by design"}.
+
+## Round end
+
+| Role | Package | Tokens k | Minutes | Status | Result |
+|---|---|---|---|---|---|
+| harness-reviewer | post-mortem office-crawler | 261.0 | 9.3 | done | version_proposal: 0.6.0; top_changes: 5; backlog: 15 |
+| implementer | harness 0.6.0 apply part A | 148.5 | 2.7 | done | changed_files: 29; hooks_installed: false; tests: tools 8/8, portal 63/63, skeleton 9/9 |
 
 ## Harness work
 
@@ -266,3 +282,4 @@ Retro summary (`round-08T.json`): incidents 9, learnings L-054, L-055, L-056, L-
 | 2026-10-15T17:00:56Z | question | how long is the expected rest runtime? |
 | 2026-10-15T18:27:05Z | question | sorry we lost internet where are we? |
 | 2026-10-15T19:38:42Z | instruction | update in tods and runtime left pls |
+| 2026-10-15T20:57:05Z | instruction | i will warp up for tody please make it complte by tomorrow 6am cest even if that means we will have some bugs left that will be for later - we need to get the d |

@@ -61,3 +61,13 @@ Cost note for the post-mortem: R7 is the most expensive round so far, 5766.3 k t
 
 Cost note for the post-mortem: R8-T 2106.3 k tokens over 13 agents and a 1.6 k duplicate (R8 3238.9 k, R7 5766.3 k), 479.5 agent minutes, 391 min wall clock; fix packages 717.6 k (34.1 %), of which the polish round 353.5 k.
 
+
+### Final verdicts (retro R11, 2026-10-15; decided by `harness-reviewer` in `harness/reviews/office-crawler-postmortem.md` section 2, numbers from `metrics/round-11.json`)
+
+| # | Verdict | Numbers and evidence |
+|---|---|---|
+| E1 | **Confirmed on yield; the ordering clause ("before the reviewer") was never tested.** | Adversary findings per round 14, 7, 10, 3, 7, 9 (R5, R6, R7, R8, R8-T, R11): at least 1 in 6 of 6 rounds. Reviewer blocking 2, 0, 1, 0, 0, 0 (met in 5 of 6; R5 had 2). R11: sweep 9 findings (1 medium-low, 4 low, 4 info), delta review 0 blocking and 1 major, disjoint sets. The two passes always ran in parallel. Cost per finding rose from 33 k to 40-70 k; the pass now pays through regression tests and real-input sweeps (L-059) more than through blockers. Keep both passes (L-030). |
+| E2 | **Refuted as stated; a narrower claim is supported.** | Stated metric (fewer fix rounds than R2's 2 and R3's 1 plus restart): after contracts 0, 3, 2, 2, 3, 1, 3 and at least 2 (R4, R5, G, R6, R7, R8, R8-T, R11), not fewer. Supported: names and fields held (0 renames R4-R8, additive deviations, the L-026 feasibility line caught 1 error). Fix work came from review, adversary and visual findings, not contract gaps. A fairer metric is cross-package red hand-backs per package (L-022, closed as accepted cost). Fix share 8 % (R8), 34 % (R8-T), 47.1 % (R11, polish rounds by design). |
+| E3 | **Confirmed, with a measurement caveat.** | Prototype C3 31/31, in game 32/31, 33/32 (gate 32 met at the second in-game review), 34/33, 35/34, 35/33 (dip with new UI), 35/34, 36/34, 37/35, 38/36 at R11 (UI 37/35). No port drop after L-023. Caveat (L-061): the score rose monotonically over 14 reviews by the same reviewer type with the previous score printed in the review, no anchor shots, no human taste check, and the gate rose with the score; a blind B1 re-run scored the same 29 as the earlier run. The numbers prove no regression and gates met, not that 38 is better than 34 to a person. |
+
+Cost note: R11 1796.9 k tokens over 9 agent rows with usage (R8-T 2106.3 k, R8 3238.9 k, R7 5766.3 k), 507.9 agent minutes, 342 min wall clock; fix packages 845.5 k (47.1 %). Suggested for the next project (post-mortem): E4 delta review after every fix round, E5 settings-level git hook, E6 "lenses first" round template.
