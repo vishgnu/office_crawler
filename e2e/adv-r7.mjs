@@ -247,7 +247,9 @@ if (sec("handin")) {
     const st2 = await g.state();
     check(`[R7-handin] ${cls}: 80 further hand-in attempts leave one toast element, a bounded live region, no second payment and the same owed list`, spam.toasts <= 1 && spam.live <= Math.max(live0, 1) + 2 && st2.player.gold === st1.player.gold && (st2.player.owed?.length ?? 0) === owed1 && st2.inventory.items.length === bagItems, [live0, spam, st1.player.gold, st2.player.gold]);
     // make room through the real drop input (the open window may be any giver's, not the vendor's): the owed items arrive by themselves, none is lost
-    const items = (await g.state()).inventory.items.slice(0, 8);
+    // R8 (CR7L-06): the reward gear may be a tall piece (a 2x3 body piece) that needs a free block, so free whole top rows as tall as the tallest owed item, not 8 scattered cells
+    const tall = Math.max(...st1.player.owed.map((i) => i.h));
+    const items = (await g.state()).inventory.items.filter((it) => it.y < tall);
     let sold = 0;
     for (const it of items) { const r = await g.app("input", { t: "drop", id: it.id }); if (r?.ok !== false) sold++; }
     await g.app("step", 4);
@@ -255,7 +257,7 @@ if (sec("handin")) {
     const owed2 = s.player.owed?.length ?? 0, delivered = owed1 - owed2;
     check(`[R7-handin] ${cls}: after dropping ${sold} items the owed items moved into the bag by themselves (delivered ${delivered}, bag ${bagItems} - ${sold} + ${delivered}), none lost or doubled`, delivered >= 1 && s.inventory.items.length === bagItems - sold + delivered && new Set(s.inventory.items.map((i) => i.id)).size === s.inventory.items.length, [bagItems, sold, owed1, owed2, s.inventory.items.length]);
     if (cls === CLASSES[0]) check(`[R7-handin] ${cls}: the dock count follows the owed list (${owed2} left)`, owed2 === 0 ? (await g.page.locator(T("inv-badge")).count()) === 0 : (await g.page.locator(T("inv-badge")).innerText()) === String(owed2), owed2);
-    if (owed2) { for (const it of (await g.state()).inventory.items.slice(0, 12)) await g.app("input", { t: "drop", id: it.id }).catch(() => {}); await g.app("step", 4); }
+    if (owed2) { for (const it of (await g.state()).inventory.items.slice(0, 24)) await g.app("input", { t: "drop", id: it.id }).catch(() => {}); await g.app("step", 4); }
     s = await g.state();
     check(`[R7-handin] ${cls}: with the bag freed nothing is owed any more`, (s.player.owed?.length ?? 0) === 0 && (await g.page.locator(T("inv-badge")).count()) === 0, s.player.owed);
     check(`[R7-handin] ${cls}: the completion toast names the reward and the journal badge is set`, (st1.ui.toast ?? "").includes(s.quests[fb].title) && s.ui.badge.journal === true, [st1.ui.toast, s.ui.badge]);
