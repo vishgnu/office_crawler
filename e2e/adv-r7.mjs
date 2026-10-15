@@ -13,7 +13,7 @@ import { BOT, createBotMemory, decide, noteResult } from "../bot/policy.js";
 
 const browser = await launch();
 const T = (id) => `[data-testid="${id}"]`;
-const SHOTS = "docs/shots";
+const SHOTS = process.env.E2E_SHOTS || "docs/shots"; // L-042: agents run with E2E_SHOTS set to a temp dir
 mkdirSync(SHOTS, { recursive: true });
 const sec = (name) => !process.env.SEC || process.env.SEC.split(",").includes(name);
 const CLASSES = ["facilities-manager", "sales-rep", "it-wizard"];
@@ -47,7 +47,7 @@ async function boot({ viewport = { width: 1280, height: 720 }, query = "test=1&s
 const focusId = (page) => page.evaluate(() => document.activeElement?.dataset?.testid ?? document.activeElement?.tagName);
 const overflow = (page) => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && [...document.querySelectorAll(".screen,.panel,#pleft,#pright")].every((e) => e.scrollWidth <= innerWidth + 1));
 const sides = ["sq1", "sq2", "sq3", "sq4", "sq5"]; // R7-4: five side quests
-const first3 = ["sq1", "sq2", "sq3"]; // ready at the first Lobby visit of the bot (trip T1 from floor 4); sq4 and sq5 follow at trip T2 from floor 6
+const first3 = ["sq1", "sq2", "sq3"]; // R8: the bot visits the Lobby earlier now and hands quests in as they become ready; the fixture is the first visit with at least two of them ready (the others are completed or not yet ready); sq4 and sq5 follow at a later trip
 const qstates = (s) => Object.fromEntries(sides.map((k) => [k, s.quests[k].state]));
 const GIVER = { sq1: "vendor", sq2: "healer", sq3: "potions", sq4: "stash", sq5: "vendor" };
 
@@ -60,6 +60,9 @@ async function talk(g, npc) {
   await g.page.waitForTimeout(60);
   return (await g.state()).ui.dialog?.npc === npc;
 }
+/** R8 (toast queue): the single live region is overwritten by every line, so a check reads the log of everything written to it, not its last text. */
+const liveLog = (g) => g.page.evaluate(() => { const l = document.getElementById("live"); window.__liveLog = []; new MutationObserver(() => { if (l.textContent) window.__liveLog.push(l.textContent); }).observe(l, { childList: true, characterData: true, subtree: true }); });
+const readLive = (g) => g.page.evaluate(() => window.__liveLog ?? []);
 const handInState = async (g) => { const s = await g.state(); return { gold: s.player.gold, xp: s.player.xp, pouch: s.player.pouch.length, q: qstates(s), bag: s.inventory.items.length }; };
 
 // ------------------------------------------------------------------------------------------------ fixtures from real play (no cheats)
@@ -68,7 +71,7 @@ function realRun(cls, seed) {
   let pre = null, pre2 = null;
   for (let i = 0; i < 400000 && !(mem.done && !(state.victory && !state.victory.done)); i++) { // after the boss falls, play on to the victory screen, then keepPlaying
     if (state.scene === "dead") applyInput(state, { t: "respawn" });
-    if (!pre && state.depth === 0 && state.scene === "town" && first3.every((k) => state.quests[k].s === "ready")) pre = { text: serialize(state), tick: state.tick };
+    if (!pre && state.depth === 0 && state.scene === "town" && first3.filter((k) => state.quests[k].s === "ready").length >= 2) pre = { text: serialize(state), tick: state.tick };
     if (pre && !pre2 && state.depth === 0 && state.scene === "town" && ["sq4", "sq5"].some((k) => state.quests[k].s === "ready")) pre2 = { text: serialize(state), tick: state.tick }; // trip T2: the second Lobby visit
     if (i % BOT.decideEvery === 0) { const cmd = decide(state, mem); if (cmd) noteResult(mem, cmd, applyInput(state, cmd)); }
     step(state);
@@ -90,9 +93,9 @@ for (const cls of CLASSES) {
   const f = FX[cls];
   const ok = !!f && f.won && !!f.pre2 && deserialize(f.post.text).ok && sides.every((k) => f.post.quests[k].s === "completed") && f.post.quests.main.m.verdict;
   noCheat.push({ cls, seed: f?.seed, ok });
-  check(`[R7-nocheat] ${cls}: real play by the bot (public input API only, no cheat) reaches the Lobby with sq1..sq3 ready, again with sq4 and sq5 ready, and ends with main, main2, main3 and sq1..sq5 completed (seed ${f?.seed})`, ok, f && { won: f.won, q: f.post.quests });
+  check(`[R7-nocheat] ${cls}: real play by the bot (public input API only, no cheat) reaches the Lobby with at least two of sq1..sq3 ready, later with sq4 or sq5 ready, and ends with main, main2, main3 and sq1..sq5 completed (seed ${f?.seed})`, ok, f && { won: f.won, q: f.post.quests });
 }
-xfailAfter.push(() => xfail("[R7-nocheat] real play by the bot on seeds 101, 102 and 105 leaves no quest open in any class (AC-R-259-3: all eight completed, floors 5 and 6 must hold the count of consultants)", incomplete.length === 0, "ADV-R7-10", incomplete));
+check("[R7-nocheat] real play by the bot on seeds 101, 102 and 105 leaves no quest open in any class (AC-R-259-3; ADV-R7-10 fixed by topUpKills: now a check)", incomplete.length === 0, incomplete);
 const loadFixture = async (g, text, slot = 1) => {
   const a = await g.app("slots.run", { t: "importSlot", slot, text, confirm: true });
   const b = await g.app("slots.run", { t: "loadSlot", slot, confirm: true });
@@ -216,57 +219,58 @@ if (sec("handin")) {
     const f = FX[cls];
     if (!f) continue;
     const g = await boot();
-    check(`[R7-handin] ${cls}: the real-play save (sq1..sq3 ready, sq4 and sq5 accepted, arc 1 completed) loads through the slot dialog`, await loadFixture(g, f.pre.text));
+    check(`[R7-handin] ${cls}: the real-play save (at least two of sq1..sq3 ready, arc 1 completed) loads through the slot dialog`, await loadFixture(g, f.pre.text));
     let s = await g.state();
-    check(`[R7-handin] ${cls}: the Lobby shows a hand-in marker on the vendor, healer and potion seller and none on the stash keeper, whose sq4 is accepted but not done (shapes, not colour)`, s.npcs.filter((n) => n.marker === "handin").length === 3 && s.npcs.find((n) => n.id === "stash").marker === "none", s.npcs);
+    const ready3 = first3.filter((k) => s.quests[k].state === "ready"), fb = ready3[0], fbNpc = GIVER[fb];
+    check(`[R7-handin] ${cls}: the Lobby shows a hand-in marker on the giver of each ready quest (${ready3.join("+")}) and on no other (shapes, not colour)`, ready3.length >= 2 && s.npcs.filter((n) => n.marker === "handin").map((n) => n.id).sort().join() === [...new Set(ready3.map((k) => GIVER[k]))].sort().join(), s.npcs.map((n) => [n.id, n.marker]));
     check(`[R7-handin] ${cls}: arc 1 is completed by the real run, the tracker follows the pin to main2 (R7-4: the pin moved when main completed)`, s.quests.main.state === "completed" && s.quests.main2.state === "active" && s.quests.pinned === "main2" && s.ui.tracker?.id === "main2", [s.quests.main.state, s.quests.main2.state, s.quests.pinned, s.ui.tracker]);
-    check(`[R7-handin] ${cls}: the pouch lists the badge in the journal`, (await (async () => { await g.page.keyboard.press("KeyJ"); await g.app("step", 2); const t = await g.page.textContent(T("journal-pouch")); await g.page.keyboard.press("Escape"); return t; })()).includes("Lost Staff Badge"));
+    if (ready3.includes("sq2")) check(`[R7-handin] ${cls}: the pouch lists the badge in the journal`, (await (async () => { await g.page.keyboard.press("KeyJ"); await g.app("step", 2); const t = await g.page.textContent(T("journal-pouch")); await g.page.keyboard.press("Escape"); return t; })()).includes("Lost Staff Badge"));
     // fill the bag with real pick-ups until nothing more fits
     for (let i = 0; i < 80; i++) { const r = await g.app("cheat.giveItem", { potion: true }); if (r && r.ok === false) break; }
     const before = await handInState(g);
     const free = await g.page.evaluate(() => { const st = window.__app.getState(), occ = new Set(); for (const it of st.inventory.items) for (let y = 0; y < it.h; y++) for (let x = 0; x < it.w; x++) occ.add(`${it.x + x},${it.y + y}`); return 40 - occ.size; });
     check(`[R7-handin] ${cls}: the bag is full (${free} cells free)`, free <= 1, free);
-    check(`[R7-handin] ${cls}: the vendor window opens with Hand in`, await talk(g, "vendor") && (await g.page.locator(T("quest-handin-sq1")).count()) === 1);
-    await g.page.click(T("quest-handin-sq1")); await g.app("step", 2);
+    check(`[R7-handin] ${cls}: the ${fbNpc} window opens with Hand in for ${fb}`, await talk(g, fbNpc) && (await g.page.locator(T(`quest-handin-${fb}`)).count()) === 1);
+    await g.page.click(T(`quest-handin-${fb}`)); await g.app("step", 2);
     const after = await handInState(g);
     // R8-Q1: a full bag no longer refuses the hand-in. Gold and xp are paid at once, the reward items are owed and wait for room.
     const owedN = (after.owed ?? 0);
     const st1 = await g.state(), bagItems = st1.inventory.items.length, owed1 = st1.player.owed?.length ?? 0;
-    check(`[R7-handin] ${cls}: full bag: no refusal alert, the hand-in completes, gold and xp are paid at once (${before.gold} -> ${st1.player.gold}), the items are owed (${owed1})`, (await g.page.locator(T("quest-bagfull")).count()) === 0 && st1.quests.sq1.state === "completed" && st1.player.gold > before.gold && (st1.player.xp > before.xp || st1.player.level > 1) && owed1 >= 1 && bagItems === before.bag, [before, after, owed1]);
+    check(`[R7-handin] ${cls}: full bag: no refusal alert, the hand-in completes, gold and xp are paid at once (${before.gold} -> ${st1.player.gold}), the items are owed (${owed1})`, (await g.page.locator(T("quest-bagfull")).count()) === 0 && st1.quests[fb].state === "completed" && st1.player.gold > before.gold && (st1.player.xp > before.xp || st1.player.level > 1) && owed1 >= 1 && bagItems === before.bag, [before, after, owed1]);
     check(`[R7-handin] ${cls}: the owed line is a polite status (role=status) in the dialog and a count sits on the dock button; no role=alert is shown`, (await g.page.getAttribute(T("quest-owed"), "role")) === "status" && (await g.page.locator(T("inv-badge")).innerText()) === String(owed1) && (await g.page.locator('[role="alert"]:visible').count()) === 0, [owedN, owed1]);
     if (cls === CLASSES[0]) await shot(g.page, "handin-owed");
     // click and spam: the button is gone after the hand-in; 40 forced clicks and 40 direct inputs pay nothing more and owe nothing more
     const live0 = await g.page.evaluate(() => document.getElementById("live").childNodes.length);
-    for (let i = 0; i < 40; i++) { await g.page.evaluate(() => document.querySelector('[data-testid="quest-handin-sq1"]')?.click()); await g.app("input", { t: "questHandIn", id: "sq1" }).catch(() => {}); }
+    for (let i = 0; i < 40; i++) { await g.page.evaluate((id) => document.querySelector(`[data-testid="quest-handin-${id}"]`)?.click(), fb); await g.app("input", { t: "questHandIn", id: fb }).catch(() => {}); }
     await g.app("step", 2);
     const spam = await g.page.evaluate(() => ({ live: document.getElementById("live").childNodes.length, toasts: document.querySelectorAll("#toast, .toast").length }));
     const st2 = await g.state();
     check(`[R7-handin] ${cls}: 80 further hand-in attempts leave one toast element, a bounded live region, no second payment and the same owed list`, spam.toasts <= 1 && spam.live <= Math.max(live0, 1) + 2 && st2.player.gold === st1.player.gold && (st2.player.owed?.length ?? 0) === owed1 && st2.inventory.items.length === bagItems, [live0, spam, st1.player.gold, st2.player.gold]);
-    // make room through the real sell input (the vendor window is open): the owed items arrive by themselves, none is lost
+    // make room through the real drop input (the open window may be any giver's, not the vendor's): the owed items arrive by themselves, none is lost
     const items = (await g.state()).inventory.items.slice(0, 8);
     let sold = 0;
-    for (const it of items) { const r = await g.app("input", { t: "sell", id: it.id }); if (r?.ok !== false) sold++; }
+    for (const it of items) { const r = await g.app("input", { t: "drop", id: it.id }); if (r?.ok !== false) sold++; }
     await g.app("step", 4);
     s = await g.state();
     const owed2 = s.player.owed?.length ?? 0, delivered = owed1 - owed2;
-    check(`[R7-handin] ${cls}: after selling ${sold} items the owed items moved into the bag by themselves (delivered ${delivered}, bag ${bagItems} - ${sold} + ${delivered}), none lost or doubled`, delivered >= 1 && s.inventory.items.length === bagItems - sold + delivered && new Set(s.inventory.items.map((i) => i.id)).size === s.inventory.items.length, [bagItems, sold, owed1, owed2, s.inventory.items.length]);
+    check(`[R7-handin] ${cls}: after dropping ${sold} items the owed items moved into the bag by themselves (delivered ${delivered}, bag ${bagItems} - ${sold} + ${delivered}), none lost or doubled`, delivered >= 1 && s.inventory.items.length === bagItems - sold + delivered && new Set(s.inventory.items.map((i) => i.id)).size === s.inventory.items.length, [bagItems, sold, owed1, owed2, s.inventory.items.length]);
     if (cls === CLASSES[0]) check(`[R7-handin] ${cls}: the dock count follows the owed list (${owed2} left)`, owed2 === 0 ? (await g.page.locator(T("inv-badge")).count()) === 0 : (await g.page.locator(T("inv-badge")).innerText()) === String(owed2), owed2);
-    if (owed2) { for (const it of (await g.state()).inventory.items.slice(0, 12)) await g.app("input", { t: "sell", id: it.id }).catch(() => {}); await g.app("step", 4); }
+    if (owed2) { for (const it of (await g.state()).inventory.items.slice(0, 12)) await g.app("input", { t: "drop", id: it.id }).catch(() => {}); await g.app("step", 4); }
     s = await g.state();
     check(`[R7-handin] ${cls}: with the bag freed nothing is owed any more`, (s.player.owed?.length ?? 0) === 0 && (await g.page.locator(T("inv-badge")).count()) === 0, s.player.owed);
-    check(`[R7-handin] ${cls}: the completion toast names the reward and the journal badge is set`, /Intern Overflow/.test(st1.ui.toast ?? "") && s.ui.badge.journal === true, [st1.ui.toast, s.ui.badge]);
+    check(`[R7-handin] ${cls}: the completion toast names the reward and the journal badge is set`, (st1.ui.toast ?? "").includes(s.quests[fb].title) && s.ui.badge.journal === true, [st1.ui.toast, s.ui.badge]);
     const tr0 = s.ui.tracker;
-    check(`[R7-handin] ${cls}: the vendor window no longer lists the completed sq1 (only the open quest, sq5), no Hand in for sq1 (AC-R-258-1)`, (await g.page.locator(T("quest-handin-sq1")).count()) === 0 && (await g.page.locator(T("npc-quest-sq1")).count()) === 0 && (await g.page.locator(T("npc-quest-sq5")).count()) === 1 && (await g.page.locator(T("npc-quest-state-sq5")).textContent()) === "Active", await g.page.locator('[data-testid^="npc-quest-"]').evaluateAll((e) => e.map((x) => x.dataset.testid)));
+    check(`[R7-handin] ${cls}: the window no longer offers a Hand in for the completed ${fb} (at most the "done" line, AC-R-258-1)`, (await g.page.locator(T(`quest-handin-${fb}`)).count()) === 0 && ((await g.page.locator(T(`npc-quest-${fb}`)).count()) === 0 || (await g.page.locator(T(`npc-quest-state-${fb}`)).textContent()) === "Completed"), await g.page.locator('[data-testid^="npc-quest-"]').evaluateAll((e) => e.map((x) => x.dataset.testid)));
     await g.page.keyboard.press("Escape"); await g.app("step", 2);
     // sq2 (pouch) and sq3
-    for (const id of ["sq2", "sq3"]) {
+    for (const id of ready3.slice(1)) {
       check(`[R7-handin] ${cls}: ${id}: window opens`, await talk(g, GIVER[id]));
       const pre = await handInState(g);
       const r = await g.page.evaluate((qid) => { const b = document.querySelector(`[data-testid="quest-handin-${qid}"]`); if (!b) return null; b.click(); return true; }, id);
       await g.app("step", 2);
       const post = await handInState(g);
       if (r && post.q[id] !== "completed") { // no room: free the bag and retry once through the real sell input
-        for (const it of (await g.state()).inventory.items.slice(0, 10)) await g.app("input", { t: "sell", id: it.id }).catch(() => {});
+        for (const it of (await g.state()).inventory.items.slice(0, 10)) await g.app("input", { t: "drop", id: it.id }).catch(() => {});
         await g.app("step", 2);
         await g.page.evaluate((qid) => document.querySelector(`[data-testid="quest-handin-${qid}"]`)?.click(), id);
         await g.app("step", 2);
@@ -276,17 +280,17 @@ if (sec("handin")) {
       await g.page.keyboard.press("Escape"); await g.app("step", 2);
     }
     s = await g.state();
-    check(`[R7-handin] ${cls}: sq1..sq3 completed, sq4 and sq5 still active: no giver shows a marker, the tracker still follows main2 (${s.ui.tracker?.id})`, s.npcs.every((n) => n.marker === "none") && s.ui.tracker?.id === "main2" && s.quests.pinned === "main2", [s.npcs, s.ui.tracker]);
+    check(`[R7-handin] ${cls}: sq1..sq3 completed: no giver shows a hand-in marker, the tracker still follows main2 (${s.ui.tracker?.id})`, s.npcs.every((n) => n.marker !== "handin") && s.ui.tracker?.id === "main2" && s.quests.pinned === "main2", [s.npcs, s.ui.tracker]);
     await g.page.keyboard.press("KeyJ"); await g.app("step", 2);
     const done = await g.page.locator('[data-testid="journal-completed"] .jq').count();
-    check(`[R7-handin] ${cls}: the journal lists 4 completed quests (arc 1 and sq1..sq3), with no next step on them, and an empty pouch`, done === 4 && (await g.page.locator('[data-testid="journal-completed"] .jn').count()) === 0 && (await g.page.locator(T("journal-pouch-empty")).count()) === 1, done);
+    check(`[R7-handin] ${cls}: the journal lists arc 1 and every completed side quest (R8: the count depends on the visit), with no next step on them, and an empty pouch`, done === 1 + first3.filter((k) => s.quests[k].state === "completed").length && (await g.page.locator('[data-testid="journal-completed"] .jn').count()) === 0 && (await g.page.locator(T("journal-pouch-empty")).count()) === 1, done);
     if (cls === CLASSES[0]) await shot(g.page, "journal-completed");
     check(`[R7-handin] ${cls}: no page error, no alert`, g.errors.length === 0 && g.dialogs.length === 0, [g.errors, g.dialogs]);
     // the save written after the hand-ins loads again with the same state
     await g.app("save.write");
     const txt = await g.app("slots.raw", 1);
     const back = deserialize(txt);
-    check(`[R7-handin] ${cls}: the slot written after the hand-ins loads with sq1..sq3 completed and the pouch empty`, back.ok && first3.every((k) => back.state.quests[k].s === "completed") && back.state.player.pouch.length === 0, back.message);
+    check(`[R7-handin] ${cls}: the slot written after the hand-ins loads with sq1..sq3 completed and the pouch empty`, back.ok && ready3.every((k) => back.state.quests[k].s === "completed") && back.state.player.pouch.length === 0, back.message);
     await g.context.close();
   }
 }
@@ -345,6 +349,7 @@ if (sec("slots")) {
   const g = await boot();
   await loadFixture(g, f.pre.text, 1);
   const slot1 = await g.app("slots.raw", 1);
+  const st0 = await g.state(), q1 = Object.fromEntries(first3.map((k) => [k, st0.quests[k].state])), pouch1 = st0.player.pouch.length; // R8: whichever mix of ready/completed the real run had at that visit
   await g.app("slots.run", { t: "createCharacter", slot: 2, class: "it-wizard", name: "Second" });
   await g.app("step", 2);
   let s = await g.state();
@@ -355,10 +360,10 @@ if (sec("slots")) {
   const slot2 = await g.app("slots.raw", 2);
   const r1 = await g.app("slots.run", { t: "loadSlot", slot: 1, confirm: true });
   s = await g.state();
-  check("[R7-slots] switching back to slot 1 restores its quests, its badge in the pouch and its tracker; slot 2's accept did not leak", r1.ok && first3.every((k) => s.quests[k].state === "ready") && s.player.pouch.length === 1 && s.name !== "Second", qstates(s));
+  check("[R7-slots] switching back to slot 1 restores its quests, its badge in the pouch and its tracker; slot 2's accept did not leak", r1.ok && first3.every((k) => s.quests[k].state === q1[k]) && s.player.pouch.length === pouch1 && s.name !== "Second", qstates(s));
   check("[R7-slots] the switch wrote slot 2 with its accepted quest and did not touch slot 1's bytes", JSON.parse(await g.app("slots.raw", 2)).quests.sq1.s === "active" && (await g.app("slots.raw", 1)) === slot1);
   await g.page.keyboard.press("KeyJ"); await g.app("step", 2);
-  check("[R7-slots] slot 1's journal shows the pouch item, slot 2's active quest is not listed", (await g.page.textContent(T("journal-pouch"))).includes("Lost Staff Badge"));
+  check("[R7-slots] slot 1's journal shows the pouch item (when its pouch holds one), slot 2's active quest is not listed", pouch1 === 0 ? (await g.page.locator(T("journal-pouch-empty")).count()) === 1 : (await g.page.textContent(T("journal-pouch"))).includes("Lost Staff Badge"));
   await g.page.keyboard.press("Escape");
   const r2 = await g.app("slots.run", { t: "loadSlot", slot: 2, confirm: true });
   s = await g.state();
@@ -446,18 +451,31 @@ if (sec("xss")) {
 if (sec("toast")) {
   const g = await boot();
   await startNew(g.page, { cls: "sales-rep", name: "Probe" });
-  await g.app("cheat.teleportFloor", 1); await g.app("step", 2);
-  const kill = async (n) => { const s = await g.state(); for (const z of s.monsters.filter((m) => m.type === "zombie-intern" && m.ai !== "dead").slice(0, n)) { await g.app("cheat.damageMonster", z.id, 9999); await g.app("step", 1); } };
-  await kill(15); // real kills before the quest is accepted: 90 xp, the next level is at 136
+  // R8-B1: floor 1 is sparse, so zombie interns are killed on whichever floor holds them. The xp the hero has before Accept is tuned (real kills on floors 3 and 4) so that the
+  // eighth counted kill (floors 1 and 2) crosses the level threshold: the scenario of ADV-R7-02 (a level-up line in the same tick as the quest line) is kept.
+  const zs = async () => (await g.state()).monsters.filter((m) => m.type === "zombie-intern" && m.ai !== "dead");
+  const killOn = async (depth, n) => { await g.app("cheat.teleportFloor", depth); await g.app("step", 2); let k = 0; for (const z of (await zs()).slice(0, n)) { await g.app("cheat.damageMonster", z.id, 9999); await g.app("step", 1); k++; } return k; };
+  const xpOf = async () => { const p = (await g.state()).player; return { xp: p.xp, next: p.xpNext, level: p.level }; };
+  const gain = {}; // xp of one zombie intern per floor, measured by real kills
+  const killMeasured = async (d) => { const a = await xpOf(); if (await killOn(d, 1) !== 1) return false; const b = await xpOf(); if (b.level === a.level) gain[d] = b.xp - a.xp; return true; };
+  for (const d of [2, 3, 4, 1]) await killMeasured(d);
+  const g2 = gain[2] ?? 8;
+  for (let i = 0; i < 60; i++) { // kill off-floor zombies until the gap to the next level is in (7 x g2, 8 x g2]: the eighth kill on floor 2 then levels the hero up
+    const p = await xpOf(), left = p.next - p.xp;
+    if (left > 7 * g2 && left <= 8 * g2) break;
+    const d = [4, 3, 1, 2].find((f) => gain[f] && left - gain[f] > 7 * g2);
+    if (!d || !(await killMeasured(d))) break;
+  }
   await g.app("cheat.teleportFloor", 0); await g.app("step", 2);
   await talk(g, "vendor"); await g.page.click(T("quest-accept-sq1")); await g.app("step", 2); await g.page.keyboard.press("Escape");
-  await g.app("cheat.teleportFloor", 1); await g.app("step", 2);
   const lvl = (await g.state()).player.level;
-  for (let i = 0; i < 8; i++) await kill(1);
+  await liveLog(g);
+  let counted = 0;
+  counted += await killOn(2, 8);
   const s = await g.state();
   check("[R7-toast] the eighth kill made sq1 ready and levelled the hero up (scenario holds)", s.quests.sq1.state === "ready" && s.player.level === lvl + 1, [s.quests.sq1.state, lvl, s.player.level]);
   check("[R7-toast] the toast shows the quest line ('Return to ...') for at least config.quests.toastMs, not the level-up line that arrived in the same tick (AC-R-254-2)", /Intern Overflow/.test(s.ui.toast ?? ""), s.ui.toast);  // ADV-R7-02 fixed in R7-4.2
-  check("[R7-toast] the screen-reader live region announces the ready quest", /Intern Overflow/.test(await g.page.evaluate(() => document.getElementById("live").textContent)), await g.page.evaluate(() => document.getElementById("live").textContent));  // ADV-R7-02 fixed in R7-4.2
+  { const lg = await readLive(g); check("[R7-toast] the screen-reader live region announced the ready quest (once)", lg.filter((t) => /Intern Overflow/.test(t)).length === 1, lg); }  // ADV-R7-02 fixed in R7-4.2
   check("[R7-toast] the journal and tracker are right regardless: sq1 ready, tracker names main or sq1 consistently", s.ui.tracker !== null && s.ui.badge.journal === true);
   await g.context.close();
 }
@@ -637,12 +655,13 @@ if (sec("r74")) {
     // the unlock toast: reaching floor 6 completes main2 and opens main3 (one quest line, naming the new assignment)
     await g.page.keyboard.press("Escape"); await g.app("step", 2);
     for (let i = 0; i < 300 && (await g.state()).ui.toast; i++) await g.page.waitForTimeout(100); // let the toasts of the set-up cheats (a quest line takes the lane for 4 s each) run out first
+    await liveLog(g);
     await g.app("cheat.teleportFloor", 6); await g.app("step", 2);
     const seen = await sampleToasts(g, 9000);
     s = await g.state();
     check("[R74-toast] reaching floor 6 raises a toast naming the new assignment (\"A new assignment is on your desk: Final Notice.\") and the pin moves to main3", seen.some((t) => t === "A new assignment is on your desk: Final Notice.") && s.quests.pinned === "main3" && s.quests.main3.state === "active" && s.quests.main2.state === "completed", [seen, s.quests.pinned]);
     check("[R74-toast] the toast lane shows each quest line once (no repeat of the same text)", new Set(seen).size === seen.length, seen);
-    check("[R74-toast] the screen-reader live region carries the announcement of the unlock", /Final Notice/.test(await g.page.evaluate(() => document.getElementById("live").textContent)), await g.page.evaluate(() => document.getElementById("live").textContent));
+    { const lg = await readLive(g); check("[R74-toast] the screen-reader live region announced the unlock once (R8: the log of the region, later lines such as the floor name overwrite its text)", lg.filter((t) => /Final Notice/.test(t)).length === 1 && new Set(lg).size === lg.length, lg); }
     check("[R74-journal] after main3 opened the journal shows it as the first entry with its blurb and no lock line", (await (async () => { await g.page.keyboard.press("KeyJ"); await g.app("step", 2); return order(g.page, "journal-active"); })())[0] === "main3" && (await g.page.locator(T("journal-lock-main3")).count()) === 0 && (await g.page.locator(T("journal-blurb-main3")).count()) === 1);
     check("[R74-journal] no page error", g.errors.length === 0 && g.dialogs.length === 0, [g.errors, g.dialogs]);
     await g.context.close();
@@ -849,10 +868,10 @@ if (sec("r74")) {
     for (const id of ["constructor", "toString", "__proto__"]) await g.app("quests.pin", id);
     await g.app("step", 2);
     const s = await g.state();
-    xfail("[R74-pin] the hook refuses to pin 'constructor', 'toString' and '__proto__' (they are not quests); the pin stays on main", s.quests.pinned === "main", "ADV-R7-07", s.quests.pinned);
+    check("[R74-pin] the hook refuses to pin 'constructor', 'toString' and '__proto__' (they are not quests); the pin stays on main (ADV-R7-07 fixed: now a check)", s.quests.pinned === "main", s.quests.pinned);
     await g.app("save.write");
     const back = deserialize(await g.app("slots.raw", 1));
-    xfail("[R74-pin] and the save written afterwards still loads", back.ok, "ADV-R7-07", back.message);
+    check("[R74-pin] and the save written afterwards still loads (ADV-R7-07 fixed: now a check)", back.ok, back.message);
     await g.context.close();
   }
 }

@@ -2,9 +2,9 @@
 // L-022: every script has a timeout (default 240 s, override per script below or with E2E_TIMEOUT_S); a hung child is killed, "TIMEOUT <script>"
 // is printed and the run fails. The summary line of each script is repeated as soon as it finishes, so a hang never looks like "no output".
 import { spawn } from "node:child_process";
-const scripts = ["audio", "smoke", "hook", "render", "combat", "input", "replay", "realtime", "ui", "s3ui", "r5ui", "adv-r5", "adv-r6", "adv-r7", "r7journal", "r7quest", "r8gear", "polish"];
+const scripts = ["audio", "smoke", "hook", "render", "combat", "input", "replay", "realtime", "ui", "s3ui", "r5ui", "adv-r5", "adv-r6", "adv-r7", "adv-r8", "r7journal", "r7quest", "r8gear", "polish"];
 const DEFAULT_S = Number(process.env.E2E_TIMEOUT_S) || 240;
-const TIMEOUT_S = { replay: 480, polish: 360, "adv-r5": 420, "adv-r6": 600, "adv-r7": 600 }; // per-script overrides (seconds)
+const TIMEOUT_S = { replay: 480, polish: 360, "adv-r5": 420, "adv-r6": 600, "adv-r7": 600, "adv-r8": 480 }; // per-script overrides (seconds)
 const results = [];
 
 function run(name) {
