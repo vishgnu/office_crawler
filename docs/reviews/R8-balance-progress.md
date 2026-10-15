@@ -4,3 +4,4 @@
 - run-c re-recorded (bot quests off, depth 9, respawn; seed 3, 24000 ticks, reaches floor 4, 124 kills) because the old script no longer reached floor 3; hash 37fd4406e43949fd
 - report written; waiting for e2e (run-all) to finish
 - done: npm test x3 green (1295 pass, 1 todo), build ok, e2e all green except adv-r7 1 check (R7-handin owed items after dropping, pre-existing from R8-Q1 owed; was 2 reds before); finished
+- R8-A3 (CORE-R8T-2): measured floors 1-4 (bot/floor-measure.mjs); floor 2 hp mult 0.72 to 0.62; floor 2 deaths FM 2 to 0, SR 1 to 0; parity 72/72, medians 23.8/24.0/23.3; run-c re-recorded (0792d55d8cdcdf89); npm test green (1312 pass, 1 todo); report docs/reviews/R8T-balance.md
