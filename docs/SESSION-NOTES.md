@@ -1,7 +1,7 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
 _Last updated 2026-10-15T04:51:58Z. Keep this block current after every step; the log below is history._
 
-**Where we are: R8 closed (accept with follow-ups, retro done). R8-T running: TE-R8T (worktree), FIX-UI-R8T, FIX-WORLD-R8T, CORE-R8T-1 in parallel; then CORE-R8T-2 balance alone, review, visual, fix round, verify, proxy, retro. Then R11, then END-OF-PROJECT TASK. Open question to user: release harness 0.5.1?
+**Where we are:** R8 closed (accept with follow-ups, retro done). R8-T running: TE-R8T (worktree), FIX-UI-R8T, FIX-WORLD-R8T, CORE-R8T-1 in parallel; then CORE-R8T-2 balance alone, review, visual, fix round, verify, proxy, retro. Then R11, then END-OF-PROJECT TASK. Open question to user: release harness 0.5.1?
 
 **In flight (check the files, not memory):**
 - ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
