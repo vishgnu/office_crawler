@@ -12,8 +12,10 @@ import { rollItem, rollPotion } from "../items/roll.js";
 import { autoplace } from "../items/inventory.js";
 import { mint, giveGold, affixTagOf } from "./loot.js";
 import { gainXp } from "./progression.js";
+import { sellValue } from "../items/price.js";
 import { quests, sideIds, mainIds, mainSteps } from "../content/quests.js";
 import { npcs } from "../content/npcs.js";
+import { classById } from "../content/classes.js";
 import { mainStep, mainState, activeMainId, goalOf, nextStep, objCfg } from "./questview.js";
 
 const fail = (error) => ({ ok: false, error });
@@ -317,24 +319,38 @@ export function rewardSummary(id) {
   };
 }
 
+/** The hero level a quest's gear reward is measured against (never the hero's own): `config.quests[id].refLevel`, else the gear floor plus `config.quests.refLevelOffset`. */
+const refLevelOf = (id) => config.quests[id]?.refLevel ?? gearFloorOf(id) + config.quests.refLevelOffset;
+
+/**
+ * Can the reference hero of this quest wear `item`? CR7L-06: a hero of level `refLevelOf(id)` of the state's class with its start attributes and every point it
+ * has earned in its power attribute (the build the class plays). Never reads the real hero's level or attributes, so a respec or a level-up cannot fish for a reward.
+ */
+export function refHeroWears(state, id, item) {
+  const ref = refLevelOf(id), cls = classById(state.player.class), attrs = { ...(cls?.attrs ?? config.player.attrs) }, pow = cls?.derived?.powerAttr ?? config.derived.powerAttr;
+  attrs[pow] = (attrs[pow] ?? 0) + (ref - 1) * config.attrPointsPerLevel;
+  return Object.entries(item.reqs ?? {}).every(([k, v]) => (k === "level" ? ref : attrs[k] ?? 0) >= v);
+}
+
 /** What wearing an item takes, as one number (level first, then the attribute points): the tie-break of the reward roll. */
 const reqCost = (it) => Object.entries(it.reqs ?? {}).reduce((n, [k, v]) => n + (k === "level" ? v * 100 : v), 0);
 
 /**
  * The reward of a side quest as data: gold, xp, gear (rolled, 0 or 1 item) and potions. No state is touched (the gear stream is derived).
  * CR7-06: the gear depends on the seed and the hero's class (affix tag) only, never on level, attributes or inventory: rewardRerolls candidates are
- * rolled from the seed stream at the quest's fixed item level and the one that asks the least of its wearer is paid (level first, then attribute
- * points; the first of equals), so a respec or a level-up cannot fish for another reward and a refused-then-retried hand-in pays the same item.
+ * rolled from the seed stream at the quest's fixed item level and the best one a hero of the quest's reference level can wear is paid (refLevelOf; CR7L-06), so a respec or a level-up cannot fish for another reward and a refused-then-retried hand-in pays the same item.
  */
 export function rewardOf(state, id) {
   const def = quests[id], c = config.quests, qc = c[id], gf = gearFloorOf(id), ilvl = gf * config.ilvlPerDepth, sum = rewardSummary(id);
   const out = { gold: sum.gold, xp: sum.xp, gear: null, potions: [] };
   if (sum.gear) {
-    const rng = questRng(state.seed, def.salt, 4, 0), tries = Math.max(1, c.rewardRerolls);
-    for (let i = 0; i < tries; i++) {
-      const it = rollItem(rng, { depth: gf, ilvl, minRarity: sum.gear.minRarity, maxRarity: sum.gear.maxRarity, slot: rng.pick(qc.slots), affixTag: affixTagOf(state) });
-      if (!out.gear || reqCost(it) < reqCost(out.gear)) out.gear = it;
-    }
+    const rng = questRng(state.seed, def.salt, 4, 0), tries = Math.max(1, c.rewardRerolls), cands = [];
+    for (let i = 0; i < tries; i++) cands.push(rollItem(rng, { depth: gf, ilvl, minRarity: sum.gear.minRarity, maxRarity: sum.gear.maxRarity, slot: rng.pick(qc.slots), affixTag: affixTagOf(state) }));
+    // CR7L-06: the best candidate a hero of the reference level can wear (highest requirement cost among those the reference hero wears, see refHeroWears; the first of equals); if none qualifies, the one that asks the least. Seed-pure: the reference level is a number of the quest, not of the hero.
+    const fit = cands.filter((it) => refHeroWears(state, id, it));
+    // ties (typical for classes whose weapons all ask level 1) go to the more valuable piece (rarity and affixes), then to the first
+    const better = (x, y) => { const a = reqCost(x), b = reqCost(y); return (fit.length ? a > b : a < b) || (a === b && sellValue(x) > sellValue(y)); };
+    out.gear = (fit.length ? fit : cands).reduce((best, it) => (!best || better(it, best) ? it : best), null);
   }
   if (sum.potions) {
     const rng = questRng(state.seed, def.salt, 5, 0);

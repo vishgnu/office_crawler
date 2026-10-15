@@ -23,7 +23,7 @@ export const config = {
   holdRadius: 2,       // a hero whose target is already chasing it waits once the target is this close (no mutual-pursuit orbits)
   retargetTicks: 60,   // a standing hero whose held target has not come into reach for this long (a second) strikes an adjacent attacker instead (R7-3)
   retargetEvery: 10,   // ... looking for that attacker once then, and every this many ticks while the hero stays blocked (not every tick)
-  holdFarTicks: 480,   // R7 fix: a chaser that comes round a block (no line to it) is waited for this long: two equal-speed actors that each walk the shorter way round a ring orbit it for ever
+  holdFarTicks: 180,   // R7 fix: a chaser that comes round a block (no line to it) is waited for at most this long (3 s; was 480, CR7L-04: the hero stood 4 s in plain corridors): two equal-speed actors that each walk the shorter way round a ring orbit it for ever; 150 is too short to break the staged ring
   holdMaxTicks: 120,   // ... and stops waiting for a chasing target after this long and walks to it itself (a blocked chaser must not freeze the pair)
 
   // Combat
@@ -41,6 +41,9 @@ export const config = {
   noticeTicks: 15,
   packWakeTicks: 5,
   ai: { maxPathNodes: 1500, repathTicks: 15, detourSlack: 6 }, // detourSlack: longest detour (tiles) taken to walk round other actors
+
+  // R8-B2: after arriving on a floor, monsters within `radius` tiles of the arrival tile ignore the hero for `ticks` (7 s); null or ticks 0 switches it off. The monsters start where they started (a lift trip after a death meets them again), but not already awake.
+  entryGrace: { ticks: 420, radius: 12 },
 
   // Natural regeneration (QF-02-4 is open; small default, easy to set to 0)
   regen: { hpEvery: 40, mpEvery: 30 },
@@ -111,6 +114,7 @@ export const config = {
   affixWorth: 0.5,                   // share of the base value an affix at its range maximum adds
   ilvlValue: 0.1,                    // base value grows by this per item level
   consumableValueMult: 2,            // scales the sell value (and so the price) of potions and other consumables
+  potionBuyOverSell: 3,              // R8-B3: potions cost sell value * this (36 gold for the first potion, 50 gold at the start buys one)
   buyOverSell: 4,                    // vendor price = sell value * this (at least sell value + 1)
   vendor: { gearSlots: 8, potionTiers: { 1: 1, 2: 5, 3: 12 } }, // potion tier -> minimum player level; stock is re-rolled on each return to the Lobby, not on each window open
   exploreRadius: 6,                  // R-075: tiles within this distance of the hero count as explored (the Lobby is explored from the start)
@@ -137,7 +141,7 @@ export const config = {
   depthMult: { hp: [1, 0.72, 0.56, 0.48, 0.43, 0.365, 0.375, 0.35], damage: [2.3, 1.98, 1.74, 1.53, 1.37, 1.24, 1.2, 1.21] }, // effective hp (times hpBase) 1.0 to 2.5, effective damage 2.3 to 2.8 x the old registry; never falls with depth (AC-R-031-1); floors 4 and 6 stay level with 3 and 5 because the quest rewards of the Lobby trips arrive after them
   // Floor population budget (AC-R-034-3): sum of cost * tierFactor stays within it.
   budgetBase: 120, budgetPerDepth: 32,
-  population: { packsWanted: [12, 16], maxPacks: 50, tries: 400, stopAtBudget: 0.6 }, // how many packs a floor tries to place before it stops
+  population: { packsWanted: [12, 16], maxPacks: 50, tries: 400, stopAtBudget: 0.6, early: { 1: { minDist: 20, packMax: 2, packGap: 10 } } } /* R8-B1: tutorial floor; null switches it off (test/balance-legacy.js) */, // how many packs a floor tries to place before it stops
 
   // World (S2-4)
   maxDepth: 8,                       // floors 1-8; the boss arena (depth 9, S3) hangs off floor 8
@@ -182,7 +186,8 @@ export const config = {
     // R7-4: a quest names its own objective block (`config.quests[id][type]`, else the global one above), its gear floor and its rarity range.
     sq4: { refDepth: 5, gold: { base: 30, perDepth: 15 }, xp: { base: 30, perDepth: 15 }, potions: 2, gearFloor: 5, item: { floors: [5, 6], pickupRange: 1 } },
     sq5: { refDepth: 6, gold: { base: 30, perDepth: 15 }, xp: { base: 30, perDepth: 15 }, slots: ["ring", "amulet", "belt"], gearFloor: 6, rarity: { min: "magic", max: "magic" }, kill: { monster: "consultant", count: 6, depths: [5, 6] } },
-    rewardRerolls: 8,
+    rewardRerolls: 24,
+    refLevelOffset: 4,               // CR7L-06: the gear reward is the best of rewardRerolls candidates that a hero of level (gearFloor + this) can wear; a quest may carry its own `refLevel`
     genBudgetFactor: 1.05,
     toastMs: 4000,
   },

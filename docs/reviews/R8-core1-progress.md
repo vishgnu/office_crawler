@@ -1,3 +1,10 @@
 # R8-core1 progress (CORE-R8-1, implementer)
 - baseline 2026-10-15: npm test 1155 tests, 1154 pass, 1 todo, 131 s.
 - done: R8-Q1 core (player.owed, settleOwed in step, quest.completed rewards.owed, save quests.owed + schema), old tests updated, 5 adv tests todo-flagged; next: B1 first pack, B2 entry grace, B3 potions, AI1, M1, new test file
+- done: CR7L-04 (holdFarTicks 480->180, tight tests), CR7L-05 (helper boss + thenable, test/balance-legacy-proof.test.js pins own sha1; reviewer hash method unreproducible); next: CR7L-06 rewardOf, then B1-B3, AI1, M1
+- done: CR7L-06 rewardOf (refLevel), B1 floor-1 population (early: minDist 20, packMax 2, packGap 12; clicker 0 deaths/60 seeds/class), test/naive-clicker.js; next: B2 entry grace, B3 potions, AI1, M1, new tests, goldens, parity
+- done: B2 entryGrace (config.entryGrace {ticks 420, radius 12}, state.entryGrace transient, ai.js, world.js; legacy helper clears)
+- done: goldens re-recorded (run-a.json new recording + run-a.legacy.json for legacy proof, run-class.json, run-c.json); legacy proof passes (stripped equals pre-quest goldens under helper); B3 potions (belt-first buy, kit 4/4/3, potionBuyOverSell 3); next: fix remaining reds, new tests file r8-core1, AI1, M1, parity, docs ADR
+- done: AI1 (carry standT across re-click, planned-order guard, noPath retargets attacker), M1 mapMarkers item/elite, test/r8-core1.test.js (14 tests), r7-ai test updated; next: full npm test, parity, ADR-0007 amendment, e2e, 3x
+- done: ADR-0007 amendment, rewardOf tie-break + 24 rerolls + refLevelOffset 4; next: full npm test, build, parity, e2e
+- parity (packGap 10): medians 24.2/24.9/24.1, 24/24 wins each, all quests 24/24, watchdog 0; floor-2 deaths FM 12 SR 5 (floor 1 sparse = less xp). next: npm test x3, build, e2e

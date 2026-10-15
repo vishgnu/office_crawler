@@ -112,5 +112,49 @@ for (const [flag, expect] of [["lowfx=1", { lowFx: true, hc: false }], ["hc=1", 
   check("S5 a devicePixelRatio 2 screen gets a sharper atlas than dpr 1 at the same size", hp.atlasScale > before.atlasScale && hp.dpr === 2, { dpr1: before.atlasScale, dpr2: hp.atlasScale });
   await hi.context.close();
 }
+// ---- R8-0.1 gear visuals: signature, cache, perf fields, hero pixels follow equip / swap / unequip (AC-R-260-4 pipeline part, AC-R-262-3) ----
+{
+  const g = await open(browser, { query: "test=1&seed=3&zoom=1.8", viewport: { width: 1280, height: 720 } });
+  const p0 = await g.app("perf");
+  check("AC-R-262-3 cold load: atlasMs under 5000 and no gear sprite built before a game frame", p0.atlasMs < 5000 && p0.gearCache.builds === 0 && p0.gearSig === "-|-|-|-|-|-", { atlasMs: p0.atlasMs, gear: p0.gearCache, sig: p0.gearSig });
+  await g.app("newGame", { seed: 3 });
+  await g.app("cheat.setLevel", 20);
+  await g.app("step", 5);
+  // The canvas around the hero is noisy (grain, light flicker change every pixel every frame), so the probe is perf().heroDigest: a hash of the sprite the hero was drawn from.
+  // A state is the set of digests over ~1.2 s (the idle animation loops through a few frames).
+  const sample = async () => { const set = new Set(); for (let i = 0; i < 40; i++) { set.add((await g.app("perf")).heroDigest); await g.page.waitForTimeout(30); } return [...set]; };
+  const overlap = (a, b) => a.some((x) => b.includes(x));
+  const empty = await sample();
+  const wear = async (base, rarity) => { const r = await g.app("cheat.giveItem", { base, rarity }); const e = await g.app("input", { t: "equip", id: r.id }); return { r, e }; };
+  const a = await wear("hard-hat", "rare");
+  const p1 = await g.app("perf");
+  const worn = await sample();
+  check("AC-R-260-4 equipping a head item changes the hero pixels and the signature (c.. rare)", a.r.ok && a.e.ok !== false && !overlap(empty, worn) && p1.gearSig.split("|")[0] === "h2", { sig: p1.gearSig, e: a.e });
+  const b = await wear("visor-cap", "magic");
+  const p2 = await g.app("perf");
+  const swapped = await sample();
+  check("AC-R-260-4 swapping to another category changes the pixels again", b.r.ok && p2.gearSig.split("|")[0] === "c1" && !overlap(worn, swapped) && !overlap(empty, swapped), { sig: p2.gearSig });
+  const held = await g.app("cheat.giveItem", { base: "steel-toe-boots", rarity: "rare" }); // carried, not worn
+  await g.page.waitForTimeout(1500); // the pick-up floater fades
+  const carried = await sample();
+  const pc = await g.app("perf");
+  check("AC-R-260-4 carrying an unworn item changes nothing", held.ok && overlap(swapped, carried) && pc.gearSig === p2.gearSig, { sig: pc.gearSig });
+  const u = await g.app("input", { t: "unequip", slot: "head" });
+  const back = await sample();
+  const p3 = await g.app("perf");
+  check("AC-R-260-4 unequipping returns to the empty look pixels and signature", u.ok !== false && overlap(empty, back) && p3.gearSig === "-|-|-|-|-|-", { sig: p3.gearSig, u });
+  // every visible slot at once, walking: the cache stays under its cap, builds only on signature changes, no page error
+  for (const [base, rarity] of [["hard-hat", "rare"], ["cardigan", "rare"], ["wrist-brace", "magic"], ["sneakers", "rare"], ["ruler-rapier", "rare"], ["clipboard-shield", "magic"]]) await wear(base, rarity);
+  await g.app("step", 30);
+  await g.page.waitForTimeout(800);
+  const p4 = await g.app("perf");
+  const b1 = p4.gearCache.builds;
+  await g.page.waitForTimeout(800);
+  const p5 = await g.app("perf");
+  check("AC-R-262-3 gear cache: under 32 MB, frames built, no fallback, no new builds while the signature stays", p4.gearCache.bytes > 0 && p4.gearCache.bytes <= 32 * 1024 * 1024 && p4.gearCache.fallbacks === 0 && p5.gearCache.builds - b1 <= 80 && p4.gearSig.split("|").filter((x) => x !== "-").length === 6, { gear: p4.gearCache, sig: p4.gearSig, b1, b2: p5.gearCache.builds });
+  check("AC-R-262-4 on-demand builds: at most one in any frame", p5.gearCache.maxBuildsPerFrame <= 1, p5.gearCache);
+  check("gear visuals: no page errors", g.errors.length === 0, g.errors);
+  await g.context.close();
+}
 await browser.close();
 finish("render");

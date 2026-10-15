@@ -29,7 +29,15 @@ report("AC-R-005-9 enclosed goal on 100x100", time(() => findPath(g, 0, 0, 50, 5
 // ADR-0004 + NFR-P01: atlas build and a 50-monster scene in the real browser (headless Chromium, software GL: pessimistic).
 // Report fps from real animation frames. The scene is 1920x1080 at zoom 1 (the playing zoom is 1.8) so that 50 monsters are actually on screen.
 const FPS_TARGET = 40;
-const result = { fps50: null, fps50Low: null, visible: null };
+const result = { fps50: null, fps50Low: null, fps50Geared: null, visible: null };
+// R8 (ADR-0008): the hero wears all six visible slots at the highest tier the content has (hands have no unique: rare). BENCH_GEAR=1 does it in every scene (floor loads too);
+// without it the plain scenes stay comparable with the pre-R8 numbers and one extra scene ("geared") measures 50 monsters with the geared hero.
+const WEAR = [["hard-hat", "unique"], ["blazer", "unique"], ["wrist-brace", "rare"], ["sneakers", "unique"], ["ruler-rapier", "unique"], ["clipboard-shield", "unique"]];
+const wearAll = async (g) => {
+  await g.app("cheat.setLevel", 30);
+  for (const [base, rarity] of WEAR) { const r = await g.app("cheat.giveItem", { base, rarity, ilvl: 30 }); if (r.ok) await g.app("input", { t: "equip", id: r.id }); }
+  return (await g.app("perf")).gearSig;
+};
 try {
   const { launch, open, freeTilesNear } = await import("../e2e/helpers.mjs");
   const browser = await launch();
@@ -38,9 +46,10 @@ try {
   report("ADR-0004 atlas build", perf0.atlasMs, 5000, `, ${perf0.atlasKeys} sprites`);
   await page0.context.close();
 
-  const scene = async (extra) => {
+  const scene = async (extra, geared = !!process.env.BENCH_GEAR) => {
     const g = await open(browser, { query: `test=1&seed=3&zoom=1${extra}`, viewport: { width: 1920, height: 1080 } });
     await g.app("newGame", { seed: 3 });
+    const sig = geared ? await wearAll(g) : null;
     let s = await g.app("step", 30);
     const types = ["zombie-intern", "printer-imp"];
     let n = 0;
@@ -68,11 +77,12 @@ try {
     await g.context.close();
     const f = win.dts.slice(-120), avg = f.reduce((a, b) => a + b, 0) / f.length;
     const sorted = [...win.dts].sort((a, b) => a - b), q = (p) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
-    return { fps: 1000 / avg, renderAvg: perf.renderMsAvg, renderP95: perf.renderMsP95, visible, spawned: n, fx: perf.fx,
+    return { sig, gear: perf.gearCache, fps: 1000 / avg, renderAvg: perf.renderMsAvg, renderP95: perf.renderMsP95, visible, spawned: n, fx: perf.fx,
       frame: { p50: q(0.5), p95: q(0.95), p99: q(0.99), max: sorted[sorted.length - 1], over25: sorted.filter((d) => d > 25).length }, win };
   };
-  for (const [label, extra, key] of [["full fx", "", "fps50"], ["lowFx", "&lowfx=1", "fps50Low"]]) {
-    const r = await scene(extra);
+  for (const [label, extra, key, geared] of [["full fx", "", "fps50", !!process.env.BENCH_GEAR], ["lowFx", "&lowfx=1", "fps50Low", !!process.env.BENCH_GEAR], ["full fx, hero geared (all six slots)", "", "fps50Geared", true]]) {
+    const r = await scene(extra, geared);
+    if (r.sig) { console.log(`INFO   hero signature ${r.sig}; gear cache ${r.gear.frames} frames, ${(r.gear.bytes / 1048576).toFixed(1)} MB, ${r.gear.builds} builds (${r.gear.warmBuilds} warm), max ${r.gear.maxBuildsPerFrame} on-demand builds in a frame, ${r.gear.fallbacks} fallbacks`); result[key + "Gear"] = { sig: r.sig, ...r.gear }; }
     result[key] = Math.round(r.fps * 10) / 10; result.visible = r.visible;
     console.log(`INFO 50 monsters (${r.spawned} spawned, ${r.visible} on screen), ${label}: ${result[key]} fps, render ${r.renderAvg.toFixed(1)} ms avg / ${r.renderP95.toFixed(1)} ms p95`);
     const fr = r.frame, w = r.win;
@@ -87,6 +97,7 @@ try {
     const g = await open(browser, { query: "test=1&realtime=1&seed=3&zoom=1.8", viewport: { width: 1280, height: 720 } });
     if (process.env.NOAHEAD) await g.page.evaluate(() => { window.__noAhead = true; }); // baseline switch: warm of the current floor only (the R6 behaviour)
     await g.app("newGame", { seed: 3 });
+    if (process.env.BENCH_GEAR) await wearAll(g);
     await g.page.waitForTimeout(800);
     let aheadBroken = null;
     if (mode === "ahead") {
@@ -130,6 +141,7 @@ try {
     const g = await open(browser, { query: "test=1&seed=3&zoom=1.8", viewport: { width: 1280, height: 720 } });
     if (process.env.NOAHEAD) await g.page.evaluate(() => { window.__noAhead = true; });
     await g.app("newGame", { seed: 3 });
+    if (process.env.BENCH_GEAR) await wearAll(g);
     await g.page.waitForTimeout(800);
     if (mode === "ahead") {
       if (depth > 2) { await g.app("cheat.teleportFloor", depth - 1); await g.page.waitForTimeout(500); }
@@ -154,6 +166,7 @@ try {
   }
   const ok = result.fps50 >= FPS_TARGET;
   if (!ok) failed++;
+  if (result.fps50Geared !== null) console.log(`INFO geared hero vs plain hero, 50 monsters, full fx: ${result.fps50Geared} vs ${result.fps50} fps (${(result.fps50Geared - result.fps50).toFixed(1)}); load ${os.loadavg().map((x) => x.toFixed(2)).join(" ")}`);
   console.log(`${ok ? "PASS" : "FAIL"} NFR-P01 50 monsters on screen, full fx: ${result.fps50} fps (target >= ${FPS_TARGET}; lowFx ${result.fps50Low} fps)`);
   await browser.close();
 } catch (err) {

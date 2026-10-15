@@ -17,11 +17,11 @@ import { replay } from "./helpers.js";
 const FIG = { translate: [52, 76] };
 const stream = (cls, anim, d, f, gear) => { const r = recorder(); r.g.translate(FIG.translate[0], FIG.translate[1]); paintFigure(r.g, cls, anim, d, f, gear); return r.digest(); };
 const item = (base, rarity = "normal", extra = {}) => {
-  const b = content.bases[base];
+  const b = content.items[base];
   return { id: "t-" + base, base, rarity, slot: b?.slot ?? extra.slot, ...(b?.twoHanded ? { twoHanded: true } : {}), ...extra };
 };
-const visibleBases = Object.values(content.bases).filter((b) => b.kind === "gear" && VISIBLE_SLOTS.includes(b.slot));
-const baseOf = (slot, cat) => Object.keys(LOOK_BY_BASE).find((id) => LOOK_BY_BASE[id] === cat && content.bases[id].slot === slot);
+const visibleBases = Object.values(content.items).filter((b) => b.kind === "gear" && VISIBLE_SLOTS.includes(b.slot));
+const baseOf = (slot, cat) => Object.keys(LOOK_BY_BASE).find((id) => LOOK_BY_BASE[id] === cat && content.items[id].slot === slot);
 
 // ---- AC-R-260-1: table and signature ----
 test("AC-R-260-1 every visible gear base maps to a category of its slot; no other base; 21 categories with the fixed slot limits", () => {
@@ -74,7 +74,7 @@ test("AC-R-260-5 unknown base: the slot default; unknown rarity: normal; null, m
   assert.equal(lookOf("ring1", { base: "paperclip-ring" }), null);
   assert.equal(gearSignature(null), EMPTY_SIG);
   assert.equal(gearSignature("nope"), EMPTY_SIG);
-  assert.equal(gearSignature({ head: 7, body: "x", hands: [], feet: { base: 4 } }), "-|-|-|s0|-|-".replace("s0", "s0"), "feet with a non-string base is the default sneaker");
+  assert.equal(gearSignature({ head: 7, body: "x", hands: [], feet: { base: 4 } }), EMPTY_SIG, "an item without a string base is malformed");
 });
 
 test("AC-R-260-5 a part painter that throws leaves its slot empty, is counted once, and the rest of the figure is drawn", () => {
@@ -219,7 +219,7 @@ test("AC-R-262-2 the same signature, class, anim, facing and frame gives identic
   gearTick(atlas, core);
   const t = gearTable(atlas), st = gearState(atlas);
   const e1 = gearFrame(atlas, t, "attack", 5, 2).digest;
-  st.cap = 1; gearFrame(atlas, t, "walk", 1, 1); // over the cap: the oldest entry goes
+  st.cap = 1; gearFrame(atlas, t, "death", 1, 1); // over the cap: LRU entries go (the warmed frames are older)
   st.cap = GEAR_CAP_BYTES;
   assert.ok(st.evictions >= 1);
   assert.equal(t.rows.attack[5][2], undefined, "evicted");
@@ -261,7 +261,7 @@ test("AC-R-262-3 no gear sprite is built before a game frame, and the cache neve
   assert.equal(gearPerf(atlas).gearCache.bytes, 0);
   gearTick(atlas, core);
   assert.equal(gearPerf(atlas).gearCache.builds, 0, "bare hero: nothing built");
-  const bases = Object.keys(LOOK_BY_BASE), pick = (s) => bases.filter((b) => content.bases[b].slot === s);
+  const bases = Object.keys(LOOK_BY_BASE), pick = (s) => bases.filter((b) => content.items[b].slot === s);
   let seed = 12345; const rnd = (n) => { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; return (seed >>> 8) % n; };
   let peak = 0, evictions = 0;
   for (let combo = 0; combo < 40; combo++) {

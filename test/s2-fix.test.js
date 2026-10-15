@@ -85,6 +85,7 @@ test("AC-R-046-3 using a missing item id fails and changes nothing; in the Lobby
 
 test("Emergency Exit can sit on the belt and be used from there; one door at a time; vendors sell it", () => {
   const s = newGame(7); teleportFloor(s, 4); s.monsters.length = 0;
+  s.belt[3] = null; // R8-B3: the start kit now fills the belt; free a slot for the Exit
   const ex = give(s, "emergency-exit");
   assert.equal(cmd(s, { t: "toBelt", id: ex.id }).ok, true);
   assert.equal(s.belt.some((b) => b?.id === ex.id), true);
@@ -97,7 +98,7 @@ test("Emergency Exit can sit on the belt and be used from there; one door at a t
   assert.ok(e && e.unlimited && e.price > 0);
   l.player.gold = e.price;
   assert.equal(cmd(l, { t: "buy", index: l.vendor.stock.indexOf(e) }).ok, true);
-  assert.equal(l.inventory.items.filter((i) => i.base === "emergency-exit").length, 1);
+  assert.equal(l.inventory.items.filter((i) => i.base === "emergency-exit").length, 1); // not a potion: the bag, as before (R8-B3 sends potions to the belt)
 });
 
 test("potions can be drunk with useItem from the inventory", () => {

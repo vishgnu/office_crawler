@@ -11,6 +11,8 @@ import { replay } from "./helpers.js";
 import { withLegacyBalance } from "./balance-legacy.js";
 
 const script = JSON.parse(readFileSync("test/fixtures/run-a.json", "utf8"));
+// R8: the population of floor 1, the start kit and the entry grace changed the sim on purpose, so run-a.json was re-recorded; the pre-quest proofs replay the previous recording (run-a.legacy.json) under withLegacyBalance, which puts all of it back.
+const legacy = JSON.parse(readFileSync("test/fixtures/run-a.legacy.json", "utf8"));
 const pre = readFileSync("test/fixtures/run-a.pre-quests.hash", "utf8").trim();
 const preClass = JSON.parse(readFileSync("test/fixtures/run-class.pre-quests.json", "utf8"));
 const STRIP = { paths: ["quests", "player.pouch"], eventPrefixes: ["quest."] };
@@ -23,7 +25,7 @@ test("AC-R-259-4 run-a never reaches floor 3 (no arc reward is paid in it) and t
 
 test("AC-R-256-3 run-a with the quest state and quest events stripped equals the pre-quest golden", () => {
   const s = replay(script);
-  assert.equal(withLegacyBalance(() => hashStateWithout(replay(script), STRIP)), pre, "old balance numbers: the pre-quest golden");
+  assert.equal(withLegacyBalance(() => hashStateWithout(replay(legacy), STRIP)), pre, "old balance numbers: the pre-quest golden");
   assert.notEqual(hashState(s), pre, "the full hash differs: the state gained quests");
   assert.notEqual(hashStateWithout(s, STRIP), pre, "and the stripped hash differs with the new balance numbers (R7-3): the balance pass is what moved the golden");
   assert.equal(hashState(s), readFileSync("test/fixtures/run-a.hash", "utf8").trim(), "and equals the re-pinned golden");
@@ -32,7 +34,7 @@ test("AC-R-256-3 run-a with the quest state and quest events stripped equals the
 for (const c of content.classes) {
   test(`AC-R-256-3 ${c.id}: stripped hash equals the pre-quest class golden`, () => {
     const s = replay(script, { class: c.id });
-    assert.equal(withLegacyBalance(() => hashStateWithout(replay(script, { class: c.id }), STRIP)), preClass[c.id], "old balance numbers: the pre-quest class golden");
+    assert.equal(withLegacyBalance(() => hashStateWithout(replay(legacy, { class: c.id }), STRIP)), preClass[c.id], "old balance numbers: the pre-quest class golden");
     assert.equal(hashState(s), JSON.parse(readFileSync("test/fixtures/run-class.json", "utf8"))[c.id]);
   });
 }

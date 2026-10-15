@@ -408,11 +408,21 @@ function tempRing(g, sx, sy, r, z) {
 }
 
 const monFrame = (atlas, type, anim, dir, f) => { const row = F.figs.mon[type][anim][dir]; return row[f] ?? (row[f] = atlas.get(keys.mon(type, anim, dir, f))); };
+let heroShown = null; // the atlas entry the hero was last drawn from (read by heroSpriteDigest for the e2e checks)
 const heroFrame = (atlas, anim, dir, f) => {
   const row = F.hfigs[anim][dir], e = row[f];
-  if (F.gear) return e ? (e.use = F.gframe, e) : gearFrame(atlas, F.gear, anim, dir, f); // worn gear (R8): the baked sprite of the signature, built on first sight
-  return e ?? (row[f] = atlas.get(keys.plr(F.htype, anim, dir, f)));
+  if (F.gear) return (heroShown = e ? (e.use = F.gframe, e) : gearFrame(atlas, F.gear, anim, dir, f)); // worn gear (R8): the baked sprite of the signature, built on first sight
+  return (heroShown = e ?? (row[f] = atlas.get(keys.plr(F.htype, anim, dir, f))));
 };
+/** FNV-1a hash of the pixels of the hero sprite drawn last (0 when there is none). A test probe (perf().heroDigest): the canvas itself is noisy (grain, light), the sprite is not. */
+export function heroSpriteDigest() {
+  const c = heroShown?.img;
+  if (!c?.getContext) return 0;
+  const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+  let h = 2166136261;
+  for (let i = 0; i < d.length; i += 4) { h ^= d[i] | (d[i + 1] << 8) | (d[i + 2] << 16) | (d[i + 3] << 24); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
 
 /**
  * The hero's body drawn again over the screen-space loot beams (WORLD-R6, N3): beams belong to the ground, so they pass behind the hero, never through him.

@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { mkdirSync } from "node:fs";
 
 export const DIST = pathToFileURL(resolve("dist/index.html")).href;
-export const SHOTS = resolve("e2e/shots");
+export const SHOTS = resolve(process.env.E2E_SHOTS || "e2e/shots"); // L-042: runs by agents set E2E_SHOTS to a temp dir
 mkdirSync(SHOTS, { recursive: true });
 export const engines = { chromium, firefox, webkit };
 

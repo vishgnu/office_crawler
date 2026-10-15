@@ -86,7 +86,10 @@ export function npcMarker(state, npcId) {
   return offer ? MARK.available : MARK.none;
 }
 
-/** Targets of the pinned quest's next step that are on this floor and already known. Item and elite positions are never listed. */
+/**
+ * Targets of the pinned quest's next step that are on this floor and already known (an explored tile). R8-M1: an active item quest lists its item (the badge, the ledger)
+ * and an active elite quest its named elite once the hero has seen their tile on this floor; before that, and on other floors, they are never listed.
+ */
 export function mapMarkers(state) {
   if (!state.quests) return [];
   const id = state.quests.pinned, q = quests[id], f = state.floor, out = [];
@@ -104,6 +107,11 @@ export function mapMarkers(state) {
     return out;
   }
   const st = state.quests[id].s;
+  if (st === "active" && state.depth > 0) {
+    const type = q.objective.type;
+    if (type === "item") { const g = state.groundItems.find((e) => e.quest === id); if (g) add("item", g.tile, q.item.name); }
+    else if (type === "elite") { const m = state.monsters.find((o) => o.quest === id && o.ai !== "dead"); if (m) add("elite", m.tile, q.elite.name); }
+  }
   if ((st === "available" || st === "ready") && state.depth === 0) {
     const n = (f.npcs ?? []).find((o) => o.id === q.giver);
     if (n) add("npc", n.tile, giverName(id));

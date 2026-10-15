@@ -158,13 +158,21 @@ test("ADV-R7-10 the top-up is deterministic, stable across re-entry and kills, a
   }
 });
 
-test("ADV-R7-10 every other kill quest of the content table (sq1 interns) is winnable on 1000 seeds without a top-up: the generator holds at least `count`", () => {
+test("ADV-R7-10 / R8-B1 every other kill quest of the content table (sq1 interns) is winnable on 1000 seeds: the generator holds at least `count` less two (the tutorial floor 1 is sparse), and the top-up on entry of the last kill floor places the rest once the quest is accepted", () => {
   for (const id of content.sideIds.filter((x) => x !== "sq5" && content.quests[x].objective.type === "kill")) {
     const k = config.quests[id]?.kill ?? config.quests.kill;
+    let topped = 0;
     for (let seed = 1; seed <= 1000; seed++) {
       const n = k.depths.reduce((t, d) => t + generateFloor(seed, d).spawns.filter((sp) => sp.type === k.monster).length, 0);
-      assert.ok(n >= k.count, `${id} seed ${seed}: ${n}`);
+      assert.ok(n >= k.count - 2, `${id} seed ${seed}: ${n}`);
+      if (n >= k.count) continue;
+      topped++;
+      const s = lobby(seed, [id]);
+      let alive = 0;
+      for (const d of k.depths) { enterFloor(s, d); alive += s.monsters.filter((m) => m.type === k.monster && !m.summoned && m.ai !== "dead").length; }
+      assert.ok(alive >= k.count, `${id} seed ${seed}: ${alive} after the top-up`);
     }
+    assert.ok(topped > 0, "the sample has short seeds");
   }
 });
 

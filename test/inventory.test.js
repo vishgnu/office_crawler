@@ -4,6 +4,7 @@ import {
   content, config, createRng, applyInput, step, makeItem, mint, newGrid, canPlace, autoplace, clickCell, spawnItem, giveGold,
   rollItem, vendorStock, sellValue, buyPrice, deriveStats, enterFloor,
 } from "../src/core/index.js";
+import { classById } from "../src/core/content/classes.js";
 import { gameOn, run, OPEN } from "./helpers.js";
 
 const fresh = () => { const s = gameOn(OPEN); s.inventory.items.length = 0; s.belt.fill(null); return s; };
@@ -17,7 +18,7 @@ test("AC-R-055-1 inventory is 10x4; new game starts with one weapon (unworn) and
   assert.equal(s.inventory.items.length, 1);
   assert.equal(s.inventory.items[0].kind, "gear");
   assert.equal(s.belt.length, 4);
-  assert.equal(s.belt.filter((b) => b?.restores === "hp").length, config.startKit.healthPotions);
+  assert.equal(s.belt.filter((b) => b?.restores === "hp").length, classById(s.player.class).startKit.healthPotions, "the class start kit (R8-B3: 4 / 4 / 3)");
   assert.equal(s.player.gold, config.startGold);
 });
 
@@ -374,8 +375,12 @@ test("potions at the vendor are unlimited and unlock by player level (QF-04-3)",
   const i = s.vendor.stock.findIndex((e) => e.unlimited && e.item.kind === "potion");
   cmd(s, { t: "buy", index: i }); cmd(s, { t: "buy", index: i });
   assert.equal(s.vendor.stock[i].unlimited, true);
-  assert.equal(s.inventory.items.filter((x) => x.kind === "potion").length, 2);
-  assert.notEqual(s.inventory.items[0].id, s.inventory.items[1].id);
+  assert.equal(s.inventory.items.filter((x) => x.kind === "potion").length, 0, "R8-B3: bought potions go to the belt while a slot is free");
+  assert.equal(s.belt.filter((x) => x?.kind === "potion").length, 2);
+  assert.notEqual(s.belt[0].id, s.belt[1].id);
+  s.belt.fill(s.belt[0]); // belt full: the next potion goes to the bag
+  cmd(s, { t: "buy", index: i });
+  assert.equal(s.inventory.items.filter((x) => x.kind === "potion").length, 1);
   const t = fresh(); t.player.level = 12; open(t);
   assert.equal(tiers(t).size, 6);
 });

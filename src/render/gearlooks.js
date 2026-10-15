@@ -50,7 +50,7 @@ const own = (o, k) => typeof k === "string" && Object.prototype.hasOwnProperty.c
  * Unknown base in a visible slot: the slot's plain default. Unknown rarity counts as normal. Never throws.
  */
 export function lookOf(slot, item) {
-  if (!item || typeof item !== "object" || !own(LOOK_CATEGORIES, slot)) return null;
+  if (!item || typeof item !== "object" || Array.isArray(item) || typeof item.base !== "string" || !own(LOOK_CATEGORIES, slot)) return null;
   const s = item.slot;
   if (s !== undefined && s !== slot) return null; // a belt, ring or amulet (or any item that does not belong in this slot) is not drawn
   const base = item.base, known = own(LOOK_BY_BASE, base) && LOOK_CATEGORIES[slot].includes(LOOK_BY_BASE[base]);

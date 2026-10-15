@@ -68,8 +68,12 @@ export function buy(state, index) {
   if (!entry) return fail("no such stock entry");
   if (state.player.gold < entry.price) { emit(state, { type: "cannotAfford", price: entry.price }); return fail("cannot afford"); }
   const item = entry.unlimited ? mint(state, makeItem(entry.item.base)) : entry.item;
-  if (!autoplace(state.inventory, item)) { emit(state, { type: "inventoryFull", id: item.id }); return fail("inventory full"); }
+  // R8-B3: a bought potion goes to the first free belt slot, else into the bag (so a full bag does not stop a potion purchase while the belt has room).
+  const slot = item.kind === "potion" ? state.belt.findIndex((b) => b === null) : -1;
+  if (slot >= 0) state.belt[slot] = item;
+  else if (!autoplace(state.inventory, item)) { emit(state, { type: "inventoryFull", id: item.id }); return fail("inventory full"); }
   state.player.gold -= entry.price;
+  if (slot >= 0) emit(state, { type: "beltSet", slot, id: item.id });
   if (!entry.unlimited) {
     v.stock.splice(index, 1);
     const kept = state.vendorStocks?.[v.id]?.stock; // same array in memory; after a JSON round trip they are separate copies

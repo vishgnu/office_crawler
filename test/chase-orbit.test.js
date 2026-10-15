@@ -19,19 +19,37 @@ const RING = [
 ];
 
 /** Ticks until the pair is in contact (the monster attacks or the hero swings), or -1 within `max`. Damage is off: only the geometry is tested. */
-function contact(rows, type, mon, cls, max = 3000) {
+function contact(rows, type, mon, cls, max = 3000, stats = null) {
   const s = gameOn(rows, [[type, mon.x, mon.y]], 1, { class: cls });
   const m = s.monsters[0];
   m.damage = 0; s.player.hp = s.player.hpMax = 1e6; m.ai = "chase";
   applyInput(s, { t: "attack", id: m.id });
-  for (let t = 0; t < max; t++) { step(s); if (m.ai === "attack" || s.player.action === "attack") return t; }
+  let stand = 0, last = null;
+  for (let t = 0; t < max; t++) {
+    step(s);
+    const k = `${s.player.tile.x},${s.player.tile.y}${s.player.next ? "n" : ""}`; // longest time the hero stands without moving (CR7L-04)
+    if (k === last) stand++; else { stand = 0; last = k; }
+    if (stats) stats.maxStand = Math.max(stats.maxStand ?? 0, stand);
+    if (m.ai === "attack" || s.player.action === "attack") return t;
+  }
   return -1;
 }
 
-test("[chase-orbit] staged ring: a hero and an equal-speed auditor half a ring apart meet (every class), within 400 ticks", () => {
+test("[chase-orbit] staged ring: a hero and an equal-speed auditor half a ring apart meet (every class), within 250 ticks, the hero never stands longer than 120", () => {
   for (const cls of ["facilities-manager", "sales-rep", "it-wizard"]) {
-    const t = contact(RING, "auditor", { x: 15, y: 7 }, cls);
-    assert.ok(t >= 0 && t < 400, `${cls}: ${t}`);
+    const st = {}, t = contact(RING, "auditor", { x: 15, y: 7 }, cls, 3000, st);
+    assert.ok(t >= 0 && t < 250, `${cls}: ${t}`);
+    assert.ok(st.maxStand <= 120, `${cls}: stood ${st.maxStand}`);
+  }
+});
+
+// CR7L-04: a wall that blocks the line in a long room is no orbit; the hero must not freeze for seconds waiting for a chaser that is far away.
+const W = 36, LONG = ["#".repeat(W), "#@" + ".".repeat(W - 3) + "#", "#".repeat(W - 2) + ".#", "#" + ".".repeat(W - 2) + "#", "#".repeat(W)];
+test("[chase-orbit] plain wall, far chaser (walk of about 60 tiles): the hero stands at most 90 ticks at a time and contact comes within 450 ticks (CR7L-04)", () => {
+  for (const type of ["auditor", "printer-imp", "zombie-intern"]) {
+    const st = {}, t = contact(LONG, type, { x: 12, y: 3 }, "it-wizard", 3000, st);
+    assert.ok(t >= 0 && t < 450, `${type}: contact ${t}`);
+    assert.ok(st.maxStand <= 90, `${type}: stood ${st.maxStand}`);
   }
 });
 

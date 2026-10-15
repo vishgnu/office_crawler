@@ -15,5 +15,5 @@ export function sellValue(item) {
 
 export function buyPrice(item) {
   const sell = sellValue(item);
-  return Math.max(sell + 1, Math.ceil(sell * config.buyOverSell));
+  return Math.max(sell + 1, Math.ceil(sell * (item.kind === "potion" ? config.potionBuyOverSell ?? config.buyOverSell : config.buyOverSell))); // R8-B3: potions carry a lower markup
 }

@@ -58,6 +58,9 @@ function chase(ctx, m, p) {
 
 export function ai(state) {
   const ctx = getCtx(state), p = state.player;
+  const grace = state.entryGrace; // R8-B2: monsters within entryGrace radius of the arrival tile do not notice the hero until the grace has run out
+  if (grace && --grace.t <= 0) delete state.entryGrace;
+  const graced = (m) => grace && grace.t > 0 && Math.max(Math.abs(m.tile.x - grace.at.x), Math.abs(m.tile.y - grace.at.y)) <= (config.entryGrace?.radius ?? 0);
   // in position to attack: the hero, or (melee types only) an ally within reach
   const inPos = (m) => inPosition(ctx, m, p) || (state.allies.length > 0 && registry[m.type].behaviour !== "ranged" && !!allyInReach(state, ctx, m));
   for (const m of state.monsters) {
@@ -69,7 +72,7 @@ export function ai(state) {
     }
     switch (m.ai) {
       case "idle":
-        if (canSee(ctx, m, p)) { m.ai = "notice"; m.aiT = 1; wakePack(state, m); }
+        if (!graced(m) && canSee(ctx, m, p)) { m.ai = "notice"; m.aiT = 1; wakePack(state, m); }
         break;
       case "notice":
         if (++m.aiT >= config.noticeTicks) { m.ai = "chase"; m.path = []; m.goal = null; m.repathT = 0; }

@@ -67,11 +67,12 @@ test("AC-R-247-2 the gear is identical for the same seed, class and hero level; 
   assert.deepEqual(a, b);
   assert.notDeepEqual(rewardOf(ready(5, "sq3"), "sq3").gear, a.gear);
   let met = 0;
-  for (let seed = 1; seed <= 40; seed++) for (const id of ["sq2", "sq3"]) {
-    const s = ready(seed, id), g = rewardOf(s, id).gear;
+  for (let seed = 1; seed <= 40; seed++) for (const id of ["sq2", "sq3"]) { // CR7L-06: wearable by the reference hero (level gearFloor + refLevelOffset, all points in the power attribute), not by a fresh level-1 hero
+    const s = ready(seed, id), g = rewardOf(s, id).gear, pow = content.classes.find((c) => c.id === s.player.class).derived.powerAttr;
+    s.player.level = config.quests[id].gearFloor + config.quests.refLevelOffset; s.player.attrs[pow] += (s.player.level - 1) * config.attrPointsPerLevel;
     if (checkReqs(s.player, g).ok) met++;
   }
-  assert.ok(met >= 70, `most rewards are wearable by the hero (${met}/80)`);
+  assert.equal(met, 80, "the reference hero wears every reward");
   // a stronger hero is allowed to get different gear (the reroll depends on checkReqs)
   const s = ready(4, "sq3"); s.player.level = 30; s.player.attrs = { grit: 99, agility: 99, stamina: 99, focus: 99 };
   assert.ok(checkReqs(s.player, rewardOf(s, "sq3").gear).ok);

@@ -67,6 +67,9 @@ export function enterFloor(state, depth, { at = "entry", from = state.depth, til
   state.blockedSpawns = [];
   floor.spawns.forEach((s, i) => { if (s.tier === "boss" && state.bossDefeated) killed.add(i); }); // a defeated boss stays dead (also after a reload)
   floor.spawns.forEach((s, i) => { if (!killed.has(i) && !spawnMonster(state, s.type, s.tile, s.packId, { ...s, spawn: i })) state.blockedSpawns.push(i); });
+  // R8-B2: a short grace after arriving on a floor (stairs, elevator, respawn trip, portal): monsters near the arrival tile do not notice the hero yet.
+  const g = config.entryGrace;
+  if (g && g.ticks > 0 && depth > 0) state.entryGrace = { t: g.ticks, at: { x: p.tile.x, y: p.tile.y } }; else delete state.entryGrace;
   initFloorMap(state);
   placeQuestObjects(state); // quest item and named elite of accepted quests (ADR-0007 section 7); nothing without an accepted quest
   emit(state, { type: "floorEnter", depth, from });

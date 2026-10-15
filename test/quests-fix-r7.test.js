@@ -4,6 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { newGame, step, applyInput, config, content, hashState, hashStateWithout, enterFloor, rewardSummary, rewardOf, checkReqs } from "../src/core/index.js";
+import { refHeroWears } from "../src/core/systems/quests.js";
 import { killMonster } from "../src/core/systems/damage.js";
 import { emit } from "../src/core/events.js";
 import { replay } from "./helpers.js";
@@ -170,11 +171,14 @@ test("CR7-06 the gear reward depends on seed and class only: level, attributes a
   assert.notDeepEqual(rewardOf(newGame(4, { start: "town" }), "sq3").gear, rewardOf(newGame(5, { start: "town" }), "sq3").gear);
 });
 
-test("CR7-06 the pick is the least demanding of the candidates, so most rewards are wearable by a fresh hero", () => {
-  let met = 0, n = 0;
+test("CR7L-06 the pick is the best candidate a reference hero can wear: seed-pure, wearable by that hero, and not the entry-level base in most cases", () => {
+  let met = 0, n = 0, entry = 0;
   for (let seed = 1; seed <= 60; seed++) for (const cls of content.classes) for (const id of ["sq2", "sq3"]) {
-    const s = newGame(seed, { start: "town", class: cls.id });
-    n++; if (checkReqs(s.player, rewardOf(s, id).gear).ok) met++;
+    const s = newGame(seed, { start: "town", class: cls.id }), g = rewardOf(s, id).gear;
+    n++; if ((g.reqs.level ?? 1) <= 1) entry++;
+    if (refHeroWears(s, id, g)) met++;
+    assert.deepEqual(rewardOf(newGame(seed, { start: "town", class: cls.id }), id).gear, g, "same seed and class, same piece");
   }
-  assert.ok(met / n >= 0.9, `${met}/${n} wearable by a level 1 hero`);
+  assert.ok(n - met <= 4, `the reference hero wears all but a small tail of the rewards (${met}/${n}; the tail is a seed where none of the 8 candidates fits and the least demanding is paid)`);
+  assert.ok(entry / n < 0.4, `${entry}/${n} level-1 bases`);
 });

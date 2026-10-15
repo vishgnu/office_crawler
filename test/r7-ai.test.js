@@ -84,17 +84,17 @@ test("CR7-03 the same stage with the wait never ending (holdMaxTicks 1e9) leaves
   } finally { config.holdMaxTicks = saved; }
 });
 
-test("CR7-03 a fresh click is never replaced at once: the stand count starts again with the order (CR7-14)", () => {
+test("CR7-03 / R8-AI1 a fresh click is never replaced on its first tick; a hero that already stands blocked keeps its count across a re-click and answers within retargetEvery planned ticks", () => {
   const { s, a, t } = staged();
   applyInput(s, { t: "attack", id: t.id });
   run(s, config.retargetTicks - 1);
   assert.equal(s.player.target, t.id, "not yet");
   applyInput(s, { t: "attack", id: t.id }); // the player clicks the same target again
-  assert.equal(s.player.standT, 0);
-  run(s, 5);
-  assert.equal(s.player.target, t.id, "the new order stands for its own retargetTicks, not the old count");
-  run(s, config.retargetTicks + 10);
-  assert.notEqual(s.player.target, t.id, "and is answered after them");
+  assert.ok(s.player.standT >= config.retargetTicks - 2, "R8-AI1: the stand count is carried, not reset (the hero has not moved)");
+  run(s, 1);
+  assert.equal(s.player.target, t.id, "the new order is planned once before it can be replaced (no goal, no retarget)");
+  run(s, config.retargetEvery + 2);
+  assert.notEqual(s.player.target, t.id, "and the attacker in reach is answered right after");
   assert.ok(a.hp <= a.hpMax);
 });
 

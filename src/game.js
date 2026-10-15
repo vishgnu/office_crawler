@@ -10,7 +10,7 @@ import { resolveKey } from "./input/keymap.js";
 import { defaultOptions } from "./ui/options.js";
 import { messageFor } from "./ui/messages.js";
 import { trackerOf } from "./ui/journal.js";
-import { drawWorld, actorPos } from "./render/world.js";
+import { drawWorld, actorPos, heroSpriteDigest } from "./render/world.js";
 import { gearPerf } from "./render/gearcache.js";
 import { createHud, hudState } from "./render/hud.js";
 import { createFx } from "./render/fx.js";
@@ -449,7 +449,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
       frameMs: f.slice(-120), simMsPerTick: game.simTicks ? game.simMs / game.simTicks : 0, samples: f.length, atlasMs, atlasKeys: atlas.keys().length, atlasMissing: missing,
       fps: avg(f) ? 1000 / avg(f) : 0, renderMsAvg: avg(r), renderMsP95: sorted.length ? sorted[Math.floor(sorted.length * 0.95)] : 0,
       fx: { lowFx: game.lowFx, hc: game.hc }, labels: game.labels(), atlasScale: atlas.scale, atlasRim: atlas.meta.rim, atlasChanges: game.atlasChanges, dpr: game.dpr, lootPlates: Math.max(0, (fx.platesPlaced?.length ?? 1) - 1), npcMarkers: fx.npcMarkers ?? [],
-      ...gearPerf(atlas), // R8: gearSig, gearCache {frames, bytes, builds, warmBuilds, evictions, fallbacks, maxBuildsPerFrame, ...}
+      heroDigest: heroSpriteDigest(), ...gearPerf(atlas), // R8: gearSig, gearCache {frames, bytes, builds, warmBuilds, evictions, fallbacks, maxBuildsPerFrame, ...}
     };
   };
   game.clearPerf = () => { game.frameMs.length = 0; game.renderMs.length = 0; };

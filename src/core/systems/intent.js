@@ -62,7 +62,9 @@ function issueAttack(state, id) {
   if (!m || m.ai === "dead") return fail("no such living monster");
   if (state.player.hp <= 0) return fail("player is dead");
   const p = state.player;
-  p.target = id; p.path = []; p.goal = null; p.repathT = 0; p.standT = 0; p.pickup = null; p.stairs = null; p.interact = null; p.toPortal = false;
+  // R8-AI1: a hero that stands blocked keeps its stand count across a new attack click (re-clicking an unreachable monster must not keep it from answering an attacker);
+  // the retarget needs the order to have been planned once (p.goal), so a fresh reachable click is never replaced on its first tick.
+  p.target = id; p.path = []; p.goal = null; p.repathT = 0; p.standT = p.next ? 0 : (p.standT ?? 0); p.pickup = null; p.stairs = null; p.interact = null; p.toPortal = false;
   return OK;
 }
 
@@ -279,7 +281,7 @@ export function playerIntent(state) {
   // it starts again with a new target or when the target is in reach.
   if (p.next) { if (p.standT < config.holdMaxTicks) p.standT = 0; } else p.standT = (p.standT ?? 0) + 1; // a path that stays blocked (movement.js) is still standing
   // The search costs a reach test per monster: it runs once when retargetTicks is reached and then every retargetEvery ticks while the hero stays blocked.
-  if (!p.next && p.standT >= config.retargetTicks && (p.standT - config.retargetTicks) % config.retargetEvery === 0 && !mouse.down) {
+  if (!p.next && p.goal && p.standT >= config.retargetTicks && (p.standT - config.retargetTicks) % config.retargetEvery === 0 && !mouse.down) {
     const a = reachableAttacker(state, ctx, p, m);
     if (a) { p.target = a.id; p.goal = null; p.path = []; p.repathT = 0; p.standT = 0; return; }
   }
@@ -294,7 +296,11 @@ export function playerIntent(state) {
     const path = planPath(ctx, p.next ?? p.tile, m.tile, { adjacent: true });
     p.goal = { ...m.tile };
     p.repathT = config.ai.repathTicks;
-    if (!path) { p.target = null; p.path = []; emit(state, { type: "noPath", tile: { ...m.tile } }); }
+    if (!path) { // R8-AI1: no way to the clicked monster: answer an attacker in reach instead of standing idle (the click is still reported as unreachable)
+      const a = reachableAttacker(state, ctx, p, m);
+      p.target = a ? a.id : null; p.path = []; p.goal = null; p.repathT = 0; p.standT = 0;
+      emit(state, { type: "noPath", tile: { ...m.tile } });
+    }
     else p.path = path;
   }
 }

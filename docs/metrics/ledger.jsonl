@@ -91,3 +91,4 @@
 {"round": "R8", "role": "orchestrator", "pkg": "round start", "status": "started", "source": "orchestrator"}
 {"round": "R8", "role": "architect", "pkg": "ADR-0008 gear visuals", "tokensK": 130.5, "minutes": 3.4, "status": "done", "acs": 14, "packages": ["R8-0.1 render core ~500", "R8-0.2 21 part painters ~600", "R8-0.3 UI busts ~350"], "source": "task usage"}
 {"round": "R8", "role": "reviewer", "pkg": "code review late R7 (L-049)", "tokensK": 294.0, "minutes": 10.9, "status": "done", "findings": {"blocking": 0, "should": 6, "nit": 6}, "source": "task usage"}
+{"round": "R8", "role": "implementer", "pkg": "R8-0.1 gear render core", "tokensK": null, "minutes": null, "status": "done", "fps50": {"plain_median": 56.7, "geared_median": 55.0, "load": "3-7"}, "atlasMs": 450, "source": "agent report; usage pending"}
