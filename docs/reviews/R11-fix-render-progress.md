@@ -9,3 +9,4 @@
 - done: G-R1 checked at 1x (art-sheet set mode, fm/sr/it): a full RARE set keeps its class colours (thin yellow edge and two studs); only the UNIQUE set reads gold by design (rim). No change.
 - done: `test/render-r11-fix.test.js` (7 tests), `e2e/r11fix-render.mjs` (realtime page without noanim, contact sheet).
 - done: `node --test` run 1: 1358 pass 0 fail. art-sheet check ok, e2e/render.mjs 39/39, r8gear.mjs 21/21, r11fix-render 3/3.
+- done: node --test run 2: 1358 pass 0 fail.
