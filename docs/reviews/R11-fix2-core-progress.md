@@ -1,2 +1,3 @@
 - done: F-03 rule (intent.js spam strike-back; config spamTicks 30, spamRange 3), tests in core-r8t1; next: full suite, goldens, F-01
 - done: F-03 final: rule counts mouse clicks only (WeakMap, not hashed) so bot, goldens, run-c unchanged; parity 72/72 unaffected; tests green; next: F-01
+- F-01 deferred: floor-2 early rule (minDist 14) tried, reverted (seed 3 survived but seeds 2/4 fell to 3 % / 8 %); suite 3x green 1366/1366; parity 72/72 (24.3/23.5/23.6)
