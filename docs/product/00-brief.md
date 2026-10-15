@@ -124,3 +124,13 @@ visible slots; rings, amulet and belt are not), as in the original. Today the he
 **Status: agreed (real customer).** The lighting rounds R9–R10 and the second overall test-and-polish round R12 are
 dropped. Remaining: rest of R7, R8 (gear visuals + flawless gameplay), R8-T (end-to-end test + polish), R11 (overall test
 and polish), then the end-of-project task (post-mortem, new harness version, all files and pages updated).
+
+## Late-recorded decisions (user, 2026-10-14, verbatim from human-log.jsonl; added in retro R7, learning L-037)
+
+These five entries were in the human-log but had no briefing here; they were acted on and recorded in SESSION-NOTES, STATE and the CHANGELOG at the time.
+
+- 2026-10-14T14:54:14Z (decision): > yes (add noindex to the game build)
+- 2026-10-14T15:30:45Z (decision): > YES (release harness 0.5.0)
+- 2026-10-14T15:52:37Z (instruction): > go ahead i will go afk for a while
+- 2026-10-14T16:03:53Z (decision): > Circle 2 answers Q1-Q7, drop circle 2, wrap up a new harness version at the very end with all files and htmls updated
+- 2026-10-14T18:48:21Z (decision): > No we proceed this is good (keep the full round plan, no merging)

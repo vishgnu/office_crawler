@@ -1,0 +1,7 @@
+- start (2026-10-15): read harness-retro.md, 13-harness-improvement-loop.md step 2, ledger (34 R7 rows), human-log (31 entries), round-06.json, SESSION-NOTES since R7, R7 reviews, brief, INDEX, playbook, results.md, experiments
+- verified candidates against files: 1 yes (2 stopped agents, ledger), 2 partly (one read-only git slip in SESSION-NOTES, not two), 3 yes, 4 yes, 5 yes, 6 yes, 7 yes, 8 yes, 9 partly (real vendor item, metric met via bot route), 10 yes, 11 partly (scores yes, "design pass" not evidenced; timing is), 12 yes (5766.3 k)
+- found by the retro, not on the list: L-049 (one code review for the whole round), 5 human-log entries without briefing (L-037)
+- done: docs/metrics/round-07.json, ledger retro row, human-log notes + 00-brief late section, harness-experiments R7 table, L-041..L-050, L-032/L-033 reopened, L-034/35/36/38/39 verified, L-018/20/22/37 notes, INDEX, 4 agent definitions, playbook 11 rows + template, CHANGELOG, STATUS, SESSION-NOTES 3 lines
+- slip: one read-only `git diff --stat` by the retro agent while checking its own agent-file edits (no change to the tree)
+- done: portals + metrics report rebuilt, portal tests run (see result)
+- processes: none

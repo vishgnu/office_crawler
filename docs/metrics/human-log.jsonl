@@ -19,13 +19,13 @@
 {"at": "2026-10-14T14:00:38Z", "kind": "question", "text": "whre are athe metrics for the other iteration?"}
 {"at": "2026-10-14T14:01:20Z", "kind": "question", "text": "i only see 1 and 2-3"}
 {"at": "2026-10-14T14:52:22Z", "kind": "question", "text": "sidequest how can i secure this againt bot / crawlers ?"}
-{"at": "2026-10-14T14:54:14Z", "kind": "decision", "text": "yes (add noindex to the game build)"}
+{"at":"2026-10-14T14:54:14Z","kind":"decision","text":"yes (add noindex to the game build)","note":"added late (brief entry written in retro R7)"}
 {"at": "2026-10-14T15:14:11Z", "kind": "question", "text": "did you updatge the harnes and reviews after the completed rounds?"}
-{"at": "2026-10-14T15:30:45Z", "kind": "decision", "text": "YES (release harness 0.5.0)"}
-{"at": "2026-10-14T15:52:37Z", "kind": "instruction", "text": "go ahead i will go afk for a while"}
+{"at":"2026-10-14T15:30:45Z","kind":"decision","text":"YES (release harness 0.5.0)","note":"added late (brief entry written in retro R7)"}
+{"at":"2026-10-14T15:52:37Z","kind":"instruction","text":"go ahead i will go afk for a while","note":"added late (brief entry written in retro R7)"}
 {"at": "2026-10-14T15:57:09Z", "kind": "decision", "text": "1 done, 2 done 3 no need, 4 keep as is , 5 ok, 6 spread it pout better accross the floors 7 keep 8  do 3 quests and 5 sidequests,  ; gitve me details for 9 now"}
-{"at": "2026-10-14T16:03:53Z", "kind": "decision", "text": "Circle 2 answers Q1-Q7, drop circle 2, wrap up a new harness version at the very end with all files and htmls updated"}
+{"at":"2026-10-14T16:03:53Z","kind":"decision","text":"Circle 2 answers Q1-Q7, drop circle 2, wrap up a new harness version at the very end with all files and htmls updated","note":"added late (brief entry written in retro R7)"}
 {"at": "2026-10-14T16:04:32Z", "kind": "decision", "text": "= don change it is good (AMBIENT_LIFT keep)"}
 {"at": "2026-10-14T18:46:32Z", "kind": "question", "text": "Is there any ending?"}
-{"at": "2026-10-14T18:48:21Z", "kind": "decision", "text": "No we proceed this is good (keep the full round plan, no merging)"}
+{"at":"2026-10-14T18:48:21Z","kind":"decision","text":"No we proceed this is good (keep the full round plan, no merging)","note":"added late (brief entry written in retro R7)"}
 {"at": "2026-10-14T18:50:42Z", "kind": "decision", "text": "Drop r9-r10 , drop r12"}

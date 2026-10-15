@@ -18,6 +18,7 @@ Gate authority for this project is delegated to `customer-proxy` while the user 
 
 ## Waiting for the real customer
 - **Quests optional or intended?** With quests the floors are now smooth (deaths spread out, floor 5 has 2 deaths in 72 runs). A hero who accepts NO quest still hits a wall at floor 5 (32 deaths). Should the game also be balanced for players who skip quests (softer floor 5 / lighter quest rewards), or are quests the intended route? Default: quests are the intended route.
+- **Emergency Exit price**: to make quest hand-in trips short, the Emergency Exit (teleport to the Lobby) now costs 40 gold instead of 200. Fine, or should trips cost more? Default: keep 40.
 - **Optional (R7-4.3)**: the 5th side quest comes from the vendor (second quest there), because only 4 Lobby characters exist. Want a new, 5th Lobby character instead? (about 250 lines + art; default: no).
 - **Portal-overview variant pick** (harness; may fold into the final harness version).
 - Review `proxy-log.md` whenever you are back.

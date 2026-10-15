@@ -15,10 +15,10 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R5 | 12 | 2407.0 | 353.6 | 1873.9 | 668 | charselectAppeal 34, charselectCraft 33, g2 33/30 | adversarial: 14; codeReview: 28; visualReview: 9; customer: 2; escaped: 0; escapedNote: none known at acceptance; the file:// storage race (4/23 file://) is an open caveat for the delivery mode |
 | G | 11 | 1893.6 | 117.6 | 1374.1 | 668 | prototypeC3 31/31, g1 32/31, g2 33/32, g3 34/33, gate 34 target; under 33 = another pass; proxy passed at 34/33 with follow-ups | adversarial: null; adversarialNote: No adversarial pass on render work (visual rounds use visual reviewers); the adversarial pass of R5 covered the save/UI code only; codeReview: 0; visualReview: 12; customer: 0; escaped: 0 |
 | R6 | 15 | 2375.6 | 376.8 | 2222.0 | 770 | inGame 35/34, charselect 35/34, uiTreeSlotsPause 35/34, note [appeal, craft]; target 34; first time craft reached 34; G3 was 34/33 | adversarial: 7; codeReview: 15; visualReview: 7; customer: 8; escaped: 0; escapedNote: none shipped; two things were found late and are open: N11/R7-2 floor-entry stutter (found by the richer bench, no review saw it) and F1 hero stand-off (bot watchdog had masked it, CR6-05) |
-| R7 | 27 | 5670.0 | 1096.8 | – | – | – | – |
+| R7 | 28 | 5766.3 | 1099.6 | 5766.3 | 1154 | inGame 35/34, charselect null, uiTreeSlotsPause 35/34, note [appeal, craft]; R7 first review iterate: in-game 35/33, UI 35/32; after the visual fix round R7b pass 35/34 both; R6 was 35/34 | adversarial: 10; codeReview: 16; visualReview: 25; customer: 8; escaped: 0; escapedNote: none shipped; the R7 acceptance feel items (bag full, early deaths) are open for R8 |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 89 rows, 14378.7 k subagent tokens. **Your messages logged:** 30.
+**Ledger total:** 90 rows, 14475.0 k subagent tokens. **Your messages logged:** 30.
 
 ## Round R3
 
@@ -146,7 +146,10 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | implementer | VFIX-R7-WORLD | 178.1 | 54.7 | done (G4 needs core) | fixed: ["G1","G2","G3","N9","N10"]; fps50: [53.3,59,58.5,56.7,56.3]; load: 2.6-3.7 |
 | implementer | VFIX-R7-UI | 277.6 | 82.1 | done (N12 partial) | tests: 1155; fixed: ["U1","U2","U3","U4","U5","U6","N14","R8-Q2 partial","R8-Q3"] |
 | orchestrator | verify after visual fixes (quiet) | – | – | done | tests: 1154; e2e: 17/17; fps50: [53.7,51.8,54.5]; load: 1.1-1.5 |
-| visual-reviewer | R7b narrow re-review | – | – | done | score: {"g":[35,34],"ui":[35,34]}; verdict: pass |
+| visual-reviewer | R7b narrow re-review | 96.3 | 2.8 | done | score: {"g":[35,34],"ui":[35,34]}; verdict: pass |
+| harness-retro | retro R7 | – | – | done | learnings_new: ["L-041","L-042","L-043","L-044","L-045","L-046","L-047","L-048","L-049","L-050"]; reopened: ["L-032","L-033"]; verified: ["L-034","L-035","L-036","L-038","L-039"] |
+
+Retro summary (`round-07.json`): incidents 12, learnings L-032, L-033, L-034, L-035, L-037, L-038, L-039, L-020, L-022, L-018, L-041, L-042, L-043, L-044, L-045, L-046, L-047, L-048, L-049, L-050, rework {"fixRounds":3,"reverts":0,"detail":"fix round 1 = FIX-R7-CORE + FIX-R7-UI (code review 16 findings + ADV first pass 6); fix round 2 = FIX-R7-CORE-2 (ADV update findings ADV-R7-07..10, chase orbit core); visual fix round = VFIX-R7-WORLD + VFIX-R7-UI (R7 visual review 10 findings), then R7b narrow re-review. Scope additions are not fix rounds: ARCH-R7-4, R7-4.1, R7-4.2, BAL-R7. e2e reds in hand-backs: CORE-R7Q 0.2 (version exception), 0.3 (adversary pin line 185), R7-4.1 (6 ui/render unit reds), R7-4.2 (reds from BAL-R7, L-044); all fixed in the round. No reverts recorded in SESSION-NOTES.","fixTokensK":1004.9,"fixShare":"1004.9 k tokens, 17 % of the round"}.
 
 ## Harness work
 

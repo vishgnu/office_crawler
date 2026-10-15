@@ -1,0 +1,434 @@
+{
+  "project": "office-crawler",
+  "harnessVersion": "0.5.0",
+  "round": "R7",
+  "slice": "R7: AI fixes (AI-R7), floor-entry stutter (STUTTER-R7), quest journal R7-0 (circle 3, spec, ADR-0007, CORE-R7Q 0.1-0.4, UI-R7Q 0.5-0.6, WORLD-R7Q 0.7), code review R7 and ADV-R7 in parallel, fix round 1 (FIX-R7-CORE, FIX-R7-UI), customer scope R7-4 (3 main + 5 side quests: ARCH-R7-4, R7-4.1, R7-4.2, ADV update), balance R7-3 (BAL-R7), fix round 2 (FIX-R7-CORE-2), visual review R7, proxy acceptance, visual fix round (VFIX-R7-WORLD, VFIX-R7-UI), narrow visual re-review R7b. Orchestrator verify rows have no usage. The harness benchmark B1 run during R7 is listed under harnessWork and is not in tokensKTotal.",
+  "elapsedMin": null,
+  "elapsedNote": "R7 start not logged with a time; first spec hand-back about 13:22Z on 2026-10-14 (after R6 acceptance 13:07Z), R7b re-review 01:57Z on 2026-10-15, i.e. about 770 min from R6 acceptance to R7b including the user being afk; the sum of agent minutes (1099.6) counts parallel work",
+  "humanMin": null,
+  "humanMessages": 13,
+  "humanMessagesNote": "human-log.jsonl 14:00Z-18:50Z on 2026-10-14 (after the R6 retro): 5 questions (metrics for earlier rounds x2, crawler protection, harness update status, is there an ending), 7 decisions (noindex, release 0.5.0, customer decisions 1-9 incl. 3 main + 5 side quests and spread difficulty, circle 2 answers, AMBIENT_LIFT keep, keep the full round plan, drop R9-R10 and R12), 1 instruction (go ahead, afk). 0 rework requests. 5 of the decision/instruction entries had no briefing in 00-brief.md and were added late in this retro (L-037, counted as an incident).",
+  "wallClockUtc": {
+    "specWriter": "13:22Z",
+    "architect": "13:35Z",
+    "AI-R7": "13:46Z",
+    "CORE-R7Q-0.1": "14:12Z",
+    "STUTTER-R7": "14:18Z",
+    "CORE-R7Q-0.2": "14:37Z",
+    "CORE-R7Q-0.3": "14:40Z",
+    "CORE-R7Q-0.4": "14:56Z",
+    "UI-R7Q-0.5": "15:15Z",
+    "WORLD-R7Q-0.7": "15:30Z",
+    "UI-R7Q-0.6": "15:46Z",
+    "verifyR7-0": "16:16Z",
+    "codeReview": "16:25Z",
+    "ADV-R7": "17:27Z",
+    "FIX-R7-CORE": "18:07Z",
+    "FIX-R7-UI": "18:13Z",
+    "verifyWorktree": "18:50Z",
+    "R7-4.1": "19:15Z",
+    "R7-4.2": "20:15Z",
+    "BAL-R7": "20:55Z",
+    "FIX-R7-CORE-2": "21:39Z",
+    "finalVerify": "22:17Z",
+    "visualReview": "22:24Z",
+    "acceptance": "23:59Z",
+    "VFIX-R7-WORLD": "00:54Z (10-15)",
+    "VFIX-R7-UI": "01:21Z (10-15)",
+    "verifyAfterVfix": "01:54Z (10-15)",
+    "R7b": "01:57Z (10-15)"
+  },
+  "agents": [
+    {
+      "role": "requirements-facilitator",
+      "pkg": "circle-03 quests",
+      "tokensK": 98.7,
+      "minutes": 4,
+      "status": "done"
+    },
+    {
+      "role": "customer-proxy",
+      "pkg": "circle-03 answers",
+      "tokensK": 80.7,
+      "minutes": 0.9,
+      "status": "done"
+    },
+    {
+      "role": "spec-writer",
+      "pkg": "spec 12 quests",
+      "tokensK": 100.3,
+      "minutes": 2.5,
+      "status": "done"
+    },
+    {
+      "role": "architect",
+      "pkg": "ADR-0007 quests + R7 contract",
+      "tokensK": 320.6,
+      "minutes": 12.9,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "AI-R7",
+      "tokensK": 124,
+      "minutes": 33.2,
+      "status": "done",
+      "note": "golden re-pinned once (standT); give-ups 1 -> 0"
+    },
+    {
+      "role": "implementer",
+      "pkg": "CORE-R7Q 0.1 (quest core)",
+      "tokensK": 167.6,
+      "minutes": 24.6,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "STUTTER-R7",
+      "tokensK": 134.1,
+      "minutes": 64.4,
+      "status": "done",
+      "note": "fps50 under load 2.3-7.5, informational; gate number from the orchestrator quiet run"
+    },
+    {
+      "role": "implementer",
+      "pkg": "CORE-R7Q 0.2 (hooks, pouch, hand-in, rewards)",
+      "tokensK": 206.3,
+      "minutes": 25.4,
+      "status": "done",
+      "note": "stopped by the orchestrator after hand-back, background work running (L-032)"
+    },
+    {
+      "role": "implementer",
+      "pkg": "CORE-R7Q 0.3 (save v4)",
+      "tokensK": 196.5,
+      "minutes": 27.5,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "CORE-R7Q 0.4 (bot quests)",
+      "tokensK": 157.3,
+      "minutes": 16.4,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "UI-R7Q 0.5 (journal, tracker)",
+      "tokensK": 235.6,
+      "minutes": 34.7,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "WORLD-R7Q 0.7 (quest markers)",
+      "tokensK": 202.2,
+      "minutes": 49.7,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "UI-R7Q 0.6 (dialogue, toasts, slot card)",
+      "tokensK": 225.4,
+      "minutes": 30.2,
+      "status": "done"
+    },
+    {
+      "role": "reviewer",
+      "pkg": "code review R7",
+      "tokensK": 246,
+      "minutes": 8.9,
+      "status": "done"
+    },
+    {
+      "role": "test-engineer",
+      "pkg": "ADV-R7",
+      "tokensK": 444.4,
+      "minutes": 70.3,
+      "status": "done"
+    },
+    {
+      "role": "architect",
+      "pkg": "ARCH-R7-4 (3 main + 5 side quests)",
+      "tokensK": 183.6,
+      "minutes": 7,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "FIX-R7-CORE",
+      "tokensK": 209.2,
+      "minutes": 39.1,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "FIX-R7-UI",
+      "tokensK": 164.5,
+      "minutes": 45.7,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "R7-4.1 (3 arcs, sq4/sq5, save v5, bot)",
+      "tokensK": 341.5,
+      "minutes": 61.2,
+      "status": "done (UI reds for R7-4.2)",
+      "note": "one read-only git status/diff slip (L-033 recurs); 6 ui/render reds owned by R7-4.2"
+    },
+    {
+      "role": "implementer",
+      "pkg": "R7-4.2 (UI/WORLD arcs, sq4/sq5)",
+      "tokensK": 211.2,
+      "minutes": 59.4,
+      "status": "done (reds = core/balance in flight)",
+      "note": "reds from BAL-R7 changing config.js mid-run (L-044)"
+    },
+    {
+      "role": "test-engineer",
+      "pkg": "ADV-R7 update (arcs, sq4/sq5)",
+      "tokensK": 325.2,
+      "minutes": 91.8,
+      "status": "done"
+    },
+    {
+      "role": "implementer",
+      "pkg": "BAL-R7 (spread difficulty)",
+      "tokensK": 228.5,
+      "minutes": 99.5,
+      "status": "done",
+      "note": "shift spread 6.1 -> 0.4 pts via cheap Emergency Exit trips used by the bot (L-047)"
+    },
+    {
+      "role": "implementer",
+      "pkg": "FIX-R7-CORE-2",
+      "tokensK": 175.5,
+      "minutes": 43.2,
+      "status": "done"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "R7 visual review",
+      "tokensK": 161.4,
+      "minutes": 6.4,
+      "status": "done"
+    },
+    {
+      "role": "customer-proxy",
+      "pkg": "R7 acceptance",
+      "tokensK": 274,
+      "minutes": 101.1,
+      "status": "done",
+      "note": "stopped by the orchestrator after hand-back, background work running (L-032)"
+    },
+    {
+      "role": "implementer",
+      "pkg": "VFIX-R7-WORLD",
+      "tokensK": 178.1,
+      "minutes": 54.7,
+      "status": "done (G4 needs core)",
+      "note": "fixed G1-G3, N9, N10; G4 needs core (R8-M1)"
+    },
+    {
+      "role": "implementer",
+      "pkg": "VFIX-R7-UI",
+      "tokensK": 277.6,
+      "minutes": 82.1,
+      "status": "done (N12 partial)",
+      "note": "N12 partial; wrench swing checked on a normal page (L-045)"
+    },
+    {
+      "role": "visual-reviewer",
+      "pkg": "R7b narrow re-review",
+      "tokensK": 96.3,
+      "minutes": 2.8,
+      "status": "done"
+    }
+  ],
+  "tokensKTotal": 5766.3,
+  "tokensKNote": "sum of the 28 agent rows with usage (ledger rows with round R7; the 6 orchestrator verify/golden rows have no usage); the harness-retro row for R7 is added to the ledger after this file. Biggest round so far: R6 ledger sum 2375.6 k (round-06.json 2222.0 k without the retro row), G 1893.6 k, R5 2407.0 k. R7 is 2.4x R6. By role: implementer 3435.1 k (17 rows, 60 %), test-engineer 769.6 k, architect 504.2 k (2), customer-proxy 354.7 k (2), visual-reviewer 257.7 k (2), reviewer 246.0 k, spec-writer 100.3 k, requirements-facilitator 98.7 k.",
+  "agentMinutesTotal": 1099.6,
+  "harnessWork": [
+    {
+      "role": "mixed",
+      "pkg": "B1 benchmark baseline on 0.5.0 (spec, build, verify)",
+      "tokensK": 289.6,
+      "minutes": 6.5,
+      "status": "done",
+      "note": "harness/benchmarks/results.md; not in tokensKTotal"
+    }
+  ],
+  "defects": {
+    "adversarial": {
+      "round1": {
+        "blocker": 0,
+        "major": 0,
+        "minor": 4,
+        "trivial": 2
+      },
+      "update": {
+        "high": 1,
+        "medium": 1,
+        "low": 2,
+        "note": "ADV-R7-07 pin proto keys (medium), ADV-R7-08, ADV-R7-09 (low), ADV-R7-10 sq5 unwinnable on about 1.5 % of seeds (high)"
+      },
+      "total": 10,
+      "noCheatRuns": "3/3 won with all quests through the real input API + 12 headless (11 all quests) in the first pass; update pass: arc unlock and catch-up 600 sequences, 18 migration fixtures, 31 forged v5 blocks",
+      "verifiedFixed": "ADV-R7-01..10 fixed in FIX-R7-UI / FIX-R7-CORE / FIX-R7-CORE-2 per ledger; generator-level ADV-R7-10 todo and XPASS flags left for R8-T",
+      "overlapWithCodeReview": [
+        "ADV-R7-02 = CR7-04 (quest toast replaced by level-up)"
+      ],
+      "uniqueToAdversarial": [
+        "ADV-R7-01",
+        "ADV-R7-03",
+        "ADV-R7-04",
+        "ADV-R7-05",
+        "ADV-R7-06",
+        "ADV-R7-07",
+        "ADV-R7-08",
+        "ADV-R7-09",
+        "ADV-R7-10"
+      ]
+    },
+    "codeReview": {
+      "blocking": 1,
+      "should": 6,
+      "nit": 9,
+      "total": 16,
+      "uniqueToReview": [
+        "CR7-01 sq1 can become unfinishable",
+        "CR7-02 golden proof weaker than claimed",
+        "CR7-03 retarget/hold test gaps",
+        "CR7-05",
+        "CR7-06",
+        "CR7-07"
+      ],
+      "note": "scope: AI-R7, STUTTER-R7, CORE 0.1-0.4, UI 0.5-0.6, WORLD 0.7 only; R7-4.1/4.2, BAL-R7 and later packages not reviewed (L-049)"
+    },
+    "visualReview": {
+      "count": 10,
+      "medium": 4,
+      "low": 6,
+      "r6Open": 5,
+      "note": "R7: G1-G4, U1-U6 + R6 N9/N10/N12/N14/N15 open; R7b: pass, all fixed except G4 (needs core mapMarkers, R8-M1) and N12 partial"
+    },
+    "customer": {
+      "count": 8,
+      "note": "acceptance follow-ups R8-Q1 bag full blocks gear rewards, R8-Q2 drawer + journal + dialog all open, R8-Q3 repeated toast, R8-Q4 journal text, R8-AI1 deterministic re-click test, R8-B1..B3 balance feel (first minute rough, death spiral at the lift); nothing rejected"
+    },
+    "escaped": 0,
+    "escapedNote": "none shipped; the R7 acceptance feel items (bag full, early deaths) are open for R8"
+  },
+  "quality": {
+    "unitTests": 1154,
+    "unitTestsStart": 770,
+    "unitTestsNote": "1154 at the verify after the visual fixes (3 runs green); 1141 at the final verify (1 todo)",
+    "e2eChecks": null,
+    "e2eScripts": 17,
+    "e2eDetail": "17/17 green at every verify since R7-0 (16/16 at the R7-0 verify; r7journal 70, r7quest 62, adv-r7 260 with 3 XFAIL, ui 172)",
+    "visualScore": {
+      "inGame": [
+        35,
+        34
+      ],
+      "charselect": null,
+      "uiTreeSlotsPause": [
+        35,
+        34
+      ],
+      "note": "[appeal, craft]; R7 first review iterate: in-game 35/33, UI 35/32; after the visual fix round R7b pass 35/34 both; R6 was 35/34"
+    },
+    "fps50": 55.8,
+    "fps50Runs": [
+      54.1,
+      59,
+      51.8,
+      56.7,
+      55.8
+    ],
+    "fps50Min": 51.8,
+    "fps50AfterVfix": [
+      53.7,
+      51.8,
+      54.5
+    ],
+    "loadFinal": "1.0-1.5",
+    "atlasMs": "441-596",
+    "perf": {
+      "floorLoad": "floor 2 ahead max 33.4-66.6 ms (median 33.5), lazy draws 480-600 -> 61 (floor 5: 0); bench floor-load gate is a soft WARN at 61-62 vs limit 60",
+      "invalidBench": "worktree verify beside the parity run: fps50 43.6/46.2/39.1/54.5/50.4 at load 5.4-8.8, not used as a gate (L-041)"
+    },
+    "botWinRate": {
+      "all": "72/72 (24 seeds x 3 classes) with all 8 quests after BAL-R7 and FIX-R7-CORE-2"
+    },
+    "parity": {
+      "clearTimeMin": {
+        "FM": 25.2,
+        "SR": 26.1,
+        "IT": 24.9
+      },
+      "band": "within 25 % of the median",
+      "deathsPerRun": "73 -> 36 over 72 runs (boss 48 -> 7)",
+      "shiftSpreadPts": {
+        "beforeBAL": 6.1,
+        "afterBAL": 0.4,
+        "note": "met through the Emergency Exit trip in the bot, L-047"
+      },
+      "giveUps": 0,
+      "note": "R7-4.1 intermediate: medians 32.1/32.5/32.4, 70/72 complete; FIX-R7-CORE gave 71/72 before the sq5 fix"
+    },
+    "golden": "re-pinned with proofs in AI-R7 (a4a3cd6a1dac3cb2 -> 4a96887c22fea751), CORE-R7Q 0.1 (-> 60a33ace8c544a3c), R7-4.1 and BAL-R7 (legacy-balance proof, run-c new); run-b pre-quest golden 6c70792233585181 recorded by the orchestrator at 03f8882 (L-043)"
+  },
+  "rework": {
+    "fixRounds": 3,
+    "reverts": 0,
+    "detail": "fix round 1 = FIX-R7-CORE + FIX-R7-UI (code review 16 findings + ADV first pass 6); fix round 2 = FIX-R7-CORE-2 (ADV update findings ADV-R7-07..10, chase orbit core); visual fix round = VFIX-R7-WORLD + VFIX-R7-UI (R7 visual review 10 findings), then R7b narrow re-review. Scope additions are not fix rounds: ARCH-R7-4, R7-4.1, R7-4.2, BAL-R7. e2e reds in hand-backs: CORE-R7Q 0.2 (version exception), 0.3 (adversary pin line 185), R7-4.1 (6 ui/render unit reds), R7-4.2 (reds from BAL-R7, L-044); all fixed in the round. No reverts recorded in SESSION-NOTES.",
+    "fixTokensK": 1004.9,
+    "fixShare": "1004.9 k tokens, 17 % of the round"
+  },
+  "contract": {
+    "build": "R7-contract.md written by the architect (names, ownership, overlaps, tests affected, consumer tables) for CORE-R7Q/UI-R7Q/WORLD-R7Q; R7-4 amended the ADR and spec (15 ACs) before the packages",
+    "deviations": "R7-core-q-notes: 5 additive deviations (questHandIn stub timing, saveVersion bump moved to 0.3, snapshot without quests, markerLabels export, mapMarkers scope); R7-4-core-notes: 5 additive items; 0 renames, 0 change requests recorded"
+  },
+  "incidents": [
+    "CORE-R7Q 0.2 (implementer) and the R7 acceptance (customer-proxy) were stopped by the orchestrator after hand-back with background work still running; the rule from the R6 retro was in the definitions (L-032 reopened)",
+    "R7-4.1 ran a read-only git status/diff despite the no-git rule (L-033 reopened; the rule listed only mutating commands)",
+    "Worktree verify of the fix round gave an invalid bench (load 5-9 from a parallel parity run); correctly not used as a gate (L-041)",
+    "BAL-R7 changed core numbers while R7-4.2 and the ADV update ran; many false reds in hand-backs (L-044)",
+    "Pre-quest golden for run-b could not be recorded by agents (no git); CR7-02 found the proof weaker than claimed until the orchestrator replayed it in a worktree (L-043)",
+    "Test flag noanim hid the select-screen wrench flourish from the visual reviewer for two rounds (L-045)",
+    "sq5 unwinnable on about 1.5 % of seeds, found only by the adversary update with a 1000-seed sweep (L-046)",
+    "Class-spread metric met through a cheap bot-used Emergency Exit trip (L-047)",
+    "Craft fell to 33/32 in the first R7 visual review; the review ran 6.6 h after the first UI hand-back (L-048)",
+    "Only one code review in R7: R7-4.1/4.2, BAL-R7, FIX-R7-CORE-2 and the visual fixes (about 1.4 M tokens) were not reviewed (L-049)",
+    "5 decision/instruction entries in the human-log had no briefing in 00-brief.md; added late in this retro (L-037)",
+    "Every e2e run rewrote about 30 committed screenshots; reverted by hand (L-042)"
+  ],
+  "learnings": [
+    "L-032",
+    "L-033",
+    "L-034",
+    "L-035",
+    "L-037",
+    "L-038",
+    "L-039",
+    "L-020",
+    "L-022",
+    "L-018",
+    "L-041",
+    "L-042",
+    "L-043",
+    "L-044",
+    "L-045",
+    "L-046",
+    "L-047",
+    "L-048",
+    "L-049",
+    "L-050"
+  ],
+  "experiments": {
+    "E1": "supported on both thresholds again: adversarial 10 findings over two passes (1 high), code review blocking 1 (<= 1 met); passes ran in parallel, ordering still untested; review coverage of late packages gap (L-049)",
+    "E2": "supported for the build rounds (0 renames, additive deviations only); 3 fix rounds, driven by review and visual findings, not contract gaps; still not normalised",
+    "E3": "held: in-game craft 34 -> 33 (new UI) -> 34 after one narrow visual fix round; appeal 35 throughout"
+  }
+}
