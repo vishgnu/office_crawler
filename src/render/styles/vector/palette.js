@@ -19,6 +19,8 @@ export const palette = {
   skin: "#f6c49c", zombie: "#6cae6c", paper: "#ece4cf",
   // Rarity colours (Okabe-Ito): blue Magic, yellow Rare, vermillion Unique. Used from S2 (loot); kept here so the palette is one file.
   rarity: { magic: "#56b4e9", rare: "#f0e442", unique: "#e8590c" },
+  // Gear part trim (R8-0.2): the light-orange outer rim of a unique part (Okabe-Ito orange), drawn outside the vermillion edge.
+  rarityRim: "#e69f00",
   // Per-actor rim colours (2 px silhouette ring baked into the atlas sprite).
   rims: {
     clerk: "#e6fbff", "facilities-manager": "#ffe9a8", "sales-rep": "#ffd0e4", "it-wizard": "#b8f6ff", "ally.intern": "#cfe8ff", "ally.cone": "#ffd0a0", "zombie-intern": "#a6e65a", "printer-imp": "#ff5a46",

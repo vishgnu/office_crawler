@@ -8,3 +8,4 @@
 - done: AI1 (carry standT across re-click, planned-order guard, noPath retargets attacker), M1 mapMarkers item/elite, test/r8-core1.test.js (14 tests), r7-ai test updated; next: full npm test, parity, ADR-0007 amendment, e2e, 3x
 - done: ADR-0007 amendment, rewardOf tie-break + 24 rerolls + refLevelOffset 4; next: full npm test, build, parity, e2e
 - parity (packGap 10): medians 24.2/24.9/24.1, 24/24 wins each, all quests 24/24, watchdog 0; floor-2 deaths FM 12 SR 5 (floor 1 sparse = less xp). next: npm test x3, build, e2e
+- done: npm test x3 (1189 pass, 1 red ui-hudstate line 40 = reds_from_balance, 9 todo), build ok, e2e: replay/combat/hook/audio/smoke/render/input/realtime/s3ui/r5ui/r7journal/polish/adv-r5/adv-r6 green; reds: ui.mjs 3 (belt kit), adv-r7 2 (full-bag refused, it-wizard fixture), r7quest 1 (full-bag refused); parity done; finished

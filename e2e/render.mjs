@@ -1,4 +1,6 @@
 // Canvas, viewport fill, screen<->tile round trip (real mouse events), colour count; writes screenshots.
+import { execFileSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { launch, open, check, finish, freeTilesNear, tileScreen, SHOTS } from "./helpers.mjs";
 
 const browser = await launch();
@@ -155,6 +157,14 @@ for (const [flag, expect] of [["lowfx=1", { lowFx: true, hc: false }], ["hc=1", 
   check("AC-R-262-4 on-demand builds: at most one in any frame", p5.gearCache.maxBuildsPerFrame <= 1, p5.gearCache);
   check("gear visuals: no page errors", g.errors.length === 0, g.errors);
   await g.context.close();
+}
+// ---- R8-0.2 gear part art, pixel level (real canvases, own browser page): 21 categories x 3 classes x 8 facings x idle/walk/attack/cast/death (frame 0 + last) differ from the
+// empty slot and from each other (AC-R-260-2); the four tiers differ pairwise, also in grey-scale (AC-R-261-1); the sprites are not clipped by the 104 x 96 cell outside death.
+{
+  let r;
+  try { r = JSON.parse(execFileSync(process.execPath, ["e2e/art-sheet.mjs", tmpdir(), "check"], { encoding: "utf8", timeout: 180000 }).trim().split("\n").at(-1)); } catch (e) { r = { ok: false, failures: [String(e.message).slice(0, 200)], stats: {} }; }
+  check("AC-R-260-2 / 261-1 gear part pixels: every category differs from the empty slot and from its slot mates; four tiers differ pairwise (colour and grey-scale)", r.ok, r.failures);
+  check("gear parts stay inside the 104 x 96 sprite cell in idle, walk, attack and cast", (r.stats.clipped ?? 1) === 0, r.stats);
 }
 await browser.close();
 finish("render");

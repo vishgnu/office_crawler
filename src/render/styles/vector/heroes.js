@@ -3,7 +3,8 @@
 // Identity must survive at ~60 px: FM = wide, hard hat, hi-vis vest, a long wrench; SR = slim, pink suit, headset, blonde quiff, white shoes;
 // IT = hunched purple hoodie, cyan glowing laptop, dark spikes, round glasses.
 import { INK, limb, ellipse, fillPoly, line, shade, ink } from "../../draw/shapes.js";
-import { gearHook, worn } from "../../gearparts.js";
+import { gearHook, worn, bodySleeve } from "../../gearparts.js";
+import { secondHand } from "../../gearkit.js";
 
 export const HERO_IDS = ["facilities-manager", "sales-rep", "it-wizard"];
 /** Accent colour per class (UI tokens --class-facilities / --class-sales / --class-it). */
@@ -105,28 +106,29 @@ export function hero(g, id, o, G = null) {
   }
   // anchors for the gear parts (only built when gear is worn)
   const wornW = worn(G, "weapon"), behind = !front && o.anim !== "attack" && o.anim !== "cast";
-  const A = G ? { id, sc, front, fx, fy, side, lx, ly, hipY, shY, hw, wide, behind, skin: K.skin, shoeW: K.shoeW, anim: o.anim, f: o.f, n: o.n, near: [hx3, hy3], tip: [tx, ty], far: null, head: null, leg: null, two: !!wornW?.two, wdir: null, hook: "" } : null;
+  const A = G ? { id, sc, front, fx, fy, side, lx, ly, hipY, shY, hw, wide, behind, skin: K.skin, shoeW: K.shoeW, anim: o.anim, f: o.f, n: o.n, near: [hx3, hy3], tip: [tx, ty], far: null, head: null, leg: null, two: !!wornW?.two, wdir: null, hook: "", legW: (isFM ? 6.4 : isSR ? 4.4 : 5.2) * sc, ns: [nx, ny], fs: [side * (hw - 0.5) + lx, shY + 3], taper: 0, cx0: 0 } : null;
   if (A) { // weapon direction: along hand -> tip for the wrench; upright (swinging forward in attack) for the card and laptop classes
     let wx = tx - hx3, wy = ty - hy3;
-    if (Math.hypot(wx, wy) < 2) { if (o.anim === "attack" && a > 0.2) { wx = fx * 0.9; wy = -0.3 + fy * 0.4; } else { wx = fx * 0.4; wy = -1; } }
+    if (Math.hypot(wx, wy) < 2) { if (o.anim === "attack" && a > 0.2) { wx = fx * 0.9; wy = -0.3 + fy * 0.4; } else { wx = fx * 0.4 - side * 0.3; wy = -1; } }
     const wl = Math.hypot(wx, wy) || 1; A.wdir = [wx / wl, wy / wl];
   }
   // legs
   for (const k of [-1, 1]) {
     const ph = swing * k, ftx = k * 3.8 * sc * (isFM ? 1.25 : 1) + fx * 6 * ph, fty = fy * 3 * ph - Math.max(0, ph) * 2;
     limb(g, k * 3.6 * sc * (isFM ? 1.3 : 1) + lx * 0.2, hipY, ftx, fty - 1, k < 0 ? shade(K.pants, -0.36) : K.pants, (isFM ? 6.4 : isSR ? 4.4 : 5.2) * sc);
-    if (A) { A.leg = { x: ftx, y: fty, k }; gearHook(g, "legs", G, A); }
+    if (A) { A.leg = { x: ftx, y: fty, k, hx: k * 3.6 * sc * (isFM ? 1.3 : 1) + lx * 0.2 }; gearHook(g, "legs", G, A); }
     ellipse(g, ftx + fx * 1.4, fty, K.shoeW * sc, 2.5 * sc, K.shoe, INK, 1.3);
     if (isIT) line(g, ftx - K.shoeW * 0.8 + fx * 1.4, fty + 1.9, ftx + K.shoeW * 0.8 + fx * 1.4, fty + 1.9, "#33e0ff", 1.3);
     if (A) gearHook(g, "feet", G, A);
   }
   // far arm behind the torso (IT: the laptop arm)
-  const sleeve = isFM ? K.shirt : isSR ? "#e0457b" : K.shirt;
+  const sleeve = (A && bodySleeve(G)) || (isFM ? K.shirt : isSR ? "#e0457b" : K.shirt); // a worn body part colours the sleeves too
   const farTo = (x, y) => limb(g, side * (hw - 0.5) + lx, shY + 3, x, y, shade(sleeve, -0.2), isFM ? 5.6 : isSR ? 3.8 : 4.6);
   let farHand = null;
   if (isIT) farHand = [side * (hw + 5) + lx + fx * 2, hipY - 7 + swing * 1.2];
   else if (isSR && o.anim === "cast") farHand = [side * 9 + lx + fx * 6, shY - 4 - 6 * o.cast];
   else farHand = [side * (hw + 1.5) + lx - fx * 1, hipY - 3 + swing * 2 * -side];
+  if (A?.two) farHand = secondHand(A); // a two-handed weapon: the far arm reaches the shaft
   farTo(farHand[0], farHand[1]);
   if (A) { A.far = farHand; gearHook(g, "weaponBack", G, A); if (!front) gearHook(g, "offhand", G, A); } // behind the torso: a weapon carried at the back, an off-hand seen from behind
   // torso
@@ -174,12 +176,13 @@ export function hero(g, id, o, G = null) {
     }
   }
   line(g, tl + lx + 1, shY + ly + 1.2, tr + lx - 1, shY + ly + 1.2, shade(isFM ? "#ff8a1f" : isSR ? "#e0457b" : K.shirt, 0.4), 1.2);
-  if (A) gearHook(g, "torso", G, A);
+  if (A) { A.taper = taper; A.cx0 = cx0; gearHook(g, "torso", G, A); }
   // lanyard + badge for everyone but the FM (keys at the belt) -- IT cord pair
   // laptop (IT) is held on the far side, in front of the torso edge; a worn off-hand item or a two-handed weapon replaces it
   if (isIT && !worn(G, "offhand") && !wornW?.two) laptop(g, farHand[0] + (front ? side * 0 : 0), farHand[1] - 1, 1, front, pulse);
   if (A && front) gearHook(g, "offhand", G, A);
   // head
+  const gearHead = worn(G, "head"), capped = gearHead && gearHead.cat !== "headset"; // a worn head part replaces the class hat / headset and covers the class hair
   const hr = K.head * 1.1, hx = lx + fx * 2.2 + fx * hunch, hy = shY - hr + 3 + ly + bob * 0.5 + fy * 0.8 + (isIT ? 3 : 0);
   if (A) A.head = { x: hx, y: hy, r: hr };
   limb(g, lx + fx * 1.2, shY + 2 + ly, hx, hy + hr * 0.6, K.skin, isFM ? 6 : 4); // neck
@@ -215,34 +218,38 @@ export function hero(g, id, o, G = null) {
   if (isFM) {
     const top = front ? 0 : 1;
     if (!front) ellipse(g, hx, hy + 1, hr + 0.5, hr * 0.95, "#2b1d17", INK, 1.5);
-    g.beginPath(); g.ellipse(hx, hy - 2.2, hr + 1.4, hr * 0.92, 0, Math.PI, 0); g.closePath(); g.fillStyle = "#ffd23a"; g.fill(); g.lineWidth = ink(1.8); g.strokeStyle = INK; g.stroke();
-    g.beginPath(); g.ellipse(hx - 1.5, hy - 4.2, hr * 0.7, hr * 0.5, 0, Math.PI * 1.05, Math.PI * 1.6); g.lineWidth = 1.5; g.strokeStyle = "#fff3a0"; g.stroke(); // rim light
-    fillPoly(g, [[hx - hr - 2.6, hy - 2.2], [hx + hr + 2.6, hy - 2.2], [hx + hr + 1.5 + (front ? fx * 3 : 0), hy - 0.9 + top * 0.4], [hx - hr - 1.5 + (front ? fx * 3 : 0), hy - 0.9 + top * 0.4]], "#f0bc2a", INK, 1.4); // brim
-    rect(g, hx + fx * 0.6, hy - hr - 1.2, 4, 3.2, "#fff3a0", INK, 1); // lamp / ridge
+    if (gearHead) { if (front) { g.beginPath(); g.ellipse(hx, hy - 1.6, hr + 0.3, hr * 0.86, 0, Math.PI, 0); g.closePath(); g.fillStyle = "#2b1d17"; g.fill(); g.lineWidth = ink(1.6); g.strokeStyle = INK; g.stroke(); } } // worn head part: the class hat is off, dark hair under it
+    else {
+      g.beginPath(); g.ellipse(hx, hy - 2.2, hr + 1.4, hr * 0.92, 0, Math.PI, 0); g.closePath(); g.fillStyle = "#ffd23a"; g.fill(); g.lineWidth = ink(1.8); g.strokeStyle = INK; g.stroke();
+      g.beginPath(); g.ellipse(hx - 1.5, hy - 4.2, hr * 0.7, hr * 0.5, 0, Math.PI * 1.05, Math.PI * 1.6); g.lineWidth = 1.5; g.strokeStyle = "#fff3a0"; g.stroke(); // rim light
+      fillPoly(g, [[hx - hr - 2.6, hy - 2.2], [hx + hr + 2.6, hy - 2.2], [hx + hr + 1.5 + (front ? fx * 3 : 0), hy - 0.9 + top * 0.4], [hx - hr - 1.5 + (front ? fx * 3 : 0), hy - 0.9 + top * 0.4]], "#f0bc2a", INK, 1.4); // brim
+      rect(g, hx + fx * 0.6, hy - hr - 1.2, 4, 3.2, "#fff3a0", INK, 1); // lamp / ridge
+    }
   } else if (isSR) {
     if (front) {
       g.beginPath(); g.ellipse(hx, hy - 1.5, hr + 0.4, hr * 0.78, 0, Math.PI, 0); g.fillStyle = "#f2c14e"; g.fill(); g.lineWidth = ink(1.6); g.strokeStyle = INK; g.stroke();
-      g.beginPath(); g.moveTo(hx - hr - 0.2, hy - 2); g.quadraticCurveTo(hx - hr * 1.1, hy - hr * 1.3, hx - 1, hy - hr * 1.38); g.quadraticCurveTo(hx + hr * 1.3, hy - hr * 1.7, hx + hr * 1.25, hy - hr * 0.7); g.lineTo(hx + hr + 0.2, hy - 2.5); g.quadraticCurveTo(hx + 2, hy - hr * 1.0, hx - hr * 0.5, hy - hr * 0.7); g.closePath();
+      if (!capped) { g.beginPath(); g.moveTo(hx - hr - 0.2, hy - 2); g.quadraticCurveTo(hx - hr * 1.1, hy - hr * 1.3, hx - 1, hy - hr * 1.38); g.quadraticCurveTo(hx + hr * 1.3, hy - hr * 1.7, hx + hr * 1.25, hy - hr * 0.7); g.lineTo(hx + hr + 0.2, hy - 2.5); g.quadraticCurveTo(hx + 2, hy - hr * 1.0, hx - hr * 0.5, hy - hr * 0.7); g.closePath();
       g.fillStyle = "#f2c14e"; g.fill(); g.lineWidth = ink(1.5); g.strokeStyle = INK; g.stroke(); // quiff
-      line(g, hx - 1, hy - hr * 1.18, hx + 5, hy - hr * 1.32, "#ffe9a0", 1.3);
+      line(g, hx - 1, hy - hr * 1.18, hx + 5, hy - hr * 1.32, "#ffe9a0", 1.3); }
     } else {
       ellipse(g, hx, hy - 0.5, hr + 0.4, hr * 1.02, "#f2c14e", INK, 1.8);
-      g.beginPath(); g.moveTo(hx - hr * 0.8, hy - hr * 0.6); g.quadraticCurveTo(hx - hr * 0.5, hy - hr * 1.5, hx + hr * 0.5, hy - hr * 1.45); g.quadraticCurveTo(hx + hr * 1.3, hy - hr * 1.2, hx + hr * 0.9, hy - hr * 0.5); g.closePath(); g.fillStyle = "#f2c14e"; g.fill(); g.lineWidth = ink(1.4); g.strokeStyle = INK; g.stroke();
-      g.beginPath(); g.arc(hx, hy + 0.5, hr + 0.9, Math.PI * 1.04, Math.PI * 1.96); g.lineCap = "round"; g.lineWidth = ink(3.8); g.strokeStyle = INK; g.stroke(); g.lineWidth = 2; g.strokeStyle = "#232a58"; g.stroke();
+      if (!capped) { g.beginPath(); g.moveTo(hx - hr * 0.8, hy - hr * 0.6); g.quadraticCurveTo(hx - hr * 0.5, hy - hr * 1.5, hx + hr * 0.5, hy - hr * 1.45); g.quadraticCurveTo(hx + hr * 1.3, hy - hr * 1.2, hx + hr * 0.9, hy - hr * 0.5); g.closePath(); g.fillStyle = "#f2c14e"; g.fill(); g.lineWidth = ink(1.4); g.strokeStyle = INK; g.stroke(); }
+      if (!gearHead) { g.beginPath(); g.arc(hx, hy + 0.5, hr + 0.9, Math.PI * 1.04, Math.PI * 1.96); g.lineCap = "round"; g.lineWidth = ink(3.8); g.strokeStyle = INK; g.stroke(); g.lineWidth = 2; g.strokeStyle = "#232a58"; g.stroke(); }
     }
-    const sx = hx - fx * 1 - hr * 0.98; // headset: earcup, band, orange mic boom
-    ellipse(g, sx, hy + 0.5, 2.8, 3.8, "#232a58", INK, 1.2); if (!front) ellipse(g, hx + hr * 1.0, hy + 1.2, 2.8, 3.6, "#232a58", INK, 1.2);
-    if (front) {
+    const sx = hx - fx * 1 - hr * 0.98; // headset: earcup, band, orange mic boom (off when a head part is worn)
+    if (!gearHead) { ellipse(g, sx, hy + 0.5, 2.8, 3.8, "#232a58", INK, 1.2); if (!front) ellipse(g, hx + hr * 1.0, hy + 1.2, 2.8, 3.6, "#232a58", INK, 1.2); }
+    if (front && !gearHead) {
       g.beginPath(); g.arc(hx, hy - 1, hr + 0.9, Math.PI * 1.1, Math.PI * 1.55); g.lineWidth = ink(2.4); g.strokeStyle = INK; g.stroke(); g.lineWidth = 1.2; g.strokeStyle = "#3a4488"; g.stroke();
       g.beginPath(); g.moveTo(sx, hy + 3.5); g.quadraticCurveTo(sx + 1, hy + hr * 0.95, hx + fx * 3 - 1, hy + hr * 0.78); g.lineWidth = ink(1.4); g.strokeStyle = INK; g.stroke();
       ellipse(g, hx + fx * 3 - 1, hy + hr * 0.78, 1.7, 1.5, "#ff8a1f", INK, 0.9);
     }
   } else { // IT: dark spikes
-    if (front) {
+    if (capped) { if (front) { g.beginPath(); g.ellipse(hx, hy - 1.2, hr + 0.3, hr * 0.8, 0, Math.PI, 0); g.closePath(); g.fillStyle = "#2a1a40"; g.fill(); g.lineWidth = ink(1.5); g.strokeStyle = INK; g.stroke(); } else ellipse(g, hx, hy - 0.5, hr + 0.4, hr * 1.02, "#2a1a40", INK, 1.8); } // under a cap or helmet: flat hair, no spikes
+    else if (front) {
       fillPoly(g, [[hx - hr - 0.4, hy - 2], [hx - hr * 0.9, hy - hr * 1.15], [hx - hr * 0.45, hy - hr * 0.8], [hx - hr * 0.2, hy - hr * 1.55], [hx + hr * 0.2, hy - hr * 0.95], [hx + hr * 0.6, hy - hr * 1.4], [hx + hr * 0.85, hy - hr * 0.8], [hx + hr + 0.4, hy - 2], [hx + hr * 0.6, hy - hr * 0.5], [hx - hr * 0.6, hy - hr * 0.55]], "#2a1a40", INK, 1.5);
     } else {
       ellipse(g, hx, hy - 0.5, hr + 0.4, hr * 1.02, "#2a1a40", INK, 1.8);
-      fillPoly(g, [[hx - hr * 0.8, hy - hr * 0.7], [hx - hr * 0.3, hy - hr * 1.5], [hx + hr * 0.2, hy - hr * 0.95], [hx + hr * 0.6, hy - hr * 1.4], [hx + hr * 0.85, hy - hr * 0.6]], "#2a1a40", INK, 1.2);
+      if (!capped) fillPoly(g, [[hx - hr * 0.8, hy - hr * 0.7], [hx - hr * 0.3, hy - hr * 1.5], [hx + hr * 0.2, hy - hr * 0.95], [hx + hr * 0.6, hy - hr * 1.4], [hx + hr * 0.85, hy - hr * 0.6]], "#2a1a40", INK, 1.2);
     }
   }
   g.beginPath(); g.arc(hx, hy, hr - 1, Math.PI * 1.05, Math.PI * 1.55); g.lineWidth = 1.8; g.strokeStyle = shade(K.skin, 0.5); g.stroke(); // rim light
