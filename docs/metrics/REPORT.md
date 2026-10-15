@@ -19,7 +19,7 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R8 | – | – | – | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 91 rows, 14650.2 k subagent tokens. **Your messages logged:** 30.
+**Ledger total:** 92 rows, 14650.2 k subagent tokens. **Your messages logged:** 30.
 
 ## Round R3
 
@@ -157,6 +157,7 @@ Retro summary (`round-07.json`): incidents 12, learnings L-032, L-033, L-034, L-
 | Role | Package | Tokens k | Minutes | Status | Result |
 |---|---|---|---|---|---|
 | orchestrator | round start | – | – | started |  |
+| architect | ADR-0008 gear visuals | – | – | done | acs: 14; packages: ["R8-0.1 render core ~500","R8-0.2 21 part painters ~600","R8-0.3 UI busts ~350"] |
 
 ## Harness work
 

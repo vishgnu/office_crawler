@@ -20,7 +20,7 @@ import { uniques as uniqueDefs, uniqueById } from "../core/content/uniques.js";
 import { skills as skillDefs } from "../core/content/skills.js";
 import { quests as questDefs, sideIds, mainIds, newQuestState } from "../core/content/quests.js";
 import { goalOf, objCfg, activeMainId } from "../core/systems/questview.js";
-import { itemFloorOf } from "../core/systems/quests.js";
+import { itemFloorOf, OWED_MAX } from "../core/systems/quests.js";
 import { migrate } from "./migrate.js";
 
 export const SAVE_FORMAT = "office-crawler-save";
@@ -70,7 +70,7 @@ export function toSave(state) {
     player: { level: p.level, xp: p.xp, attrs: { ...p.attrs }, attrPoints: p.attrPoints, skillPoints: p.skillPoints, skills: { ...p.skills }, skillBar: clone(p.skillBar), gold: p.gold, respecsUsed: p.respecsUsed ?? 0 },
     inventory: clone(state.inventory), equipment: clone(state.equipment), belt: clone(state.belt), stash: clone(state.stash), cursorItem: clone(state.cursorItem ?? null),
     uniquesFound: [...state.uniquesFound], nextItemId: state.nextItemId, rng: clone(state.rng), stats: { ...state.stats }, explored,
-    quests: { ...clone(state.quests ?? newQuestState()), pouch: clone(p.pouch ?? []) }, // the pouch travels inside the quest block (ADR-0006 amendment, R7)
+    quests: { ...clone(state.quests ?? newQuestState()), pouch: clone(p.pouch ?? []), ...(p.owed?.length ? { owed: clone(p.owed) } : {}) }, // the pouch travels inside the quest block (ADR-0006 amendment, R7)
     options: {}, // options are global and not part of a slot (ADR-0006 section 3, CR-04)
   };
 }
@@ -197,7 +197,7 @@ function gridOk(g, w, h, ids) {
  */
 function questsProblem(d) {
   const q = d.quests;
-  if (!hasOnly(q, ["main", ...sideIds, "pinned", "pouch"]) || ["main", ...sideIds, "pinned", "pouch"].some((k) => !(k in q))) return "bad quests";
+  if (!hasOnly(q, ["main", ...sideIds, "pinned", "pouch", "owed"]) || ["main", ...sideIds, "pinned", "pouch"].some((k) => !(k in q))) return "bad quests";
   const m = q.main?.m;
   if (!hasOnly(q.main, ["m"]) || !hasOnly(m, ["depth", ...MAIN_FLAGS]) || [...MAIN_FLAGS, "depth"].some((k) => !(k in m))) return "bad quest milestones";
   if (MAIN_FLAGS.some((k) => typeof m[k] !== "boolean") || !isInt(m.depth, 0, config.bossDepth)) return "bad quest milestones";
@@ -275,9 +275,16 @@ export function schemaProblem(d) {
   if (!Array.isArray(d.belt) || d.belt.length !== config.beltSlots) return "bad belt";
   for (const it of d.belt) if (it !== null && (!itemOk(it, { placed: false }) || ids.has(it.id) || !ids.add(it.id))) return "bad belt item";
   if (d.cursorItem !== null && (!itemOk(d.cursorItem, { placed: false }) || ids.has(d.cursorItem.id))) return "bad cursor item";
+  if (d.cursorItem) ids.add(d.cursorItem.id);
+  // R8-Q1: reward items that did not fit the bag at a hand-in (optional key; absent means nothing is owed). Unplaced items, bounded, only after a completed side quest.
+  const owed = isObj(d.quests) ? d.quests.owed : undefined;
+  if (owed !== undefined) {
+    if (!Array.isArray(owed) || owed.length < 1 || owed.length > OWED_MAX || !sideIds.some((id) => d.quests[id]?.s === "completed")) return "bad owed items";
+    for (const it of owed) if (!itemOk(it, { placed: false }) || it.kind === "consumable" || ids.has(it.id) || !ids.add(it.id)) return "bad owed items";
+  }
   if (config.uniqueOncePerGame) { // a unique is found once per game (QF-05-2): never two copies
     const seen = new Set();
-    for (const it of [...d.inventory.items, ...d.stash.items, ...Object.values(d.equipment), ...d.belt, d.cursorItem]) if (it?.unique !== undefined && (seen.has(it.unique) || !seen.add(it.unique))) return "duplicate unique";
+    for (const it of [...d.inventory.items, ...d.stash.items, ...Object.values(d.equipment), ...d.belt, d.cursorItem, ...(isObj(d.quests) && Array.isArray(d.quests.owed) ? d.quests.owed : [])]) if (it?.unique !== undefined && (seen.has(it.unique) || !seen.add(it.unique))) return "duplicate unique";
   }
   if (!Array.isArray(d.uniquesFound) || d.uniquesFound.length > 100 || d.uniquesFound.some((u) => !safeId(u))) return "bad uniques";
   if (!isInt(d.nextItemId, 1)) return "bad item counter";
@@ -330,6 +337,7 @@ export function loadSave(save) {
   state.tick = save.savedAtTick;
   state.quests = { main: clone(save.quests.main), pinned: save.quests.pinned, ...Object.fromEntries(sideIds.map((id) => [id, clone(save.quests[id])])) }; // before the resume entry: the placement hook of a quest floor reads it
   p.pouch = clone(save.quests.pouch);
+  if (save.quests.owed?.length) p.owed = clone(save.quests.owed); // R8-Q1
   for (const [d, e] of Object.entries(save.explored)) state.floors[d] = { killed: [], groundItems: [], explored: rleDecode(e.runs, e.size) };
   applyDerived(state, { fill: true });
   if (config.resumeAt === "floorEntry" && save.resume.depth > 0) enterFloor(state, save.resume.depth, { at: "entry", from: 0 });

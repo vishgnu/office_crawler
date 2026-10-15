@@ -6,6 +6,7 @@ import { ai } from "./systems/ai.js";
 import { boss } from "./systems/boss.js";
 import { movement } from "./systems/movement.js";
 import { pickups } from "./systems/loot.js";
+import { settleOwed } from "./systems/quests.js";
 import { combat } from "./systems/combat.js";
 import { status } from "./systems/status.js";
 import { cleanup } from "./systems/cleanup.js";
@@ -31,6 +32,7 @@ export function step(state, inputs = []) {
   allies(state);
   movement(state);
   pickups(state);
+  settleOwed(state);
   projectiles(state);
   combat(state);
   status(state);

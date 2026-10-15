@@ -488,6 +488,30 @@ R4-4 -> R6-1 ; R5 -> R6-2
   CORE only if a field is missing → UI (sheet/select/busts) → visual review with 1x crops per slot and class → adversarial
   (every slot × class × facing renders without errors, perf with 50 monsters) → acceptance.
 
+#### R8-0 work packages (ADR-0008, spec `30-spec/13-gear-visuals.md`, 14 ACs R-260..R-262)
+- **Order:** R8-0.1 (core of the render path, with stub part painters) -> R8-0.2 and R8-0.3 in parallel (disjoint files) -> visual review (1x crops per slot and class) -> adversarial (21 categories x 3 classes x 8 facings, 50 monsters) -> acceptance. **CORE-R8-1** (bag-full rewards, first pack, entry safety, potions) runs in parallel in `src/core/**` and `bot/**`: no overlap (gear visuals only read `state.equipment`, nothing under `src/core` changes, goldens untouched). Watch only `main.js` (one line in R8-0.3) and `testhook/index.js` (read-only `perf()` fields in R8-0.1); the owners of those files merge in order.
+
+#### R8-0.1 WORLD-G1: render core: signature, parts API, cache, budget test
+- **Goal:** `gearlooks.js` (categories, `LOOK_BY_BASE`, `gearSignature`, default-per-slot fallback), the hook points in `heroes.js` (`gearHook` calls at legs/feet/torso/head/hands/weapon/offhand; no hooks = unchanged pixels), stub part painters (a labelled block per slot) so the pipeline works end to end, the per-atlas signature cache (lazy build with `figureWithRim`, LRU by bytes with the 32 MB cap and the 120-frame rule), reference compare of the six slots once a frame, `warmGear` (0.7 ms, idle and walk first, 240-frame pause after floor changes, unbudgeted at game start), `perf().gearCache/gearSig`, `drawFigure(..., {look})` and `figureHost` `look`, bench with a geared hero, error isolation per painter.
+- **Depends:** none (STUTTER-R7 and R7 quest packages are merged). **Parallel-ok with:** CORE-R8-1; R8-0.2 starts once the hook signature is merged. **Estimate:** M (about 500 lines).
+- **ACs:** AC-R-260-1, 260-3, 260-5, 262-1, 262-2, 262-3, 262-4, 262-5.
+- **Files (owner WORLD):** `src/render/gearlooks.js` (new), `src/render/gearparts.js` (new, stub painters + `trim` helper), `src/render/styles/vector/heroes.js` (hook calls), `src/render/styles/vector/characters.js` (pass-through of the gear argument in `drawFigure`), `src/render/figure.js`, `src/render/world.js` (reference compare, table swap, `warmGear` in `warmFrames`), `src/render/keys.js` (only if a helper key is needed), `src/ui/figureHost.js` (one field), `src/testhook/index.js` (read-only fields), `bench/bench.mjs`, `test/render-r8-gear.test.js` (new), `e2e/render.mjs` (assertions).
+- **Risk:** medium: pixel equality of the empty look (hook placement must not change draw order); rim bake for a new offscreen canvas per entry; memory at scale 2.
+
+#### R8-0.2 WORLD-G2: part art for all categories x classes
+- **Goal:** the 21 real part painters (`(g, slot, category, tier, anchors)`), the `trim` rarity helper (plain, single blue edge, double yellow edge + studs, vermillion edge + accent mark), per-class anchor tuning for FM, SR, IT, correct layering for all 8 facings and death/cast poses, 1x crop contact sheet `docs/shots/r8-gear-*` (one per slot and class, four tiers) for the visual reviewer.
+- **Depends:** R8-0.1. **Parallel-ok with:** R8-0.3, CORE-R8-1. **Estimate:** M-L (about 600 lines; split by slot pairs if over: weapon+offhand / head+body+hands+feet).
+- **ACs:** AC-R-260-2, 261-1, 261-2, 261-3 (visual).
+- **Files (owner WORLD):** `src/render/gearparts.js` (replaces the stubs; if it passes 450 lines split into `gearparts-weapons.js` and `gearparts-armour.js`), `src/render/styles/vector/palette.js` (trim tokens only), `test/render-r8-parts.test.js` (new), `e2e/art-sheet.mjs` (gear sheet), `docs/shots/r8-gear-*`.
+- **Risk:** medium: 21 painters must stay distinct at 1x (~60 px hero); two-handed poses; hard-hat/headset over the class hair and glasses.
+
+#### R8-0.3 UI-G1: Employee File, character select, slot busts
+- **Goal:** `paintBust(canvas, classId, look)` with the per-look bust cache (LRU 8), Employee File bust repainted on equipment change, slot index field `look` (written at save from the saved `equipment`, validated by regex, optional so old entries show the bare bust), slot cards and the slot manager use it, class cards show the starting kit if worn at start, reduced motion unchanged (portrait is static), accessible name of the bust mentions the main worn items (text alternative).
+- **Depends:** R8-0.1 (`look` option and `gearSignature`). **Parallel-ok with:** R8-0.2, CORE-R8-1. **Estimate:** S-M (about 350 lines).
+- **ACs:** AC-R-260-4, 260-6.
+- **Files (owner UI):** `src/ui/slots.js`, `src/ui/panels.js` (bust canvas call only), `src/ui/charselect.js`, `src/ui/figureHost.js` (wired by R8-0.1; this package only consumes), `src/main.js` (pass `look` into `provideFigures`), `src/save/slots.js` (the `look` field; index only, no save version bump, no state change; ADR-0006 gets a one-line amendment), `src/core/index.js` is NOT touched (the signature function is imported by `save/slots.js` from the render-free `src/render/gearlooks.js`, which has no DOM or canvas dependency), `test/ui-gear.test.js` (new), `e2e/r8gear.mjs` (new), `e2e/run-all.mjs` (one line), `style.css` (bust sizing only if needed).
+- **Risk:** low-medium: `src/save/slots.js` is not in `src/core`, but the index code path is shared with the R7 quest fields (`qv`); layering N5 (save importing a render file is allowed only for the pure `gearlooks.js`; if the layering test objects, move `gearSignature` and the tables to `src/core/content/gearlooks.js`, which is a one-file core addition, then re-check overlap with CORE-R8-1).
+
 ## Round R8-T: end-to-end testing and polish (seventh briefing, after R8, before the lighting rounds R9–R10)
 - **Goal:** a full end-to-end pass over everything built so far: no-cheat full runs per class to the boss in a real browser,
   save/load across all features (quests, gear visuals, slots), keyboard-only and phone layouts, offline/file:// smoke

@@ -352,22 +352,41 @@ export function handInQuest(state, id) {
   const pouchEntry = def.objective.type === "item" ? state.player.pouch.find((e) => e.quest === id) : null;
   if (def.objective.type === "item" && !pouchEntry) return fail("not ready");
   const r = rewardOf(state, id), items = [...(r.gear ? [r.gear] : []), ...r.potions];
-  const dry = structuredClone(state.inventory); // dry run on a copy of the bag with the real autoplace order (gear first, then potions)
-  if (!items.every((it) => autoplace(dry, structuredClone(it)))) {
-    emit(state, { type: "quest.handInRefused", id, reason: "bagFull" });
-    return { ok: false, error: "bagFull", reason: "bagFull" };
-  }
+  // R8-Q1: a full bag never blocks the hand-in. Gold and experience are paid at once; every item that does not fit goes to the owed pouch
+  // (state.player.owed) and moves into the bag as soon as there is room (settleOwed, every tick). Nothing is refused, nothing is lost.
   giveGold(state, r.gold);
   gainXp(state, r.xp);
-  for (const it of items) { mint(state, it); autoplace(state.inventory, it); }
+  let owed = 0;
+  for (const it of items) { mint(state, it); if (!autoplace(state.inventory, it)) { (state.player.owed ??= []).push(it); owed++; } }
   state.player.pouch = state.player.pouch.filter((e) => e.quest !== id);
   state.quests[id] = { s: "completed", p: q.p };
-  emit(state, { type: "quest.completed", id, title: def.title, rewards: { gold: r.gold, xp: r.xp, items: items.map((it) => it.name) } });
+  emit(state, { type: "quest.completed", id, title: def.title, rewards: { gold: r.gold, xp: r.xp, items: items.map((it) => it.name), owed } });
+  if (owed) emit(state, { type: "quest.rewardOwed", id, count: owed, names: state.player.owed.slice(-owed).map((it) => it.name) });
   if (state.quests.pinned === id) repin(state, id);
   return OK;
 }
 
-/** Input questHandIn { id }: needs the giver's dialog open (same gate as accept). Refused with bagFull when the whole reward does not fit. */
+/** Upper bound of the owed pouch: one gear piece and a few potions per side quest (the save schema uses it too). */
+export const OWED_MAX = 4 * sideIds.length;
+
+/**
+ * R8-Q1: move owed reward items into the bag, in order, as far as they fit. Called every tick (cheap when nothing is owed) and after a load.
+ * The key `player.owed` exists only while something is owed, so a run that never has a full bag at a hand-in hashes as before.
+ * One quest.rewardDelivered event per call that moved something.
+ */
+export function settleOwed(state) {
+  const owed = state.player.owed;
+  if (!owed) return;
+  const moved = [];
+  for (let i = 0; i < owed.length;) {
+    if (autoplace(state.inventory, owed[i])) moved.push(owed.splice(i, 1)[0]);
+    else i++;
+  }
+  if (!owed.length) delete state.player.owed;
+  if (moved.length) emit(state, { type: "quest.rewardDelivered", count: moved.length, names: moved.map((it) => it.name) });
+}
+
+/** Input questHandIn { id }: needs the giver's dialog open (same gate as accept). Never refused for a full bag (R8-Q1): what does not fit waits in the owed pouch. */
 export function questHandIn(state, id) {
   if (typeof id !== "string") return fail("bad id");
   const def = questDef(id);
