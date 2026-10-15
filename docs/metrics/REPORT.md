@@ -19,7 +19,7 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R8 | 5 | 1311.2 | 235.9 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 97 rows, 15961.4 k subagent tokens. **Your messages logged:** 30.
+**Ledger total:** 98 rows, 15961.4 k subagent tokens. **Your messages logged:** 34.
 
 ## Round R3
 
@@ -163,6 +163,7 @@ Retro summary (`round-07.json`): incidents 12, learnings L-032, L-033, L-034, L-
 | implementer | CORE-R8-1 (acceptance follow-ups + CR7L-04/05/06) | 351.2 | 101.6 | done | tests: 1189 pass / 1 fail (ui reds_from_balance); parity: {"medians_min":[24.2,24.9,24.1],"wins":"72/72","all8":"72/72","floor1_deaths":0,"floor2_hotspot":"FM 12, SR 5, IT 0"}; rule_breach: read-only git diff (L-033, 3rd time) |
 | orchestrator | verify CR7L-05 legacy hashes at 0934a57 | – | – | done | result: spawns 9ac4acd3..., stats 86fdc7aa... reproduced exactly at the pre-R7-3 commit (worktree) |
 | implementer | R8-0.2 gear part art (21 categories) | 277.3 | 55.2 | done | fps50_geared: [53.7,58.5,55.4,53.7,53.7]; gearCacheMB: 7.3 |
+| implementer | R8-0.3 UI (busts, owed, toast lane, CR7L-01/02/03, N16) | – | – | done | tests: 1225; e2e: 16/17 (adv-r7 stale fixtures → adversary) |
 
 ## Harness work
 
@@ -204,3 +205,7 @@ Retro summary (`round-07.json`): incidents 12, learnings L-032, L-033, L-034, L-
 | 2026-10-14T18:46:32Z | question | Is there any ending? |
 | 2026-10-14T18:48:21Z | decision | No we proceed this is good (keep the full round plan, no merging) |
 | 2026-10-14T18:50:42Z | decision | Drop r9-r10 , drop r12 |
+| 2026-10-15T04:15:47Z | question | Morning, where are we? |
+| 2026-10-15T04:19:21Z | decision | Defaults are fine |
+| 2026-10-15T04:20:50Z | question | What is the time outlook? |
+| 2026-10-15T04:23:27Z | instruction | ok proceed |

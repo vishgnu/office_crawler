@@ -218,7 +218,8 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   check("AC-R-071-3 with too little mana the skill's bar entry is disabled", s.ui.hud.skillBar.slots[0].disabled === true && (await g.page.getAttribute(T("hud-skill-0"), "aria-disabled")) === "true", s.ui.hud.skillBar.slots[0]);
   await g.app("step", 14);
   await g.page.mouse.click(sc.x, sc.y, { button: "right" });
-  check("a toast says there is not enough mana", /Not enough mana/.test((await g.page.textContent(T("toast"))) ?? ""));
+  const manaToast = await g.page.waitForFunction(() => /Not enough mana/.test(document.querySelector('[data-testid="toast"]')?.textContent ?? ""), null, { timeout: 9000 }).then(() => true, () => false); // CR7L-02: a direct line waits behind a quest line that still holds the lane
+  check("a toast says there is not enough mana", manaToast);
   check("no page errors (skills)", g.errors.length === 0, g.errors);
   await g.context.close();
 }
