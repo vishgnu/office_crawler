@@ -69,21 +69,32 @@ function torsoPts(A, ext, hem, shoulder = 0) {
   return [[-hw - ext - shoulder + lx, shY + ly - 0.6], [hw + ext + shoulder + lx, shY + ly - 0.6], [hw - taper + ext + lx * 0.5, hipY + 1 + hem], [-hw + taper - ext + lx * 0.5, hipY + 1 + hem]];
 }
 
-/** R8-T G-2: a unique body keeps the class torso width: the heavy rim sits on the shoulder line and the hem only, the centre stays open (lapels, tie, buttons show). Tiers 0-2 use the shared trim. */
+/** Rounded outline of the torso quad (corner radius r, arcTo), used by the unique body: rim, clip and ink line share it so the slab has round shoulders and hem. */
+function roundedTorso(g, p, r) {
+  const n = p.length, mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  g.beginPath();
+  const m0 = mid(p[n - 1], p[0]); g.moveTo(m0[0], m0[1]);
+  for (let i = 0; i < n; i++) { const c = p[i], m = mid(c, p[(i + 1) % n]); g.arcTo(c[0], c[1], m[0], m[1], r); }
+  g.closePath();
+}
+/** R8-T G-2 / G-R2: a unique body gets a light-orange rim all round the (rounded) torso; the fill is clipped to the same rounded shape until bodyOver. Tiers 0-2 use the shared trim. */
 function bodyUnder(g, p, tier) {
   if (tier < 3) return trimUnder(g, p, tier);
   g.save();
-  for (const seg of [[p[0], p[1]], [p[3], p[2]]]) { g.beginPath(); g.moveTo(seg[0][0] - 1, seg[0][1]); g.lineTo(seg[1][0] + 1, seg[1][1]); g.lineWidth = 4.2; g.lineCap = "round"; g.strokeStyle = UNIQUE_RIM; g.stroke(); }
-  g.restore();
+  roundedTorso(g, p, 4.2); g.lineWidth = 4.4; g.lineJoin = "round"; g.strokeStyle = UNIQUE_RIM; g.stroke();
+  roundedTorso(g, p, 4.2); g.clip();
 }
+/** Pairs with bodyUnder: tiers 3 releases the clip (the one extra save), inks the rounded edge, then the vermillion lines on shoulders and hem and the collar diamond. */
 function bodyOver(g, p, tier, at) {
   if (tier < 3) return trimOver(g, p, tier, at);
   const R = palette.rarity;
-  g.save();
-  for (const [a, b, dy] of [[p[0], p[1], 1.9], [p[3], p[2], -1.9]]) { g.beginPath(); g.moveTo(a[0] + 1.5, a[1] + dy); g.lineTo(b[0] - 1.5, b[1] + dy); g.lineWidth = 1.7; g.lineCap = "round"; g.strokeStyle = R.unique; g.stroke(); }
   g.restore();
-  const cx = at ? at[0] : (p[0][0] + p[1][0]) / 2, cy = at ? at[1] : p[0][1] + 7;
-  fillPoly(g, [[cx, cy - 3.6], [cx + 2.8, cy], [cx, cy + 3.6], [cx - 2.8, cy]], "#fff2c0", R.unique, 1);
+  g.save();
+  roundedTorso(g, p, 4.2); g.lineWidth = 1.5; g.lineJoin = "round"; g.strokeStyle = INK; g.stroke();
+  for (const [a, b, dy] of [[p[0], p[1], 2.1], [p[3], p[2], -1.9]]) { g.beginPath(); g.moveTo(a[0] + 2.5, a[1] + dy); g.lineTo(b[0] - 2.5, b[1] + dy); g.lineWidth = 1.5; g.lineCap = "round"; g.strokeStyle = R.unique; g.stroke(); }
+  g.restore();
+  const cx = (p[0][0] + p[1][0]) / 2, cy = p[0][1] + 7.4; // collar diamond, centred just below the chin on every class (the head covers the neckline itself)
+  fillPoly(g, [[cx, cy - 4], [cx + 3.2, cy], [cx, cy + 4], [cx - 3.2, cy]], "#fff2c0", R.unique, 1.1);
 }
 
 function knit(g, slot, cat, tier, A) { // cardigan: soft sage knit, V-neck over a white shirt, buttons, ribbed hem band and two pockets
@@ -162,11 +173,11 @@ const rot = (pts, cx, cy, ux, uy) => pts.map(([a, b]) => [cx + ux * a * HK - uy 
 
 function brace(g, slot, cat, tier, A) { // wrist brace (R8-T G-3): a slim navy band across the wrist with a white edge and one yellow stud; the hand stays bare and clear of the face
   for (const [x, y, ux, uy] of handSpots(A)) {
-    const band = rot([[-4.6, -3], [-2, -3], [-2, 3], [-4.6, 3]], x, y, ux, uy);
+    const band = rot([[-5.6, -3.2], [-2.2, -3.2], [-2.2, 3.2], [-5.6, 3.2]], x, y, ux, uy); // R8-T L-4: 3 px along the arm (HK-scaled), dark 1.6 px outline, light-blue body so it reads at 1x
     trimUnder(g, band, tier);
-    fillPoly(g, band, "#2f4b9c", INK, 1.2);
-    fillPoly(g, rot([[-3.6, -3], [-2.8, -3], [-2.8, 3], [-3.6, 3]], x, y, ux, uy), "#e8eef8", null);
-    const [sx, sy] = rot([[-4, 0]], x, y, ux, uy)[0]; ellipse(g, sx, sy, 0.9, 0.9, "#ffd23a", INK, 0.5);
+    fillPoly(g, band, "#3f6ad0", INK, 1.7);
+    fillPoly(g, rot([[-3.4, -2.4], [-2.8, -2.4], [-2.8, 2.4], [-3.4, 2.4]], x, y, ux, uy), "#a9c4ff", null);
+    const [sx, sy] = rot([[-4.6, 0]], x, y, ux, uy)[0]; ellipse(g, sx, sy, 0.8, 0.8, "#ffd23a", INK, 0.5);
     trimOver(g, band, tier, [x - ux * 3.4, y - uy * 3.4 - 4.6]);
   }
 }

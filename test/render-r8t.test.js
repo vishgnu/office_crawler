@@ -14,13 +14,7 @@ test("G-1: magic trim carries a hue-free bright line, normal does not, rare/uniq
   assert.ok(!styles((g) => trimOver(g, SQ, 2)).includes("#ffffff"));
 });
 
-test("G-2: unique body trim strokes shoulders and hem only (2 rim segments), not the whole torso", () => {
-  const A = { hw: 8, lx: 0, ly: 0, shY: 10, hipY: 40, taper: 2, cx0: 0, front: true, fx: 0, fy: 1, hook: "torso" };
-  let strokes = 0;
-  const g = new Proxy({}, { get: (t, k) => (k in t ? t[k] : (...a) => { if (k === "stroke" && t.lineWidth === 4.2) strokes++; }), set: (t, k, v) => { t[k] = v; return true; } });
-  PART_PAINTERS.jacket(g, "body", "jacket", 3, A);
-  assert.equal(strokes, 2);
-});
+// G-2 / G-R2 (unique body rim all round, collar diamond) is superseded by test/render-r8t3.test.js.
 
 // A recording 2D context: every moveTo/lineTo point and every ellipse extent is kept, so the painted size of a part can be asserted.
 const recorder = () => { const pts = []; const g = new Proxy({}, { get: (t, k) => (k in t ? t[k] : k === "moveTo" || k === "lineTo" ? (x, y) => pts.push([x, y]) : k === "ellipse" ? (x, y, rx, ry) => pts.push([x - rx, y - ry], [x + rx, y + ry]) : () => {}), set: (t, k, v) => { t[k] = v; return true; } }); return { g, pts }; };

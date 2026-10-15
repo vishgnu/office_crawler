@@ -108,7 +108,7 @@ test("layering: head parts come after the class hair, body parts after the class
   after(sigOf("body", "jacket"), "sales-rep", "#34487e", "#c0346a");        // blazer over the SR lapel panels
   after(sigOf("body", "suit"), "it-wizard", "#3a3b50", "#2aa8c8");          // suit over the IT hoodie pocket
   after(sigOf("hands", "gloves"), "facilities-manager", "#5fd0b0", "#c98a5e"); // gloves over the FM hand
-  after(sigOf("hands", "brace"), "sales-rep", "#2f4b9c", "#f6c49c");        // wrist brace over the SR hand
+  after(sigOf("hands", "brace"), "sales-rep", "#3f6ad0", "#f6c49c");        // wrist brace over the SR hand
   after(sigOf("feet", "sneaker"), "facilities-manager", "#f2788c", "#5a3a28"); // sneakers over the FM shoes
   after(sigOf("feet", "loafer"), "it-wizard", "#8a4f2a", "#f4ecd8");        // loafers over the IT shoes
   for (const cls of CLASSES) for (const { slot, cat } of CATS.filter((c) => ["head", "body", "hands", "feet"].includes(c.slot))) assert.ok(diff(ops("-|-|-|-|-|-", cls, 0), ops(sigOf(slot, cat), cls, 0)).length > 10, `${cls} ${cat} adds drawing`);
@@ -122,7 +122,7 @@ test("AC-R-261-1 the four tiers of every category differ pairwise in the call st
     for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) assert.notEqual(noColour(t[i]), noColour(t[j]), `${cat}: tier ${i} and ${j} have the same geometry (hue only)`);
     const add1 = diff(base, t[1]), add2 = diff(base, t[2]), add3 = diff(base, t[3]);
     assert.ok(add1.some((o) => o.startsWith("lineTo:")), cat + " magic: one edge path");
-    assert.ok(add2.filter((o) => o.startsWith("ellipse:")).length >= 2 && add2.filter((o) => o.startsWith("closePath")).length >= 2, cat + " rare: double edge and studs");
+    assert.ok(add2.filter((o) => o.startsWith("ellipse:")).length >= 2 && add2.filter((o) => o.startsWith("closePath")).length >= 1, cat + " rare: one thin edge and studs (R8-T G-R1 dropped the inner second line so a rare set keeps the class colour)");
     assert.ok(add3.some((o) => o === "set fillStyle=#fff2c0") && add3.some((o) => o === "set strokeStyle=" + UNIQUE_RIM), cat + " unique: accent diamond and outer rim");
     const R = palette.rarity;
     assert.ok(add1.includes("set strokeStyle=" + R.magic) && add2.includes("set strokeStyle=" + R.rare) && add3.includes("set strokeStyle=" + R.unique), cat + " palette colours");

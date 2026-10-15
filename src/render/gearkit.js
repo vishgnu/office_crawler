@@ -1,5 +1,5 @@
 // Shared kit of the gear part painters (R8-0.2): the rarity trim and the small geometry helpers. Pure drawing, no state, no RNG, no clock.
-// Rarity (AC-R-261-1) differs by SHAPE as well as hue: tier 0 ink only; 1 one sky-blue edge; 2 a double yellow edge plus two studs;
+// Rarity (AC-R-261-1) differs by SHAPE as well as hue: tier 0 ink only; 1 one sky-blue edge; 2 one thin yellow edge plus two studs;
 // 3 a vermillion edge, a light-orange outer rim and one bright diamond accent (the same diamond on every unique, whatever the base).
 import { INK, fillPoly, ellipse } from "./draw/shapes.js";
 import { palette } from "./styles/vector/palette.js";
@@ -20,10 +20,10 @@ export function trimOver(g, pts, tier, at = null) {
     const s = scaled(pts, 0.8);
     edge(g, s, "rgba(20,16,40,0.7)", 3); edge(g, s, R.magic, 1.7); edge(g, s, "#ffffff", 0.8);
   }
-  else if (tier === 2) {
-    edge(g, scaled(pts, 0.9), R.rare, 1.1); edge(g, scaled(pts, 0.66), R.rare, 1.1);
+  else if (tier === 2) { // R8-T G-R1: ONE thin yellow line plus two studs (no second inner line), so a part keeps its own fill and a full rare set keeps the class colour
+    edge(g, scaled(pts, 0.88), R.rare, 1);
     const s = scaled(pts, 0.78);
-    for (let i = 0; i < 2; i++) ellipse(g, s[i][0], s[i][1], 1.5, 1.5, R.rare, INK, 0.6);
+    for (let i = 0; i < 2; i++) ellipse(g, s[i][0], s[i][1], 1.4, 1.4, R.rare, INK, 0.6);
   } else if (tier >= 3) {
     edge(g, scaled(pts, 0.8), R.unique, 1.7);
     const [cx, cy] = at ?? [centroid(pts)[0], Math.min(...pts.map((p) => p[1])) - 1.4];
