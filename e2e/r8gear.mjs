@@ -95,7 +95,7 @@ check("no page errors", g.errors.length === 0, g.errors);
   check("N16 phone: with the full map open only the Map dock button shows (the title band is free)", vis.length === 1 && vis[0] === "dock-map", vis);
   await m.page.click(T("dock-map")); await m.app("step", 2);
   const after = await m.page.evaluate(() => [...document.querySelectorAll(".dock .hbtn")].filter((e) => e.offsetParent).length);
-  check("N16 phone: the Map button closes the map and the dock is whole again", (await m.state()).ui.panels.map === false && after === 4, after);
+  check("N16 phone: the Map button closes the map and the dock is whole again (R8-U5: five buttons incl. Map)", (await m.state()).ui.panels.map === false && after === 5, after);
   check("N16 no page errors", m.errors.length === 0, m.errors);
   await m.context.close();
 }

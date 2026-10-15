@@ -1,6 +1,6 @@
 // The browser shell around the pure core: owns the state, the fixed-step loop, the camera, input
 // translation and rendering. Everything the test hook needs goes through this object.
-import { newGame, step, applyInput, snapshot, hashState, advance, config, spawnMonster, content, setLevel, setHp, teleportFloor, giveGold, spawnItem, takeGround, canPlace } from "./core/index.js";
+import { newGame, step, applyInput, snapshot, hashState, advance, config, spawnMonster, content, setLevel, setHp, teleportFloor, giveGold, spawnItem, takeGround, canPlace, releaseCursor } from "./core/index.js";
 import { setQuestStep, completeQuest } from "./core/cheats.js";
 import { makeCamera, easeFollow } from "./ui/camera.js";
 import { hudLayout, cameraInset, drawerLayout } from "./ui/layout.js";
@@ -44,9 +44,18 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     // the real game (story on) starts armed; test fixtures keep the unarmed core default
     storyOn: !!story, wearStartKit: !!story, inset: 0, defaultStart: "town",
   };
+  let deadClosing = false;
   const syncUi = () => { // the NPC window follows the core dialog; the drawers go away with the run
     const u = game.ui;
     if (!game.core) { u.left = null; u.inventory = false; u.tooltip = null; u.map = false; return; }
+    if (game.core.scene === "dead") { // R8-T N2: the death screen stands alone: drawers, map and tooltip close, and a held item goes back to the bag (else the floor) so none is lost or duplicated
+      game.heldOrigin = null; u.left = null; u.inventory = false; u.invByDialog = false; u.map = false; u.tooltip = null;
+      if (!deadClosing && (game.core.cursorItem || game.core.ui.dialog)) { // guard: game.input re-enters emitChange
+        deadClosing = true;
+        try { if (game.core.cursorItem) releaseCursor(game.core); /* the input path refuses item commands once dead; the real death already did this in the core, this covers any other route to the death scene */ if (game.core.ui.dialog) game.input({ t: "closeDialog" }); } finally { deadClosing = false; }
+      }
+      return;
+    }
     if (u.left === "npc" && !game.core.ui.dialog) { u.left = null; if (u.inventory && u.invByDialog && !game.core.cursorItem) u.inventory = false; /* R8-Q2: the bag the dialog opened closes with it */ u.invByDialog = false; if (u.inventory) u.front = "inventory"; u.tooltip = null; }
   };
   const emitChange = () => {

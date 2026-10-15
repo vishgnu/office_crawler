@@ -2,7 +2,7 @@
 // Sizes: 1280x720, 1366x768 (desktop minimum band) and, with REACH_PHONE=1, 390x844 and 844x390. One real-mouse click on the key control of each panel.
 import { launch, open, startNew, check, finish, SHOTS } from "./helpers.mjs";
 
-const SIZES = process.env.REACH_SIZES ? process.env.REACH_SIZES.split(",").map((s) => s.split("x").map(Number)) : process.env.REACH_PHONE ? [[390, 844], [844, 390], [360, 640]] : [[1280, 720], [1366, 768]];
+const SIZES = process.env.REACH_SIZES ? process.env.REACH_SIZES.split(",").map((s) => s.split("x").map(Number)) : process.env.REACH_PHONE ? [[390, 844], [844, 390], [360, 640]] : [[1280, 720], [1366, 768], [667, 375], [740, 360], [844, 390]]; // default: both desktop minimums and the three short landscape phones (R8-T N1)
 const SEL = 'button, input, select, textarea, a[href], summary, [tabindex]:not([tabindex="-1"]), [role=button], [role=radio], [role=tab], [data-testid^="cell-"], [data-testid^="slot-"], [data-testid^="bslot-"], [data-testid^="hud-belt"], [data-testid^="hud-skill"]';
 
 /** Returns the list of problems on the current screen (empty = every visible control reachable). */

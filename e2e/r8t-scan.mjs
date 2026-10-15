@@ -24,7 +24,7 @@ const net = ["fetch(", "XMLHttpRequest", "WebSocket", "sendBeacon", "importScrip
 check("[R8T-legal] dist uses no network or dynamic-code API (fetch, XHR, WebSocket, beacon, eval, Function)", net.length === 0, net);
 check("[R8T-legal] CSP meta present and denies connect/frames (default-src 'none')", /Content-Security-Policy[^>]+default-src 'none'/.test(html), null);
 check("[R8T-legal] robots noindex meta present", /name="robots"[^>]+noindex/.test(html), null);
-check("[R8T-legal] licence statement file exists (docs/ASSET-LICENCES.md; CORE-R8T-1 adds it)", existsSync("docs/ASSET-LICENCES.md"), "missing in the frozen worktree: assigned to CORE-R8T-1");
+check("[R8T-legal] licence statement file exists (docs/ASSET-LICENCES.md, added by CORE-R8T-1)", existsSync("docs/ASSET-LICENCES.md"), "docs/ASSET-LICENCES.md missing");
 check("[R8T-legal] play/index.html equals dist/index.html (CI check)", existsSync("play/index.html") && readFileSync("play/index.html", "utf8") === html, existsSync("play/index.html") ? "differs (expected until the orchestrator copies the new build)" : "missing");
 const files = ["package.json"]; const pj = JSON.parse(readFileSync("package.json", "utf8"));
 check("[R8T-legal] no runtime dependencies (only dev: esbuild, playwright)", !pj.dependencies || Object.keys(pj.dependencies).length === 0, pj.dependencies);

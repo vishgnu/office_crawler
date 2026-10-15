@@ -21,6 +21,7 @@ function fixture() {
   throw new Error("no fixture");
 }
 const text = fixture();
+let totalRuns = 0, totalBad = 0;
 const browser = await launch();
 async function boot(ctx, origin) {
   const page = await ctx.newPage(); const errors = [];
@@ -75,6 +76,9 @@ for (const cond of CONDS) {
     else for (let i = 0; i < N; i++) res.push(await once(origin, v));
     const bad = res.filter((r) => !(r.ok1 && r.ok2 && r.errs === 0));
     console.log(`${cond} click=${v}: ${res.length - bad.length}/${res.length} ok`, bad.length ? JSON.stringify(bad.slice(0, 3)) : "");
+    totalRuns += res.length; totalBad += bad.length;
   }
 }
 await browser.close();
+console.log(`r8t-tabs: ${totalRuns - totalBad}/${totalRuns} two-tab runs passed`); // run-all summary line; a failing run makes the script exit non-zero
+if (totalBad) process.exitCode = 1;

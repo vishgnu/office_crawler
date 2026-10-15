@@ -21,8 +21,10 @@ for (const [W, H, label] of [[390, 844, "portrait 390x844"], [360, 640, "small 3
   await page.waitForTimeout(200);
   check(`[R8T-phone] ${label} HUD: no horizontal scroll`, await noScroll(), null);
   const sm2 = await small("#ui button, #ui .hbtn");
+  const mapBtn = await page.evaluate(() => { const e = document.querySelector('[data-testid="dock-map"]'); if (!e) return null; const r = e.getBoundingClientRect(); return { vis: getComputedStyle(e).display !== "none" && r.width > 0, w: Math.round(r.width), h: Math.round(r.height) }; });
+  check(`[R8T-phone] ${label} the Map dock button is visible and at least 44x44 (R8-U5)`, !!mapBtn && mapBtn.vis && mapBtn.w >= 44 && mapBtn.h >= 44, mapBtn);
   check(`[R8T-phone] ${label} HUD buttons (dock, skills, belt): touch targets at least 44x44 px`, sm2.length === 0, sm2);
-  for (const [btn, key] of [["dock-inventory", "inventory"], ["dock-character", "character"], ["dock-skills", "skills"], ["dock-journal", "journal"]]) { // the phone layout hides the Map dock button by design (css #ui.phone .hbtn[data-open=map]; R8-V2 U-5 is open)
+  for (const [btn, key] of [["dock-inventory", "inventory"], ["dock-character", "character"], ["dock-skills", "skills"], ["dock-journal", "journal"], ["dock-map", "map"]]) { // R8-U5 (fixed): the phone dock offers the Map button too
     await page.tap(T(btn)); await app("step", 2);
     const st = await app("getState");
     check(`[R8T-phone] ${label} tapping ${btn} opens ${key}`, st.ui.panels?.[key] === true, st.ui.panels);

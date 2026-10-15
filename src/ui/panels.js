@@ -267,6 +267,7 @@ export function createPanels(root, game) {
     st.setProperty("--top", D.top + "px"); st.setProperty("--bottom", D.bottom + "px"); st.setProperty("--lw", D.leftW + "px"); st.setProperty("--rw", D.rightW + "px"); st.setProperty("--cw", D.cell + "px");
     st.setProperty("--hudtop", Math.floor(D.hudTop) + "px");
     root.classList.toggle("phone", D.phone);
+    root.classList.toggle("scene-dead", c.scene === "dead"); // R8-T N2: the dock goes away behind the death screen
     const u = game.ui, p = c.player, held = c.cursorItem;
     const leftOpen = !!u.left, rightOpen = u.inventory;
     { // ADV-R7-04: the dock button that had focus when a drawer opened; on the phone the dock is hidden while a drawer is open, so the re-render drops focus to <body> and the opener must be remembered here

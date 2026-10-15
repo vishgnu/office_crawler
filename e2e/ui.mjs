@@ -469,7 +469,8 @@ for (const [W, H] of [[1280, 800], [1024, 768], [390, 844]]) {
   }
   if (W < 900) {
     const dock = await rect(g.page, T("dock-inventory"));
-    check("phone: the panel buttons are >= 44 px high and the Map button is not offered", dock.height >= 44 && !(await g.page.locator(T("dock-map")).isVisible()), dock);
+    const mapB = await g.page.locator(T("dock-map")).isVisible() ? await rect(g.page, T("dock-map")) : null; // R8-U5: touch needs a way to open the map
+    check("phone: the panel buttons are >= 44 px high and the Map button is offered (visible, >= 44 px high)", dock.height >= 44 && !!mapB && mapB.height >= 44, { dock, mapB });
   }
   check(`no page errors (HUD ${W})`, g.errors.length === 0, g.errors);
   await g.context.close();
