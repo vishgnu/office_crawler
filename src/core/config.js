@@ -145,7 +145,7 @@ export const config = {
   xpMult: [2.5, 1.2, 1.1, 1, 1.2, 1.25, 1, 1],
   // Floor population budget (AC-R-034-3): sum of cost * tierFactor stays within it.
   budgetBase: 120, budgetPerDepth: 32,
-  population: { packsWanted: [12, 16], maxPacks: 50, tries: 400, stopAtBudget: 0.6, early: { 1: { minDist: 20, packMax: 2, packGap: 10 }, 2: { minDist: 14, packMax: 99, packGap: 0 } } } /* R8-B1: tutorial floor; null switches it off (test/balance-legacy.js) */, // how many packs a floor tries to place before it stops
+  population: { packsWanted: [12, 16], maxPacks: 50, tries: 400, stopAtBudget: 0.6, early: { 1: { minDist: 20, packMax: 2, packGap: 10 } } } /* R8-B1: tutorial floor; null switches it off (test/balance-legacy.js) */, // how many packs a floor tries to place before it stops
 
   // World (S2-4)
   maxDepth: 8,                       // floors 1-8; the boss arena (depth 9, S3) hangs off floor 8
