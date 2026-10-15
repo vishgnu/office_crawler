@@ -16,10 +16,10 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | G | 11 | 1893.6 | 117.6 | 1374.1 | 668 | prototypeC3 31/31, g1 32/31, g2 33/32, g3 34/33, gate 34 target; under 33 = another pass; proxy passed at 34/33 with follow-ups | adversarial: null; adversarialNote: No adversarial pass on render work (visual rounds use visual reviewers); the adversarial pass of R5 covered the save/UI code only; codeReview: 0; visualReview: 12; customer: 0; escaped: 0 |
 | R6 | 15 | 2375.6 | 376.8 | 2222.0 | 770 | inGame 35/34, charselect 35/34, uiTreeSlotsPause 35/34, note [appeal, craft]; target 34; first time craft reached 34; G3 was 34/33 | adversarial: 7; codeReview: 15; visualReview: 7; customer: 8; escaped: 0; escapedNote: none shipped; two things were found late and are open: N11/R7-2 floor-entry stutter (found by the richer bench, no review saw it) and F1 hero stand-off (bot watchdog had masked it, CR6-05) |
 | R7 | 29 | 5941.5 | 1105.7 | 5766.3 | 1154 | inGame 35/34, charselect null, uiTreeSlotsPause 35/34, note [appeal, craft]; R7 first review iterate: in-game 35/33, UI 35/32; after the visual fix round R7b pass 35/34 both; R6 was 35/34 | adversarial: 10; codeReview: 16; visualReview: 25; customer: 8; escaped: 0; escapedNote: none shipped; the R7 acceptance feel items (bag full, early deaths) are open for R8 |
-| R8 | 11 | 2387.1 | 498.4 | – | – | – | – |
+| R8 | 12 | 2501.1 | 562.3 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 104 rows, 17037.3 k subagent tokens. **Your messages logged:** 34.
+**Ledger total:** 105 rows, 17151.3 k subagent tokens. **Your messages logged:** 34.
 
 ## Round R3
 
@@ -169,7 +169,8 @@ Retro summary (`round-07.json`): incidents 12, learnings L-032, L-033, L-034, L-
 | implementer | FIX-R8-CORE | 145.0 | 45.5 | done | tests: 1295; fixed: ["CR8-01","ADV-R8-01","ADV-R8-03","CR8-04","CR8-06","CR8-07 (saveVersion 6)"]; golden: unchanged |
 | test-engineer | ADV adv-r5 fixture fix | 5.4 | 11.0 | done | e2e: adv-r5 150/150, adv-r7 257/257, adv-r8 39/39 |
 | implementer | FIX-R8-UIR (toast queue, gear cache cap) | 121.8 | 59.3 | done | fps50_loaded: [47.4,48.3,48.7,49,57.6]; fps50_gear: [44.7,44.7,47.7,49.7,50]; load: 1.2-3.9 |
-| implementer | BAL-R8 (floor 2 hotspot) | – | – | done | deaths_total: {"before":[25,16,10],"after":[6,6,3]}; parity: {"medians_min":[24.3,24,23.8],"wins":"72/72"}; golden: re-pinned with proof |
+| implementer | BAL-R8 (floor 2 hotspot) | 114.0 | 63.9 | done | deaths_total: {"before":[25,16,10],"after":[6,6,3]}; parity: {"medians_min":[24.3,24,23.8],"wins":"72/72"}; golden: re-pinned with proof |
+| orchestrator | verify R8 (quiet) | – | – | green except 1 adv-r7 check (suspected fixture) | tests: 1295; e2e: 18/19; fps50: [51.8,53.3,55,47.4,60]; fps50GearedHero: [51.8,52.9,53.3,46.2,55.8]; benchGear_fps50: [42.1,51.8,47.1]; load: 1.0-1.6 |
 
 ## Harness work
 

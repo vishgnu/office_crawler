@@ -475,6 +475,7 @@ R4-4 -> R6-1 ; R5 -> R6-2
 - R8-AI1 (medium) deterministic re-click test in a crowd (adjacent attacker hit within 1.5 s).
 - R8-Q2/Q3 (low) close the inventory with the NPC window; second hand-in toast wording.
 - R8-T1 (from late-R7 review, UI): CR7L-01 rewards gainXp before quest.completed → level-up/floor lines lost in the same dispatch, screen reader hears only the last; CR7L-02 direct toast clears the whole waiting list; CR7L-03 fx.plateDraw not cleared → stale nameplates over the title backdrop. Goes into R8-0.3 UI.
+- R8-P1 (watch): BENCH_GEAR=1 scene fps50 median 47.1 on a quiet machine (42.1/51.8/47.1), just under the 48 target; plain 53.3. Profile in R8-T.
 - R8-V1 (low) N16 phone map title covered by the dock buttons; N17 elite same size as a manager; N12 tree left gutter.
 - R8-M1 (low, from R7 visual G4) core mapMarkers lists the quest elite and the badge tile once seen; render already draws them.
 
