@@ -4,7 +4,9 @@ import assert from "node:assert/strict";
 import { newGame, step, applyInput, config, content, enterFloor, generateFloor, snapshot } from "../src/core/index.js";
 import { installTestHook } from "../src/testhook/index.js";
 import { setQuestStep } from "../src/core/cheats.js";
-import { gameOn } from "./helpers.js";
+import { gameOn, replay } from "./helpers.js";
+import { hashState } from "../src/core/index.js";
+import { readFileSync } from "node:fs";
 
 // ---- R8-A4 ----
 const ROWS = [
@@ -41,6 +43,50 @@ for (const cls of content.classes.map((c) => c.id)) {
     }
   });
 }
+
+// ---- R11-F03: click spam on a changing far target in the open (the hero is not cornered, so it would walk away from its attackers) ----
+const OPEN = ["##########################", ...Array(5).fill("#........................#"), "#...........@............#", ...Array(5).fill("#........................#"), "##########################"];
+function spamRun(cls, period, offset, ticks = 480) {
+  const s = gameOn(OPEN, [["zombie-intern", 13, 5], ["zombie-intern", 11, 7], ["zombie-intern", 13, 7], ["zombie-intern", 22, 2], ["zombie-intern", 2, 10], ["zombie-intern", 22, 10]], 1, { class: cls });
+  s.player.hp = s.player.hpMax = 1e6;
+  for (const m of s.monsters) { m.ai = "chase"; m.damage = 1; }
+  const far = s.monsters.slice(3), adj = new Set(s.monsters.slice(0, 3).map((m) => m.id));
+  for (const m of far) m.hp = m.hpMax = 1e6;
+  let first = -1, swings = 0;
+  for (let t = 0; t < ticks; t++) {
+    const n = s.eventLog.length;
+    step(s, t % period === 0 ? [{ t: "attack", id: far[(t / period + offset) % far.length].id }] : []);
+    for (const e of s.eventLog.slice(n)) if ((e.type === "hit" || e.type === "miss") && e.source === "player" && adj.has(e.target)) { swings++; if (first < 0) first = t; }
+  }
+  return { first, swings };
+}
+for (const cls of content.classes.map((c) => c.id)) {
+  test(`[R11-F03] ${cls}: 10 Hz and 3.3 Hz click spam on a changing far target still strikes an adjacent attacker within 60 ticks (72 at 3.3 Hz)`, () => {
+    for (const [period, limit] of [[6, 60], [18, 72]]) for (const offset of [0, 1, 2]) { // 3.3 Hz: the third click (tick 36) is what marks it as spam
+      const { first, swings } = spamRun(cls, period, offset);
+      assert.ok(first >= 0 && first <= limit, `period ${period}, start ${offset}: first swing at an adjacent attacker at tick ${first} (limit ${limit})`);
+      assert.ok(swings >= 2, `period ${period}, start ${offset}: ${swings} swings in 8 s`);
+    }
+  });
+}
+test("[R11-F03] a lone far click (no spam) is not redirected: the hero walks to a far target even with an awake monster nearby, and a 1 Hz click is unchanged", () => {
+  const s = gameOn(OPEN, [["zombie-intern", 13, 5], ["zombie-intern", 22, 2]], 1, { class: "sales-rep" });
+  s.player.hp = s.player.hpMax = 1e6;
+  s.monsters[0].ai = "chase"; s.monsters[0].damage = 1; s.monsters[1].ai = "idle";
+  step(s, [{ t: "attack", id: s.monsters[1].id }]);
+  for (let i = 0; i < 20; i++) step(s, []);
+  assert.equal(s.player.target, s.monsters[1].id, "the single click's target is kept");
+});
+
+test("[R11-F03] golden proof: run-c (the bot's recorded run re-orders attacks every few ticks) replays to its pre-R11 hash 0792d55d8cdcdf89 with the spam rule off, and to the re-pinned run-c.hash with it on", () => {
+  const run = JSON.parse(readFileSync("test/fixtures/run-c.json", "utf8")), keep = config.spamTicks;
+  try {
+    config.spamTicks = -1;
+    assert.equal(hashState(replay(run, { start: "town" })), "0792d55d8cdcdf89", "rule off: the old golden, so the rule is the only change");
+  } finally { config.spamTicks = keep; }
+  assert.equal(hashState(replay(run, { start: "town" })), readFileSync("test/fixtures/run-c.hash", "utf8").trim());
+  assert.notEqual(readFileSync("test/fixtures/run-c.hash", "utf8").trim(), "0792d55d8cdcdf89");
+});
 
 // ---- R8-M1 ----
 test("[R8-M1] the snapshot's map.markers carries the quest elite once its tile is seen, and the pinned quest's markers only", () => {

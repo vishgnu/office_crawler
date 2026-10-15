@@ -5,9 +5,12 @@ import { spawn } from "node:child_process";
 const scripts = ["audio", "smoke", "hook", "render", "combat", "input", "replay", "realtime", "ui", "s3ui", "r5ui", "adv-r5", "adv-r6", "adv-r7", "adv-r8", "r7journal", "r7quest", "r8gear", "polish",
   // R8-T adversarial scripts (fast ones) and the FIX-R8T-2 checks. NOT included: r8t-fullrun.mjs (no-cheat full run to the boss, about 10 minutes per class, 30 min for all three).
   // Run it alone, per class: node e2e/r8t-fullrun.mjs <facilities-manager|sales-rep|it-wizard> 1 400000
-  "r8t-reach", "r8t-save", "r8t-keys", "r8t-phone", "r8t-offline", "r8t-scan", "r8t-adv", "r8t-states", "r8t-vendor", "r8t-storage", "r8t-tabs", "r8t2-fix", "r8t3-fix", "r11fix-ui", "r11fix-render"];
+  "r8t-reach", "r8t-save", "r8t-keys", "r8t-phone", "r8t-offline", "r8t-scan", "r8t-adv", "r8t-states", "r8t-vendor", "r8t-storage", "r8t-tabs", "r8t2-fix", "r8t3-fix", "r11fix-ui", "r11fix-render",
+  // R11 sweep scripts that pass on the fixed code (R11-FIX2-UI). NOT included on purpose: r11-play.mjs (real-mouse player per class and floor, 6 to 20 minutes per run, takes PLAY_WALL_MIN)
+  // and r11-spam.mjs (10 Hz click spam in a crowd, long measuring tool): run them alone, e.g. node e2e/r11-play.mjs facilities-manager spend 1 4 manual.
+  "r11-panels", "r11-keys", "r11-save", "r11-tabs", "r11-learn"];
 const DEFAULT_S = Number(process.env.E2E_TIMEOUT_S) || 240;
-const TIMEOUT_S = { replay: 480, polish: 360, "adv-r5": 420, "adv-r6": 600, "adv-r7": 600, "adv-r8": 480, "r8t-reach": 420, "r8t-adv": 420, "r8t-save": 360, "r8t-offline": 360, "r8t-tabs": 420, "r8t-keys": 300, "r8t-phone": 300, "r8t-storage": 300, "r8t-vendor": 300, "r8t-states": 300, "r8t-scan": 120, "r8t2-fix": 300, "r8t3-fix": 300, "r11fix-ui": 420, "r11fix-render": 300 }; // per-script overrides (seconds)
+const TIMEOUT_S = { replay: 480, polish: 360, "adv-r5": 420, "adv-r6": 600, "adv-r7": 600, "adv-r8": 480, "r8t-reach": 420, "r8t-adv": 420, "r8t-save": 360, "r8t-offline": 360, "r8t-tabs": 420, "r8t-keys": 300, "r8t-phone": 300, "r8t-storage": 300, "r8t-vendor": 300, "r8t-states": 300, "r8t-scan": 120, "r8t2-fix": 300, "r8t3-fix": 300, "r11fix-ui": 420, "r11fix-render": 300, "r11-panels": 300, "r11-keys": 120, "r11-save": 420, "r11-tabs": 600, "r11-learn": 240 }; // per-script overrides (seconds)
 const results = [];
 
 function run(name) {

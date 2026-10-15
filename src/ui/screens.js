@@ -179,7 +179,7 @@ export function createScreens(root, h) {
       const back = returnFocus && menu !== "slots" ? s.querySelector(`[data-testid="${returnFocus}"]`) : null; // Esc / Close from the Load dialog: focus goes back to the button that opened it
       if (menu !== "slots") returnFocus = back ? null : returnFocus;
       if (back && !back.disabled) back.focus({ preventScroll: true });
-      else if (menu === "options") s.querySelector("input,select,button")?.focus({ preventScroll: true });
+      else if (menu === "options") [...s.querySelectorAll("input,select,button")].find((c) => !c.disabled)?.focus({ preventScroll: true }); // the first slot card's Load button is disabled while it is the character being played
       else if (menu === "create") (s.querySelector(".cs-cls.on") ?? first)?.focus({ preventScroll: true });
       else first?.focus({ preventScroll: true });
     },

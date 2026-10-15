@@ -306,6 +306,7 @@ export function createPanels(root, game) {
       }
     } else { view.sigs.left = ""; view.stats = {}; }
     syncJournalFocus(leftOpen && u.left === "journal");
+    syncPanelFocus(leftOpen && (u.left === "character" || u.left === "skills") ? u.left : null);
     if ((leftOpen || rightOpen) !== !!view.drawerWas) { // all drawers closed: focus goes back to the opener, not <body> (phone: the dock is visible again only now)
       view.drawerWas = leftOpen || rightOpen;
       if (!view.drawerWas && view.hudFk && (!doc.activeElement || doc.activeElement === doc.body || el.left.contains(doc.activeElement) || el.right.contains(doc.activeElement)) && !menu) {
@@ -332,6 +333,25 @@ export function createPanels(root, game) {
       view.jOpen = false; const p = view.jPrev; view.jPrev = null;
       const t = p?.fk ? root.querySelector(`[data-fk="${CSS.escape(p.fk)}"]`) : p;
       if (t?.isConnected && !t.disabled && !game.menu()) t.focus({ preventScroll: true });
+    }
+  }
+  /**
+   * F-05 / F-06: opening the Employee File or the Skills panel (key or dock) puts focus on its first useful control, so a keyboard or screen reader user is
+   * inside the panel at once. Skills: the first enabled Learn button, which native focus scrolls into view (the tier 2/3 cards sit below the fold at 720 high).
+   * Employee File: the first enabled + button, else the close button. Closing gives focus back to what had it (the dock restore in sync() covers the dock case).
+   */
+  function syncPanelFocus(kind) {
+    if (kind && view.pOpen !== kind) {
+      const was = view.pOpen; view.pOpen = kind; // was: switching panels with the tabs keeps the focus the tab restore gave
+      const a = doc.activeElement;
+      if (!was) view.pPrev = a && a !== doc.body && !el.left.contains(a) && !el.hud.contains(a) ? a : null; // a dock button is restored by sync() through hudFk
+      if (!a || a === doc.body || !el.left.contains(a)) {
+        const t = kind === "skills" ? el.left.querySelector("button.learn:not(:disabled)") : el.left.querySelector('button[data-testid^="alloc-"]:not(:disabled)');
+        (t ?? el.left.querySelector("[data-close]"))?.focus(); // scrolls an off-screen target into view
+      }
+    } else if (!kind && view.pOpen) {
+      view.pOpen = null; const p = view.pPrev; view.pPrev = null;
+      if (p?.isConnected && !p.disabled && !game.menu() && (!doc.activeElement || doc.activeElement === doc.body)) p.focus({ preventScroll: true });
     }
   }
   /** An NPC window with a quest puts focus on its first quest button (else the close button); the window is a labelled region and Escape closes it (core). */

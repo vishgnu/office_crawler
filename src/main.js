@@ -49,6 +49,7 @@ async function boot() {
   try { tabId = crypto.randomUUID(); } catch { tabId = `t${Date.now()}${Math.floor(Math.random() * 1e9)}`; }
   const store = createSlotStore(createAdapter(), { now: () => Date.now(), tabId, onNotice: (key, extra) => notify(key, extra) });
   const options = normalizeOptions(store.loadOptions());
+  store.optionsBaseline?.(options); // F-04: later writes carry only what this tab changes, merged into what is stored then
   if (hc) options.highContrast = true; // ?hc=1 / ?lowfx=1 switch the option on for this session
   if (lowFx) options.lowFx = true;
   hc = options.highContrast; lowFx = options.lowFx;

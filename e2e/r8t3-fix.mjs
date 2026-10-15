@@ -1,5 +1,5 @@
 // FIX-R8T-3-UI checks: L-1 short landscape phone panels (one header row, full height, equipment beside the bag, equipping by real clicks), L-2 portrait drawer shows the bag,
-// L-3 death screen hides pill/toast, L-5 skill tree tier 1 centred over its children, L-6 respawn / Emergency Exit lines ahead of older toasts, floor-2 unspent-points toast once per visit,
+// L-3 death screen hides pill/toast, L-5 skill tree tier 1 centred over its children, L-6 respawn / Emergency Exit lines ahead of older toasts, unspent-points line per the R11-05 rule (once per run, only with &story=1, none in test mode),
 // "In hand" footer at 1280x720 / 1366x768. Screenshots go to E2E_SHOTS (a temp dir, L-042), never docs/shots.
 import { launch, open, startNew, check, finish, SHOTS } from "./helpers.mjs";
 const T = (id) => `[data-testid="${id}"]`;
@@ -158,28 +158,33 @@ for (const [W, H, cls, parent, kids, branch] of [[1280, 720, "facilities-manager
   await g.context.close();
 }
 
-// ---- unspent points: one low line on arrival on floor 2, once per visit
-{
+// ---- unspent points: R11-05 rule. ONE low line per run, only in the real game (&story=1), none in test mode; shared by the level-up hint and the floor-2 arrival.
+const watchToasts = (page) => page.evaluate(() => { window.__toastLog = []; const t = document.querySelector("#toast"); new MutationObserver(() => { if (!t.hidden && t.textContent) window.__toastLog.push(t.textContent); }).observe(t, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ["hidden"] }); });
+const pointsLines = (page) => page.evaluate(() => window.__toastLog.filter((x) => /points to spend/.test(x)).length);
+{ // test mode (no story flag): no points line at all, neither at the level-up nor on floor 2
   const g = await fresh(1280, 720);
-  await g.page.evaluate(() => { window.__toastLog = []; const t = document.querySelector("#toast"); new MutationObserver(() => { if (!t.hidden && t.textContent) window.__toastLog.push(t.textContent); }).observe(t, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ["hidden"] }); });
+  await watchToasts(g.page);
   await g.app("cheat.setLevel", 4); await g.app("step", 2);
-  const p = (await g.state()).player;
-  check("[points] the hero holds unspent points", p.attrPoints > 0, p.attrPoints);
-  await g.page.waitForTimeout(3600); await g.page.evaluate(() => { window.__toastLog.length = 0; });
-  await g.app("cheat.teleportFloor", 1); await g.app("step", 2); await g.page.waitForTimeout(3600);
-  const f1 = await g.page.evaluate(() => window.__toastLog.filter((x) => /points to spend/.test(x)).length);
-  check("[points] floor 1: no nudge", f1 === 0, f1);
-  await g.page.evaluate(() => { window.__toastLog.length = 0; });
-  await g.app("cheat.teleportFloor", 2); await g.app("step", 2);
+  check("[points] the hero holds unspent points", (await g.state()).player.attrPoints > 0, (await g.state()).player.attrPoints);
+  await g.page.waitForTimeout(3600);
+  await g.app("cheat.teleportFloor", 2); await g.app("step", 2); await g.page.waitForTimeout(4500);
+  check("[points] test mode (no &story=1): no points line at the level-up or on floor 2", (await pointsLines(g.page)) === 0, await g.page.evaluate(() => window.__toastLog.slice()));
+  check("[points] no page errors (test mode)", g.errors.length === 0, g.errors.slice(0, 3));
+  await g.context.close();
+}
+{ // real game (&story=1): one line in the whole run, at the first level-up with points; floor 1 -> 2 arrival and later level-ups do not repeat it
+  const g = await open(browser, { lobby: true, query: "test=1&seed=7&story=1", viewport: { width: 1280, height: 720 } });
+  await startNew(g.page, { cls: "facilities-manager", name: "Shot" }); await g.page.waitForSelector(T("hud-ui"));
+  if (await g.page.$(T("story-continue"))) { await g.page.click(T("story-continue")); await g.page.waitForTimeout(100); }
+  await watchToasts(g.page);
+  await g.app("cheat.setLevel", 4); await g.app("step", 2);
   await g.page.waitForFunction(() => window.__toastLog.some((x) => /points to spend/.test(x)), null, { timeout: 9000 }).catch(() => {});
-  await g.page.waitForTimeout(4000);
-  const log = await g.page.evaluate(() => window.__toastLog.slice());
-  const n = log.filter((x) => /points to spend/.test(x)).length, floorFirst = log.findIndex((x) => /Floor 2/.test(x)) <= log.findIndex((x) => /points to spend/.test(x));
-  check("[points] floor 2: exactly one nudge, after the floor name", n === 1 && floorFirst, log);
-  await g.page.waitForTimeout(4000);
-  const n2 = (await g.page.evaluate(() => window.__toastLog.filter((x) => /points to spend/.test(x)).length));
-  check("[points] it does not repeat while the hero stays on the floor", n2 === 1, n2);
-  check("[points] no page errors", g.errors.length === 0, g.errors.slice(0, 3));
+  check("[points] story on: the line shows once at the first level-up with points", (await pointsLines(g.page)) === 1, await g.page.evaluate(() => window.__toastLog.slice()));
+  await g.page.waitForTimeout(3600); await g.app("cheat.teleportFloor", 2); await g.app("step", 2); await g.page.waitForTimeout(4500);
+  check("[points] story on: arriving on floor 2 with points still unspent does not repeat it (once per run)", (await pointsLines(g.page)) === 1, await g.page.evaluate(() => window.__toastLog.slice()));
+  await g.app("cheat.setLevel", 6); await g.app("step", 2); await g.page.waitForTimeout(3600); await g.app("cheat.teleportFloor", 1); await g.app("step", 2); await g.app("cheat.teleportFloor", 2); await g.app("step", 2); await g.page.waitForTimeout(4500);
+  check("[points] story on: a later level-up and a second floor-2 arrival stay silent", (await pointsLines(g.page)) === 1, await g.page.evaluate(() => window.__toastLog.slice()));
+  check("[points] no page errors (story)", g.errors.length === 0, g.errors.slice(0, 3));
   await g.context.close();
 }
 await browser.close();

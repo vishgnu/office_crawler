@@ -100,7 +100,7 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
   // Running total of the characters held by the own keys (CR-13): one full scan the first time, then every put and del adjusts it, so a write
   // never reads all keys. Another writer is noticed when the number of own keys differs from the tracked one (one cheap key listing, no
   // getItem); `usage({ exact: true })` and a failed write rescan.
-  let total = null, tracked = 0;
+  let total = null, tracked = 0, optBase = null;
   const countKeys = () => adapter.keys?.().reduce((n, k) => n + (k.startsWith(PREFIX) ? 1 : 0), 0) ?? 0;
   const scan = () => { total = 0; tracked = 0; for (const k of adapter.keys?.() ?? []) if (k.startsWith(PREFIX)) { total += k.length + (adapter.getItem(k)?.length ?? 0); tracked++; } return total; };
   const used = () => (total === null || countKeys() !== tracked ? scan() : total);
@@ -468,7 +468,29 @@ export function createSlotStore(adapter = createAdapter(), { now = () => Date.no
 
     /** Options live apart from every slot and are never touched by slot operations. */
     loadOptions() { try { const v = JSON.parse(get(config.optionsKey) ?? "null"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch { return {}; } },
-    saveOptions: (options) => put(config.optionsKey, JSON.stringify(options ?? {})),
+    /**
+     * F-04: options are one global object shared by every tab. A tab only writes what IT changed since it loaded (or last wrote): the stored object is
+     * re-read, the changed settings (per top-level key; per channel for volume, per action for keys) are merged into it and the result is written, so a
+     * stale tab cannot revert a setting another tab changed. `optionsBaseline(opts)` records what the tab started from; without a baseline the object is written whole.
+     */
+    optionsBaseline(options) { optBase = structuredClone(options ?? {}); },
+    saveOptions(options) {
+      options = options ?? {};
+      const cur = JSON.parse(JSON.stringify(options)), base = optBase;
+      if (!base) { optBase = cur; return put(config.optionsKey, JSON.stringify(cur)); }
+      const stored = store.loadOptions(), same = (a, b) => JSON.stringify(a) === JSON.stringify(b), merged = { ...stored };
+      for (const k of Object.keys(cur)) {
+        if (same(cur[k], base[k])) continue;
+        const o = cur[k], b = base[k];
+        if ((k === "volume" || k === "keys") && o && typeof o === "object" && b && typeof b === "object" && merged[k] && typeof merged[k] === "object") {
+          merged[k] = { ...merged[k] };
+          for (const sub of Object.keys(o)) if (!same(o[sub], b[sub])) merged[k][sub] = o[sub];
+        } else merged[k] = o;
+      }
+      const r = put(config.optionsKey, JSON.stringify(merged));
+      if (r?.ok !== false) optBase = cur; // only a written change moves the baseline
+      return r;
+    },
   });
   return store;
 }
