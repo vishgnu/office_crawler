@@ -73,7 +73,7 @@ h2 { margin: 0 0 8px; font-size: calc(clamp(26px, 4.5vw, 44px) * var(--ts, 1)); 
 .bdg{margin-left:6px;background:var(--gold);color:var(--ol);border-radius:10px;padding:0 6px;font-size:14px;font-weight:800}
 #ui.open-right:not(.phone) .dock{right:calc(var(--rw) + 8px)}
 #ui.phone.open-left .dock,#ui.phone.open-right .dock{display:none}
-#ui.phone .dock{flex-direction:row;top:6px;right:6px}
+#ui.phone .dock{flex-direction:row;top:6px;left:6px;right:6px;justify-content:flex-end}
 #ui.phone .hbtn kbd,#ui.phone .hbtn .bdg{margin-left:2px}
 #ui.phone .hbtn{padding:3px 7px;font-size:14px}
 
@@ -237,7 +237,8 @@ button.plus:disabled{background:var(--disabled-bg);color:var(--disabled-fg);bord
 .tip .vd{margin-top:2px;font-weight:800;font-size:14px}
 .tip .vd.up{color:var(--ok)}.tip .vd.down,.tip .vd.dn{color:var(--bad)}
 .ar{width:12px;height:12px;flex:none;fill:currentColor}
-.toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--hudtop) - 56px);max-width:min(92vw,560px);background:var(--panel3);color:#fff;border:3px solid var(--ol);box-shadow:inset 0 0 0 2px var(--rim),0 6px 20px rgba(0,0,0,.5);border-radius:10px;padding:7px 14px;font-weight:700;font-size:15px;text-align:center;z-index:210;pointer-events:none}
+.toast{position:fixed;left:50%;width:max-content;box-sizing:border-box;transform:translateX(-50%);bottom:calc(var(--tb,160px) / var(--ts,1));max-width:calc(var(--tw,560px) / var(--ts,1));background:var(--panel3);color:#fff;border:3px solid var(--ol);box-shadow:inset 0 0 0 2px var(--rim),0 6px 20px rgba(0,0,0,.5);border-radius:10px;padding:7px 14px;font-weight:700;font-size:15px;text-align:center;z-index:210;pointer-events:none;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.toast.dup{visibility:hidden}
 .toast[hidden]{display:none}
 
 /* phone: one panel at a time */
@@ -253,7 +254,7 @@ button.plus:disabled{background:var(--disabled-bg);color:var(--disabled-fg);bord
 #ui.phone .bgrid{grid-template-columns:repeat(4,44px);grid-auto-rows:44px}
 #ui.phone .sheet{margin:4px;padding:8px}
 #ui.phone .dstats{grid-template-columns:1fr}
-#ui.phone .toast{font-size:14px;top:calc(var(--hudtop) - 43px);padding:4px 12px;max-width:94vw;line-height:1.2}
+#ui.phone .toast{font-size:14px;padding:2px 10px;line-height:1.2;-webkit-line-clamp:2}
 #ui.phone .tip{left:8px;right:8px;width:auto}
 #ui.phone .xbtn{width:44px;height:44px}
 #ui.phone .plus{width:44px;height:44px}
@@ -695,6 +696,11 @@ html.hc .tr-in{background:#000;border-color:#fff;color:#fff}
 #ui.phone .dock .hbtn{padding:3px 6px}
 #ui.phone .dock .hbtn kbd{display:none}
 #ui.phone .dock .hbtn .bdg{margin-left:4px}
+/* VFIX-R7 U1: the row of four buttons with wide badges must fit 320 to 390 px: tighter padding and badges, labels may shrink */
+#ui.phone .dock .hbtn{flex:0 1 auto;min-width:0;overflow:hidden}
+#ui.phone .dock .hbtn span:first-child{padding-right:0;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:400px){#ui.phone .dock{gap:3px}#ui.phone .dock .hbtn{padding:3px 4px}#ui.phone .dock .hbtn .bdg{margin-left:3px;padding:0 4px}}
+@media (max-width:340px){#ui.phone .dock{flex-wrap:wrap;row-gap:3px}}
 
 /* ---- R7: quest section of the NPC window, slot card quest line, reduced motion ---- */
 .nqs{margin:0}
@@ -717,3 +723,14 @@ html.hc .tr-in{background:#000;border-color:#fff;color:#fff}
 .sl-quest{color:var(--gold)}
 @media (prefers-reduced-motion:reduce){.toast,.bdg,.tracker,.nq{animation:none!important;transition:none!important}}
 .noanim .toast,.noanim .bdg,.noanim .tracker,.noanim .nq{animation:none!important;transition:none!important}
+
+/* VFIX-R7 U6: the NPC's opening quote stays in view when the window scrolls to a quest button */
+.npc .say{position:sticky;top:0;z-index:3;background:var(--panel);margin:0;padding:4px 0}
+/* VFIX-R7 N12: a single-chain branch is one row of three cards with a short connector between them (desktop); the phone keeps its one column */
+#ui:not(.phone) .tree .tnodes.chain { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 14px; row-gap: 2px; }
+#ui:not(.phone) .tree .chain .ci0 { grid-column: 1; } #ui:not(.phone) .tree .chain .ci1 { grid-column: 2; } #ui:not(.phone) .tree .chain .ci2 { grid-column: 3; }
+#ui:not(.phone) .tree .chain .tl { grid-row: 1; writing-mode: horizontal-tb; transform: none; border: 0; border-bottom: 2px solid var(--rim); text-align: left; padding: 0 0 1px; font-size: 14px; }
+#ui:not(.phone) .tree .chain .tnode { grid-row: 2; }
+#ui:not(.phone) .tree .chain .lk { left: -16px; right: auto; width: 16px; top: 22px; height: 3px; background: var(--lc); }
+#ui:not(.phone) .tree .chain .lk::before, #ui:not(.phone) .tree .chain .lk::after { display: none; }
+#ui:not(.phone) .tree .chain .kd { display: none; }

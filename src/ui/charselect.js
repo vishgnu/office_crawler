@@ -244,6 +244,17 @@ export function createCharSelect(h, info) {
     // Facilities Manager flourish (variant A): the wrench comes down beside him and a gold shockwave rolls out over the floor. Ported from A.html
     // drawFacilitiesManager (ring at x +47, ratio .28, eight diamond sparks); the sprite itself is the in-world one, so the slam is the stage overlay plus a body hop (CSS).
     const sf = !busy && !reduced() && cards[sel].id === "facilities-manager" && selT < SLAM_DUR ? selT / SLAM_DUR : -1;
+    if (sf > 0) { // VFIX-R7 N14: before the shockwave the wrench itself swings: wound up overhead, whipped down to the floor (motion arc behind it), left standing for a beat after the hit
+      const k1 = sc * 0.45, L = 54 * k1, hx = ringX + 47 * k1, hy = GY - 1 * k1 - L, p = Math.min(1, sf / 0.38), e = p * p * p, th = -2.5 + (2.5 + 0.08) * e, post = sf > 0.38 ? (sf - 0.38) / 0.62 : 0, al = sf > 0.38 ? Math.max(0, 1 - Math.max(0, post - 0.25) / 0.5) : 1;
+      g.save(); g.globalAlpha = al; g.lineCap = "round"; g.lineJoin = "round";
+      if (p < 1) { g.globalAlpha = 0.5 * al * Math.min(1, p * 4); g.strokeStyle = "#fff3a0"; g.lineWidth = Math.max(4, 6 * k1); g.beginPath(); g.arc(hx, hy, L * 1.12, Math.PI / 2 - th, Math.PI / 2 + 2.5, false); g.stroke(); g.globalAlpha = al; }
+      g.translate(hx, hy); g.rotate(-th); // th 0 = pointing straight down; the grip end sits at the hand (origin)
+      g.fillStyle = "#c9422f"; g.strokeStyle = OUT; g.lineWidth = Math.max(3, 4 * k1); g.beginPath(); g.rect(-4.5 * k1, 0, 9 * k1, L * 0.62); g.fill(); g.stroke(); // grip
+      g.fillStyle = "#d9dfeb"; g.beginPath(); g.rect(-3 * k1, L * 0.6, 6 * k1, L * 0.2); g.fill(); g.stroke(); // shaft
+      g.beginPath(); g.arc(0, L * 0.92, 11 * k1, 0, TAU); g.fill(); g.stroke(); // head with the open jaw
+      g.fillStyle = "#14102c"; g.beginPath(); g.moveTo(-4 * k1, L * 0.92 + 3 * k1); g.lineTo(-4 * k1, L * 0.92 + 14 * k1); g.lineTo(4 * k1, L * 0.92 + 14 * k1); g.lineTo(4 * k1, L * 0.92 + 3 * k1); g.closePath(); g.fill();
+      g.restore();
+    }
     if (sf > 0.38) {
       const s = (sf - 0.38) / 0.62, al = Math.max(0, 1 - s), k0 = sc * 0.45, wx = ringX + 47 * k0, wy = GY - 1 * k0, rr = (8 + s * 62) * k0; // the in-world sprite fills about 45 % of the canvas that A.html units assume
       g.save(); g.globalAlpha = al; g.lineWidth = Math.max(3, 3.2 * k0); g.strokeStyle = OUT; g.beginPath(); g.ellipse(wx, wy, rr, rr * 0.28, 0, 0, TAU); g.stroke();

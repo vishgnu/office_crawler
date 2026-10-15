@@ -681,7 +681,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     const it = items[i];
     if (!it.actor || it.isPlayer || it.d <= hi.d) continue;
     const dx = Math.abs(it.x - hi.x), dy = it.y - hi.y;
-    if (dx < 30 * z && dy > -8 * z && dy < 60 * z) { if (it.a > 0.5) it.a = 0.5; buried = true; }
+    if (dx < 30 * z && dy > -8 * z && dy < 60 * z) { if (it.a > 0.7) it.a = 0.7; buried = true; } // VFIX-R7 N10: 0.7 (was 0.5), restored over the pool light (a > 0.6): a readable body, not a pale ghost
   }
   items.sort(byDepth);
   restore.length = 0;

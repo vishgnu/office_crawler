@@ -53,7 +53,7 @@ export function drawMapPin(g, x, y, u, ink) {
  * records (npc: true, id "npc:<id>"). Fills `list` = [{id, shape}] for every NPC with a marker (read by perf().npcMarkers), drawn only when on screen.
  */
 const SHORT = Object.create(null); // "npc:vendor" -> "vendor", cached so a Lobby frame allocates no string
-export function drawNpcMarkers(g, cam, core, bodies, list, style, reducedMotion, now) {
+export function drawNpcMarkers(g, cam, core, bodies, list, style, reducedMotion, now, avoid) {
   let n = 0;
   if (core.depth === 0 && core.quests && bodies) {
     const z = cam.z, r = Math.max(9, Math.min(17, 5.4 * z)), ink = style.palette.ink;
@@ -65,7 +65,15 @@ export function drawNpcMarkers(g, cam, core, bodies, list, style, reducedMotion,
       const rec = list[n] ?? (list[n] = { id: "", shape: "" });
       rec.id = id; rec.shape = shape; n++;
       if (o.sx < -40 || o.sx > cam.w + 40 || o.sy < 0 || o.sy > cam.h + 140) continue;
-      drawNpcMarker(g, shape, o.sx, o.sy - (style.dims[o.type]?.head ?? 54) * z - 30 - r, r, ink, reducedMotion, now);
+      // VFIX-R7 G2: the marker keeps a fixed offset above the NPC's plate wherever the plate was nudged (hero beside the NPC, phone): lifted over any claimed plate it would touch
+      let my = o.sy - (style.dims[o.type]?.head ?? 54) * z - 30 - r;
+      for (let pass = 0; avoid && pass < 3; pass++) {
+        let hit = null;
+        for (let j = 0; j < avoid.length; j++) { const a = avoid[j]; if (a.plate && o.sx + r * 1.3 > a.x && o.sx - r * 1.3 < a.x + a.w && my + r * 1.4 > a.y && my - r * 1.4 < a.y + a.h) { hit = a; break; } }
+        if (!hit) break;
+        my = hit.y - 3 - r * 1.4;
+      }
+      drawNpcMarker(g, shape, o.sx, my, r, ink, reducedMotion, now);
     }
   }
   list.length = n;

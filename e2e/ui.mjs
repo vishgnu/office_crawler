@@ -600,6 +600,61 @@ for (const [W, H] of [[1280, 800], [1024, 768], [390, 844]]) {
   check("no page errors (phone toast)", g.errors.length === 0, g.errors);
   await g.context.close();
 }
+{
+  // VFIX-R7-UI: dock fits 320-390 px with wide badges (U1), tracker hides over a left panel and the chain row (U2, N12), toast above the belt (U3), one sentence once (U5), quote stays (U6), bag closes with the dialog (R8-Q2)
+  const talk = async (g, npc) => { const n = (await g.state()).npcs.find((o) => o.id === npc); await g.app("clickTile", n.tile.x, n.tile.y); for (let i = 0; i < 12; i++) { await g.app("step", 60); if ((await g.state()).ui.dialog?.npc === npc) break; } await g.page.waitForTimeout(100); };
+  for (const w of [390, 360, 320]) {
+    const g = await start("test=1&seed=3", { width: w, height: w === 320 ? 640 : 800 }, "it-wizard");
+    await g.app("cheat.setLevel", 30); await g.app("quests.setStep", "sq1", 2); await g.app("step", 3);
+    const r = await g.page.evaluate(() => [...document.querySelectorAll('.dock .hbtn')].filter((e) => e.offsetParent).map((e) => { const b = e.getBoundingClientRect(); return [b.left, b.right]; }));
+    check(`phone ${w}: every dock button is inside the screen with wide badges`, r.length >= 4 && r.every(([l, rt]) => l >= 4 && rt <= w - 4), r);
+    check(`phone ${w}: no horizontal overflow, the badge reads 99+`, (await g.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)) && /99\+/.test(await g.page.textContent(T("dock-character"))), await g.page.textContent(T("dock-character")));
+    await g.context.close();
+  }
+  {
+    const g = await start("test=1&seed=3", { width: 1280, height: 720 }, "facilities-manager");
+    await g.app("cheat.setLevel", 12); await g.app("ui.open", "skills"); await g.app("step", 2);
+    check("U2 the tracker pill is hidden while the Skills panel is open", await g.page.locator(T("tracker")).isHidden());
+    const tops = await g.page.evaluate(() => [...document.querySelectorAll('[data-testid="branch-maintenance"] .tnode')].map((e) => Math.round(e.getBoundingClientRect().top)));
+    check("N12 the single-chain branch is one row of cards", tops.length === 3 && tops.every((t) => t === tops[0]), tops);
+    await g.app("ui.close", "skills"); await g.app("step", 2);
+    check("U2 the tracker pill is back with the panel closed", await g.page.locator(T("tracker")).isVisible());
+    await g.context.close();
+  }
+  for (const [w, h] of [[390, 844], [360, 740], [1280, 720]]) {
+    const g = await open(browser, { query: "test=1&seed=3", viewport: { width: w, height: h }, lobby: true }); await startNew(g.page, { cls: "facilities-manager" }); // the kit weapon stays worn: the bag fills up completely
+    await g.app("quests.setStep", "sq5", 2);
+    for (let n = 0; n < 80; n++) { const r = await g.app("cheat.giveItem", { slot: "body" }); if (!r?.ok) break; }
+    await g.app("step", 200); await talk(g, "vendor");
+    const d = await g.state();
+    check(`${w}: the NPC window opens (R8-Q2: the bag opens with a vendor only where the room allows)`, d.ui.dialog?.npc === "vendor" && (w >= 1280 ? d.ui.panels.inventory === true : true));
+    await g.page.click(T("quest-handin-sq5")); await g.app("step", 2); await g.page.waitForTimeout(200);
+    const toast = g.page.locator("#toast"), cls = await toast.getAttribute("class");
+    check(`${w}: the bag-full sentence shows once (the alert is visible, the toast with the same text is not)`, /dup/.test(cls ?? "") && await g.page.locator(T("quest-bagfull")).isVisible() && !(await toast.isVisible()) && (await toast.textContent()) === (await g.page.locator(T("quest-bagfull")).textContent()), cls);
+    const say = await rect(g.page, "#pleft .say"), pb = await rect(g.page, "#pleft .pb");
+    await g.page.evaluate(() => { const b = document.querySelector("#pleft .pb"); b.scrollTop = b.scrollHeight; });
+    const say2 = await rect(g.page, "#pleft .say");
+    check(`${w}: the NPC's opening quote stays visible after the window scrolls (U6)`, say2.y >= pb.y - 1 && say2.y + say2.height <= pb.y + pb.height + 1, { say, say2, pb });
+    if (w < 1000) {
+      await g.page.keyboard.press("Escape"); await g.app("step", 2);
+      await g.app("quests.setStep", "sq1", 1); await g.app("quests.setStep", "sq1", 2); await g.app("step", 2);
+      const t2 = await rect(g.page, "#toast"), belt = await rect(g.page, T("hud-belt-0"));
+      check(`${w}: a phone toast never covers the potion belt (U3)`, !(await g.page.locator("#toast").isHidden()) ? !intersects(t2, belt) : true, { t2, belt });
+    }
+    await g.context.close();
+  }
+  {
+    const g = await start("test=1&seed=3", { width: 1280, height: 720 }, "facilities-manager");
+    await talk(g, "healer");
+    check("R8-Q2 a healer window does not open the bag", (await g.state()).ui.panels.inventory === false);
+    await g.page.keyboard.press("Escape"); await g.app("step", 2);
+    await talk(g, "vendor");
+    const open = (await g.state()).ui.panels.inventory === true;
+    await g.page.keyboard.press("Escape"); await g.app("step", 2);
+    check("R8-Q2 the bag the vendor window opened closes with it", open && (await g.state()).ui.panels.inventory === false);
+    await g.context.close();
+  }
+}
 
 await browser.close();
 finish("ui");

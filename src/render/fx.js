@@ -97,20 +97,20 @@ function marker(g, P, gi, x, y, size, colour) {
 }
 
 /** Light beam above an item: thin (magic), wide trapezoid with a bright core (rare), wide double beam with a diamond top (unique). */
-function beam(g, rarity, colour, x, y, z, now) {
+function beam(g, rarity, colour, x, y, z, now, k = 1) {
   if (rarity !== "magic" && rarity !== "rare" && rarity !== "unique") return;
   const w = (rarity === "magic" ? 4 : rarity === "rare" ? 9 : 14) * z, hgt = (rarity === "magic" ? 52 : rarity === "rare" ? 80 : 110) * z;
   const grad = g.createLinearGradient(0, y, 0, y - hgt);
   grad.addColorStop(0, colour); grad.addColorStop(1, "rgba(255,255,255,0)");
-  g.save(); g.globalAlpha = (rarity === "unique" ? 0.62 : 0.72) + 0.1 * Math.sin(now / 300 + x);
+  g.save(); g.globalAlpha = k * ((rarity === "unique" ? 0.62 : 0.72) + 0.1 * Math.sin(now / 300 + x));
   g.fillStyle = grad;
   g.beginPath();
   if (rarity === "magic") g.rect(x - w / 2, y - hgt, w, hgt);
   else { g.moveTo(x - w / 2, y); g.lineTo(x - w * (rarity === "rare" ? 0.22 : 0.4), y - hgt); g.lineTo(x + w * (rarity === "rare" ? 0.22 : 0.4), y - hgt); g.lineTo(x + w / 2, y); g.closePath(); }
   g.fill();
-  if (rarity !== "magic") { g.globalAlpha = 0.7; g.fillStyle = grad; g.fillRect(x - w * 0.12, y - hgt * 0.8, w * 0.24, hgt * 0.8); }
+  if (rarity !== "magic") { g.globalAlpha = 0.7 * k; g.fillStyle = grad; g.fillRect(x - w * 0.12, y - hgt * 0.8, w * 0.24, hgt * 0.8); }
   if (rarity === "unique") { // diamond sparkle riding the top, and a second thin beam
-    g.globalAlpha = 0.9; g.fillStyle = "#ffffff";
+    g.globalAlpha = 0.9 * k; g.fillStyle = "#ffffff";
     const ty = y - hgt * 0.78 - Math.sin(now / 260) * 4 * z, d = 5 * z;
     g.beginPath(); g.moveTo(x, ty - d); g.lineTo(x + d * 0.6, ty); g.lineTo(x, ty + d); g.lineTo(x - d * 0.6, ty); g.closePath(); g.fill();
   }
@@ -161,7 +161,7 @@ function plateFree(fx, placed, R, x, y, bodies, cam) {
   R.x = x; R.y = y;
   if (!(y > SAFE_ && y + R.h < cam.h - SAFE_ && x >= SAFE_ && x + R.w <= cam.w - SAFE_)) return -1;
   for (let j = 0; j < placed.length; j++) if (hitGap(R, placed[j])) return j + 1;
-  if (fx.blocked(R) || fx.onHead(R, cam.z) || (bodies && fx.onBody(R, cam.z))) return -1; // a head is a keep-out in every pass, relaxed or not (N4)
+  if (fx.blocked(R) || fx.onHead(R, cam.z) || (bodies && fx.onBody(R, cam.z)) || fx.onChamp(R, cam.z)) return -1; // a head is a keep-out in every pass, relaxed or not (N4)
   return 0;
 }
 const rectHit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
@@ -349,7 +349,7 @@ export function createFx(style) {
       for (let i = fx.impacts.length - 1; i >= 0; i--) if (now - fx.impacts[i].born >= fx.impacts[i].life) fx.impacts.splice(i, 1);
       for (let i = fx.pillars.length - 1; i >= 0; i--) if (now - fx.pillars[i].born >= fx.pillars[i].life) fx.pillars.splice(i, 1);
 
-      if (core) { fx.drawLoot(g, cam, core, now); fx.drawProjectiles(g, cam, atlas, core, now); }
+      if (core) { fx.drawLoot(g, cam, core, now); if (fx.plateDraw) fx.plateDraw(g); fx.drawProjectiles(g, cam, atlas, core, now); } // VFIX-R7: nameplates come after the loot icons, so no crate or star covers a name
 
       const sprites = { paper: atlas.get(keys.fx("paper")), plus: atlas.get(keys.fx("plus")), spark: atlas.get(keys.fx("spark")) };
       for (let i = 0; i < fx.parts.length; i++) {
@@ -511,6 +511,19 @@ export function createFx(style) {
         if (a.dead || a.hid || a.sx < r.x - 20 * z || a.sx > r.x + r.w + 20 * z) continue;
         const head = (style.dims[a.type]?.head ?? 50) * z;
         if (r.x < a.sx + 16 * z && a.sx - 16 * z < r.x + r.w && r.y < a.sy && a.sy - head < r.y + r.h) return true;
+      }
+      return false;
+    },
+
+    /** VFIX-R7 G1: a loot tag never covers a champion or boss (its face, crown and plate stay clear), even for a rare item or the hovered one. */
+    onChamp(r, z) {
+      const list = fx.bodies;
+      if (!list) return false;
+      for (let i = 0; i < list.length; i++) {
+        const a = list[i];
+        if (!(a.champ || a.boss) || a.dead || a.hid || a.sx < r.x - 24 * z || a.sx > r.x + r.w + 24 * z) continue;
+        const top = a.sy - (style.dims[a.type]?.head ?? 50) * z - 14 * z; // the head plus the crown above it
+        if (r.x < a.sx + 20 * z && a.sx - 20 * z < r.x + r.w && r.y < a.sy && top < r.y + r.h) return true;
       }
       return false;
     },
@@ -680,7 +693,7 @@ export function createFx(style) {
       const lt = fx.lt ?? (fx.lt = newLootState());
       const placed = fx.platesPlaced ?? (fx.platesPlaced = []);
       placed.length = 0; lt.vis = 0;
-      drawNpcMarkers(g, cam, core, fx.bodies, fx.npcMarkers ?? (fx.npcMarkers = []), style, fx.reducedMotion, now); // R7-0.7 quest markers over the Lobby NPCs
+      drawNpcMarkers(g, cam, core, fx.bodies, fx.npcMarkers ?? (fx.npcMarkers = []), style, fx.reducedMotion, now, fx.avoid); // R7-0.7 quest markers over the Lobby NPCs
       const list = core.groundItems, z = cam.z;
       if (!list || list.length === 0) return;
       const hero = core.player, hx = hero.tile.x, hy = hero.tile.y, size = Math.max(16, Math.round(6.5 * z)), dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -694,6 +707,7 @@ export function createFx(style) {
       const order = lt.order, n = order.length;
       // pass 1: beams (under everything else of the loot layer), pass 2: markers, pass 3 (drawLootPlates): plates
       let overHero = false;
+      const br = lt.r3 ?? (lt.r3 = { x: 0, y: 0, w: 0, h: 0 });
       for (let i = 0; i < n; i++) {
         const e = order[i], gi = e.gi;
         project(cam, gi.tile.x + 0.5, gi.tile.y + 0.5, pos);
@@ -701,19 +715,31 @@ export function createFx(style) {
         e.x = pos.x; e.my = pos.y - 14 * z - (gi.rarity === "unique" ? Math.sin(now / 400) * 1.5 * z : 0);
         if (e.on) {
           lt.vis++;
-          if (gi.quest) beam(g, "magic", e.colour, pos.x, pos.y - 4 * z, z, now); // a thin beam so the item is found from across the room
+          br.x = pos.x - 5 * z; br.y = pos.y - 70 * z; br.w = 10 * z; br.h = 66 * z;
+          const bk = fx.onChamp(br, z) ? 0.3 : 1; // VFIX-R7 G1: a beam through a champion's face is drawn faint
+          if (gi.quest) beam(g, "magic", e.colour, pos.x, pos.y - 4 * z, z, now, bk); // a thin beam so the item is found from across the room
           else if (gi.rarity) {
-            beam(g, gi.rarity, e.colour, pos.x, pos.y - 4 * z, z, now);
+            beam(g, gi.rarity, e.colour, pos.x, pos.y - 4 * z, z, now, bk);
             const bw = (gi.rarity === "magic" ? 2 : gi.rarity === "rare" ? 4.5 : 7) * z, bh = (gi.rarity === "magic" ? 52 : gi.rarity === "rare" ? 80 : 110) * z;
             if (pos.x + bw > hr.x && pos.x - bw < hr.x + hr.w && pos.y - 4 * z > hr.y && pos.y - 4 * z - bh < hr.y + hr.h) overHero = true;
           }
         }
       }
       if (overHero && fx.heroRedraw) fx.heroRedraw(g); // N3: a beam never crosses the hero's body: he is drawn over it
+      let markOverHero = false;
+      const mr = lt.r2 ?? (lt.r2 = { x: 0, y: 0, w: 0, h: 0 });
       for (let i = 0; i < n; i++) {
         const e = order[i];
-        if (e.on) { if (e.gi.quest) drawQuestSign(g, e.x, e.my, size * 1.1, e.colour, P.ink); else marker(g, P, e.gi, e.x, e.my, size * (e.gi.rarity === "unique" ? 1.15 : 1), e.colour); }
+        if (e.on) {
+          mr.x = e.x - size / 2; mr.y = e.my - size / 2; mr.w = size; mr.h = size;
+          const dim = fx.onChamp(mr, cam.z); // VFIX-R7 G1: an icon on a champion's body is drawn faint, so the face stays readable
+          if (dim) g.globalAlpha = 0.4;
+          if (e.gi.quest) drawQuestSign(g, e.x, e.my, size * 1.1, e.colour, P.ink); else marker(g, P, e.gi, e.x, e.my, size * (e.gi.rarity === "unique" ? 1.15 : 1), e.colour);
+          if (dim) g.globalAlpha = 1;
+          if (e.x + size > hr.x && e.x - size < hr.x + hr.w && e.my + size > hr.y && e.my - size < hr.y + hr.h) markOverHero = true;
+        }
       }
+      if (markOverHero && fx.heroRedraw) fx.heroRedraw(g); // VFIX-R7 N9: an item under the hero's feet never puts its star on his hat
       lt.size = size; lt.fs = fs; lt.dpr = dpr; lt.hc = !!fx.hc;
     },
 

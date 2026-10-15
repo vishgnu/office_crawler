@@ -474,6 +474,7 @@ R4-4 -> R6-1 ; R5 -> R6-2
 - R8-B3 (medium) first potions: price vs 50 start gold; bought potions go to the belt.
 - R8-AI1 (medium) deterministic re-click test in a crowd (adjacent attacker hit within 1.5 s).
 - R8-Q2/Q3 (low) close the inventory with the NPC window; second hand-in toast wording.
+- R8-M1 (low, from R7 visual G4) core mapMarkers lists the quest elite and the badge tile once seen; render already draws them.
 
 ### R8-0 Hero visuals follow equipped gear (customer request, first item of R8)
 - **Goal:** the hero's figure shows what is equipped in the visible slots (head, body, hands, feet, weapon, off-hand), for all

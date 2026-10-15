@@ -204,7 +204,7 @@ export function createPanels(root, game) {
     h += `</div>`;
     const xr = L.xp, xt = xpProgress(p);
     h += `<div class="xptip" data-testid="hud-xp" tabindex="-1" title="${esc(T.xpTotal)}: ${num(xt.total)}" aria-label="${esc(T.experience)} ${xt.pct}%, ${esc(T.xpTotal)} ${num(xt.total)}" style="left:${(xr.x - 2).toFixed(1)}px;top:${(xr.y - fs - 8).toFixed(1)}px;width:${(xr.w + 4).toFixed(1)}px;height:${(xr.h + fs + 10).toFixed(1)}px"></div>`;
-    const badge = (n, what) => (n > 0 ? `<span class="bdg" aria-label="${n} ${esc(what)}">${n}</span>` : "");
+    const badge = (n, what) => (n > 0 ? `<span class="bdg" aria-label="${n} ${esc(what)}">${n > 99 ? "99+" : n}</span>` : ""); // VFIX-R7 U1: "99+" keeps the phone dock inside the screen; the label keeps the real count
     h += `<div class="dock" role="group" aria-label="${esc(T.toggleLabel)}">`;
     h += `<button class="hbtn" type="button" data-testid="dock-inventory" data-fk="h.d.i" data-open="inventory" aria-pressed="${panels.inventory}"><span>${esc(T.openInventory)}</span><kbd>${esc(kl("inventory"))}</kbd></button>`;
     h += `<button class="hbtn" type="button" data-testid="dock-character" data-fk="h.d.c" data-open="character" aria-pressed="${panels.character}"><span>${esc(T.openCharacter)}</span><kbd>${esc(kl("character"))}</kbd>${badge(p.attrPoints, T.attrPointsBadge)}</button>`;
@@ -291,7 +291,7 @@ export function createPanels(root, game) {
     syncNpcFocus(leftOpen && u.left === "npc" && !!c.ui.dialog);
     syncTracker(c, D, leftOpen, rightOpen, menu);
     syncGhost();
-    syncToast();
+    syncToast(); layoutToast(D); syncToastDup();
     if (view.hoverKey && !itemFor(view.hoverKey)) hideTip(); // the item under the cursor was equipped, used, sold or dropped
     else if (!leftOpen && !rightOpen && !view.hoverEl?.closest?.("#hudui")) hideTip();
   }
@@ -320,10 +320,10 @@ export function createPanels(root, game) {
   /** One line for the pinned quest. It sits between the drawers and the dock, so it never covers a panel control. */
   function syncTracker(c, D, leftOpen, rightOpen, menu) {
     const t = el.tracker, tr = c.quests ? trackerOf(questView(c)) : null;
-    t.hidden = !tr || !!menu || c.scene === "dead" || (D.phone && (leftOpen || rightOpen));
+    t.hidden = !tr || !!menu || c.scene === "dead" || (D.phone ? leftOpen || rightOpen : leftOpen); // VFIX-R7 U2: no pill over an open left panel (it covered the Skills assign buttons)
     if (!tr) return;
     const s = hudLayout(game.w, game.h).scale;
-    if (D.phone) { t.style.left = "6px"; t.style.right = "6px"; t.style.top = "54px"; }
+    if (D.phone) { t.style.left = "6px"; t.style.right = "6px"; t.style.top = (game.w <= 340 ? 100 : 54) + "px"; } // at 340 px and under the dock wraps to two rows (CSS), the pill moves below them
     else {
       t.style.left = (leftOpen ? D.leftW + 8 : Math.round(12 * s)) + "px";
       t.style.right = ((rightOpen ? D.rightW + 8 : 8) + 140) + "px";
@@ -331,17 +331,34 @@ export function createPanels(root, game) {
     }
     const label = `${T.trackerLabel}: ${tr.title}`, text = tr.text;
     if (t.dataset.sig === label + "|" + text) return;
-    t.dataset.sig = label + "|" + text; t.dataset.quest = tr.id;
+    t.dataset.sig = label + "|" + text; t.dataset.quest = tr.id; t.dataset.line = `${tr.title}: ${text}`;
     t.querySelector(".tr-l").textContent = tr.title; t.querySelector(".tr-t").textContent = text;
     t.title = `${tr.title}: ${text}`; t.setAttribute("aria-label", `${label}. ${text}`);
   }
 
   // ------------------------------------------------------------ toast + live region
+  /** VFIX-R7 U3/U4: the toast sits just above the HUD (never over the potion belt) and, on the desktop, in the free gap between the open drawers (never over a panel). */
+  function layoutToast(D) {
+    const w = game.w, L = D.phone ? 0 : (game.ui.left ? D.leftW : 0), R = D.phone ? 0 : (game.ui.inventory ? D.rightW : 0);
+    const free = Math.max(200, w - L - R), cx = L + (w - L - R) / 2;
+    const st = el.toast.style;
+    st.setProperty("--tb", Math.max(0, game.h - Math.floor(D.hudTop) + (D.phone ? 4 : 8)) + "px");
+    st.setProperty("--tw", (D.phone ? Math.round(w * 0.96) : Math.round(Math.min(560, free - 24))) + "px");
+    st.left = ((cx / w) * 100).toFixed(2) + "%";
+  }
+  /** VFIX-R7 U5: one sentence shows once. A toast that repeats the tracker pill, or the red alert that is on screen in the NPC window, is hidden (it stays in the live region). */
+  function syncToastDup() {
+    const tx = el.toast.textContent;
+    const pill = !el.tracker.hidden && el.tracker.dataset.line === tx;
+    const al = el.left.querySelector(".nq-warn");
+    const alert = !!al && al.getClientRects().length > 0 && al.textContent === tx;
+    el.toast.classList.toggle("dup", !el.toast.hidden && (pill || alert));
+  }
   function syncToast() {
     const t = game.ui.toast;
     if (!t || t === view.toastObj) return; // by identity: game.toast restarts its ids at 1 after the timer cleared the last one, which could equal the id shown before
     view.toastObj = t; view.toastId = t.id;
-    el.toast.textContent = t.text; el.toast.hidden = false;
+    el.toast.textContent = t.text; el.toast.title = t.text; el.toast.hidden = false;
     el.live.textContent = ""; el.live.textContent = t.text;
     clearTimeout(view.toastTimer);
     view.toastTimer = setTimeout(() => { el.toast.hidden = true; if (game.ui.toast?.id === t.id) game.ui.toast = null; }, t.ms ?? 3200);

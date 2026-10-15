@@ -67,7 +67,7 @@ export const isPhone = (w, h) => w <= PHONE_MAX_W || h <= PHONE_MAX_H;
  * health mug and mana jug so the vessels stay visible; the world camera re-centres the hero in the gap that stays free.
  * Cells are 44 px from 1024 px up (the decision's minimum), 40 px on the narrow desktop band; on a phone the grid fits the width.
  */
-export const TOAST_LANE = 40; // phone: a strip under an open drawer where the toast sits, so it never covers the panel's action buttons
+export const TOAST_LANE = 48; // phone: a strip under an open drawer where the toast (at most two lines) sits, so it never covers the panel's action buttons or the potion belt
 export function drawerLayout(w, h) {
   const L = hudLayout(w, h), phone = isPhone(w, h);
   const vesselTop = Math.min(L.health.rect.y, L.mana.rect.y), hudTop = Math.min(L.panel.y, L.beltPanel.y, vesselTop);

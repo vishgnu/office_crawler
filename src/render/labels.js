@@ -34,6 +34,15 @@ export function lineCrossesBody(x1, y1, x2, y2, actors, self, cam, style, heroR)
   }
   return false;
 }
+/** Champion mark: a small crown (three points) sitting on the head, centred at (x, y) = its base; s = UI scale. */
+function drawCrown(g, x, y, s, colour, ink) {
+  const w = 17 * s, h = 12 * s, l = x - w / 2, t = y - h;
+  g.save(); g.lineJoin = "round"; g.lineWidth = Math.max(2.2, 2.4 * s); g.strokeStyle = ink; g.fillStyle = colour;
+  g.beginPath(); g.moveTo(l, y); g.lineTo(l - 0.5 * s, t + 1 * s); g.lineTo(l + w * 0.27, t + h * 0.42); g.lineTo(x, t); g.lineTo(l + w * 0.73, t + h * 0.42); g.lineTo(l + w + 0.5 * s, t + 1 * s); g.lineTo(l + w, y); g.closePath();
+  g.stroke(); g.fill();
+  g.fillStyle = "#fff4c2"; g.beginPath(); g.arc(x, y - h * 0.3, Math.max(1.3, 1.5 * s), 0, Math.PI * 2); g.fill();
+  g.restore();
+}
 const overlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 const BR = { x: 0, y: 0, w: 0, h: 0 };
 const GAP = 4; // minimum gap between stacked plates, px (round G fix: de-collision with a vertical push and a gap)
@@ -41,7 +50,7 @@ const overlapGap = (a, b) => a.x < b.x + b.w + GAP && b.x < a.x + a.w + GAP && a
 
 export function createLabels(style) {
   const P = style.palette, cache = new Map();
-  const placed = Array.from({ length: MAX_PLATES }, () => ({ x: 0, y: 0, w: 0, h: 0, ax: 0, ay: 0, sprite: null, ratio: 0, moved: false, line: true, id: "", name: "" }));
+  const placed = Array.from({ length: MAX_PLATES }, () => ({ x: 0, y: 0, w: 0, h: 0, ax: 0, ay: 0, sprite: null, ratio: 0, moved: false, line: true, id: "", name: "", crown: false, cs: 1, cx: 0, cy: 0 }));
   const cand = [], pips = Array.from({ length: MAX_PIPS }, () => ({ x: 0, y: 0, w: 0, h: 0, ratio: 0, id: "", fade: 1 }));
   let pipN = 0;
   const heroRect = { x: 0, y: 0, w: 0, h: 0 };
@@ -109,12 +118,23 @@ export function createLabels(style) {
         if (dup) continue;
         const head = style.dims[a.type]?.head ?? 50;
         const sp = L.sprite(a.name, fs, hc, dpr, !a.npc, a.sub, a.champ), r = placed[n];
-        const ax = Math.round(a.sx), ay = Math.round(a.sy - head * z - 5 * s);
+        const crown = a.champ ? Math.round(10 * s) : 0; // VFIX-R7 G1: a champion wears a crown on its head, the plate sits above the crown
+        const ax = Math.round(a.sx), ay = Math.round(a.sy - head * z - 5 * s) - crown;
+        r.crown = !!a.champ; r.cs = s; r.cx = Math.round(a.sx); r.cy = Math.round(a.sy - head * z - 5 * s) + Math.round(3 * s);
         r.w = sp.w; r.h = sp.h; r.sprite = sp; r.ax = ax; r.ay = ay; r.id = a.id; r.name = a.name; r.ratio = a.hpMax > 0 ? Math.max(0, Math.min(1, a.hp / a.hpMax)) : 0;
         let ok = false;
-        for (let k = 0; k < 5 && !ok; k++) {
-          r.x = Math.min(cam.w - SAFE - r.w, Math.max(SAFE, ax - Math.round(r.w / 2)));
-          r.y = Math.max(SAFE, ay - r.h - k * (r.h + 3));
+        // VFIX-R7 G1: when the spot right above the head is taken (hero keep-out, another body), try the plate beside the head at the same height first
+        // (short leader line), and only then stack it upward (a long stem detached the plate from its actor)
+        const sideStep = Math.round(r.w * 0.5 + 20 * z);
+        for (let k = 0; k < 9 && !ok; k++) {
+          if (k >= 1 && k <= 4) { // beside the head: right, left, then a wider step each way
+            const dx = (k & 1 ? 1 : -1) * (k <= 2 ? sideStep : Math.round(sideStep * 1.6));
+            r.x = Math.min(cam.w - SAFE - r.w, Math.max(SAFE, ax - Math.round(r.w / 2) + dx));
+            r.y = Math.max(SAFE, ay - Math.round(r.h * 0.5) - Math.round(8 * z));
+          } else {
+            r.x = Math.min(cam.w - SAFE - r.w, Math.max(SAFE, ax - Math.round(r.w / 2)));
+            r.y = Math.max(SAFE, ay - r.h - (k === 0 ? 0 : k - 4) * (r.h + 3));
+          }
           ok = !overlap(r, heroRect) && !onSprite(r, actors, a, cam, style);
           for (let j = 0; j < n && ok; j++) if (overlapGap(r, placed[j])) ok = false;
           for (let j = 0; j < obstacles.length && ok; j++) if (overlap(r, obstacles[j])) ok = false;
@@ -192,6 +212,7 @@ export function createLabels(style) {
           g.lineCap = "round"; g.strokeStyle = P.ink; g.lineWidth = 3.4; g.beginPath(); g.moveTo(r.x + r.w / 2, r.y + r.h); g.lineTo(r.ax, r.ay); g.stroke();
           g.strokeStyle = "#f3eefc"; g.lineWidth = 1.4; g.stroke();
         }
+        if (r.crown) drawCrown(g, r.cx, r.cy, r.cs, "#f6c945", P.ink);
         g.drawImage(sp.c, r.x, r.y, sp.w, sp.h);
         if (!sp.bar) continue;
         const bw = sp.barW * r.ratio;

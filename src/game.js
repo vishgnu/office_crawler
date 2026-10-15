@@ -3,7 +3,7 @@
 import { newGame, step, applyInput, snapshot, hashState, advance, config, spawnMonster, content, setLevel, setHp, teleportFloor, giveGold, spawnItem, takeGround, canPlace } from "./core/index.js";
 import { setQuestStep, completeQuest } from "./core/cheats.js";
 import { makeCamera, easeFollow } from "./ui/camera.js";
-import { hudLayout, cameraInset } from "./ui/layout.js";
+import { hudLayout, cameraInset, drawerLayout } from "./ui/layout.js";
 import { T } from "./ui/text.js";
 import { panelFor } from "./input/keys.js";
 import { resolveKey } from "./input/keymap.js";
@@ -46,7 +46,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     const u = game.ui;
     if (!game.core) { u.left = null; u.inventory = false; u.tooltip = null; u.map = false; return; }
     if (!game.core.ui.dialog || (u.questNotice && game.core.inventory.items.length < (u.questNoticeN ?? 0))) u.questNotice = null; // ADV-R7-06: the bag-full line goes once the hero has made room (fewer items than at the refusal)
-    if (u.left === "npc" && !game.core.ui.dialog) { u.left = null; if (u.inventory) u.front = "inventory"; u.tooltip = null; }
+    if (u.left === "npc" && !game.core.ui.dialog) { u.left = null; if (u.inventory && u.invByDialog && !game.core.cursorItem) u.inventory = false; /* R8-Q2: the bag the dialog opened closes with it */ u.invByDialog = false; if (u.inventory) u.front = "inventory"; u.tooltip = null; }
   };
   const emitChange = () => {
     syncUi();
@@ -66,7 +66,8 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (!game.core) return;
     if (ev.type === "floorEnter" && portalToast) return;
     const m = messageFor(ev, game.core);
-    if (m) game.toast(m, ev.type.startsWith("quest.") ? config.quests.toastMs : undefined, { quest: QUEST_LINES.has(ev.type), passive: PASSIVE_LINES.has(ev.type), kind: ev.type }); // a quest line stays for config.quests.toastMs (AC-R-254-2)
+    if (ev.type === "quest.completed") game.toastDrop(ev.id); // R8-Q3: a "return for your reward" line still waiting for this quest would show after it is handed in and look like a repeat
+    if (m) game.toast(m, ev.type.startsWith("quest.") ? config.quests.toastMs : undefined, { quest: QUEST_LINES.has(ev.type), passive: PASSIVE_LINES.has(ev.type), kind: ev.type, qid: ev.type.startsWith("quest.") ? ev.id : undefined }); // a quest line stays for config.quests.toastMs (AC-R-254-2)
     if (ev.type === "portalOpen" || ev.type === "portalUse") portalToast = true;
   });
   // R7: a new, advanced or completed quest lights the journal badge (cleared when the journal opens); the open journal and the tracker redraw on every change
@@ -77,7 +78,8 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   // R7: the bag-full line of a refused hand-in stays in the NPC window until the dialog closes or the quest is done
   bus.on("quest.handInRefused", (ev) => { game.ui.questNotice = ev.id; game.ui.questNoticeN = game.core?.inventory.items.length ?? 0; });
   bus.on("quest.completed", () => { game.ui.questNotice = null; });
-  bus.on("dialog", () => { game.ui.questNotice = null; game.ui.left = "npc"; game.ui.inventory = true; game.ui.front = "left"; game.ui.vendorTab = "buy"; });
+  // R8-Q2: the Desk Drawer opens with a trading NPC window (vendor, stash: AC-R-073-3) only while the play area between the two drawers stays at least 35% of the width (1280 px: 36%); a healer needs no bag, so it never opens it; on a phone one panel shows at a time, so it stays as before
+  bus.on("dialog", () => { const D = drawerLayout(game.w, game.h), kind = game.core?.ui.dialog?.kind, had = game.ui.inventory; game.ui.questNotice = null; game.ui.left = "npc"; game.ui.inventory = D.phone || (kind !== "healer" && game.w - D.leftW - D.rightW >= 0.35 * game.w); game.ui.invByDialog = !had && !D.phone && game.ui.inventory; game.ui.front = "left"; game.ui.vendorTab = "buy"; });
   // run summary for the death screen, derived from the event stream (the core keeps no kill counter)
   game.run = { kills: 0 };
   bus.on("kill", () => { if (game.core) game.run.kills++; });
@@ -282,7 +284,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     const u = game.ui;
     const was = isOpen(name);
     if (name === "map") { u.map = true; u.tooltip = null; if (!was) bus.emit({ type: "ui:open" }); emitChange(); return { ok: true }; }
-    if (name === "inventory") { u.inventory = true; u.front = "inventory"; }
+    if (name === "inventory") { u.inventory = true; u.invByDialog = false; u.front = "inventory"; }
     else if (isLeft(name)) {
       if (u.left === "npc" && name !== "npc" && game.core.ui.dialog) game.input({ t: "closeDialog" });
       u.left = name; u.front = "left";
@@ -296,7 +298,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   game.closePanel = (name) => {
     const u = game.ui, was = isOpen(name);
     if (name === "map") { u.map = false; if (was) bus.emit({ type: "ui:close" }); emitChange(); return { ok: true }; }
-    if (name === "inventory") { u.inventory = false; if (u.left) u.front = "left"; }
+    if (name === "inventory") { u.inventory = false; u.invByDialog = false; if (u.left) u.front = "left"; }
     else if (isLeft(name) && u.left) { if (u.left === "npc" && game.core?.ui.dialog) game.input({ t: "closeDialog" }); u.left = null; if (u.inventory) u.front = "inventory"; }
     else return { ok: false, error: "unknown panel" };
     u.tooltip = null;
@@ -340,10 +342,11 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
       tq.timer = setTimeout(() => { tq.timer = 0; tq.until = 0; const nx = tq.q.shift(); if (nx) { showToast({ ...nx, hold: true }); emitChange(); } }, n.ms ?? 3200);
     } else tq.q.length = 0;
   };
+  game.toastDrop = (qid) => { if (qid) tq.q = tq.q.filter((w) => w.qid !== qid); };
   game.toastReset = () => { tq.q.length = 0; clearTimeout(tq.timer); tq.timer = 0; tq.until = 0; };
   /** `opt.quest`: a quest line (holds the lane). `opt.passive`: a world event line (waits behind a held quest line, keyed by `opt.kind` so a newer one of the kind replaces it). */
   game.toast = (text, ms, opt = {}) => {
-    const n = { text, ms, hold: !!opt.quest, kind: opt.kind };
+    const n = { text, ms, hold: !!opt.quest, kind: opt.kind, qid: opt.qid };
     if (opt.passive && game.ui.toast && tq.until > performance.now()) {
       if (game.ui.toast.text === text) return;
       tq.q = tq.q.filter((w) => w.kind !== n.kind && w.text !== text);
@@ -494,7 +497,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
       const L = layoutFor(game.w, game.h);
       labels.place(out.actors, c, L.scale, game.core.player.target, game.hover, out.heroScreen, hudRects(L), game.hc, game.dpr);
       labels.collect(fx.avoid, fx.avoidSegs); // loot plates and floaters keep clear of the nameplates, pips and leader lines
-      labels.draw(g);
+      fx.plateDraw = labels.draw; // nameplates are drawn by fx.draw, after the loot icons (VFIX-R7)
     }
     fx.draw(g, c, atlas, now, out.heroDir);
     if (!game.reduced()) fx.drawHurt(g, game.w, game.h, now);

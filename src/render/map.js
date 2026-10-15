@@ -142,9 +142,10 @@ export function createMap(style) {
     drawFull(g, core, w, h, now, hc) {
       const ex = exploredOf(core);
       g.fillStyle = "rgba(7,5,24,0.74)"; g.fillRect(0, 0, w, h);
-      const phone = isPhone(w, h), titleH = phone ? 40 : 52, footH = 38, pad = phone ? 8 : 24;
+      const phone = isPhone(w, h), titleH = phone ? 40 : 52, legH = 30, footH = (phone ? 96 : Math.max(140, Math.round(h * 0.2))) + legH - 38, pad = phone ? 8 : 24; // VFIX-R7 G3: the card (map + legend) ends above the hotbar
       const f = core.floor;
       const title = core.depth > 0 ? `${T.floorWord} ${core.depth}: ${f.name}` : f.name;
+      g.fillStyle = hc ? "#000" : "rgba(7,5,24,0.97)"; g.fillRect(0, 0, w, titleH + 4); // VFIX-R7 G3: a solid band behind the title, so an NPC marker of the world never shows through it
       g.textAlign = "center"; g.textBaseline = "alphabetic"; g.lineJoin = "round";
       g.font = `800 ${phone ? 17 : 22}px ${FONT}`; g.lineWidth = 5; g.strokeStyle = P.ink; g.strokeText(`${T.mapTitle}: ${title}`, w / 2, titleH - 14); g.fillStyle = "#f3eefc"; g.fillText(`${T.mapTitle}: ${title}`, w / 2, titleH - 14);
       if (!ex) { g.font = `700 16px ${FONT}`; g.fillStyle = "#c9c3ec"; g.fillText(T.mapUnexplored, w / 2, h / 2); return; }
@@ -157,13 +158,13 @@ export function createMap(style) {
       const bw = x1 - x0 + 1, bh = y1 - y0 + 1, availW = w - pad * 2 - 16, availH = h - titleH - footH - pad - 16;
       const sc = Math.max(2, Math.min(14, availW / bw, availH / bh)), mw = bw * sc, mh = bh * sc;
       const rect = { x: Math.round((w - mw) / 2), y: Math.round(titleH + (availH - mh) / 2 + 8), w: Math.round(mw), h: Math.round(mh) };
-      frame(g, { x: rect.x - 8, y: rect.y - 8, w: rect.w + 16, h: rect.h + 16 }, hc, 0.95);
+      frame(g, { x: rect.x - 8, y: rect.y - 8, w: rect.w + 16, h: rect.h + 16 + legH }, hc, 0.95);
       g.save(); g.beginPath(); g.roundRect(rect.x - 4, rect.y - 4, rect.w + 8, rect.h + 8, 5); g.clip();
       g.imageSmoothingEnabled = false; g.drawImage(b.c, x0 * CELL, y0 * CELL, bw * CELL, bh * CELL, rect.x, rect.y, rect.w, rect.h); g.imageSmoothingEnabled = true;
       g.restore();
       markers(g, core, ex, (tx, ty) => ({ x: rect.x + (tx - x0) * sc, y: rect.y + (ty - y0) * sc }), Math.max(3.5, Math.min(8, sc * 0.9)), now, { x: rect.x - 6, y: rect.y - 6, w: rect.w + 12, h: rect.h + 12 }, { w });
       g.font = `700 ${phone ? 12 : 14}px ${FONT}`; g.lineWidth = 4; g.strokeStyle = P.ink;
-      const ly = Math.min(h - 12, rect.y + rect.h + 34);
+      const ly = rect.y + rect.h + 8 + legH - 12; // inside the card, under the map
       g.strokeText(T.mapLegend, w / 2, ly); g.fillStyle = "#c9c3ec"; g.fillText(T.mapLegend, w / 2, ly);
     },
   };
