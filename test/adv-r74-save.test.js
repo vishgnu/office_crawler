@@ -222,7 +222,7 @@ test("[R74-migrate] MIGRATIONS[4] is pure and total: it never throws on hostile 
 });
 
 test("[R74-migrate] a version 6 text is `newer`, a corrupt v4 text ends corrupt without an exception, a v4 text with a bad checksum is refused, and 400 mutated v4 texts never throw", () => {
-  const v5 = JSON.parse(serialize(fresh(3))); v5.version = 6;
+  const v5 = JSON.parse(serialize(fresh(3))); v5.version = 7; // CR8-07: the current version is 6, so 7 is the first newer one
   const n = deserialize(seal(v5));
   assert.equal(n.ok, false); assert.equal(n.reason, "newer");
   const text = v4Text(fresh(3));
@@ -239,7 +239,7 @@ test("[R74-migrate] a version 6 text is `newer`, a corrupt v4 text ends corrupt 
     if (rnd(4) === 0) delete tgt[k]; else tgt[k] = val;
     let r;
     assert.doesNotThrow(() => { r = deserialize(rnd(2) ? seal(o) : JSON.stringify(o)); });
-    if (r.ok) { accepted++; const again = deserialize(serialize(r.state)); assert.ok(again.ok, `accepted a save that does not survive a write: ${again.message}`); assert.equal(JSON.parse(serialize(r.state)).version, 5); }
+    if (r.ok) { accepted++; const again = deserialize(serialize(r.state)); assert.ok(again.ok, `accepted a save that does not survive a write: ${again.message}`); assert.equal(JSON.parse(serialize(r.state)).version, config.saveVersion); }
   }
   assert.ok(accepted >= 0);
 });

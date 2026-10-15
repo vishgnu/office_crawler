@@ -38,8 +38,8 @@ test("AC-R-251-2 each fixture loads in v5 with the derived main step, all five s
   for (const [i, [name, step, depth]] of FIX.entries()) {
     const r = deserialize(fx(`save-v3-${name}`));
     assert.equal(r.ok, true, `${name}: ${r.message}`);
-    assert.equal(r.save.version, 5);
-    assert.deepEqual(r.notes, [], "no notice for 3 to 5");
+    assert.equal(r.save.version, 6); // CR8-07: v3 -> ... -> 6
+    assert.deepEqual(r.notes, [], "no notice for 3 to 6");
     const q = r.state.quests;
     assert.equal(mainStep(q.main.m), step, name); assert.equal(q.main.m.depth, depth, name);
     assert.deepEqual([q.sq1, q.sq2, q.sq3, q.sq4, q.sq5], Array(5).fill({ s: "available", p: 0 })); assert.equal(q.pinned, PIN[i], name); assert.deepEqual(r.state.player.pouch, []);
@@ -87,11 +87,11 @@ test("derived depth rule: 'ever descended' is deepestDepth >= 2, explored[1], re
   assert.deepEqual(flags((j) => { j.bossUnlocked = true; j.deepestDepth = 8; }), [true, true, false, false]);
 });
 
-test("chains: version 0, 1 and 2 saves end as version 5 with a quest block, and a Clerk save still reports its refund note", () => {
+test("chains: version 0, 1 and 2 saves end as version 6 with a quest block, and a Clerk save still reports its refund note", () => {
   for (const f of ["save-v0", "save-v1", "save-v2-r5-fm", "save-v2-r5-it", "save-v2-r5-sales"]) {
     const old = JSON.parse(fx(f)), r = deserialize(fx(f));
     assert.equal(r.ok, true, `${f}: ${r.message}`);
-    assert.equal(r.save.version, 5, f); assert.ok(r.save.quests, f);
+    assert.equal(r.save.version, 6, f); assert.ok(r.save.quests, f);
     assert.equal(mainStep(r.state.quests.main.m) >= 1, true);
     assert.deepEqual(r.state.quests.pinned, activeMainId(r.state.quests.main.m), f);
     const again = deserialize(serialize(r.state)); assert.equal(again.ok, true, f); assert.deepEqual(again.notes, [], f);

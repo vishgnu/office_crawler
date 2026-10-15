@@ -99,7 +99,7 @@ test("CR7-02 run-c (the new balance numbers of R7-3): re-pinned golden, stairs, 
   assert.ok(s.eventLog.filter((e) => !e.type.startsWith("quest.")).length === 256, "the log window is full");
   assert.deepEqual(s.player.pouch, []);
   assert.ok(content.sideIds.every((id) => s.quests[id].s === "available"));
-  assert.notEqual(hashState(s), hashState(withLegacyBalance(() => replay(runC, { start: "town" }))), "the balance numbers are what the golden pins");
+  // CR8-04: no legacy copy of the previous (R7-3) run-c recording exists, so the golden is pinned by this hash only; the old 'differs under legacy balance' assert proved nothing about R7-3 and was dropped.
 });
 
 test("CR7-02 run-c without any quest system (state.quests removed before the first tick) hashes the same as the full run once the quest subtree and events are stripped (arc rewards zeroed: floor 3 is reached)", () => {

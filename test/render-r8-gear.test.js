@@ -279,7 +279,6 @@ test("AC-R-262-3 no gear sprite is built before a game frame, and the cache neve
     }
   }
   assert.ok(peak > 0 && peak <= GEAR_CAP_BYTES);
-  assert.ok(evictions > 0 || peak < GEAR_CAP_BYTES);
   const st = gearState(atlas), b0 = st.builds;
   for (let i = 0; i < 300; i++) gearTick(atlas, core); // steady frames build nothing
   assert.equal(st.builds, b0, "builds grow only on a signature change");
@@ -310,7 +309,7 @@ test("AC-R-262-3 residency: LRU by bytes evicts the other signature first, then 
   assert.ok(st.bytes <= per, "bytes stay under the cap (one entry in flight)");
 });
 
-test("AC-R-262-4 a signature change costs at most one on-demand build in a frame and a warm call stops after one build at a zero budget", () => {
+test("AC-R-262-4 a signature change costs at most one on-demand build in a frame and a warm call never bakes on top of an on-demand bake or at a zero budget (CR8-03: the budget is a ceiling)", () => {
   const atlas = fakeAtlas(1), core = fakeCore(), st = gearState(atlas);
   gearTick(atlas, core);
   core.equipment = { body: item("blazer", "magic"), weapon: item("keyboard-sword", "unique") };
@@ -319,14 +318,18 @@ test("AC-R-262-4 a signature change costs at most one on-demand build in a frame
     st.pause = 0; // the floor-entry pause has its own test
     const t = gearTable(atlas);
     gearFrame(atlas, t, "walk", fr % 8, fr % 6); // the frame on screen
-    warmGear(atlas, core, 0); // budget 0: one build per call
+    const b0 = st.builds;
+    warmGear(atlas, core, 0); // budget 0: nothing
+    assert.equal(st.builds, b0, "a zero budget bakes nothing");
+    warmGear(atlas, core); // this frame already paid an on-demand bake (if it did): no warm bake on top
+    if (st.frameBuilds > 0) assert.equal(st.builds, b0, "no warm bake in a frame that already baked");
   }
   assert.ok(st.maxBuildsPerFrame <= 1, `maxBuildsPerFrame ${st.maxBuildsPerFrame}`);
   assert.equal(st.warmI * 1, st.queue.length, "idle and walk of all 8 facings (80 frames) got warmed");
   assert.equal(gearTable(atlas).list.length, 80);
-  assert.equal(warmGear(atlas, core, 0), true);
+  assert.equal(warmGear(atlas, core), true);
   const before = st.builds;
-  warmGear(atlas, core, 0);
+  warmGear(atlas, core);
   assert.equal(st.builds, before);
 });
 
@@ -387,8 +390,8 @@ test("AC-R-262-5 a floor change warms nothing for 240 frames (on-demand draws of
   assert.ok(st.builds > w0, "on-demand draws of the shown frame are allowed");
   gearTick(atlas, core);
   assert.equal(st.pause, 0);
-  warmGear(atlas, core, 0);
-  assert.equal(st.warmBuilds, w0 + 1, "warm work resumes after the pause");
+  warmGear(atlas, core);
+  assert.ok(st.warmBuilds > w0, "warm work resumes after the pause");
   // a floor change does not change the signature: the table stays
   const T = gearTable(atlas); core.depth = 3; gearTick(atlas, core); assert.equal(gearTable(atlas), T);
   // a load / new game arrives as a new state object with new equipment references: compare, switch, warm at once

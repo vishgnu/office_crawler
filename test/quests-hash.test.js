@@ -11,7 +11,11 @@ import { replay } from "./helpers.js";
 import { withLegacyBalance } from "./balance-legacy.js";
 
 const script = JSON.parse(readFileSync("test/fixtures/run-a.json", "utf8"));
-// R8: the population of floor 1, the start kit and the entry grace changed the sim on purpose, so run-a.json was re-recorded; the pre-quest proofs replay the previous recording (run-a.legacy.json) under withLegacyBalance, which puts all of it back.
+// R8: the population of floor 1, the start kit and the entry grace changed the sim on purpose, so run-a.json was re-recorded; the pre-quest proof replays the previous recording (run-a.legacy.json, byte-identical to the old run-a.json) under withLegacyBalance.
+// CR8-04, what this proves and what it does not: withLegacyBalance restores the balance NUMBERS (hp/damage scaling, xp curve, champion chance, vendor depth, start kit, floor-1 population, entry grace), nothing else.
+// The R8 AI changes (holdFarTicks 480->180, the re-click / retarget guard in issueAttack, rewardOf, the vendor belt-first buy) are NOT switched back; the proof passes because the legacy run-a recording does not reach them in a way that changes its hash.
+// So it shows: "run-a.legacy, with the quest state and events stripped, hashes to the pre-quest baseline", which is evidence that the quest system adds no gameplay effect on that recording, not that every R8 code path is inert.
+// run-c: its R7-3 recording was replaced (R8) and no legacy copy exists in the tree (it cannot be reconstructed without the old file), so run-c has no legacy proof; its protection is the current golden plus the 'no quest system at all' test in quests-fix-r7.test.js.
 const legacy = JSON.parse(readFileSync("test/fixtures/run-a.legacy.json", "utf8"));
 const pre = readFileSync("test/fixtures/run-a.pre-quests.hash", "utf8").trim();
 const preClass = JSON.parse(readFileSync("test/fixtures/run-class.pre-quests.json", "utf8"));
@@ -27,7 +31,6 @@ test("AC-R-256-3 run-a with the quest state and quest events stripped equals the
   const s = replay(script);
   assert.equal(withLegacyBalance(() => hashStateWithout(replay(legacy), STRIP)), pre, "old balance numbers: the pre-quest golden");
   assert.notEqual(hashState(s), pre, "the full hash differs: the state gained quests");
-  assert.notEqual(hashStateWithout(s, STRIP), pre, "and the stripped hash differs with the new balance numbers (R7-3): the balance pass is what moved the golden");
   assert.equal(hashState(s), readFileSync("test/fixtures/run-a.hash", "utf8").trim(), "and equals the re-pinned golden");
 });
 

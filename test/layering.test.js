@@ -41,3 +41,26 @@ test("the bot policy is pure: no DOM, clocks, timers or Math.random", () => {
   const banned = /\b(window|document|navigator|Date|performance|setTimeout|setInterval|requestAnimationFrame)\b|Math\.random/;
   for (const f of ["bot/policy.js", "bot/report.js"]) assert.ok(!banned.test(strip(readFileSync(f, "utf8"))), `${f} uses a forbidden global`);
 });
+
+// CR8-06: the gear signature grammar has one home (src/shared/look.js) and the layers that must not see render/ do not.
+test("CR8-06 save/ and ui/ import nothing from render/, and src/shared/ is pure (no imports, no DOM, no clock)", () => {
+  for (const f of [...files("src/save"), ...files("src/ui")].filter((x) => x.endsWith(".js"))) {
+    for (const m of strip(readFileSync(f, "utf8")).matchAll(/from\s+"([^"]+)"/g)) {
+      assert.ok(!resolve(dirname(f), m[1]).startsWith(resolve("src/render")), `${f} imports from render/: ${m[1]}`);
+    }
+  }
+  const shared = files("src/shared").filter((x) => x.endsWith(".js"));
+  assert.ok(shared.length > 0);
+  for (const f of shared) {
+    const src = strip(readFileSync(f, "utf8"));
+    assert.ok(!/^\s*import\s|\bfrom\s+"/m.test(src), `${f} has an import`);
+    assert.ok(!/\b(window|document|navigator|localStorage|Date|performance|setTimeout|requestAnimationFrame|OffscreenCanvas)\b|Math\.random/.test(src), `${f} uses a forbidden global`);
+  }
+});
+
+test("CR8-06 the signature regex is written once in src/ (shared/look.js); render, save and ui use that one", () => {
+  const re = /\[-a-z0-9\]\{1,4\}\(\\\|\[-a-z0-9\]\{1,4\}\)\{5\}/;
+  const hits = files("src").filter((f) => f.endsWith(".js") && re.test(readFileSync(f, "utf8")));
+  assert.deepEqual(hits.map((f) => f.replace(/\\/g, "/")), ["src/shared/look.js"]);
+  for (const f of ["src/save/slots.js", "src/ui/slots.js", "src/render/gearlooks.js"]) assert.match(readFileSync(f, "utf8"), /shared\/look\.js/, `${f} imports the shared module`);
+});

@@ -79,7 +79,7 @@ for (const [name, mut] of BAD) {
     assert.equal(r.ok, false, name);
   });
 }
-test("[R8-owed-forge] ADV-R8-01 an item whose id is not below nextItemId is rejected (else the next minted item collides with it)", { todo: "ADV-R8-01: the save validator checks ids for uniqueness only, not against nextItemId; a forged bag, belt or owed item with a future id collides with the item minted later (same gap in every item location, not only owed)" }, () => {
+test("[R8-owed-forge] ADV-R8-01 an item whose id is not below nextItemId is rejected (else the next minted item collides with it)", () => {
   const s = owing(3, "facilities-manager", "sq3");
   const r = forge(s, (o) => { o.quests.owed[0].id = "i" + (o.nextItemId + 5); });
   const bagCase = forge(s, (o) => { o.inventory.items[0].id = "i" + (o.nextItemId + 5); });
@@ -224,7 +224,7 @@ test("[R8-owed-free] a big gear piece waits while single cells free up, potions 
   assert.equal(s.inventory.items.filter((i) => i.id === g.id).length, 1);
 });
 
-test("[R8-owed-free] ADV-R8-02 lifting an item onto the cursor to rearrange a full bag does not let an owed item take the cell the hero just freed", { todo: "ADV-R8-02: settleOwed fills any free cell on the next tick, also the one the hero is holding the cursor over; the lifted item can then not go back and may have nowhere to go" }, () => {
+test("[R8-owed-free] ADV-R8-02 lifting an item onto the cursor to rearrange a full bag does not let an owed item take the cell the hero just freed", () => {
   const s = owing(32, "facilities-manager", "sq3");
   const it = s.inventory.items[0];
   const cell = { x: it.x, y: it.y };

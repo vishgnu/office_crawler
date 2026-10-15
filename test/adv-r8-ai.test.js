@@ -38,7 +38,7 @@ test("[R8-ai] ranged classes answer at once (they fire past the crowd), whatever
   }
 });
 
-test("[R8-ai] ADV-R8-03 a melee hero whose player clicks every tick or every second tick (an auto-clicker, a 30 to 60 Hz touch repeat) still answers the attacker in front of it", { todo: "ADV-R8-03: issueAttack clears p.goal at every click and the retarget needs p.goal, so a click on every tick or every second tick keeps the hero standing for ever (600 ticks: 0 hits, 26 hp lost); every third tick already works" }, () => {
+test("[R8-ai] ADV-R8-03 a melee hero whose player clicks every tick or every second tick (an auto-clicker, a 30 to 60 Hz touch repeat) still answers the attacker in front of it", () => {
   for (const every of [1, 2]) {
     const r = crowd("facilities-manager", every);
     assert.ok(r.firstHit !== null && r.firstHit <= 150, `click every ${every}: first hit at ${r.firstHit}`);

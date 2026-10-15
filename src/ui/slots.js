@@ -10,6 +10,7 @@ import { validateName } from "../core/name.js";
 import { T } from "./text.js";
 import { figures } from "./figureHost.js";
 import { createSaveStatus, trapDialog } from "./savestatus.js";
+import { cleanLook } from "../shared/look.js"; // CR8-06: the one signature grammar (shared with save and render)
 
 const S = content.strings;
 const SLOT_COUNT = 5;
@@ -32,9 +33,9 @@ export const markUndo = (slot, kind) => undoable.set(slot, kind);
 // ---- ID-badge bust: the class figure from the render package, cropped to head and shoulders ----
 // R8 (ADR-0008 section 5): the bust follows the worn gear. `look` is a gear signature; anything malformed (a hand-edited index) draws the bare bust.
 // Sources are cached per class + look in a small LRU (8 canvases of 480 x 600, about 9 MB at most); a changed look paints a new source.
-const BUST_LRU = 8, LOOK_OK = /^[-a-z0-9]{1,4}(\|[-a-z0-9]{1,4}){5}$/;
+const BUST_LRU = 8;
 const bustSrc = new Map();
-export const cleanLook = (look) => (typeof look === "string" && look.length <= 40 && LOOK_OK.test(look) && look !== "-|-|-|-|-|-" ? look : "");
+export { cleanLook }; // re-export for the callers and tests that import it from here
 export const bustCacheSize = () => bustSrc.size;
 function bustSource(classId, look) {
   const key = `${classId}/${look}`;

@@ -99,6 +99,15 @@ export const MIGRATIONS = {
     if (q.pinned === "main" && m !== null && typeof m === "object" && !Array.isArray(m)) quests.pinned = activeMainId(m) ?? mainIds[mainIds.length - 1];
     return { ...d, version: 5, quests };
   },
+  /**
+   * Version 5 to 6 (ADR-0006 amendment "R8", CR8-07): the quest block may now hold `owed` (reward items that did not fit the bag). A v5 save never has the key, so
+   * nothing but the version changes; the bump exists so that an older build refuses a save with `owed` as "newer" instead of treating the unknown key as damage.
+   * Pure; a version 6 input is returned unchanged.
+   */
+  5(d) {
+    if (d.version >= 6) return d;
+    return { ...d, version: 6 };
+  },
 };
 
 /**

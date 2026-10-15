@@ -96,3 +96,34 @@ test("a direct line goes ahead of quest lines that are only waiting, behind the 
   assert.deepEqual(shown, ["Quest A"]); assert.deepEqual(q.waiting(), ["The way down is locked", "Quest B"]);
   advance(4000); assert.equal(shown.at(-1), "The way down is locked");
 });
+
+test("CR8-05 two direct lines in one dispatch are both shown, each for its time, one after the other", () => {
+  const { q, shown, advance } = lane();
+  q.begin(); q.offer("A", undefined, {}); q.offer("B", undefined, {}); q.end();
+  assert.deepEqual(shown, ["A"], "B does not replace A in the same tick");
+  assert.deepEqual(q.waiting(), ["B"]);
+  advance(699); assert.deepEqual(shown, ["A"], "A stays on screen at least the minimum time");
+  advance(3200); assert.deepEqual(shown, ["A", "B"]);
+  // outside a dispatch: a second direct line after the minimum time still replaces the first at once
+  q.offer("C", undefined, {}); advance(800); q.offer("D", undefined, {});
+  assert.equal(shown.at(-1), "D");
+});
+
+test("CR8-05 the cap drops world lines, then direct lines, and never a quest line: 10 quest lines in one burst all reach show()", () => {
+  const { q, shown, advance } = lane();
+  q.begin(); for (let i = 1; i <= 10; i++) q.offer(`quest line ${i}`, 4000, { quest: true, kind: "quest.step", qid: "q" + i }); q.end();
+  assert.equal(shown.length, 1); assert.equal(q.waiting().length, 9);
+  for (let i = 0; i < 12; i++) advance(4000);
+  assert.deepEqual(shown, Array.from({ length: 10 }, (_, i) => `quest line ${i + 1}`), "every quest line is passed to show() (live region), in order");
+  // mixed: quest lines survive a flood of world and direct lines
+  const m = lane();
+  m.q.offer("Q0", 4000, quest);
+  m.q.offer("QA", 4000, { quest: true, kind: "quest.step", qid: "a" }); m.q.offer("QB", 4000, { quest: true, kind: "quest.step", qid: "b" });
+  for (let i = 0; i < 20; i++) m.q.offer(`world ${i}`, undefined, passive("potion"));
+  for (let i = 0; i < 20; i++) m.q.offer(`direct ${i}`, undefined, {});
+  assert.ok(m.q.waiting().includes("QA") && m.q.waiting().includes("QB"));
+  assert.ok(m.q.waiting().length <= 8 + 0, "no more than the cap while quest lines fit");
+  for (let i = 0; i < 40; i++) m.advance(4000);
+  assert.ok(m.shown.includes("QA") && m.shown.includes("QB"));
+  assert.ok(!m.shown.some((t) => t === "world 0"), "the oldest world line was the one dropped");
+});

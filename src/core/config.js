@@ -193,7 +193,7 @@ export const config = {
   },
 
   // Save and load (S3-3, R-090..R-092). One slot; options are stored apart from the save.
-  saveVersion: 5,                    // ADR-0006: 2 adds the character name, stats.playTicks and the class trees; 3 refunds attribute points of classes whose power attribute changed (R6); 4 adds the quest block (R7); 5 adds sq4 and sq5 and the three main quests (R7-4)
+  saveVersion: 6,                    // ADR-0006: 2 adds the character name, stats.playTicks and the class trees; 3 refunds attribute points of classes whose power attribute changed (R6); 4 adds the quest block (R7); 5 adds sq4 and sq5 and the three main quests (R7-4); 6 allows quests.owed (R8-Q1, CR8-07: a build that knows v5 only refuses a v6 save as "newer" instead of calling it damaged)
   saveKey: "office-crawler.save",
   saveBackupKey: "office-crawler.save.corrupt",
   optionsKey: "office-crawler.options",

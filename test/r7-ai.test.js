@@ -91,8 +91,8 @@ test("CR7-03 / R8-AI1 a fresh click is never replaced on its first tick; a hero 
   assert.equal(s.player.target, t.id, "not yet");
   applyInput(s, { t: "attack", id: t.id }); // the player clicks the same target again
   assert.ok(s.player.standT >= config.retargetTicks - 2, "R8-AI1: the stand count is carried, not reset (the hero has not moved)");
-  run(s, 1);
-  assert.equal(s.player.target, t.id, "the new order is planned once before it can be replaced (no goal, no retarget)");
+  // ADV-R8-03 (fix round): a re-click of the SAME target keeps p.goal (it is not a new order), so the hero that already stands blocked answers within retargetEvery ticks
+  // even when the player clicks every tick; a click on a NEW target still starts from goal = null (the first half of this test and the 'new target' test in adv-r8-ai).
   run(s, config.retargetEvery + 2);
   assert.notEqual(s.player.target, t.id, "and the attacker in reach is answered right after");
   assert.ok(a.hp <= a.hpMax);

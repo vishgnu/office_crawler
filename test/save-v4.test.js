@@ -14,11 +14,11 @@ const SIDES = content.sideIds;
 /** Put the main quest at the global step g (1..10) through the cheat of its own quest. */
 const at = (s, g) => { const st = content.mainSteps[g - 1]; return setQuestStep(s, st.arcId, st.arcStep); };
 
-test("config.saveVersion is 5 and SAVE_KEYS lists the quest block", () => {
-  assert.equal(config.saveVersion, 5);
+test("config.saveVersion is 6 and SAVE_KEYS lists the quest block", () => {
+  assert.equal(config.saveVersion, 6);
   assert.ok(SAVE_KEYS.includes("quests"));
   const j = parsed(hero());
-  assert.equal(j.version, 5);
+  assert.equal(j.version, 6);
   assert.deepEqual(Object.keys(j.quests).sort(), ["main", "pinned", "pouch", "sq1", "sq2", "sq3", "sq4", "sq5"]);
   assert.deepEqual(j.quests.main.m, { memo: false, depth: 0, unlocked: false, defeated: false, verdict: false });
   assert.deepEqual(j.quests.pouch, []); assert.equal(j.quests.pinned, "main");
@@ -178,9 +178,9 @@ test("20 mutated copies of a real save never throw and never load as a different
   for (const text of ['{"quests":', JSON.stringify({ ...base, quests: undefined }), JSON.stringify({ ...base, checksum: "0" })]) assert.doesNotThrow(() => deserialize(text));
 });
 
-test("a version above 5 reports newer; a version 5 save passes check() without a note", () => {
+test("a version above 6 reports newer; a version 6 save passes check() without a note", () => {
   const j = parsed(hero());
-  assert.equal(deserialize(sealText({ ...j, version: 6 })).reason, "newer");
+  assert.equal(deserialize(sealText({ ...j, version: 7 })).reason, "newer");
   const c = check(j); assert.equal(c.ok, true); assert.deepEqual(c.notes, []);
 });
 

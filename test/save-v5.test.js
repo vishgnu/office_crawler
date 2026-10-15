@@ -53,13 +53,13 @@ test("AC-R-259-1 the pin of a main quest becomes the active arc: main at depth 0
   assert.equal(pinOf(m(5), "sq2"), "sq2");
 });
 
-test("AC-R-259-1 MIGRATIONS[4] is pure and idempotent; version 6 is newer; a corrupt v4 text ends as corrupt without an exception", () => {
+test("AC-R-259-1 MIGRATIONS[4] is pure and idempotent; version 7 is newer; a corrupt v4 text ends as corrupt without an exception", () => {
   const old = JSON.parse(fx("save-v4-floor4")), copy = structuredClone(old);
   const m = MIGRATIONS[4](structuredClone(old));
   assert.deepEqual(old, copy); assert.equal(m.version, 5);
   assert.deepEqual(MIGRATIONS[4](structuredClone(m)), m, "a v5 input comes back unchanged");
   migrate(old, 5); assert.deepEqual(old, copy, "migrate does not mutate its input");
-  assert.equal(deserialize(sealText({ ...JSON.parse(fx("save-v4-lobby")), version: 6 })).reason, "newer");
+  assert.equal(deserialize(sealText({ ...JSON.parse(fx("save-v4-lobby")), version: 7 })).reason, "newer");
   for (const text of [fx("save-v4-floor4").slice(0, 500), fx("save-v4-floor4").replace('"version":4', '"version":4,"x":'), JSON.stringify({ ...old, checksum: "bad" })]) {
     let r; assert.doesNotThrow(() => { r = deserialize(text); }); assert.equal(r.ok, false); assert.ok(["parse", "checksum", "corrupt"].includes(r.reason) || r.reason, r.reason);
   }

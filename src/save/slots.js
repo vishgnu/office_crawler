@@ -11,7 +11,7 @@ import { serialize, deserialize, check, checksumOf } from "./format.js";
 import { createAdapter } from "./storage.js";
 import { mainStep, MAIN_STEPS } from "../core/systems/questview.js";
 import { sideIds } from "../core/content/quests.js";
-import { gearSignature, EMPTY_SIG } from "../render/gearlooks.js"; // pure and DOM-free (ADR-0008 section 5): the one render file the index may import
+import { gearSignature, EMPTY_SIG, SIG_RE, validLook } from "../shared/look.js"; // pure and DOM-free (CR8-06: save/ imports nothing from render/)
 
 const PREFIX = "office-crawler.";
 const slotKey = (n) => `${config.slotKeyPrefix}${n}`;
@@ -54,8 +54,7 @@ function questFields(q) {
 }
 
 /** The slot card's bust look (ADR-0006 amendment R8, ADR-0008 section 5): the gear signature of the worn items; an entry without it (or with a malformed one) is drawn bare. */
-export const LOOK_RE = /^[-a-z0-9]{1,4}(\|[-a-z0-9]{1,4}){5}$/;
-export const validLook = (s) => typeof s === "string" && s.length <= 40 && LOOK_RE.test(s);
+export { SIG_RE as LOOK_RE, validLook };
 const lookField = (equipment) => { try { const l = gearSignature(equipment); return l !== EMPTY_SIG && validLook(l) ? { look: l } : {}; } catch { return {}; } };
 
 /** The index entry for a running state (metadata only; lastPlayed comes from the injected clock). */

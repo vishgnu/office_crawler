@@ -165,3 +165,9 @@ Source: `ADR-0007-quests.md` (state shape, rules), `../30-spec/12-quests-journal
 
 ## Amendment 2026-10-15 (R8 gear visuals, R8-0.3)
 The slot index entry gains one optional field `look`: the gear signature of the saved `equipment` (`render/gearlooks.js` `gearSignature`, regex `^[-a-z0-9]{1,4}(\|[-a-z0-9]{1,4}){5}$`, at most 40 characters), written by `entryFromState` and `entryFromText` only when something visible is worn. Missing or malformed means the bare bust; no save version, index version or state change (ADR-0008 section 5).
+
+## Amendment 2026-10-15 (R8 fix round: save version 6, item ids, one look grammar)
+
+- Version 6 (CR8-07). `quests.owed` (ADR-0007 R8-Q1) is a new key of the quest block, so the save version goes 5 to 6; `MIGRATIONS[5]` only sets the number. A save written by this build is therefore refused by an older build as `newer` (slot state `newer`, never overwritten, never moved to the damaged key). No downgrade path exists; the refusal is the supported behaviour. Existing v5 saves load and are rewritten as v6 on the next save.
+- Item ids (ADV-R8-01). A stored item id of the minted form `i<n>` must satisfy `n < nextItemId` (the counter is the only minting source), in the bag, stash, equipment, belt, cursor and owed list. Other id shapes (test fixtures) cannot collide with a minted id and are not touched.
+- Look grammar (CR8-06). The gear signature grammar (regex `SIG_RE`, `validLook`, `cleanLook`, `EMPTY_SIG`, the category table and `gearSignature`) lives in `src/shared/look.js`: pure, no imports, no DOM. `render/gearlooks.js` re-exports it; `save/slots.js` and `ui/slots.js` import it from `shared/`. `test/layering.test.js` pins: save/ and ui/ import nothing from render/, shared/ imports nothing, and the regex literal exists once in `src/`.
