@@ -23,7 +23,7 @@ function headCap(g, slot, cat, tier, A) { // visor cap: rounded teal dome, seam 
     const bx = d.cx + A.fx * r * 0.85, rx = r * (0.98 - 0.36 * s), by = d.cy + 1.1;
     fillPoly(g, arcPts(bx, by, rx, 2.0, 0, Math.PI, 8).concat([[bx - rx, by - 0.4], [bx + rx, by - 0.4]]), "#1f6f7c", INK, 1.3);
   } else { fillPoly(g, [[d.cx - 3.2, d.cy + 0.6], [d.cx + 3.2, d.cy + 0.6], [d.cx + 3.2, d.cy + 2.8], [d.cx - 3.2, d.cy + 2.8]], "#1f6f7c", INK, 1); ellipse(g, d.cx, d.cy + 1.7, 0.9, 0.9, "#cbd3e2"); // strap + buckle
-    for (const k of [-1, 1]) { g.beginPath(); g.ellipse(d.cx, d.cy + 1.2, r * 0.9 * 0.5 + 1.6 * (k < 0 ? 1 : 1), r * 0.92 * 1.0, 0, k < 0 ? Math.PI * 1.08 : Math.PI * 1.55, k < 0 ? Math.PI * 1.45 : Math.PI * 1.92); g.lineWidth = 1; g.strokeStyle = "#1d6470"; g.stroke(); } // panel seams
+    for (const k of [-1, 1]) { g.beginPath(); g.ellipse(d.cx, d.cy + 1.2, r * 0.45 + 1.6, r * 0.92, 0, k < 0 ? Math.PI * 1.08 : Math.PI * 1.55, k < 0 ? Math.PI * 1.45 : Math.PI * 1.92); g.lineWidth = 1; g.strokeStyle = "#1d6470"; g.stroke(); } // panel seams
     g.beginPath(); g.ellipse(d.cx, d.cy + 0.4, r + 0.6, r * 0.5, 0, Math.PI * 0.08, Math.PI * 0.92); g.lineWidth = 1.2; g.strokeStyle = "#143f48"; g.stroke(); // dark arc under the dome: cap and hair never read as one ball
   }
   trimOver(g, d.pts, tier, [d.cx, d.cy - r * 0.92 - 3.4]);
@@ -72,12 +72,16 @@ function torsoPts(A, ext, hem, shoulder = 0) {
 /** R8-T G-2: a unique body keeps the class torso width: the heavy rim sits on the shoulder line and the hem only, the centre stays open (lapels, tie, buttons show). Tiers 0-2 use the shared trim. */
 function bodyUnder(g, p, tier) {
   if (tier < 3) return trimUnder(g, p, tier);
+  g.save();
   for (const seg of [[p[0], p[1]], [p[3], p[2]]]) { g.beginPath(); g.moveTo(seg[0][0] - 1, seg[0][1]); g.lineTo(seg[1][0] + 1, seg[1][1]); g.lineWidth = 4.2; g.lineCap = "round"; g.strokeStyle = UNIQUE_RIM; g.stroke(); }
+  g.restore();
 }
 function bodyOver(g, p, tier, at) {
   if (tier < 3) return trimOver(g, p, tier, at);
   const R = palette.rarity;
+  g.save();
   for (const [a, b, dy] of [[p[0], p[1], 1.9], [p[3], p[2], -1.9]]) { g.beginPath(); g.moveTo(a[0] + 1.5, a[1] + dy); g.lineTo(b[0] - 1.5, b[1] + dy); g.lineWidth = 1.7; g.lineCap = "round"; g.strokeStyle = R.unique; g.stroke(); }
+  g.restore();
   const cx = at ? at[0] : (p[0][0] + p[1][0]) / 2, cy = at ? at[1] : p[0][1] + 7;
   fillPoly(g, [[cx, cy - 3.6], [cx + 2.8, cy], [cx, cy + 3.6], [cx - 2.8, cy]], "#fff2c0", R.unique, 1);
 }

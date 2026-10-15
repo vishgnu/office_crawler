@@ -50,6 +50,14 @@ try {
     const g = await open(browser, { query: `test=1&seed=3&zoom=1${extra}`, viewport: { width: 1920, height: 1080 } });
     await g.app("newGame", { seed: 3 });
     const sig = geared ? await wearAll(g) : null;
+    // R8-T F2: the first ~5 s after the six equips: the warm cost a player sees (pause 240 frames after the floor, then ~1 bake in 6 frames, on-demand bakes on a turn). Recorded, not hidden.
+    let equipWin = null;
+    if (geared) {
+      const w0 = (await g.app("perf")).gearCache;
+      equipWin = await g.page.evaluate(() => new Promise((r) => { const dts = []; let last = performance.now(); const t0 = last; const f = (t) => { dts.push(t - last); last = t; if (t - t0 >= 5000) r(dts.slice(1)); else requestAnimationFrame(f); }; requestAnimationFrame(f); }));
+      const w1 = (await g.app("perf")).gearCache, sd = [...equipWin].sort((a, b) => a - b);
+      equipWin = { frames: sd.length, p95: sd[Math.min(sd.length - 1, Math.floor(sd.length * 0.95))] ?? 0, max: sd[sd.length - 1] ?? 0, maxBuildsPerFrame: w1.maxBuildsPerFrame, warmMs: w1.warmMs - w0.warmMs, warmBuilds: w1.warmBuilds - w0.warmBuilds, builds: w1.builds - w0.builds, pause: w1.pause, warmLeft: w1.warmLeft };
+    }
     let s = await g.app("step", 30);
     const types = ["zombie-intern", "printer-imp"];
     let n = 0;
@@ -62,9 +70,16 @@ try {
     await g.page.waitForTimeout(1500); // warm-up
     // the lazy sprites of the new types are drawn a few per frame in the first seconds after they appear (world.js warmFrames); wait until that is done so the window is steady state
     for (let i = 0, last = -1; i < 60; i++) { const c = await g.page.evaluate(() => window.__atlasStats?.lazy ?? 0); if (c === last) break; last = c; await g.page.waitForTimeout(400); }
-    // R8-P1: the hero's idle/walk frames of the worn signature are baked ~1 a few frames (gearcache.js warmGear, ~4 ms each, 80 frames); a window that overlaps that warm-up
-    // measures its spikes, not the steady state. Wait until the warm queue is done (builds stop growing), like for the monster sprites above.
-    if (geared) for (let i = 0, last = -1; i < 60; i++) { const c = (await g.app("perf")).gearCache.builds; if (c === last) break; last = c; await g.page.waitForTimeout(600); }
+    // R8-P1 / R8-T F2: the hero's idle/walk frames of the worn signature are baked ~1 every few frames (gearcache.js warmGear, ~4 ms each, 80 frames) and only after the 240-frame
+    // pause that follows a depth change. A window that overlaps the warm-up measures its spikes. Wait until pause === 0 AND warmLeft === 0 (builds going flat is not enough: it is
+    // flat during the pause and while a bake debt is repaid). Hard cap 60 s: then WARN and the scene continues with warm unfinished (the numbers are not steady state).
+    let warmCap = false;
+    if (geared) {
+      let gp = (await g.app("perf")).gearCache, i = 0;
+      for (; i < 100 && (gp.pause > 0 || gp.warmLeft > 0); i++) { await g.page.waitForTimeout(600); gp = (await g.app("perf")).gearCache; }
+      warmCap = gp.pause > 0 || gp.warmLeft > 0;
+      if (warmCap) console.log(`WARN   gear warm-up not finished after the cap (pause ${gp.pause}, warmLeft ${gp.warmLeft}): the window below is not steady state`);
+    }
     // the measured window: 150 real frames; every frame's dt, the atlas first-use counters and heap drops (GC) are recorded inside it
     const win = await g.page.evaluate(() => new Promise((r) => {
       const st = window.__atlasStats ?? { lazy: 0, lazyMs: 0, sil: 0, silMs: 0 }, s0 = { ...st }, dts = [], mem = () => performance.memory?.usedJSHeapSize ?? 0;
@@ -80,12 +95,14 @@ try {
     await g.context.close();
     const f = win.dts.slice(-120), avg = f.reduce((a, b) => a + b, 0) / f.length;
     const sorted = [...win.dts].sort((a, b) => a - b), q = (p) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
-    return { sig, gear: perf.gearCache, fps: 1000 / avg, renderAvg: perf.renderMsAvg, renderP95: perf.renderMsP95, visible, spawned: n, fx: perf.fx,
+    return { sig, equipWin, warmCap, gear: perf.gearCache, fps: 1000 / avg, renderAvg: perf.renderMsAvg, renderP95: perf.renderMsP95, visible, spawned: n, fx: perf.fx,
       frame: { p50: q(0.5), p95: q(0.95), p99: q(0.99), max: sorted[sorted.length - 1], over25: sorted.filter((d) => d > 25).length }, win };
   };
   for (const [label, extra, key, geared] of [["full fx", "", "fps50", !!process.env.BENCH_GEAR], ["lowFx", "&lowfx=1", "fps50Low", !!process.env.BENCH_GEAR], ["full fx, hero geared (all six slots)", "", "fps50Geared", true]]) {
     const r = await scene(extra, geared);
     if (r.sig) { console.log(`INFO   hero signature ${r.sig}; gear cache ${r.gear.frames} frames, ${(r.gear.bytes / 1048576).toFixed(1)} MB, ${r.gear.builds} builds (${r.gear.warmBuilds} warm), max ${r.gear.maxBuildsPerFrame} on-demand builds in a frame, ${r.gear.fallbacks} fallbacks`); result[key + "Gear"] = { sig: r.sig, ...r.gear }; }
+    if (r.equipWin) { const e = r.equipWin; console.log(`INFO   just equipped (first ${(e.frames / 60).toFixed(1)} s, ${e.frames} frames): dt p95 ${e.p95.toFixed(1)} ms max ${e.max.toFixed(1)} ms; max ${e.maxBuildsPerFrame} on-demand builds in a frame; ${e.builds} builds (${e.warmBuilds} warm, ${e.warmMs.toFixed(0)} ms warm); at its end pause ${e.pause}, warm left ${e.warmLeft}`); result[key + "Equip"] = { p95: +e.p95.toFixed(1), max: +e.max.toFixed(1), maxBuildsPerFrame: e.maxBuildsPerFrame, warmMs: +e.warmMs.toFixed(0), warmBuilds: e.warmBuilds }; }
+    if (r.sig) console.log(`INFO   at window start: warm left ${r.gear.warmLeft}, pause ${r.gear.pause}, warm total ${r.gear.warmMs.toFixed(0)} ms${r.warmCap ? " (CAP REACHED)" : " (finished)"}`);
     result[key] = Math.round(r.fps * 10) / 10; result.visible = r.visible;
     console.log(`INFO 50 monsters (${r.spawned} spawned, ${r.visible} on screen), ${label}: ${result[key]} fps, render ${r.renderAvg.toFixed(1)} ms avg / ${r.renderP95.toFixed(1)} ms p95`);
     const fr = r.frame, w = r.win;

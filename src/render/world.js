@@ -299,9 +299,13 @@ function modLine(m) {
   return t;
 }
 
+export const QUEST_ELITE_K = 1.14;
+/** R8-T N17: draw scale of an actor's sprite, ring, shadow, status and plate: the named quest elite (a champion with .quest) stands bigger than a manager. Pure. */
+export const actorScale = (a) => (a && a.tier === "champion" && a.quest ? QUEST_ELITE_K : 1);
+
 /** Status icon above a monster's head: ! (noticed), speaker slash (muted), sweat (fleeing), orbiting sparks (staggered). */
 function drawIcon(g, atlas, it, x, y, z, now) {
-  const top = y - (it.head + 2) * z;
+  const top = y - (it.head * it.k + 2) * z;
   if (it.icon === ICON_ALERT) blit(g, atlas.get("fx:alert"), x, top, z);
   else if (it.icon === ICON_MUTED) blit(g, atlas.get("fx:muted"), x, top - Math.sin(now / 300) * z, z);
   else if (it.icon === ICON_FLEE) blit(g, atlas.get("fx:flee"), x + 8 * z, top + 4 * z + Math.sin(now / 90) * z, z);
@@ -441,7 +445,6 @@ function redrawHero(g) {
 
 /** Share of an actor's own (shaded, tinted) body that is drawn back over the additive pool light: the wash on actors is clamped to the remaining 1 - this (round G3, F2). */
 const RESTORE_A = 0.72;
-const QUEST_ELITE_K = 1.14;
 const restore = [];
 /**
  * Called by the lighting pass right after the additive pools: every actor standing in a pool gets its own sprite drawn again over the wash, so pale
@@ -473,7 +476,7 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
   const dm = env.style.dims[isPlayer ? F.htype : a.type];
   // lit state first: an actor deep in the dark (outside every light) is not drawn at all, so no ghost silhouettes at the screen edge
   let shade = 0, tint = "", tintA = 0, shTint = "", sdx = 0, sdy = 0;
-  const champ = !isPlayer && a.tier === "champion" && !dying;
+  const champ = !isPlayer && a.tier === "champion" && !dying, kq = champ ? actorScale(a) : 1; // kq: quest elite scale, once for ring, shadow and the pooled item
   light.sample(pos.x + 0.5, pos.y + 0.5, LS);
   if (!env.lowFx && LS.tint) { tint = LS.mul; tintA = LS.tintA; shTint = LS.sh; sdx = LS.dx; sdy = LS.dy; } // G round, item 9: every actor takes the colour of the pool it stands in (15-25 % multiply) and casts a coloured shadow
   if (!isPlayer) {
@@ -486,9 +489,9 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
     if (boss) { shade = Math.min(shade, 0.12); tint = ""; tintA = 0; shTint = ""; } // the boss is never lost in the dark and keeps its own colours (its aura is the light)
   }
   // contact shadow on the ground, under everything that stands there
-  const k = (dm.shadowR * 2.25) / 62, sh = F.shadowE;
+  const k = (dm.shadowR * 2.25) / 62 * kq, sh = F.shadowE;
   if (isPlayer && !dying) heroRing(g, sx, sy, dm.shadowR * 1.7, z, now);
-  if (champ) champRing(g, sx, sy, dm.shadowR * 1.6 * (a.quest ? QUEST_ELITE_K : 1), z, now, env.style.palette.champion);
+  if (champ) champRing(g, sx, sy, dm.shadowR * 1.6 * kq, z, now, env.style.palette.champion);
   if (boss && !dying) bossAura(g, sx, sy, dm.shadowR * 1.7, z, now, a.boss?.phase >= 2);
   if (!isPlayer && a.summoned && !dying) tempRing(g, sx, sy, dm.shadowR * 1.5, z);
   g.globalAlpha = 0.85 * alphaV;
@@ -502,7 +505,7 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
   g.globalAlpha = 1;
   const it = grab(pos.x + pos.y + 1.02, e, sx, sy);
   it.actor = true; it.isPlayer = isPlayer; it.a = alphaV; it.flash = flash; it.head = dm.head;
-  it.k = champ && a.quest ? QUEST_ELITE_K : 1; // R8-T N17: the named quest elite stands bigger than a manager (sprite, ring, status and plate follow)
+  it.k = kq; // R8-T N17: the named quest elite stands bigger than a manager (sprite, ring, status and plate follow)
   it.shade = shade; it.tint = tint; it.tintA = tintA; it.champ = champ; it.boss = boss; it.summoned = !isPlayer && !!a.summoned && !dying;
   if (!isPlayer && !dying) {
     const sf = statusFlags(a); it.sf = sf; // R5 statuses: stun / mute / freeze share muteT and differ by statusKind
@@ -666,7 +669,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     const m = mons[i], o = slot(i);
     lerpPos(m, posB);
     o.id = m.id; o.type = m.type; o.name = m.name ?? (content.monsters[m.type] ?? content.bosses?.[m.type])?.name ?? m.type; o.ai = m.ai; o.hp = m.hp; o.hpMax = m.hpMax; o.dead = m.ai === "dead";
-    o.champ = m.tier === "champion"; o.big = o.champ && m.quest ? QUEST_ELITE_K : 1; o.sub = o.champ ? modLine(m) : ""; o.npc = false;
+    o.champ = m.tier === "champion"; o.big = o.champ ? actorScale(m) : 1; o.sub = o.champ ? modLine(m) : ""; o.npc = false;
     o.boss = m.tier === "boss"; o.lit = o.boss ? (m.boss?.phase >= 2 ? "rage" : "boss") : "";
     o.x = posB.x; o.y = posB.y; o.d = Math.hypot(posB.x - hp.x, posB.y - hp.y);
     project(cam, o.x + 0.5, o.y + 0.5, pt); o.sx = pt.x; o.sy = pt.y;

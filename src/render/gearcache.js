@@ -177,7 +177,7 @@ export function gearPerf(atlas) {
   return {
     gearSig: st ? st.sig : EMPTY_SIG,
     gearCache: st
-      ? { frames, bytes: st.bytes, builds: st.builds, warmBuilds: st.warmBuilds, evictions: st.evictions, fallbacks: st.fallbacks, maxBuildsPerFrame: st.maxBuildsPerFrame, tables: st.tables.size, cap: st.cap, pause: st.pause }
-      : { frames: 0, bytes: 0, builds: 0, warmBuilds: 0, evictions: 0, fallbacks: 0, maxBuildsPerFrame: 0, tables: 0, cap: gearCapFor(atlas?.scale), pause: 0 },
+      ? { frames, bytes: st.bytes, builds: st.builds, warmBuilds: st.warmBuilds, evictions: st.evictions, fallbacks: st.fallbacks, maxBuildsPerFrame: st.maxBuildsPerFrame, tables: st.tables.size, cap: st.cap, pause: st.pause, warmLeft: st.cur ? (st.queue ? (st.queue.length - st.warmI) / 3 : WARM_ANIMS.reduce((n, a) => n + DIRS * PLAYER_ANIMS[a], 0)) : 0, warmMs: st.warmMs }
+      : { frames: 0, bytes: 0, builds: 0, warmBuilds: 0, evictions: 0, fallbacks: 0, maxBuildsPerFrame: 0, tables: 0, cap: gearCapFor(atlas?.scale), pause: 0, warmLeft: 0, warmMs: 0 },
   };
 }
