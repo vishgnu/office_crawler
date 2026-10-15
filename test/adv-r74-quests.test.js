@@ -324,7 +324,7 @@ test("[R74-sq4] the ledger: one on the floor chosen by questRng from {5,6} for 1
   }
 });
 
-test("[R74-sq4] sq4 and sq2 together: the pouch holds both items at once with a full bag, each readies only its own quest, and the pouch is empty again after each hand-in", { todo: "R8-Q1: a full bag no longer refuses a hand-in (the items are owed); replaced by test/r8-core1.test.js" }, () => {
+test("[R74-sq4] sq4 and sq2 together: the pouch holds both items at once with a full bag, each readies only its own quest, and the pouch is empty again after each hand-in; the full bag owes the sq4 potions instead of refusing", () => {
   const s = hero(61);
   accept(s, "sq2"); accept(s, "sq4");
   for (const [id, fl] of [["sq2", itemFloorOf(61, "sq2")], ["sq4", itemFloorOf(61, "sq4")]]) {
@@ -337,13 +337,16 @@ test("[R74-sq4] sq4 and sq2 together: the pouch holds both items at once with a 
   assert.equal(s.quests.sq2.s, "ready"); assert.equal(s.quests.sq4.s, "ready");
   assert.equal(s.player.pouch.length, 2);
   rt(s);
-  const bag = s.inventory.items.length;
+  const bag = s.inventory.items.length, g0 = s.player.gold;
   const r = handIn(s, "sq4");
-  assert.equal(r.ok, false, "a bag full of single potions cannot take the two potions of sq4");
-  assert.equal(r.error, "bagFull");
-  assert.equal(s.quests.sq4.s, "ready"); assert.equal(s.player.pouch.length, 2); assert.equal(s.inventory.items.length, bag);
-  s.inventory.items.length = 0;
-  assert.ok(handIn(s, "sq4").ok);
+  assert.equal(r.ok, true, "R8-Q1: a bag full of single potions does not refuse the hand-in of sq4");
+  assert.equal(s.quests.sq4.s, "completed"); assert.ok(s.player.gold > g0, "gold paid");
+  assert.ok(s.player.owed?.length >= 1, "the potions that do not fit are owed");
+  assert.deepEqual(s.player.pouch.map((e) => e.quest), ["sq2"], "only the ledger-quest item left the pouch");
+  assert.equal(s.inventory.items.length, bag, "the full bag took nothing");
+  rt(s);
+  s.inventory.items.length = 0; step(s);
+  assert.equal(s.player.owed, undefined, "delivered once the bag is empty");
   assert.deepEqual(s.player.pouch.map((e) => e.quest), ["sq2"], "only the ledger left the pouch");
   assert.equal(s.quests.sq2.s, "ready");
   assert.ok(handIn(s, "sq2").ok);
@@ -474,7 +477,7 @@ test("[R74-sq5] a run that never accepts is untouched by the revive and the new 
   }
 });
 
-test("[R74-sq5] the reward: exactly one magic ring, amulet or belt at item level gearFloor x ilvlPerDepth, no potions; same item for the same seed and class, the class affix tag differs per class; refused on a full bag with the state untouched", { todo: "R8-Q1: a full bag no longer refuses a hand-in (the items are owed); replaced by test/r8-core1.test.js" }, () => {
+test("[R74-sq5] the reward: exactly one magic ring, amulet or belt at item level gearFloor x ilvlPerDepth, no potions; same item for the same seed and class, the class affix tag differs per class; on a full bag the hand-in completes and the gear is owed, then delivered exactly once", () => {
   const items = {};
   for (const cls of ["facilities-manager", "sales-rep", "it-wizard"]) for (let seed = 1; seed <= 60; seed++) {
     const s = hero(seed, cls);
@@ -489,12 +492,15 @@ test("[R74-sq5] the reward: exactly one magic ring, amulet or belt at item level
   const s = hero(9);
   accept(s, "sq5"); setQuestStep(s, "sq5", 2);
   fillBag(s);
-  const snap = JSON.stringify([s.player, s.quests, s.inventory]);
+  const gold0 = s.player.gold, bag0 = JSON.stringify(s.inventory);
   const r = handIn(s, "sq5");
-  assert.equal(r.error, "bagFull");
-  assert.equal(JSON.stringify([s.player, s.quests, s.inventory]), snap, "refusal leaves the state untouched");
-  s.inventory.items.pop();
-  assert.ok(handIn(s, "sq5").ok);
+  assert.equal(r.ok, true, JSON.stringify(r));
+  assert.equal(s.quests.sq5.s, "completed"); assert.ok(s.player.gold > gold0, "gold paid at once");
+  assert.equal(s.player.owed.length, 1, "the one piece of gear is owed");
+  assert.equal(JSON.stringify(s.inventory), bag0, "the full bag is untouched while the gear waits");
+  s.inventory.items.pop(); step(s); // one cell is not enough for a ring? free more if still owed
+  if (s.player.owed) { s.inventory.items.length = 0; step(s); }
+  assert.equal(s.player.owed, undefined);
   assert.equal(s.inventory.items.filter((i) => i.kind === "gear").length, 1);
   assert.equal(handIn(s, "sq5").ok, false);
   assert.equal(s.inventory.items.filter((i) => i.kind === "gear").length, 1);
@@ -554,7 +560,7 @@ test("[R74-giver] the pin and the map marker with two quests of one giver: compl
   assert.deepEqual(mapMarkers(s).map((m) => [m.quest, m.kind]), [["sq5", "npc"]]);
 });
 
-test("[R74-giver] two quests handed in with ONE bag that fits only one reward: the first is paid, the second refused whole, then paid after freeing space; no duplicate or lost reward", { todo: "R8-Q1: a full bag no longer refuses a hand-in (the items are owed); replaced by test/r8-core1.test.js" }, () => {
+test("[R74-giver] two quests handed in with ONE bag that fits only one reward: both complete and pay gold, the second reward is owed and delivered after freeing space; no duplicate or lost reward", () => {
   const s = hero(82);
   accept(s, "sq1"); accept(s, "sq5");
   setQuestStep(s, "sq1", 2); setQuestStep(s, "sq5", 2);
@@ -563,12 +569,15 @@ test("[R74-giver] two quests handed in with ONE bag that fits only one reward: t
   assert.ok(r1.ok, JSON.stringify(r1));
   const g = s.player.gold;
   const r5 = handIn(s, "sq5");
-  assert.equal(r5.error, "bagFull");
-  assert.equal(s.player.gold, g, "refused: no gold");
-  assert.equal(s.quests.sq5.s, "ready");
-  s.inventory.items.length = 0;
-  assert.ok(handIn(s, "sq5").ok);
-  assert.equal(s.inventory.items.filter((i) => i.kind === "gear").length, 1);
+  assert.ok(r5.ok, JSON.stringify(r5));
+  assert.ok(s.player.gold > g, "gold of the second quest paid at once");
+  assert.equal(s.quests.sq5.s, "completed");
+  assert.equal(s.player.owed.length, 1, "the gear of sq5 is owed");
+  assert.equal(s.inventory.items.filter((i) => i.kind === "gear").length, 0);
+  s.inventory.items = s.inventory.items.filter((i) => !i.id.startsWith("fill")); step(s);
+  assert.equal(s.player.owed, undefined);
+  assert.equal(s.inventory.items.filter((i) => i.kind === "gear").length, 1, "exactly one piece, no duplicate");
+  assert.equal(s.inventory.items.length, 4, "the three potions of sq1 and the one piece of gear, nothing else");
 });
 
 // =============================================================================================== prerequisites and gates of the new quests

@@ -229,27 +229,32 @@ if (sec("handin")) {
     check(`[R7-handin] ${cls}: the vendor window opens with Hand in`, await talk(g, "vendor") && (await g.page.locator(T("quest-handin-sq1")).count()) === 1);
     await g.page.click(T("quest-handin-sq1")); await g.app("step", 2);
     const after = await handInState(g);
-    check(`[R7-handin] ${cls}: full bag: refused with a visible alert, nothing granted, quest stays ready`, (await g.page.locator(T("quest-bagfull")).count()) === 1 && JSON.stringify(after) === JSON.stringify(before), [before, after]);
-    check(`[R7-handin] ${cls}: the refusal is announced (role=alert) and the hand-in button is still there`, (await g.page.getAttribute(T("quest-bagfull"), "role")) === "alert" && (await g.page.locator(T("quest-handin-sq1")).count()) === 1);
-    if (cls === CLASSES[0]) await shot(g.page, "handin-bagfull");
-    // toast and live-region spam: 40 refused clicks
+    // R8-Q1: a full bag no longer refuses the hand-in. Gold and xp are paid at once, the reward items are owed and wait for room.
+    const owedN = (after.owed ?? 0);
+    const st1 = await g.state(), bagItems = st1.inventory.items.length, owed1 = st1.player.owed?.length ?? 0;
+    check(`[R7-handin] ${cls}: full bag: no refusal alert, the hand-in completes, gold and xp are paid at once (${before.gold} -> ${st1.player.gold}), the items are owed (${owed1})`, (await g.page.locator(T("quest-bagfull")).count()) === 0 && st1.quests.sq1.state === "completed" && st1.player.gold > before.gold && (st1.player.xp > before.xp || st1.player.level > 1) && owed1 >= 1 && bagItems === before.bag, [before, after, owed1]);
+    check(`[R7-handin] ${cls}: the owed line is a polite status (role=status) in the dialog and a count sits on the dock button; no role=alert is shown`, (await g.page.getAttribute(T("quest-owed"), "role")) === "status" && (await g.page.locator(T("inv-badge")).innerText()) === String(owed1) && (await g.page.locator('[role="alert"]:visible').count()) === 0, [owedN, owed1]);
+    if (cls === CLASSES[0]) await shot(g.page, "handin-owed");
+    // click and spam: the button is gone after the hand-in; 40 forced clicks and 40 direct inputs pay nothing more and owe nothing more
     const live0 = await g.page.evaluate(() => document.getElementById("live").childNodes.length);
-    for (let i = 0; i < 40; i++) await g.page.evaluate(() => document.querySelector('[data-testid="quest-handin-sq1"]')?.click());
+    for (let i = 0; i < 40; i++) { await g.page.evaluate(() => document.querySelector('[data-testid="quest-handin-sq1"]')?.click()); await g.app("input", { t: "questHandIn", id: "sq1" }).catch(() => {}); }
     await g.app("step", 2);
-    const spam = await g.page.evaluate(() => ({ live: document.getElementById("live").childNodes.length, toasts: document.querySelectorAll("#toast, .toast").length, nodes: document.querySelectorAll("*").length }));
-    check(`[R7-handin] ${cls}: 40 refused clicks leave one toast element and a bounded live region`, spam.toasts <= 1 && spam.live <= Math.max(live0, 1), [live0, spam]);
-    check(`[R7-handin] ${cls}: still nothing granted after the spam`, JSON.stringify(await handInState(g)) === JSON.stringify(before));
-    // make room through the real sell input (the vendor window is open) and double click Hand in
+    const spam = await g.page.evaluate(() => ({ live: document.getElementById("live").childNodes.length, toasts: document.querySelectorAll("#toast, .toast").length }));
+    const st2 = await g.state();
+    check(`[R7-handin] ${cls}: 80 further hand-in attempts leave one toast element, a bounded live region, no second payment and the same owed list`, spam.toasts <= 1 && spam.live <= Math.max(live0, 1) + 2 && st2.player.gold === st1.player.gold && (st2.player.owed?.length ?? 0) === owed1 && st2.inventory.items.length === bagItems, [live0, spam, st1.player.gold, st2.player.gold]);
+    // make room through the real sell input (the vendor window is open): the owed items arrive by themselves, none is lost
     const items = (await g.state()).inventory.items.slice(0, 8);
-    for (const it of items) await g.app("input", { t: "sell", id: it.id });
-    await g.app("step", 2);
-    if (cls === CLASSES[0]) check(`[R7-handin] ${cls}: once the hero has made room, the 'bag is full' alert is gone (it is a role=alert line that is no longer true)`, (await g.page.locator(T("quest-bagfull")).count()) === 0, await g.page.locator(T("quest-bagfull")).count());  // ADV-R7-06 fixed in R7-4.2
-    await g.page.evaluate(() => { const b = document.querySelector('[data-testid="quest-handin-sq1"]'); b.click(); b.click(); });
-    await g.app("step", 2);
+    let sold = 0;
+    for (const it of items) { const r = await g.app("input", { t: "sell", id: it.id }); if (r?.ok !== false) sold++; }
+    await g.app("step", 4);
     s = await g.state();
-    const paid = s.player.gold - after.gold;
-    check(`[R7-handin] ${cls}: after room was made, a double click pays sq1 once (state completed, xp up)`, s.quests.sq1.state === "completed" && s.player.xp >= after.xp, [s.quests.sq1, paid]);
-    check(`[R7-handin] ${cls}: the toast names the reward and the journal badge is set`, /Intern Overflow/.test(s.ui.toast ?? "") && s.ui.badge.journal === true, [s.ui.toast, s.ui.badge]);
+    const owed2 = s.player.owed?.length ?? 0, delivered = owed1 - owed2;
+    check(`[R7-handin] ${cls}: after selling ${sold} items the owed items moved into the bag by themselves (delivered ${delivered}, bag ${bagItems} - ${sold} + ${delivered}), none lost or doubled`, delivered >= 1 && s.inventory.items.length === bagItems - sold + delivered && new Set(s.inventory.items.map((i) => i.id)).size === s.inventory.items.length, [bagItems, sold, owed1, owed2, s.inventory.items.length]);
+    if (cls === CLASSES[0]) check(`[R7-handin] ${cls}: the dock count follows the owed list (${owed2} left)`, owed2 === 0 ? (await g.page.locator(T("inv-badge")).count()) === 0 : (await g.page.locator(T("inv-badge")).innerText()) === String(owed2), owed2);
+    if (owed2) { for (const it of (await g.state()).inventory.items.slice(0, 12)) await g.app("input", { t: "sell", id: it.id }).catch(() => {}); await g.app("step", 4); }
+    s = await g.state();
+    check(`[R7-handin] ${cls}: with the bag freed nothing is owed any more`, (s.player.owed?.length ?? 0) === 0 && (await g.page.locator(T("inv-badge")).count()) === 0, s.player.owed);
+    check(`[R7-handin] ${cls}: the completion toast names the reward and the journal badge is set`, /Intern Overflow/.test(st1.ui.toast ?? "") && s.ui.badge.journal === true, [st1.ui.toast, s.ui.badge]);
     const tr0 = s.ui.tracker;
     check(`[R7-handin] ${cls}: the vendor window no longer lists the completed sq1 (only the open quest, sq5), no Hand in for sq1 (AC-R-258-1)`, (await g.page.locator(T("quest-handin-sq1")).count()) === 0 && (await g.page.locator(T("npc-quest-sq1")).count()) === 0 && (await g.page.locator(T("npc-quest-sq5")).count()) === 1 && (await g.page.locator(T("npc-quest-state-sq5")).textContent()) === "Active", await g.page.locator('[data-testid^="npc-quest-"]').evaluateAll((e) => e.map((x) => x.dataset.testid)));
     await g.page.keyboard.press("Escape"); await g.app("step", 2);
@@ -309,7 +314,7 @@ if (sec("handin2")) {
         await g.page.evaluate((qid) => document.querySelector(`[data-testid="quest-handin-${qid}"]`)?.click(), id); await g.app("step", 2);
         s = await g.state();
       }
-      check(`[R7-handin2] ${cls}: ${id} completed once (gold and experience up${id === "sq4" ? ", the ledger left the pouch" : ", one magic accessory"})`, s.quests[id].state === "completed" && s.player.gold > pre.gold && (id !== "sq4" || !s.player.pouch.some((e) => e.quest === "sq4")) && (id !== "sq5" || s.inventory.items.filter((i) => i.kind === "gear" && i.rarity === "magic" && ["ring", "amulet", "belt"].includes(i.slot)).length >= 1), [pre, s.quests[id].state]);
+      check(`[R7-handin2] ${cls}: ${id} completed once (gold and experience up${id === "sq4" ? ", the ledger left the pouch" : ", one magic accessory"})`, s.quests[id].state === "completed" && s.player.gold > pre.gold && (id !== "sq4" || !s.player.pouch.some((e) => e.quest === "sq4")) && (id !== "sq5" || [...s.inventory.items, ...(s.player.owed ?? [])].filter((i) => i.kind === "gear" && i.rarity === "magic" && ["ring", "amulet", "belt"].includes(i.slot)).length >= 1), [pre, s.quests[id].state]);
       await g.page.keyboard.press("Escape"); await g.app("step", 2);
     }
     check(`[R7-handin2] ${cls}: no page error`, g.errors.length === 0 && g.dialogs.length === 0, [g.errors, g.dialogs]);

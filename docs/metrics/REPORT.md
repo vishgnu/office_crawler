@@ -16,10 +16,10 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | G | 11 | 1893.6 | 117.6 | 1374.1 | 668 | prototypeC3 31/31, g1 32/31, g2 33/32, g3 34/33, gate 34 target; under 33 = another pass; proxy passed at 34/33 with follow-ups | adversarial: null; adversarialNote: No adversarial pass on render work (visual rounds use visual reviewers); the adversarial pass of R5 covered the save/UI code only; codeReview: 0; visualReview: 12; customer: 0; escaped: 0 |
 | R6 | 15 | 2375.6 | 376.8 | 2222.0 | 770 | inGame 35/34, charselect 35/34, uiTreeSlotsPause 35/34, note [appeal, craft]; target 34; first time craft reached 34; G3 was 34/33 | adversarial: 7; codeReview: 15; visualReview: 7; customer: 8; escaped: 0; escapedNote: none shipped; two things were found late and are open: N11/R7-2 floor-entry stutter (found by the richer bench, no review saw it) and F1 hero stand-off (bot watchdog had masked it, CR6-05) |
 | R7 | 29 | 5941.5 | 1105.7 | 5766.3 | 1154 | inGame 35/34, charselect null, uiTreeSlotsPause 35/34, note [appeal, craft]; R7 first review iterate: in-game 35/33, UI 35/32; after the visual fix round R7b pass 35/34 both; R6 was 35/34 | adversarial: 10; codeReview: 16; visualReview: 25; customer: 8; escaped: 0; escapedNote: none shipped; the R7 acceptance feel items (bag full, early deaths) are open for R8 |
-| R8 | 5 | 1311.2 | 235.9 | – | – | – | – |
+| R8 | 6 | 1575.4 | 300.2 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 98 rows, 15961.4 k subagent tokens. **Your messages logged:** 34.
+**Ledger total:** 99 rows, 16225.6 k subagent tokens. **Your messages logged:** 34.
 
 ## Round R3
 
@@ -163,7 +163,8 @@ Retro summary (`round-07.json`): incidents 12, learnings L-032, L-033, L-034, L-
 | implementer | CORE-R8-1 (acceptance follow-ups + CR7L-04/05/06) | 351.2 | 101.6 | done | tests: 1189 pass / 1 fail (ui reds_from_balance); parity: {"medians_min":[24.2,24.9,24.1],"wins":"72/72","all8":"72/72","floor1_deaths":0,"floor2_hotspot":"FM 12, SR 5, IT 0"}; rule_breach: read-only git diff (L-033, 3rd time) |
 | orchestrator | verify CR7L-05 legacy hashes at 0934a57 | – | – | done | result: spawns 9ac4acd3..., stats 86fdc7aa... reproduced exactly at the pre-R7-3 commit (worktree) |
 | implementer | R8-0.2 gear part art (21 categories) | 277.3 | 55.2 | done | fps50_geared: [53.7,58.5,55.4,53.7,53.7]; gearCacheMB: 7.3 |
-| implementer | R8-0.3 UI (busts, owed, toast lane, CR7L-01/02/03, N16) | – | – | done | tests: 1225; e2e: 16/17 (adv-r7 stale fixtures → adversary) |
+| implementer | R8-0.3 UI (busts, owed, toast lane, CR7L-01/02/03, N16) | 264.2 | 64.3 | done | tests: 1225; e2e: 16/17 (adv-r7 stale fixtures → adversary) |
+| reviewer | code review R8 | – | – | done | findings: {"blocking":0,"should":7,"nit":7} |
 
 ## Harness work
 

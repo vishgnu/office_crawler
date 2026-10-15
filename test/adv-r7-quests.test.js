@@ -147,17 +147,22 @@ test("[R7-step] death and respawn change no step and no side quest", () => {
   assert.equal(JSON.stringify(s.quests), before);
 });
 
-test("[R7-kill] kills count only for an active sq1, only zombie interns on floors 1 and 2, never summoned ones, never twice", { todo: "R8-B1: floor 1 is a sparse tutorial floor now (about 12 monsters), so it no longer holds 8 zombie interns; the count is met over floors 1 and 2 (top-up on entry of floor 2)" }, () => {
+test("[R7-kill] kills count only for an active sq1, only zombie interns on floors 1 and 2, never summoned ones, never twice", () => {
   const s = hero(6);
+  // R8-B1: floor 1 is a sparse tutorial floor, so the eight kills are met over floors 1 and 2 together (top-up on entry of floor 2)
   enterFloor(s, 1, { at: "entry" });
-  const zombies = s.monsters.filter((m) => m.type === "zombie-intern");
-  assert.ok(zombies.length >= 8);
+  const on1 = s.monsters.filter((m) => m.type === "zombie-intern").length;
+  enterFloor(s, 2, { at: "entry" });
+  assert.ok(on1 + s.monsters.filter((m) => m.type === "zombie-intern").length >= config.quests.kill.count, "floors 1 and 2 hold enough zombie interns");
+  const zFloor = [1, 2].find((d) => { enterFloor(s, d, { at: "entry" }); return s.monsters.filter((m) => m.type === "zombie-intern").length >= 2; });
+  assert.ok(zFloor, "floor 1 or 2 holds two zombie interns to test with");
   const { damageMonster } = dmg; // the function every kill in the simulation goes through
-  damageMonster(s, zombies[0], 9999, { source: "player" });
+  damageMonster(s, s.monsters.find((m) => m.type === "zombie-intern"), 9999, { source: "player" });
   assert.equal(s.quests.sq1.p, 0, "a kill before Accept does not count");
   accept(s, "sq1");
-  enterFloor(s, 1, { at: "entry" });
+  enterFloor(s, zFloor, { at: "entry" });
   const z = s.monsters.filter((m) => m.type === "zombie-intern");
+  assert.ok(z.length >= 2, "two live zombie interns on the floor (one to kill, one to flag as summoned)");
   damageMonster(s, z[0], 9999, { source: "player" });
   assert.equal(s.quests.sq1.p, 1);
   damageMonster(s, z[0], 9999, { source: "player" });
@@ -261,16 +266,20 @@ test("[R7-pouch] the pouch holds the badge exactly while sq2 is ready: real pick
   assert.equal(r.groundItems.some((g) => g.quest === "sq2"), false, "after a reload the badge is not placed again");
 });
 
-test("[R7-pouch] nothing in the bag, stash, belt, cursor or equipment code can reach the pouch item; the id is not a bag item", { todo: "R8-B3: the fourth belt slot now holds a start potion, so useBelt index 3 is a real potion; the test needs an empty slot index" }, () => {
+test("[R7-pouch] nothing in the bag, stash, belt, cursor or equipment code can reach the pouch item; the id is not a bag item", () => {
   const s = hero(13);
   toBadge(s);
+  // R8-B3: the start potions fill the belt, so useBelt needs a slot that is really empty: empty the last one first (a potion is a legal thing to lose)
+  s.belt[s.belt.length - 1] = null;
+  const emptySlot = s.belt.findIndex((b) => !b);
+  assert.ok(emptySlot >= 0);
   assert.equal(s.quests.sq2.s, "ready");
   const snap = () => JSON.stringify([s.player.pouch, s.quests, s.inventory, s.stash, s.belt, s.equipment, s.cursorItem, s.player.gold]);
   const before = snap();
   talk(s, "vendor");
   for (const cmd of [
     { t: "sell", id: "qi-sq2" }, { t: "drop", id: "qi-sq2" }, { t: "stash", id: "qi-sq2", to: "stash" }, { t: "toBelt", id: "qi-sq2", index: 0 },
-    { t: "equip", id: "qi-sq2" }, { t: "useItem", id: "qi-sq2" }, { t: "unequip", slot: "qi-sq2" }, { t: "pickup", id: "qi-sq2" }, { t: "useBelt", index: 3 },
+    { t: "equip", id: "qi-sq2" }, { t: "useItem", id: "qi-sq2" }, { t: "unequip", slot: "qi-sq2" }, { t: "pickup", id: "qi-sq2" }, { t: "useBelt", index: emptySlot },
   ]) { const r = applyInput(s, cmd); step(s); assert.notEqual(r?.ok, true, `${cmd.t} on the pouch item must fail`); }
   assert.equal(snap(), before);
 });
@@ -300,30 +309,47 @@ test("[R7-pouch] random sequences of real operations never break the invariant, 
 });
 
 // =============================================================================================== hand-in atomicity
-test("[R7-handin] a bag that fits the reward exactly accepts it; one cell fewer is refused with the state untouched and the quest ready; freeing the cell completes it", { todo: "R8-Q1: a full bag no longer refuses a hand-in (the items are owed); replaced by test/r8-core1.test.js" }, () => {
+test("[R7-handin] a bag that fits the reward exactly delivers it at once; one cell fewer still completes the hand-in (gold and xp paid), the item that did not fit is owed and arrives when a cell is free; nothing is lost or doubled", () => {
   for (const [seed, cls] of [[1, "facilities-manager"], [2, "sales-rep"], [3, "it-wizard"], [4, "facilities-manager"]]) for (const id of ["sq1", "sq2", "sq3"]) {
     const s = hero(seed, cls);
     if (id === "sq2") toBadge(s); else { accept(s, id); setQuestStep(s, id, 2); }
     enterFloor(s, 0, { at: "entry" });
     const need = rewardCells(s, id);
     const all = [...need];
+    const rw = rewardOf(s, id), names = [...(rw.gear ? [rw.gear.name] : []), ...rw.potions.map((p) => p.name)].sort();
     fillBag(s, new Set(all.slice(1))); // one hole short
-    const goldBefore = s.player.gold, xpBefore = s.player.xp;
-    const snap = () => hashStateWithout(s, { eventPrefixes: ["quest.", "vendor", "dialog"], paths: ["ui", "events", "eventLog"] });
+    const goldBefore = s.player.gold, xpBefore = s.player.xp, fill = s.inventory.items.length;
     talk(s, GIVER[id]);
-    const before = snap();
     const r = applyInput(s, { t: "questHandIn", id });
-    assert.deepEqual([r.ok, r.error], [false, "bagFull"], `${id} seed ${seed}: one cell short is refused`);
-    assert.equal(snap(), before, `${id}: nothing changed (bytes)`);
-    assert.equal(s.quests[id].s, "ready"); assert.equal(s.player.gold, goldBefore); assert.equal(s.player.xp, xpBefore);
-    if (id === "sq2") assert.equal(s.player.pouch.length, 1, "the badge is still in the pouch");
-    assert.equal(qEvents(s).filter((e) => e.type === "quest.handInRefused").length, 1);
-    fillBag(s, new Set(all)); // exactly fitting
-    const ok = applyInput(s, { t: "questHandIn", id });
-    assert.equal(ok.ok, true, `${id} seed ${seed}: exact fit accepted: ${JSON.stringify(ok)}`);
+    assert.equal(r.ok, true, `${id} seed ${seed}: one cell short still completes: ${JSON.stringify(r)}`);
     assert.equal(s.quests[id].s, "completed");
-    assert.ok(s.player.gold > goldBefore && s.player.xp > xpBefore);
+    assert.ok(s.player.gold > goldBefore, "gold paid at once");
+    assert.ok(s.player.xp > xpBefore || s.player.level > 1, "xp paid at once");
+    if (id === "sq2") assert.equal(s.player.pouch.length, 0, "the badge left the pouch");
+    assert.ok(s.player.owed?.length >= 1, `${id} seed ${seed}: something did not fit and is owed`);
+    assert.equal(qEvents(s).filter((e) => e.type === "quest.handInRefused").length, 0, "no refusal event");
+    const done = qEvents(s).find((e) => e.type === "quest.completed");
+    assert.equal(done.rewards.owed, s.player.owed.length, "the completed event names the owed count");
+    rt(s); // the owed state is a legal save
+    for (let i = 0; i < 30; i++) step(s);
+    assert.ok(s.player.owed?.length >= 1, "still owed while the bag stays full (step does not drop them)");
+    s.inventory.items = s.inventory.items.filter((i) => !i.id.startsWith("fill")); // free the cells of the filler potions (the reward items that fitted stay)
+    step(s);
+    assert.equal(s.player.owed, undefined, "delivered when there is room");
+    const got = s.inventory.items.map((i) => i.name).sort();
+    assert.deepEqual(got, names, `${id} seed ${seed}: exactly the reward, nothing lost, nothing doubled`);
+    const ids = s.inventory.items.map((i) => i.id); assert.equal(new Set(ids).size, ids.length);
+    assert.ok(fill > 0);
     rt(s);
+    // exactly fitting: nothing owed
+    const t = hero(seed, cls);
+    if (id === "sq2") toBadge(t); else { accept(t, id); setQuestStep(t, id, 2); }
+    enterFloor(t, 0, { at: "entry" });
+    fillBag(t, new Set(all));
+    talk(t, GIVER[id]);
+    assert.equal(applyInput(t, { t: "questHandIn", id }).ok, true);
+    assert.equal(t.player.owed, undefined, `${id}: an exact fit leaves nothing owed`);
+    rt(t);
   }
 });
 
@@ -388,15 +414,17 @@ test("[R7-handin] reward rerolls versus requirements: a hero of level 8 with the
   assert.ok(bad.length <= 12, `${bad.length} of 1200 unwearable rewards, first: ${bad.slice(0, 3).join(" | ")}`);
 });
 
-test("[R7-handin] the reward does not depend on how the hero stands when the bag was full: refused, then a bigger bag, gives the same gear as an immediate hand-in", { todo: "R8-Q1: a full bag no longer refuses a hand-in (the items are owed); replaced by test/r8-core1.test.js" }, () => {
+test("[R7-handin] the reward does not depend on the bag: a hand-in into a full bag, delivered later from the owed pouch, gives the same gear as an immediate hand-in", () => {
   const a = hero(41); accept(a, "sq3"); setQuestStep(a, "sq3", 2); talk(a, GIVER.sq3);
   const b = structuredClone(a);
-  fillBag(a); assert.equal(applyInput(a, { t: "questHandIn", id: "sq3" }).error, "bagFull");
+  fillBag(a); assert.equal(applyInput(a, { t: "questHandIn", id: "sq3" }).ok, true);
+  assert.ok(a.player.owed.length >= 1);
   a.inventory.items.length = 0; step(a);
-  assert.equal(applyInput(a, { t: "questHandIn", id: "sq3" }).ok, true);
+  assert.equal(a.player.owed, undefined);
   assert.equal(applyInput(b, { t: "questHandIn", id: "sq3" }).ok, true);
   const name = (s) => gearOf(s).map((i) => i.name).join();
   assert.equal(name(a), name(b));
+  assert.deepEqual(a.inventory.items.map((i) => i.name).sort(), b.inventory.items.map((i) => i.name).sort(), "gear and potions alike");
 });
 
 test("[R7-handin] the rewarded gear is rolled for the class that hands it in (class affix tag) and fits the bag as one item", () => {
@@ -541,13 +569,17 @@ test("[R7-elite] no elite on any other floor and none once sq3 is ready or compl
 });
 
 // =============================================================================================== golden and rng claims
-test("[R7-golden] the recorded runs replay to their pre-quest hash once the quest subtree, the pouch and quest events are removed (3 classes), and emit no quest event", { todo: "R8: run-a.json was re-recorded for the new floor 1; the same proof runs on run-a.legacy.json in test/quests-hash.test.js (legacy balance, stripped hash equals the pre-quest goldens)" }, () => {
+test("[R7-golden] the recorded runs replay to their pre-quest hash once the quest subtree, the pouch and quest events are removed (3 classes), and emit no quest event", () => {
   const strip = { paths: ["quests", "player.pouch"], eventPrefixes: ["quest."] };
-  const runA = JSON.parse(readFileSync(new URL("./fixtures/run-a.json", import.meta.url), "utf8"));
+  // R8: run-a.json was re-recorded for the new floor 1 (sparse, entry grace); the pre-quest baselines belong to the legacy recording of the same run
+  const runA = JSON.parse(readFileSync(new URL("./fixtures/run-a.legacy.json", import.meta.url), "utf8"));
   const old = readFileSync(new URL("./fixtures/run-a.pre-quests.hash", import.meta.url), "utf8").trim();
-  const s = replay(runA, { class: "facilities-manager" });
+  const s = withLegacyBalance(() => replay(runA, { class: "facilities-manager" }));
   assert.equal(withLegacyBalance(() => hashStateWithout(replay(runA, { class: "facilities-manager" }), strip)), old); // R7-3: the baselines are from before the balance numbers changed
   assert.equal(s.eventLog.some((e) => e.type.startsWith("quest.")), false);
+  // the new recording must carry no quest input either: it replays under the current balance with no quest event
+  const runNew = JSON.parse(readFileSync(new URL("./fixtures/run-a.json", import.meta.url), "utf8"));
+  assert.equal(replay(runNew, { class: "facilities-manager" }).eventLog.some((e) => e.type.startsWith("quest.")), false);
   const cls = JSON.parse(readFileSync(new URL("./fixtures/run-class.pre-quests.json", import.meta.url), "utf8"));
   const pre = cls.hashes ?? cls;
   for (const id of CLASSES) {
