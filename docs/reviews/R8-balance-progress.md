@@ -1,0 +1,6 @@
+- BAL-R8 pass1 xpMult floor1 2.5: FM deaths f2 12->2; pass2 xpMult [2.5,1.2,1.1,1,1.2,1.25,1,1]: deaths FM 7 SR 8 IT 5; floor 8 now hotspot; next npm test, goldens
+- moved xp bonus to kill award (damage.js, config.xpMult) because monsterStats xp must be non-decreasing; parity p3: deaths FM 6 SR 6 IT 4, spread; next goldens
+- goldens re-pinned (run-a 6a312bb6de072b9b, run-c 5cc7f05c07b00d96, run-class); legacy proof under helper unchanged 4a96887c22fea751 = pre-quest golden; helper resets xpMult; progression+combat tests use xpMult
+- run-c re-recorded (bot quests off, depth 9, respawn; seed 3, 24000 ticks, reaches floor 4, 124 kills) because the old script no longer reached floor 3; hash 37fd4406e43949fd
+- report written; waiting for e2e (run-all) to finish
+- done: npm test x3 green (1295 pass, 1 todo), build ok, e2e all green except adv-r7 1 check (R7-handin owed items after dropping, pre-existing from R8-Q1 owed; was 2 reds before); finished

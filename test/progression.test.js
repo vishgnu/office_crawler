@@ -24,7 +24,7 @@ test("AC-R-013-1 a kill gives exactly the monster's xp, once", () => {
   for (let i = 0; i < 400 && m.ai !== "dead"; i++) { step(s); kills += ev(s, "kill").length; }
   assert.equal(m.ai, "dead");
   assert.equal(kills, 1);
-  assert.equal(s.player.xp, want);
+  assert.equal(s.player.xp, Math.round(want * (config.xpMult?.[s.depth - 1] ?? 1))); // R8-BAL: the floor xp multiplier is paid at the kill
 });
 
 test("AC-R-013-3 crossing a threshold: level+1, +5 attribute points, +1 skill point, hp/mp refilled, one levelup event", () => {

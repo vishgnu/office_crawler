@@ -37,7 +37,7 @@ export function killMonster(state, m, source = "player") {
   const p = state.player;
   m.hp = 0; m.ai = "dead"; m.deathT = 0; m.path = []; m.next = null; m.moveT = 0; m.attackT = 0; m.staggerT = 0; m.muteT = 0;
   m.burnT = 0; m.slowT = 0; m.weakenT = 0; m.statusKind = null;
-  const xp = m.summoned ? 0 : m.xp; // staff called by the boss give nothing (no farming)
+  const xpm = config.xpMult, xp = m.summoned ? 0 : Math.round(m.xp * (m.tier === "boss" || !xpm ? 1 : xpm[Math.min(Math.max(1, state.depth), xpm.length) - 1])); // R8-BAL: config.xpMult is paid at the kill (monsterStats stays non-decreasing, AC-R-031-1); // staff called by the boss give nothing (no farming)
   emit(state, { type: "kill", source, target: m.id, xp });
   gainXp(state, xp);
   if (!m.summoned) dropLoot(state, m);

@@ -14,14 +14,14 @@ const OLD_HP = { "zombie-intern": 14, "printer-imp": 8, "temp-worker": 10, "prin
 export function withLegacyBalance(fn) {
   const keep = {
     depthMult: config.depthMult, xpPct: config.scaling.xpPct, champ: config.championChance, vend: monsters["vending-machine"].minDepth, exit: bases["emergency-exit"].value,
-    early: config.population.early, potionMarkup: config.potionBuyOverSell, kits: classes.map((c) => c.startKit.healthPotions), grace: config.entryGrace, boss: { hp: config.boss.hpMult, dmg: config.boss.damageMult },
+    early: config.population.early, xpMult: config.xpMult, potionMarkup: config.potionBuyOverSell, kits: classes.map((c) => c.startKit.healthPotions), grace: config.entryGrace, boss: { hp: config.boss.hpMult, dmg: config.boss.damageMult },
     hp: Object.fromEntries(Object.keys(OLD_HP).map((id) => [id, monsters[id].hpBase])),
   };
   try {
     config.depthMult = { hp: [1, 1, 1, 1, 1, 1, 1, 1], damage: [1, 1, 1, 1, 1, 1, 1, 1] };
     config.scaling.xpPct = 20; config.championChance = 0.3; monsters["vending-machine"].minDepth = 4; bases["emergency-exit"].value = 25;
     config.potionBuyOverSell = config.buyOverSell; for (const c of classes) c.startKit.healthPotions = OLD_POTIONS; // R8-B3
-    config.entryGrace = null; config.population.early = null; // R8-B2, R8-B1 (floor 1 pack rules)
+    config.xpMult = null; config.entryGrace = null; config.population.early = null; // R8-B2, R8-B1 (floor 1 pack rules)
     config.boss.hpMult = 3; config.boss.damageMult = 0.7; // CR7L-05: the boss numbers of the pre-R7-3 balance (R7-balance.md item 6)
     for (const [id, hp] of Object.entries(OLD_HP)) monsters[id].hpBase = hp;
     const out = fn();
@@ -30,7 +30,7 @@ export function withLegacyBalance(fn) {
   } finally {
     config.depthMult = keep.depthMult; config.scaling.xpPct = keep.xpPct; config.championChance = keep.champ; monsters["vending-machine"].minDepth = keep.vend; bases["emergency-exit"].value = keep.exit;
     config.potionBuyOverSell = keep.potionMarkup; classes.forEach((c, i) => { c.startKit.healthPotions = keep.kits[i]; });
-    config.entryGrace = keep.grace; config.population.early = keep.early;
+    config.entryGrace = keep.grace; config.population.early = keep.early; config.xpMult = keep.xpMult;
     config.boss.hpMult = keep.boss.hp; config.boss.damageMult = keep.boss.dmg;
     for (const [id, hp] of Object.entries(keep.hp)) monsters[id].hpBase = hp;
   }

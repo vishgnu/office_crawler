@@ -139,6 +139,8 @@ export const config = {
   // R7-3 (customer decision: spread the difficulty): per-depth multiplier (index depth - 1, depths past the end use the last entry) on the depth-scaled hp and damage of normal monsters; bosses are not touched.
   // Floors 1 to 8 start from the linear scaling above; the early floors get teeth and the deep ones lose some, so no floor stands out in deaths.
   depthMult: { hp: [1, 0.72, 0.56, 0.48, 0.43, 0.365, 0.375, 0.35], damage: [2.3, 1.98, 1.74, 1.53, 1.37, 1.24, 1.2, 1.21] }, // effective hp (times hpBase) 1.0 to 2.5, effective damage 2.3 to 2.8 x the old registry; never falls with depth (AC-R-031-1); floors 4 and 6 stay level with 3 and 5 because the quest rewards of the Lobby trips arrive after them
+  // R8-BAL: per-depth multiplier on the xp of normal monsters (index depth - 1, past the end the last entry). Floor 1 is sparse (R8-B1) and gives little xp, so the hero met floor 2 under-levelled; this pays it back on floor 1.
+  xpMult: [2.5, 1.2, 1.1, 1, 1.2, 1.25, 1, 1],
   // Floor population budget (AC-R-034-3): sum of cost * tierFactor stays within it.
   budgetBase: 120, budgetPerDepth: 32,
   population: { packsWanted: [12, 16], maxPacks: 50, tries: 400, stopAtBudget: 0.6, early: { 1: { minDist: 20, packMax: 2, packGap: 10 } } } /* R8-B1: tutorial floor; null switches it off (test/balance-legacy.js) */, // how many packs a floor tries to place before it stops

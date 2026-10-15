@@ -108,7 +108,7 @@ test("AC-R-021-5 a lethal hit leaves hp 0, ai dead, one kill event, target clear
   run(s, 200);
   assert.equal(s.eventLog.filter((e) => e.type === "kill").length, 1);
   assert.equal(kills, 1);
-  assert.equal(s.player.xp, content.monsters["zombie-intern"].xp);
+  assert.equal(s.player.xp, Math.round(content.monsters["zombie-intern"].xp * (config.xpMult?.[s.depth - 1] ?? 1))); // R8-BAL: floor xp multiplier
 });
 
 test("AC-R-021-6 a dead monster does nothing and cannot be targeted", () => {
