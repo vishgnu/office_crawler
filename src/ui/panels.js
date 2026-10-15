@@ -104,7 +104,7 @@ export function createPanels(root, game) {
       const ghost = held && origin?.kind === "belt" && origin.i === i ? held : null;
       h += `<button class="bslot" type="button" data-testid="bslot-${i}" data-belt="${i}" data-fk="b.${i}" ${it ? `data-tip="belt:${Number(i)}"` : ""} aria-label="${esc(T.belt)} ${i + 1}: ${it ? esc(it.name) : T.empty}">${it ? itemBox(it, { fill: true }) : ghost ? itemBox(ghost, { fill: true, cls: "dim" }) : `<span class="lb">${i + 1}</span>`}</button>`;
     });
-    h += `</div></div><p class="keyhint">${esc(T.dragHint)}</p></div></div>`;
+    h += `</div></div></div></div><p class="keyhint">${esc(T.dragHint)}</p>`; // R8-A1: the hint spans the drawer under the doll row (in the narrow side column it was four lines and made the row taller than the doll)
     // grid: 40 cell buttons under an absolutely positioned item layer
     h += `<div class="gridwrap"><div class="gi"><div class="grid" role="group" aria-label="${esc(T.inventoryGrid)}">`;
     for (let y = 0; y < c.inventory.h; y++) for (let x = 0; x < c.inventory.w; x++) {

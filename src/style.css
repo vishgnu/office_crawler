@@ -51,8 +51,9 @@ h2 { margin: 0 0 8px; font-size: calc(clamp(26px, 4.5vw, 44px) * var(--ts, 1)); 
 /* HUD slot layer, placed on the rects of hudLayout() */
 .hudui{position:absolute;inset:0}
 .hudui>*{pointer-events:none}
-.hudui button,.hudui .dock,.hudui .xptip{pointer-events:auto}
-.xptip{position:absolute;background:transparent}
+.hudui button,.hudui .dock{pointer-events:auto}
+/* R8-A2: the XP hover box (about 204x29) sat over the canvas and swallowed clicks on the ground behind the HUD; it keeps title/aria-label for assistive tech (the total is also in the Employee File) but takes no pointer events */
+.xptip{position:absolute;background:transparent;pointer-events:none!important}
 .hgroup{display:contents}
 .sk,.hb{position:absolute;margin:0;padding:0;background:transparent;border:0;border-radius:9px;touch-action:manipulation}
 #ui .sk .ic,#ui .hb .ic{position:absolute;left:14%;right:14%;top:14%;bottom:14%;width:72%;height:72%}
@@ -98,7 +99,7 @@ h2 { margin: 0 0 8px; font-size: calc(clamp(26px, 4.5vw, 44px) * var(--ts, 1)); 
 .pb{overflow:auto;flex:1;min-height:0}
 
 /* inventory */
-.inv{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.inv{padding:10px 12px;display:flex;flex-direction:column;gap:6px}
 .dollrow{display:flex;gap:10px;align-items:flex-start}
 .doll{display:grid;grid-template-columns:repeat(7,var(--cw));grid-template-rows:repeat(6,var(--cw));flex:none}
 .slot,.bslot{position:relative;margin:2px;background:var(--panel2);border:2px solid var(--ol);border-radius:8px;box-shadow:inset 0 0 0 1px var(--rim);padding:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--mut);text-align:center;line-height:1.1;touch-action:none;min-width:0}
@@ -106,7 +107,7 @@ h2 { margin: 0 0 8px; font-size: calc(clamp(26px, 4.5vw, 44px) * var(--ts, 1)); 
 .slot.ok,.bslot.ok{outline:3px solid #fff;outline-offset:-1px}
 .slot.bad,.bslot.bad{outline:3px dashed var(--bad);outline-offset:-1px;background:repeating-linear-gradient(45deg,rgba(255,143,128,.3) 0 6px,transparent 6px 12px),var(--panel2)}
 .side{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
-.legend{list-style:none;margin:0;padding:6px 8px;background:var(--panel3);border:2px solid var(--ol);border-radius:8px;font-size:14px;display:grid;gap:4px}
+.legend{list-style:none;margin:0;padding:4px 8px;background:var(--panel3);border:2px solid var(--ol);border-radius:8px;font-size:14px;display:grid;gap:4px}
 .legend .lh,.beltbox h4{margin:0;font-size:14px;color:var(--mut);letter-spacing:.06em;text-transform:uppercase}
 .legend li:not(.lh){display:flex;align-items:center;gap:6px}
 .swatch{width:20px;height:14px;border-radius:4px;background:#322a6c;flex:none}
@@ -135,6 +136,8 @@ h2 { margin: 0 0 8px; font-size: calc(clamp(26px, 4.5vw, 44px) * var(--ts, 1)); 
 .pv{position:absolute;pointer-events:none;border:3px solid #fff;border-radius:6px;background:rgba(255,255,255,.2);z-index:3;box-sizing:border-box;left:calc(var(--cw) * var(--x));top:calc(var(--cw) * var(--y));width:calc(var(--cw) * var(--w));height:calc(var(--cw) * var(--h))}
 .pv.bad{border-style:dashed;border-color:var(--bad);background:repeating-linear-gradient(45deg,rgba(255,143,128,.35) 0 6px,transparent 6px 12px)}
 .footrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+/* R8-A1: when the drawer is shorter than its content (<=1366x768) the body scrolls, but the footer (gold, owed line, Put back / Drop on floor) stays in view */
+#pright .footrow{position:sticky;bottom:-10px;background:var(--panel);padding:6px 0 4px;margin-bottom:-4px;z-index:5;border-top:2px solid var(--rim)}
 .gold{display:inline-flex;align-items:center;gap:8px;font-size:17px;font-weight:800;color:var(--gold);background:var(--panel3);border:2px solid var(--ol);border-radius:8px;padding:3px 10px}
 .notice{flex:1;min-width:140px;font-size:14px;color:var(--txt);min-height:20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .hint{color:var(--mut)}
@@ -265,8 +268,11 @@ button.plus:disabled{background:var(--disabled-bg);color:var(--disabled-fg);bord
 .noanim .drawer,.noanim .drawer.open{transition:none!important}
 @media (prefers-reduced-motion:reduce){.drawer{transition:none!important}.d b.flash{animation:none}}
 
-/* S2 fix: touch targets of at least 44 px on the phone (the inventory grid itself is the one exception: 10 columns at 390 px), no map button (M / Tab still work) */
-#ui.phone .hbtn[data-open=map]{display:none}
+/* S2 fix: touch targets of at least 44 px on the phone (the inventory grid itself is the one exception: 10 columns at 390 px). R8-U5: the Map button is back on the phone (touch had no way to open the map); the dock shows no key caps there */
+#ui.phone .hbtn kbd{display:none}
+/* R8-U1: with the map open the single Map button is a compact close button at the right edge; the title (centred, shortened to "Map: ...") stays clear of it */
+#ui.phone.map-open .dock .hbtn[data-open=map]{padding:3px 8px;min-width:44px;justify-content:center}
+#ui.phone.map-open .dock .hbtn[data-open=map] span:first-child{margin-right:0;padding-right:0}
 #ui.phone .mini,#ui.phone .rbtn,#ui.phone .learn,#ui.phone .heal,#ui.phone .tab,#ui.phone .vtabs button{min-height:44px;min-width:44px}
 #ui.phone .hbtn{min-height:44px}
 #ui.phone .dock{gap:4px}

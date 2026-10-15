@@ -56,7 +56,7 @@ export const T = {
   msgHeldWorld: "Place the item first, or press Esc to put it back.",
   stairsLocked: "The way down is locked. Something waits below.",
   // map (R-075) and Emergency Exit (R-046)
-  mapTitle: "Floor map", openMap: "Map", closeMap: "Close map (M)", mapLegend: "You, stairs, people, exit door", mapUnexplored: "Nothing explored yet.",
+  mapTitle: "Map", openMap: "Map", closeMap: "Close map (M)", mapLegend: "You, stairs, people, exit door", mapUnexplored: "Nothing explored yet.",
   msgPortalOpen: "Emergency Exit: a door opens. Step through to return here.", msgPortalUse: "You step through the Emergency Exit.", msgPortalBack: "The Emergency Exit leads back to your floor.", msgExitUse: "Emergency Exit used.", useItem: "Use", exitItemHint: "Right-click to use, or press its belt key.", exitEffect: "Door to the Lobby; walk back through it",
   // S3 title, save, options, victory, boss
   pointsHint: "You have points to spend: C for attributes, S for skills.",
