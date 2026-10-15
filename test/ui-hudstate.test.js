@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { newGame, applyInput, content, config } from "../src/core/index.js";
+import { newGame, applyInput, content, config, classById } from "../src/core/index.js";
 import { hudState } from "../src/render/hud.js";
 import { hudLayout } from "../src/ui/layout.js";
 
@@ -37,7 +37,8 @@ test("AC-R-071-2 belt mirrors state.belt with key labels 1-4", () => {
   const h = hudState(s, 1280, 800, style);
   assert.equal(h.belt.length, 4);
   h.belt.forEach((b, i) => { assert.equal(b.key, String(i + 1)); assert.equal(b.empty, !s.belt[i]); assert.equal(b.item?.id ?? null, s.belt[i]?.id ?? null); });
-  assert.equal(h.belt.filter((b) => !b.empty).length, config.startKit.healthPotions);
+  const kit = classById(s.player.class).startKit; // R8-B3: the belt starts with the class kit (4/4/3 health potions, a mana potion for the caster)
+  assert.equal(h.belt.filter((b) => !b.empty).length, kit.healthPotions + (kit.manaPotions ?? 0));
 });
 
 test("AC-R-077-2 the xp bar is progress inside the level; point indicators and the target come from the state", () => {

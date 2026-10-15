@@ -46,7 +46,10 @@ test("AC-R-249-2 / AC-R-258-1 the dialog model lists every non-completed quest o
   const rdy = questDialogModel(qv(s), "vendor")[0];
   assert.ok(rdy.handIn && rdy.text === content.quests.sq1.text.ready);
   assert.ok(questDialogHtml([rdy]).includes('data-qhandin="sq1"'));
-  assert.ok(questDialogHtml([rdy], "sq1").includes('data-testid="quest-bagfull"') && !questDialogHtml([rdy], null).includes("quest-bagfull"));
+  assert.ok(!questDialogHtml([rdy]).includes("quest-bagfull") && !questDialogHtml([rdy]).includes("nq-warn"), "the bag-full refusal UI is gone (R8-Q1)");
+  assert.ok(!questDialogHtml([rdy], 0).includes("quest-owed"), "nothing owed: no line");
+  assert.ok(questDialogHtml([rdy], 2).includes('data-testid="quest-owed"') && questDialogHtml([rdy], 2).includes("2 items wait until your bag has room"));
+  assert.ok(questDialogHtml([rdy], 1).includes("1 item waits until your bag has room"));
   setQuestStep(s, "sq1", 3);
   assert.deepEqual(questDialogModel(qv(s), "vendor").map((e) => e.id), ["sq5"], "with sq1 completed the vendor shows only sq5");
   setQuestStep(s, "sq5", 3);
@@ -67,7 +70,10 @@ test("AC-R-254-2 quest toasts through messageFor: accepted, step, completed; han
   const arc = messageFor({ type: "quest.completed", id: "main", title: "Why the Lights Went Out", rewards: { gold: 50, xp: 65, items: [] } }, s);
   assert.ok(arc.includes("completed") && arc.includes("50 gold") && arc.includes("65 experience"), arc);
   assert.equal(messageFor({ type: "quest.completed", id: "main", title: "Why", rewards: { gold: 0, xp: 0, items: [] } }, s), "Why: completed");
-  assert.equal(messageFor({ type: "quest.handInRefused", id: "sq2", reason: "bagFull" }, s), T.bagFullNotice);
+  assert.equal(messageFor({ type: "quest.handInRefused", id: "sq2", reason: "bagFull" }, s), null, "the refusal no longer exists in the core: no line");
+  const owed = messageFor({ type: "quest.completed", id: "sq2", title: "Cold Case", rewards: { gold: 10, xp: 20, items: ["Hard Hat"], owed: 1 } }, s);
+  assert.ok(owed.includes("Hard Hat") && owed.endsWith("1 item waits until your bag has room."), owed);
+  assert.ok(messageFor({ type: "quest.completed", id: "sq2", title: "Cold Case", rewards: { gold: 10, xp: 20, items: ["a", "b"], owed: 2 } }, s).endsWith("2 items wait until your bag has room."));
   assert.equal(messageFor({ type: "quest.item", id: "qi-sq2", quest: "sq2", name: "x" }, s), null);
   assert.equal(messageFor({ type: "quest.pinned", id: "sq2" }, s), null);
 });

@@ -6,6 +6,7 @@ import { launch, check, finish, startNew } from "./helpers.mjs";
 import { T as UT } from "../src/ui/text.js";
 import { config, content } from "../src/core/index.js";
 
+const SH = process.env.E2E_SHOTS || "docs/shots"; // L-042: runs by agents set E2E_SHOTS to a temp dir
 const T = (id) => `[data-testid="${id}"]`;
 const browser = await launch();
 const D = { width: 1280, height: 720 }, M = { width: 390, height: 844 };
@@ -50,7 +51,7 @@ const toastText = (g) => g.page.evaluate(() => { const t = document.querySelecto
   const two = await g.page.evaluate(() => ({ ids: [...document.querySelectorAll('[data-testid="npc-window"] .nq')].map((l) => l.dataset.quest), acc: ["sq1", "sq5"].map((i) => !!document.querySelector(`[data-testid="quest-accept-${i}"]`) && !!document.querySelector(`[data-testid="quest-decline-${i}"]`)), sq5: document.querySelector('[data-testid="npc-quest-reward-sq5"]')?.textContent, text5: document.querySelector('[data-testid="npc-quest-text-sq5"]')?.textContent, stock: !!document.querySelector('[data-testid="vendor-stock"]') }));
   check("AC-R-258-1 the vendor shows both of its quests, sq1 then sq5, each with Accept and Decline, the stock still there", JSON.stringify(two.ids) === '["sq1","sq5"]' && two.acc.every(Boolean) && two.stock, two);
   check("AC-R-258-4 / 247-4 the sq5 reward text names a magic ring, amulet or belt and no potions; the offer is the sq5 text", /ring, amulet or belt \(Magic\)/.test(two.sq5) && !/potions/.test(two.sq5) && two.text5.startsWith("The consultants upstairs"), two);
-  await g.page.screenshot({ path: "docs/shots/r74-ui-dialog-vendor-two-d.jpg", type: "jpeg", quality: 82 });
+  await g.page.screenshot({ path: `${SH}/r74-ui-dialog-vendor-two-d.jpg`, type: "jpeg", quality: 82 });
   check("a11y: the quest block is a labelled group, focus went into the window onto the first quest button, no horizontal scroll", win.role === "group" && /Intern Overflow/.test(win.label) && win.active === "quest-accept-sq1" && win.hs, win);
   await g.page.click(T("quest-decline-sq1"));
   await g.page.waitForFunction(() => !window.__app.getState().ui.dialog);
@@ -61,7 +62,7 @@ const toastText = (g) => g.page.evaluate(() => { const t = document.querySelecto
   await talk(g, "stash");
   const stw = await g.page.evaluate(() => ({ kind: document.querySelector('[data-testid="npc-window"]')?.dataset.kind, ids: [...document.querySelectorAll('[data-testid="npc-window"] .nq')].map((l) => l.dataset.quest), rw: document.querySelector('[data-testid="npc-quest-reward-sq4"]')?.textContent, locker: !!document.querySelector('[data-testid="stash-items"]'), active: document.activeElement?.dataset?.testid, hs: document.documentElement.scrollWidth <= innerWidth }));
   check("AC-R-258-1 the stash keeper's window shows sq4 (gold, experience, potions, no gear) above the locker, which works as before", stw.kind === "stash" && JSON.stringify(stw.ids) === '["sq4"]' && /gold/.test(stw.rw) && /experience/.test(stw.rw) && /potions/.test(stw.rw) && !/magic|armour|weapon/i.test(stw.rw) && stw.locker && stw.active === "quest-accept-sq4" && stw.hs, stw);
-  await g.page.screenshot({ path: "docs/shots/r74-ui-dialog-stash-d.jpg", type: "jpeg", quality: 82 });
+  await g.page.screenshot({ path: `${SH}/r74-ui-dialog-stash-d.jpg`, type: "jpeg", quality: 82 });
   await g.page.click(T("quest-decline-sq4"));
   await g.page.waitForFunction(() => !window.__app.getState().ui.dialog);
   await talk(g, "healer");
@@ -71,7 +72,7 @@ const toastText = (g) => g.page.evaluate(() => { const t = document.querySelecto
   await g.page.click(T("quest-accept-sq2"));
   s = await g.state();
   check("accept: sq2 is active, the window shows the progress line and no Accept button", s.quests.sq2.state === "active" && (await g.page.locator(T("quest-accept-sq2")).count()) === 0 && (await dlgText(g, "npc-quest-state-sq2")) === UT.stateActive && (await g.page.locator(T("npc-quest-text-sq2")).innerText()).startsWith("No badge yet"));
-  await g.page.screenshot({ path: "docs/shots/r7-ui-toast-d.jpg", type: "jpeg", quality: 82 });
+  await g.page.screenshot({ path: `${SH}/r7-ui-toast-d.jpg`, type: "jpeg", quality: 82 });
   const tt = await toastText(g);
   check("AC-R-254-2 the toast shows the quest title and the new next step", s.ui.toast === `${s.quests.sq2.title}: ${s.quests.sq2.nextStep}` && tt === s.ui.toast, [s.ui.toast, tt]);
   check("AC-R-254-2 the journal badge is set", s.ui.badge.journal === true && (await g.page.locator(T("journal-badge")).count()) === 1);
@@ -144,20 +145,21 @@ const toastText = (g) => g.page.evaluate(() => { const t = document.querySelecto
   const mk2 = (await g.app("perf")).npcMarkers;
   check("AC-R-249-1 ready quests show a question marker, a different shape from the exclamation", ["vendor", "healer", "potions", "stash"].every((n) => mk2.find((m) => m.id === n)?.shape === "question"), mk2);
   await talk(g, "healer");
-  const before = JSON.stringify([s.player.gold, s.player.xp, s.inventory.items.length, s.player.pouch]);
+  const gold2 = s.player.gold, xp2 = s.player.xp;
   const rdy = await g.page.evaluate(() => ({ btn: !!document.querySelector('[data-testid="quest-handin-sq2"]'), text: document.querySelector('[data-testid="npc-quest-text-sq2"]')?.textContent, state: document.querySelector('[data-testid="npc-quest-state-sq2"]')?.textContent }));
   check("AC-R-249-2 the ready state shows the hand-in line and a Hand in button", rdy.btn && rdy.text.startsWith("That is the one") && rdy.state === UT.stateReady, rdy);
-  await g.page.screenshot({ path: "docs/shots/r7-ui-dialog-ready-d.jpg", type: "jpeg", quality: 82 });
+  await g.page.screenshot({ path: `${SH}/r7-ui-dialog-ready-d.jpg`, type: "jpeg", quality: 82 });
   await g.page.click(T("quest-handin-sq2"));
   await g.page.waitForTimeout(150);
   s = await g.state();
-  const after = JSON.stringify([s.player.gold, s.player.xp, s.inventory.items.length, s.player.pouch]);
-  check("AC-R-247-3 bag full: the hand-in is refused, nothing granted, the quest stays ready, the pouch item stays", s.quests.sq2.state === "ready" && before === after, [before, after]);
-  check("AC-R-247-3 the window says so (alert text) and a toast repeats it", (await dlgText(g, "quest-bagfull")) === UT.bagFullNotice && s.ui.toast === UT.bagFullNotice && (await g.page.locator(T("quest-bagfull")).getAttribute("role")) === "alert", s.ui.toast);
-  const focusKept = await g.page.evaluate(() => document.activeElement?.dataset?.testid);
-  check("a11y: focus stays on the Hand in button after the refusal", focusKept === "quest-handin-sq2", focusKept);
-  await g.page.screenshot({ path: "docs/shots/r7-ui-dialog-bagfull-d.jpg", type: "jpeg", quality: 82 });
+  check("AC-R-247-3 (R8-Q1) bag full: the hand-in completes, gold and xp are paid, the quest item leaves the pouch, the reward item is owed", s.quests.sq2.state === "completed" && s.player.gold > gold2 && s.player.xp >= xp2 && !s.player.pouch.some((p) => p.quest === "sq2") && (s.player.owed?.length ?? 0) >= 1, [s.quests.sq2, s.player.owed?.length]);
+  const owedTxt = await dlgText(g, "quest-owed").catch(() => ""), owedN = s.player.owed?.length ?? 0;
+  check("AC-R-247-3 the window and the toast say that the items wait until the bag has room; the dock button counts them", /wait until your bag has room|waits until your bag has room/.test(owedTxt) && (s.ui.toast ?? "").includes("until your bag has room") && (await g.page.locator(T("inv-badge")).innerText()) === String(owedN) && (await g.page.locator(T("quest-owed")).getAttribute("role")) === "status", [owedTxt, s.ui.toast]);
+  await g.page.screenshot({ path: `${SH}/r8ui-owed-d.jpg`, type: "jpeg", quality: 82 });
   await closeDlg(g);
+  await g.app("ui.open", "inventory");
+  check("AC-R-247-3 the Desk Drawer shows the owed line while items wait", (await g.page.locator(T("inv-owed")).count()) === 1);
+  await g.app("ui.close", "inventory");
   // free space through the real vendor window: sell body armour until there is room
   await talk(g, "vendor");
   await g.page.click(T("tab-sell"));
@@ -178,11 +180,8 @@ const toastText = (g) => g.page.evaluate(() => { const t = document.querySelecto
     s.quests.sq1.state === "completed" && s.player.gold > gold0 && s.player.xp > xp0 && s.inventory.items.length + s.belt.filter(Boolean).length > inv0 - 1 && (await g.page.locator(T("npc-quest-sq1")).count()) === 0 && (await g.page.locator(T("quest-handin-sq5")).count()) === 1 && (await g.page.locator(T("quest-handin-sq1")).count()) === 0, [s.quests.sq1, gold0, s.player.gold]);
   check("AC-R-254-2 the completion toast names the quest and its rewards", /^Intern Overflow: completed \(.*gold.*experience/.test(s.ui.toast ?? ""), s.ui.toast);
   await closeDlg(g);
-  await talk(g, "healer");
-  await g.page.click(T("quest-handin-sq2"));
   s = await g.state();
-  check("AC-R-247-2 after freeing space the hand-in to the healer succeeds and gives one armour piece", s.quests.sq2.state === "completed" && !s.player.pouch.some((p) => p.quest === "sq2"), [s.quests.sq2, s.player.pouch]);
-  await closeDlg(g);
+  check("AC-R-247-2 (R8-Q1) after freeing space the owed reward moved into the bag by itself: nothing owed, the indicators are gone", (s.player.owed?.length ?? 0) === 0 && (await g.page.locator(T("inv-badge")).count()) === 0, [s.player.owed?.length]);
   await talk(g, "vendor");
   await g.page.click(T("quest-handin-sq5"));
   s = await g.state();
@@ -223,7 +222,7 @@ const toastText = (g) => g.page.evaluate(() => { const t = document.querySelecto
   const m2 = list.slots[1].mainStep;
   check("AC-R-259-2 the migrated v3 slot (floor 4) shows its derived global step 5 with 0/5", c2 === `${content.mainSteps[m2 - 1].title} · 0/${config.quests.sideCount}` && m2 === 5 && c2 === "Check the records floor · 0/5", [c2, m2]);
   check("AC-R-252-1 two cards, two different lines", c1 !== c2 && c1.endsWith("· 4/5"), [c1, c2]);
-  await g.page.screenshot({ path: "docs/shots/r74-ui-slotcard-d.jpg", type: "jpeg", quality: 82 });
+  await g.page.screenshot({ path: `${SH}/r74-ui-slotcard-d.jpg`, type: "jpeg", quality: 82 });
   await g.page.click(T("slot-load-2"));
   if (await g.page.locator('[data-testid$="-yes"]').count()) await g.page.click('[data-testid$="-yes"]');
   await g.page.waitForFunction(() => window.__app.getState().scene !== "title", null, { timeout: 15000 });
@@ -236,7 +235,7 @@ const toastText = (g) => g.page.evaluate(() => { const t = document.querySelecto
   await g.app("cheat.teleportFloor", 0); // the slot was saved on floor 4: walk (teleport) back to the Lobby
   await g.page.waitForFunction(() => window.__app.getState().scene === "town");
   await talk(g, "vendor");
-  await g.page.screenshot({ path: "docs/shots/r7-ui-dialog-offer-d.jpg", type: "jpeg", quality: 82 });
+  await g.page.screenshot({ path: `${SH}/r7-ui-dialog-offer-d.jpg`, type: "jpeg", quality: 82 });
   check("AC-R-251-3 the vendor offers sq1 in the migrated game", (await g.page.locator(T("quest-accept-sq1")).count()) === 1);
   await g.page.click(T("quest-accept-sq1"));
   s = await g.state();
@@ -261,7 +260,7 @@ const toastText = (g) => g.page.evaluate(() => { const t = document.querySelecto
   });
   check("AC-R-244-1 phone: the quest block fits the screen, no horizontal scroll, long text wraps", m.hs && m.inside && m.text, m);
   check("phone: Accept and Decline are touch-sized (at least 44 px high, like the dock buttons)", m.acc[1] >= 44 && m.dec[1] >= 44 && m.acc[0] >= 44 && m.close[1] >= 30, m);
-  await g.page.screenshot({ path: "docs/shots/r7-ui-dialog-m.jpg", type: "jpeg", quality: 82 });
+  await g.page.screenshot({ path: `${SH}/r7-ui-dialog-m.jpg`, type: "jpeg", quality: 82 });
   await g.page.click(T("quest-accept-sq1"));
   check("phone: Accept works by tap and the toast shows", (await g.state()).quests.sq1.state === "active" && /Intern Overflow/.test((await toastText(g)) ?? ""));
   check("phone: no page errors", g.errors.length === 0, g.errors);

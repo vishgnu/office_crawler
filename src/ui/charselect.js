@@ -3,7 +3,7 @@
 // and Load game. Borrowed: a "ding" pulse on the ring when the class changes, the SELECTED stamp and the elevator doors after Start.
 // The figures are the in-world class sprites (render/figure.js drawFigure); this file draws the lobby backdrop and drives the animation.
 // Text only via textContent / the T table; no game rules (the class data comes from classCards(), names from validateName/suggestName).
-import { classCards, validateName, suggestName } from "../core/index.js";
+import { classCards, validateName, suggestName, makeItem } from "../core/index.js";
 import { content } from "../core/index.js";
 import { T } from "./text.js";
 import { skillIcon } from "./icons.js";
@@ -19,6 +19,15 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const ss = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const hash = (n) => { n = Math.sin(n * 127.1 + 311.7) * 43758.5453; return n - Math.floor(n); };
 const reduced = () => document.documentElement.classList.contains("noanim") || (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+/** R8 (AC-R-260-6): a new character wears the class's starting weapon (session.js createCharacter -> wearStartKit), so the card shows it. "" = bare. */
+function kitLook(classId) {
+  try {
+    const base = content.classes.find((k) => k.id === classId)?.startKit?.weapon;
+    const l = base ? figures.look({ weapon: makeItem(base) }) : "";
+    return typeof l === "string" && l !== "-|-|-|-|-|-" ? l : "";
+  } catch { return ""; }
+}
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -112,7 +121,7 @@ export function createCharSelect(h, info) {
   const btns = cards.map((c, i) => {
     const b = el("button", "cs-cls"); b.type = "button"; b.setAttribute("role", "radio"); b.dataset.testid = `class-${c.id}`; b.dataset.class = c.id;
     b.style.setProperty("--x", String(SX[i] * 100)); b.style.setProperty("--c", figures.accent[c.id] ?? "#ffd43b");
-    const fig = el("canvas", "cs-fig"); fig.setAttribute("aria-hidden", "true");
+    const fig = el("canvas", "cs-fig"); fig.setAttribute("aria-hidden", "true"); fig.dataset.look = kitLook(c.id);
     const lbl = el("span", "lbl", c.name);
     b.append(fig, lbl);
     b.addEventListener("click", () => select(i, false), sig);
@@ -217,8 +226,8 @@ export function createCharSelect(h, info) {
   function drawFigures(all) {
     const still = reduced();
     btns.forEach((x, i) => {
-      if (i === sel && !still) { const f = Math.floor((performance.now() - T0) / 83); if (!all && lastFrame[i] === f) return; lastFrame[i] = f; figures.draw(x.fig, x.c.figureKey, { anim: "card-idle", t: (performance.now() - T0) / 1000 }); }
-      else if (all || lastFrame[i] !== -2) { lastFrame[i] = -2; figures.draw(x.fig, x.c.figureKey, { anim: "portrait" }); }
+      if (i === sel && !still) { const f = Math.floor((performance.now() - T0) / 83); if (!all && lastFrame[i] === f) return; lastFrame[i] = f; figures.draw(x.fig, x.c.figureKey, { anim: "card-idle", t: (performance.now() - T0) / 1000, look: x.fig.dataset.look || null }); }
+      else if (all || lastFrame[i] !== -2) { lastFrame[i] = -2; figures.draw(x.fig, x.c.figureKey, { anim: "portrait", look: x.fig.dataset.look || null }); }
     });
   }
   function render(now) {

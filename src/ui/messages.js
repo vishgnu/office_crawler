@@ -5,6 +5,9 @@ import { unmetReason } from "./itemview.js";
 
 const S = content.strings;
 
+/** R8-Q1: the sentence for reward items that did not fit the bag at a hand-in and wait in the owed pouch; "" when nothing is owed. */
+export const owedLine = (n) => (n > 0 ? (n === 1 ? T.owedOne : T.owedMany.replace("{n}", String(n))) : "");
+
 const findItem = (state, id) => state.cursorItem?.id === id ? state.cursorItem
   : state.inventory.items.find((i) => i.id === id) ?? Object.values(state.equipment).find((i) => i?.id === id)
   ?? state.vendor?.stock.find((e) => e.item.id === id)?.item ?? null;
@@ -46,10 +49,9 @@ export function messageFor(ev, state) {
     case "bossSummon": return S.bossSummon;
     case "stairsUnlocked": return S.bossStairsUnlocked;
     case "floorEnter": return ev.depth === 0 ? S.lobbyName : `${T.floorWord} ${ev.depth}: ${state.floor.name}`;
-    // R7 (contract 4.3): accepted, a main step or a side quest ready, completed; quest.item has no line of its own (the quest.step that follows toasts); the refusal shows the bag-full notice
+    // R7 (contract 4.3): accepted, a main step or a side quest ready, completed; quest.item has no line of its own (the quest.step that follows toasts)
     case "quest.accepted": case "quest.step": if (ev.unlocked && content.quests[ev.id]?.unlock) return content.quests[ev.id].unlock; /* R7-4: the next main quest opened */ return ev.next ? T.toastQuest.replace("{title}", ev.title).replace("{next}", ev.next) : null;
-    case "quest.completed": { const r = ev.rewards, parts = r ? [r.gold > 0 && T.rewardGold.replace("{n}", r.gold), r.xp > 0 && T.rewardXp.replace("{n}", r.xp), ...(r.items ?? [])].filter(Boolean) : []; return (parts.length ? T.toastQuestRewards.replace("{rewards}", parts.join(", ")) : T.toastQuestDone).replace("{title}", ev.title); }
-    case "quest.handInRefused": return T.bagFullNotice;
+    case "quest.completed": { const r = ev.rewards, parts = r ? [r.gold > 0 && T.rewardGold.replace("{n}", r.gold), r.xp > 0 && T.rewardXp.replace("{n}", r.xp), ...(r.items ?? [])].filter(Boolean) : []; const base = (parts.length ? T.toastQuestRewards.replace("{rewards}", parts.join(", ")) : T.toastQuestDone).replace("{title}", ev.title), owed = owedLine(r?.owed ?? 0); return owed ? `${base}. ${owed}` : base; }
     default: return null;
   }
 }

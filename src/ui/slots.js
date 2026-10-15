@@ -30,17 +30,25 @@ const undoable = new Map();
 export const markUndo = (slot, kind) => undoable.set(slot, kind);
 
 // ---- ID-badge bust: the class figure from the render package, cropped to head and shoulders ----
+// R8 (ADR-0008 section 5): the bust follows the worn gear. `look` is a gear signature; anything malformed (a hand-edited index) draws the bare bust.
+// Sources are cached per class + look in a small LRU (8 canvases of 480 x 600, about 9 MB at most); a changed look paints a new source.
+const BUST_LRU = 8, LOOK_OK = /^[-a-z0-9]{1,4}(\|[-a-z0-9]{1,4}){5}$/;
 const bustSrc = new Map();
-function bustSource(classId) {
-  let c = bustSrc.get(classId);
-  if (c) return c;
+export const cleanLook = (look) => (typeof look === "string" && look.length <= 40 && LOOK_OK.test(look) && look !== "-|-|-|-|-|-" ? look : "");
+export const bustCacheSize = () => bustSrc.size;
+function bustSource(classId, look) {
+  const key = `${classId}/${look}`;
+  let c = bustSrc.get(key);
+  if (c) { bustSrc.delete(key); bustSrc.set(key, c); return c; } // most recently used goes last
   c = document.createElement("canvas"); c.width = 480; c.height = 600;
-  figures.draw(c, `hero.${classId}`, { anim: "portrait" });
-  bustSrc.set(classId, c);
+  figures.draw(c, `hero.${classId}`, look ? { anim: "portrait", look } : { anim: "portrait" });
+  bustSrc.set(key, c);
+  while (bustSrc.size > BUST_LRU) bustSrc.delete(bustSrc.keys().next().value);
   return c;
 }
-export function paintBust(canvas, classId) {
-  const g = canvas.getContext("2d"), src = bustSource(classId), s = canvas.width;
+export function paintBust(canvas, classId, look = "") {
+  const g = canvas.getContext("2d"), src = bustSource(classId, cleanLook(look)), s = canvas.width;
+  canvas.dataset.look = cleanLook(look); // for tests and the e2e: the look this canvas was last painted with
   g.clearRect(0, 0, s, s);
   g.fillStyle = "#17123a"; g.fillRect(0, 0, s, s);
   g.imageSmoothingQuality = "high";
@@ -107,7 +115,7 @@ export function createSlotsView(h, { mode = "dialog", onClose = null } = {}) {
       li.dataset.class = e.class;
       const badge = el("div", "sl-badge"), cv = el("canvas"); cv.width = cv.height = 112; cv.setAttribute("aria-hidden", "true");
       badge.append(el("span", "sl-clip"), cv); li.append(badge);
-      try { paintBust(cv, e.class); } catch { /* the figure is decoration */ }
+      try { paintBust(cv, e.class, e.look); } catch { /* the figure is decoration */ }
       const body = el("div", "sl-body"), name = el("strong", "sl-name"); name.dataset.testid = `slot-name-${n}`;
       name.textContent = `${T.slSlot} ${n}: ${e.name}`;
       const tags = el("span", "sl-tags");

@@ -18,12 +18,13 @@ import { createLighting } from "./render/light.js";
 import { createLabels } from "./render/labels.js";
 import { createMap } from "./render/map.js";
 import { pick } from "./input/pick.js";
+import { createToastQueue } from "./ui/toastqueue.js";
 import { requiredKeys } from "./render/keys.js";
 import { slotsView } from "./save/session.js";
 import { damageMonster } from "./core/systems/damage.js";
 
 const MAX_CATCHUP_TICKS = 8;
-const QUEST_LINES = new Set(["quest.accepted", "quest.step", "quest.completed"]); // the toasts that keep the lane (CR7-04); the bag-full refusal does not
+const QUEST_LINES = new Set(["quest.accepted", "quest.step", "quest.completed"]); // the toasts that keep the lane (CR7-04)
 const PASSIVE_LINES = new Set(["levelup", "floorEnter", "potion", "healed", "respawn", "skillLearned"]); // world lines that wait behind a quest line instead of replacing it
 
 export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed, atlasMs = 0, lowFx = false, hc = false, story = false }) {
@@ -46,7 +47,6 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   const syncUi = () => { // the NPC window follows the core dialog; the drawers go away with the run
     const u = game.ui;
     if (!game.core) { u.left = null; u.inventory = false; u.tooltip = null; u.map = false; return; }
-    if (!game.core.ui.dialog || (u.questNotice && game.core.inventory.items.length < (u.questNoticeN ?? 0))) u.questNotice = null; // ADV-R7-06: the bag-full line goes once the hero has made room (fewer items than at the refusal)
     if (u.left === "npc" && !game.core.ui.dialog) { u.left = null; if (u.inventory && u.invByDialog && !game.core.cursorItem) u.inventory = false; /* R8-Q2: the bag the dialog opened closes with it */ u.invByDialog = false; if (u.inventory) u.front = "inventory"; u.tooltip = null; }
   };
   const emitChange = () => {
@@ -76,11 +76,8 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     if (!game.core || (ev.type !== "quest.accepted" && ev.type !== "quest.step" && ev.type !== "quest.completed")) return;
     if (game.ui.left !== "journal") game.ui.badge.journal = true;
   });
-  // R7: the bag-full line of a refused hand-in stays in the NPC window until the dialog closes or the quest is done
-  bus.on("quest.handInRefused", (ev) => { game.ui.questNotice = ev.id; game.ui.questNoticeN = game.core?.inventory.items.length ?? 0; });
-  bus.on("quest.completed", () => { game.ui.questNotice = null; });
   // R8-Q2: the Desk Drawer opens with a trading NPC window (vendor, stash: AC-R-073-3) only while the play area between the two drawers stays at least 35% of the width (1280 px: 36%); a healer needs no bag, so it never opens it; on a phone one panel shows at a time, so it stays as before
-  bus.on("dialog", () => { const D = drawerLayout(game.w, game.h), kind = game.core?.ui.dialog?.kind, had = game.ui.inventory; game.ui.questNotice = null; game.ui.left = "npc"; game.ui.inventory = D.phone || (kind !== "healer" && game.w - D.leftW - D.rightW >= 0.35 * game.w); game.ui.invByDialog = !had && !D.phone && game.ui.inventory; game.ui.front = "left"; game.ui.vendorTab = "buy"; });
+  bus.on("dialog", () => { const D = drawerLayout(game.w, game.h), kind = game.core?.ui.dialog?.kind, had = game.ui.inventory; game.ui.left = "npc"; game.ui.inventory = D.phone || (kind !== "healer" && game.w - D.leftW - D.rightW >= 0.35 * game.w); game.ui.invByDialog = !had && !D.phone && game.ui.inventory; game.ui.front = "left"; game.ui.vendorTab = "buy"; });
   // run summary for the death screen, derived from the event stream (the core keeps no kill counter)
   game.run = { kills: 0 };
   bus.on("kill", () => { if (game.core) game.run.kills++; });
@@ -138,7 +135,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   });
   game.openOptions = () => { if (game.ui.options) return { ok: true }; game.ui.options = game.core ? "pause" : "title"; bus.emit({ type: "ui:open" }); emitChange(); return { ok: true }; };
   game.closeOptions = () => { if (!game.ui.options) return { ok: true }; game.ui.options = null; game.capturing = false; bus.emit({ type: "ui:close" }); emitChange(); return { ok: true }; };
-  game.toTitle = () => { game.core = null; game.titleNotice = null; slotsCache = null; resetUi(); game.setBackdrop(); emitChange(); };
+  game.toTitle = () => { game.core = null; fx.plateDraw = null; game.titleNotice = null; slotsCache = null; resetUi(); game.setBackdrop(); emitChange(); };
   game.keepPlaying = () => game.input({ t: "keepPlaying" });
   game.setSeed = (s) => { game.titleSeed = Number(s) >>> 0; if (!game.core) game.setBackdrop(); };
 
@@ -199,7 +196,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
       for (const id of game.prev.keys()) if (!live.has(id)) game.prev.delete(id);
     }
   };
-  const dispatchFrom = (from) => { portalToast = false; const ev = game.core.events; for (let i = from; i < ev.length; i++) bus.emit(ev[i]); };
+  const dispatchFrom = (from) => { portalToast = false; const ev = game.core.events; toastQ.begin(); try { for (let i = from; i < ev.length; i++) bus.emit(ev[i]); } finally { toastQ.end(); } }; // CR7L-01: the lines of one dispatch are ordered, then shown one after the other
   game.tick = () => {
     capture();
     const t0 = performance.now();
@@ -333,33 +330,12 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   // latest passive line of a kind waits, so a backlog of stale floor names never builds up.
   // R7-4: the quest lines of one burst (an arc completes: its reward line, then the "new assignment" line of the next arc, in one tick) queue behind each other and show one
   // after the other; a quest line that comes later than QUEST_BURST_MS after the shown one still replaces it at once.
-  const QUEST_BURST_MS = 250;
-  const tq = { q: [], timer: 0, until: 0, at: 0 };
-  const showToast = (n) => {
-    game.ui.toast = { text: n.text, id: (game.ui.toast?.id ?? 0) + 1, ...(n.ms ? { ms: n.ms } : {}) };
-    clearTimeout(tq.timer); tq.timer = 0; tq.until = 0; tq.at = performance.now();
-    if (n.hold) {
-      tq.until = performance.now() + (n.ms ?? 3200);
-      tq.timer = setTimeout(() => { tq.timer = 0; tq.until = 0; const nx = tq.q.shift(); if (nx) { showToast({ ...nx, hold: true }); emitChange(); } }, n.ms ?? 3200);
-    } else tq.q.length = 0;
-  };
-  game.toastDrop = (qid) => { if (qid) tq.q = tq.q.filter((w) => w.qid !== qid); };
-  game.toastReset = () => { tq.q.length = 0; clearTimeout(tq.timer); tq.timer = 0; tq.until = 0; };
-  /** `opt.quest`: a quest line (holds the lane). `opt.passive`: a world event line (waits behind a held quest line, keyed by `opt.kind` so a newer one of the kind replaces it). */
-  game.toast = (text, ms, opt = {}) => {
-    const n = { text, ms, hold: !!opt.quest, kind: opt.kind, qid: opt.qid };
-    if (opt.passive && game.ui.toast && tq.until > performance.now()) {
-      if (game.ui.toast.text === text) return;
-      tq.q = tq.q.filter((w) => w.kind !== n.kind && w.text !== text);
-      if (tq.q.length < 4) tq.q.push(n);
-      return;
-    }
-    if (opt.quest && game.ui.toast && tq.until > performance.now() && performance.now() - tq.at < QUEST_BURST_MS) { // same burst as the quest line on show: wait behind it
-      if (game.ui.toast.text !== text && tq.q.length < 4) { const i = tq.q.findIndex((w) => !w.hold); tq.q.splice(i < 0 ? tq.q.length : i, 0, n); } // before the waiting world lines
-      return;
-    }
-    showToast(n); emitChange();
-  };
+  const toastQ = createToastQueue({ show: (n) => { game.ui.toast = { text: n.text, id: (game.ui.toast?.id ?? 0) + 1, ...(n.ms ? { ms: n.ms } : {}) }; emitChange(); } });
+  game.toastDrop = (qid) => toastQ.drop(qid);
+  game.toastReset = () => toastQ.reset();
+  game.toastWaiting = () => toastQ.waiting();
+  /** `opt.quest`: a quest line (holds the lane). `opt.passive`: a world event line (waits behind a held line). Neither: direct feedback (queues behind a held quest line, ahead of passive lines). See ui/toastqueue.js. */
+  game.toast = (text, ms, opt = {}) => toastQ.offer(text, ms, opt);
 
   /**
    * One key press. Panel keys (I, C, S/K) toggle drawers; Escape puts a held item back, then closes the drawers, then
@@ -449,7 +425,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
       frameMs: f.slice(-120), simMsPerTick: game.simTicks ? game.simMs / game.simTicks : 0, samples: f.length, atlasMs, atlasKeys: atlas.keys().length, atlasMissing: missing,
       fps: avg(f) ? 1000 / avg(f) : 0, renderMsAvg: avg(r), renderMsP95: sorted.length ? sorted[Math.floor(sorted.length * 0.95)] : 0,
       fx: { lowFx: game.lowFx, hc: game.hc }, labels: game.labels(), atlasScale: atlas.scale, atlasRim: atlas.meta.rim, atlasChanges: game.atlasChanges, dpr: game.dpr, lootPlates: Math.max(0, (fx.platesPlaced?.length ?? 1) - 1), npcMarkers: fx.npcMarkers ?? [],
-      heroDigest: heroSpriteDigest(), ...gearPerf(atlas), // R8: gearSig, gearCache {frames, bytes, builds, warmBuilds, evictions, fallbacks, maxBuildsPerFrame, ...}
+      heroDigest: heroSpriteDigest(), platesDrawn: !!fx.plateDraw, ...gearPerf(atlas), // R8: gearSig, gearCache {frames, bytes, builds, warmBuilds, evictions, fallbacks, maxBuildsPerFrame, ...}
     };
   };
   game.clearPerf = () => { game.frameMs.length = 0; game.renderMs.length = 0; };
@@ -500,7 +476,7 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
       labels.place(out.actors, c, L.scale, game.core.player.target, game.hover, out.heroScreen, hudRects(L), game.hc, game.dpr);
       labels.collect(fx.avoid, fx.avoidSegs); // loot plates and floaters keep clear of the nameplates, pips and leader lines
       fx.plateDraw = labels.draw; // nameplates are drawn by fx.draw, after the loot icons (VFIX-R7)
-    }
+    } else fx.plateDraw = null; // CR7L-03: no run (the title backdrop): labels.draw would replay the last frame's plates, hp bars and pips
     fx.draw(g, c, atlas, now, out.heroDir);
     if (!game.reduced()) fx.drawHurt(g, game.w, game.h, now);
     if (game.core && game.core.scene === "floor") fx.drawLowHp(g, game.w, game.h, now, game.core.player.hp / Math.max(1, game.core.player.hpMax), bus);

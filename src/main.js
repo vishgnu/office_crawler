@@ -18,6 +18,7 @@ import { bindKey, defaultKeys } from "./input/keymap.js";
 import { T } from "./ui/text.js";
 import { provideFigures } from "./ui/figureHost.js";
 import { drawFigure } from "./render/figure.js";
+import { gearSignature } from "./render/gearlooks.js";
 import { HERO_ACCENT } from "./render/styles/vector/heroes.js";
 
 const S = content.strings;
@@ -34,7 +35,7 @@ const seedFixed = testMode || (params.get("seed") !== null && params.get("seed")
 const seed = Number.isFinite(seedParam) && params.get("seed") !== null && params.get("seed") !== "" ? seedParam : testMode ? 1 : Date.now() % 2147483647;
 
 async function boot() {
-  provideFigures({ draw: drawFigure, accent: HERO_ACCENT });
+  provideFigures({ draw: drawFigure, accent: HERO_ACCENT, look: gearSignature });
   document.title = S.gameTitle;
   const overlay = document.getElementById("overlay");
   overlay.textContent = S.loading;

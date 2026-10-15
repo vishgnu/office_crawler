@@ -29,7 +29,7 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   const g = await start();
   let s = await g.state();
   check("AC-R-040-1 New game starts in the Lobby: scene town, depth 0, no monsters", s.scene === "town" && s.depth === 0 && s.monsters.length === 0, { scene: s.scene, depth: s.depth });
-  check("HUD: level, xp bar ratio inside the level, point indicators, skill bar with F1 selected (the class signature), belt of 4 with 2 potions", s.ui.hud.level === 1 && s.ui.hud.xpBar.ratio === 0 && s.ui.hud.points.attr === 0 && s.ui.hud.skillBar.slots.length === 4 && s.ui.hud.skillBar.selected === 0 && s.ui.hud.skillBar.slots[0].skill === FM.signature && s.ui.hud.skillBar.slots.slice(1).every((x) => x.skill === null) && s.ui.hud.belt.length === 4 && s.ui.hud.belt.filter((b) => !b.empty).length === 2, s.ui.hud.belt);
+  check("HUD: level, xp bar ratio inside the level, point indicators, skill bar with F1 selected (the class signature), belt of 4 with the class kit potions (R8-B3: 4 for the Facilities Manager)", s.ui.hud.level === 1 && s.ui.hud.xpBar.ratio === 0 && s.ui.hud.points.attr === 0 && s.ui.hud.skillBar.slots.length === 4 && s.ui.hud.skillBar.selected === 0 && s.ui.hud.skillBar.slots[0].skill === FM.signature && s.ui.hud.skillBar.slots.slice(1).every((x) => x.skill === null) && s.ui.hud.belt.length === 4 && s.ui.hud.belt.filter((b) => !b.empty).length === FM.startKit.healthPotions + (FM.startKit.manaPotions ?? 0), s.ui.hud.belt);
   check("AC-R-071-2 belt slots mirror state.belt and show keys 1-4", s.ui.hud.belt.every((b, i) => b.key === String(i + 1) && (b.item?.id ?? null) === (s.belt[i]?.id ?? null)));
   check("DOM HUD: four skill buttons and four belt buttons are labelled", (await g.page.locator("[data-skill-slot]").count()) === 4 && (await g.page.locator("[data-use-belt]").count()) === 4 && (await g.page.getAttribute(T("hud-skill-0"), "aria-label")).includes("F1"));
   check("selected skill slot is marked (aria-pressed) and the others are not", (await g.page.getAttribute(T("hud-skill-0"), "aria-pressed")) === "true" && (await g.page.getAttribute(T("hud-skill-1"), "aria-pressed")) === "false");
@@ -119,6 +119,7 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   s = await g.state();
   check("Esc puts the held item back (and does not pause)", s.cursorItem === null && s.paused === false && s.ui.panels.inventory === true && s.inventory.items.some((i) => i.id === w1.id));
   // right-click quick equip
+  await g.app("cheat.setHp", 5); await g.app("input", { t: "useBelt", index: 0 }); // R8-B3: the belt starts full (4 potions): drink one to make room
   const potion = await g.app("cheat.giveItem", { potion: true });
   s = await g.state();
   const pot = s.inventory.items.find((i) => i.id === potion.id);
@@ -292,7 +293,8 @@ const intersects = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y <
   // stairs locked at the last floor
   await g.app("cheat.teleportFloor", 8);
   await g.app("input", { t: "useStairs", dir: "down" });
-  check("stairsLocked: a toast explains the locked way down", /locked/.test((await g.page.textContent(T("toast"))) ?? ""));
+  const lockedToast = await g.page.waitForFunction(() => /locked/.test(document.querySelector('[data-testid="toast"]')?.textContent ?? ""), null, { timeout: 9000 }).then(() => true, () => false); // CR7L-02: it waits behind the arc line of the teleport
+  check("stairsLocked: a toast explains the locked way down", lockedToast);
   check("no page errors (NPCs)", g.errors.length === 0, g.errors);
   await g.context.close();
 }
@@ -529,7 +531,9 @@ for (const [W, H] of [[1280, 800], [1024, 768], [390, 844]]) {
   await g.page.click(T(`cell-${it.x}-${it.y}`), { button: "right" });
   s = await g.state();
   check("right-click in the drawer uses it: hero is in the Lobby, the door is recorded", s.depth === 0 && s.portal?.depth === depth && !!s.portal.lobbyTile, { depth: s.depth, portal: s.portal });
-  check("feedback: a toast names the Emergency Exit and the tooltip is gone", /Emergency Exit/.test((await g.page.textContent(T("toast"))) ?? "") && s.ui.tooltip === null);
+  // CR7L-02: the arc line of the floor change holds the lane for its time, a direct line waits behind it (it is not lost and it does not cut the quest line short)
+  const exitToast = await g.page.waitForFunction(() => /Emergency Exit/.test(document.querySelector('[data-testid="toast"]')?.textContent ?? ""), null, { timeout: 9000 }).then(() => true, () => false);
+  check("feedback: a toast names the Emergency Exit and the tooltip is gone", exitToast && s.ui.tooltip === null);
   const perf = await g.app("perf");
   check("sprite fx:portal exists in the atlas (nothing missing)", !perf.atlasMissing.includes("fx:portal") && perf.atlasMissing.length === 0, perf.atlasMissing);
   // the door is drawn at the lobby tile: a lit pixel run in the door's colour near its screen position
@@ -541,6 +545,7 @@ for (const [W, H] of [[1280, 800], [1024, 768], [390, 844]]) {
   }, [sc.x, sc.y]);
   check("the door sprite is visible in the Lobby (violet pixels at its tile)", found > 40 || sc.x < 0 || sc.x > 1280, { found, sc });
   // belt: put a second one on the belt and right-click it there
+  await g.app("cheat.setHp", 5); await g.app("input", { t: "useBelt", index: 0 }); // R8-B3: the belt starts full (4 potions), drink one to make room
   const b = await g.app("cheat.giveItem", { base: "emergency-exit" });
   await g.app("input", { t: "toBelt", id: b.id });
   await g.app("cheat.teleportFloor", 3);
@@ -625,12 +630,16 @@ for (const [W, H] of [[1280, 800], [1024, 768], [390, 844]]) {
     const g = await open(browser, { query: "test=1&seed=3", viewport: { width: w, height: h }, lobby: true }); await startNew(g.page, { cls: "facilities-manager" }); // the kit weapon stays worn: the bag fills up completely
     await g.app("quests.setStep", "sq5", 2);
     for (let n = 0; n < 80; n++) { const r = await g.app("cheat.giveItem", { slot: "body" }); if (!r?.ok) break; }
+    for (let n = 0; n < 60; n++) { const r = await g.app("cheat.giveItem", { slot: "ring" }); if (!r?.ok) break; } // R8-Q1: really full, no 1x1 gap left for the reward
     await g.app("step", 200); await talk(g, "vendor");
     const d = await g.state();
     check(`${w}: the NPC window opens (R8-Q2: the bag opens with a vendor only where the room allows)`, d.ui.dialog?.npc === "vendor" && (w >= 1280 ? d.ui.panels.inventory === true : true));
     await g.page.click(T("quest-handin-sq5")); await g.app("step", 2); await g.page.waitForTimeout(200);
     const toast = g.page.locator("#toast"), cls = await toast.getAttribute("class");
-    check(`${w}: the bag-full sentence shows once (the alert is visible, the toast with the same text is not)`, /dup/.test(cls ?? "") && await g.page.locator(T("quest-bagfull")).isVisible() && !(await toast.isVisible()) && (await toast.textContent()) === (await g.page.locator(T("quest-bagfull")).textContent()), cls);
+    const owedTxt = await g.page.locator(T("quest-owed")).textContent().catch(() => null), tt = await toast.textContent();
+    const sq5 = await g.state();
+    check(`${w}: R8-Q1 the hand-in completes with a full bag; the window and the toast say that items wait until the bag has room`, sq5.quests.sq5.state === "completed" && (sq5.player.owed?.length ?? 0) > 0 && /wait until your bag has room/.test(owedTxt ?? "") && /wait until your bag has room|waits until your bag has room/.test(tt ?? ""), { owedTxt, tt, owed: sq5.player.owed?.length, q: sq5.quests.sq5, dlg: sq5.ui.dialog?.npc });
+    check(`${w}: the inventory dock button carries a count while items are owed`, (await g.page.locator(T("inv-badge")).count()) === 1 || d.ui.panels.inventory, await g.page.locator(T("inv-badge")).count());
     const say = await rect(g.page, "#pleft .say"), pb = await rect(g.page, "#pleft .pb");
     await g.page.evaluate(() => { const b = document.querySelector("#pleft .pb"); b.scrollTop = b.scrollHeight; });
     const say2 = await rect(g.page, "#pleft .say");

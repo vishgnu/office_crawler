@@ -11,6 +11,7 @@ import { serialize, deserialize, check, checksumOf } from "./format.js";
 import { createAdapter } from "./storage.js";
 import { mainStep, MAIN_STEPS } from "../core/systems/questview.js";
 import { sideIds } from "../core/content/quests.js";
+import { gearSignature, EMPTY_SIG } from "../render/gearlooks.js"; // pure and DOM-free (ADR-0008 section 5): the one render file the index may import
 
 const PREFIX = "office-crawler.";
 const slotKey = (n) => `${config.slotKeyPrefix}${n}`;
@@ -52,13 +53,18 @@ function questFields(q) {
   return { qv: QUEST_FIELDS_VERSION, mainStep: Math.min(step, MAIN_STEPS), mainDone: step > MAIN_STEPS, sidesDone: sideIds.filter((id) => q[id].s === "completed").length };
 }
 
+/** The slot card's bust look (ADR-0006 amendment R8, ADR-0008 section 5): the gear signature of the worn items; an entry without it (or with a malformed one) is drawn bare. */
+export const LOOK_RE = /^[-a-z0-9]{1,4}(\|[-a-z0-9]{1,4}){5}$/;
+export const validLook = (s) => typeof s === "string" && s.length <= 40 && LOOK_RE.test(s);
+const lookField = (equipment) => { try { const l = gearSignature(equipment); return l !== EMPTY_SIG && validLook(l) ? { look: l } : {}; } catch { return {}; } };
+
 /** The index entry for a running state (metadata only; lastPlayed comes from the injected clock). */
 function entryFromState(n, state, text, now) {
   return {
     n, state: "ok", name: state.player.name, class: state.player.class, level: state.player.level,
     depth: state.scene === "floor" ? state.depth : 0, deepest: state.deepestDepth, playSec: Math.floor((state.stats?.playTicks ?? 0) / config.tickHz),
     lastPlayed: now, bytes: text.length, sum: textSum(text), boss: !!state.bossDefeated,
-    ...(state.quests ? questFields(state.quests) : {}),
+    ...(state.quests ? questFields(state.quests) : {}), ...lookField(state.equipment),
   };
 }
 /** The index entry for a stored text (parse, migrate, validate). */
@@ -70,7 +76,7 @@ function entryFromText(n, text, now, prev) {
   const r = check(raw);
   if (!r.ok) return r.reason === "newer" ? { n, state: "newer" } : { n, state: "bad", reason: REASONS[r.reason] ?? "schema", lastPlayed: prev?.lastPlayed ?? now, bytes };
   const s = r.save;
-  return { n, state: "ok", name: s.name, class: s.class, level: s.player.level, depth: s.resume.depth, deepest: s.deepestDepth, playSec: Math.floor((s.stats.playTicks ?? 0) / config.tickHz), lastPlayed: prev?.state === "ok" ? prev.lastPlayed : now, bytes, sum, boss: s.bossDefeated, ...questFields(s.quests) };
+  return { n, state: "ok", name: s.name, class: s.class, level: s.player.level, depth: s.resume.depth, deepest: s.deepestDepth, playSec: Math.floor((s.stats.playTicks ?? 0) / config.tickHz), lastPlayed: prev?.state === "ok" ? prev.lastPlayed : now, bytes, sum, boss: s.bossDefeated, ...questFields(s.quests), ...lookField(s.equipment) };
 }
 
 const safeName = (name) => (String(name ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "character");

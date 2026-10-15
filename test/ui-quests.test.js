@@ -20,7 +20,7 @@ test("AC-R-243-3 key table: journal is KeyJ, listed in ACTIONS, remappable, conf
 });
 
 test("contract 2.5: every UI text key of the quest package exists in T (no new S.* key)", () => {
-  const keys = ["journalTitle", "openJournal", "journalClose", "journalActive", "journalCompleted", "journalEmpty", "journalPouch", "journalPouchEmpty", "nextStepLabel", "giverLabel", "progressLabel", "pinAction", "unpinAction", "pinnedMark", "stateAvailable", "stateActive", "stateReady", "stateCompleted", "mainQuestLabel", "sideQuestLabel", "questAccept", "questDecline", "questHandIn", "rewardLabel", "rewardGold", "rewardXp", "rewardGear", "rewardPotions", "bagFullNotice", "readVerdict", "trackerLabel", "mapMarkerStairsDown", "mapMarkerStairsUp", "mapMarkerNpc", "mapMarkerElevator", "stateLocked", "rewardGearAccessory", "rewardGearExact", "slotQuestLine", "toastQuest", "keyJournal", "pauseJournal"];
+  const keys = ["journalTitle", "openJournal", "journalClose", "journalActive", "journalCompleted", "journalEmpty", "journalPouch", "journalPouchEmpty", "nextStepLabel", "giverLabel", "progressLabel", "pinAction", "unpinAction", "pinnedMark", "stateAvailable", "stateActive", "stateReady", "stateCompleted", "mainQuestLabel", "sideQuestLabel", "questAccept", "questDecline", "questHandIn", "rewardLabel", "rewardGold", "rewardXp", "rewardGear", "rewardPotions", "readVerdict", "trackerLabel", "mapMarkerStairsDown", "mapMarkerStairsUp", "mapMarkerNpc", "mapMarkerElevator", "stateLocked", "rewardGearAccessory", "rewardGearExact", "slotQuestLine", "toastQuest", "keyJournal", "pauseJournal"];
   for (const k of keys) assert.ok(typeof T[k] === "string" && T[k].length > 0, k);
   assert.ok(T.progressLabel.includes("{n}") && T.progressLabel.includes("{goal}"));
 });

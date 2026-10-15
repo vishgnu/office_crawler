@@ -12,6 +12,8 @@ import { keyLabel, DEFAULT_KEYS } from "../input/keymap.js";
 import { sellValue, buyPrice, classById } from "../core/index.js";
 import { renderTree, nodeTipHtml, nodeFor } from "./tree.js";
 import { paintBust } from "./slots.js";
+import { figures } from "./figureHost.js";
+import { owedLine } from "./messages.js";
 import { journalModel, journalHtml, trackerOf } from "./journal.js";
 import { questDialogModel, questDialogHtml } from "./questdialog.js";
 
@@ -112,7 +114,9 @@ export function createPanels(root, game) {
     h += `</div><div class="items">${c.inventory.items.map((it) => itemBox(it, { pos: { x: it.x, y: it.y }, })).join("")}`;
     if (held && origin?.kind === "grid") h += itemBox(held, { pos: { x: origin.x, y: origin.y }, cls: "dim origin" });
     h += `</div></div></div>`;
-    h += `<div class="footrow"><div class="gold" data-testid="gold">${coinIcon()}<span>${num(p.gold)} ${esc(T.gold)}</span></div><div class="notice" data-notice>`;
+    h += `<div class="footrow"><div class="gold" data-testid="gold">${coinIcon()}<span>${num(p.gold)} ${esc(T.gold)}</span></div>`;
+    if (p.owed?.length) h += `<div class="owed" data-testid="inv-owed" role="status" title="${esc(T.owedTitle)}: ${esc(p.owed.map((i) => i.name).join(", "))}">${esc(owedLine(p.owed.length))}</div>`;
+    h += `<div class="notice" data-notice>`;
     h += held ? `<span class="heldline">${esc(T.onCursor)}: ${nameLine(held)}</span><span class="reason" data-reason></span><button class="mini" type="button" data-act="putback" data-testid="put-back">${esc(T.putBack)}</button><button class="mini" type="button" data-act="dropfloor" data-testid="drop-floor">${esc(T.dropOnFloor)}</button>` : "";
     return h + `</div></div></div></div>`;
   }
@@ -122,7 +126,7 @@ export function createPanels(root, game) {
   function renderCharacter(c) {
     const p = c.player, xpv = xpProgress(p), pct = xpv.pct, pts = p.attrPoints;
     let h = `<div class="ph"><span class="phi">${skillIcon("panel:file")}</span><h2>${esc(T.fileTitle)}</h2>${closeBtn("character", T.closeCharacter)}</div><div class="pb"><div class="sheet" data-testid="employee-file">${tabsHtml("character")}`;
-    h += `<div class="fh"><div class="photo"><canvas width="112" height="112" data-bust="${esc(p.class)}" aria-hidden="true"></canvas></div>`;
+    h += `<div class="fh"><div class="photo"><canvas width="112" height="112" data-bust="${esc(p.class)}" data-look="${esc(figures.look(c.equipment))}" aria-hidden="true"></canvas></div>`;
     h += `<div><h2 data-testid="file-name">${esc(p.name ?? "")}</h2><p data-testid="file-class">${esc(classById(p.class)?.name ?? "")} · <span data-stat="level">${esc(T.level)} ${p.level}</span></p><p>${esc(c.floor.name)}</p></div><div class="stamp" aria-hidden="true">${esc(T.probation)}</div></div>`;
     h += `<div class="xpl" title="${esc(T.xpTotal)}: ${num(xpv.total)}"><span>${esc(T.experience)}</span><span data-stat="xp" data-testid="xp-label" data-total="${Number(xpv.total) || 0}">${xpv.capped ? esc(T.xpMax) : `${num(xpv.into)} / ${num(xpv.span)} ${esc(T.xpToLevel)} ${p.level + 1} (${pct}%)`}</span></div><div class="xpb2" role="img" title="${esc(T.xpTotal)}: ${num(xpv.total)}" aria-label="${esc(T.experience)} ${pct}%, ${esc(T.xpTotal)} ${num(xpv.total)}"><i style="width:${pct}%"></i></div>`;
     h += `<section class="sc-attr"><h3>${esc(T.attributes)} <em>${esc(T.pointsToSpend)}: <b data-stat="attrPoints">${pts}</b></em></h3>`;
@@ -153,7 +157,7 @@ export function createPanels(root, game) {
     if (!d) return "";
     let h = `<div class="ph"><span class="phi">${skillIcon("panel:talk")}</span><h2>${esc(S[d.nameKey] ?? "")}</h2>${closeBtn("npc", T.closeWindow)}</div><div class="pb"><div class="npc" data-testid="npc-window" data-kind="${esc(d.kind)}">${tabsHtml("npc")}`;
     h += `<p class="say">“${esc(d.lines.map((k) => S[k] ?? "").join(" "))}”</p><div class="gold" data-testid="npc-gold">${coinIcon()}<span>${num(c.player.gold)} ${esc(T.gold)}</span></div>`;
-    if (c.quests) h += questDialogHtml(questDialogModel(questView(c), d.npc), game.ui.questNotice);
+    if (c.quests) h += questDialogHtml(questDialogModel(questView(c), d.npc), c.player.owed?.length ?? 0);
     if (d.kind === "vendor" && c.vendor) {
       const tab = game.ui.vendorTab;
       h += `<div class="vtabs" role="tablist"><button type="button" role="tab" data-testid="tab-buy" data-vtab="buy" aria-selected="${tab === "buy"}" class="${tab === "buy" ? "on" : ""}">${esc(T.buyTab)}</button><button type="button" role="tab" data-testid="tab-sell" data-vtab="sell" aria-selected="${tab === "sell"}" class="${tab === "sell" ? "on" : ""}">${esc(T.sellTab)}</button></div>`;
@@ -206,7 +210,8 @@ export function createPanels(root, game) {
     h += `<div class="xptip" data-testid="hud-xp" tabindex="-1" title="${esc(T.xpTotal)}: ${num(xt.total)}" aria-label="${esc(T.experience)} ${xt.pct}%, ${esc(T.xpTotal)} ${num(xt.total)}" style="left:${(xr.x - 2).toFixed(1)}px;top:${(xr.y - fs - 8).toFixed(1)}px;width:${(xr.w + 4).toFixed(1)}px;height:${(xr.h + fs + 10).toFixed(1)}px"></div>`;
     const badge = (n, what) => (n > 0 ? `<span class="bdg" aria-label="${n} ${esc(what)}">${n > 99 ? "99+" : n}</span>` : ""); // VFIX-R7 U1: "99+" keeps the phone dock inside the screen; the label keeps the real count
     h += `<div class="dock" role="group" aria-label="${esc(T.toggleLabel)}">`;
-    h += `<button class="hbtn" type="button" data-testid="dock-inventory" data-fk="h.d.i" data-open="inventory" aria-pressed="${panels.inventory}"><span>${esc(T.openInventory)}</span><kbd>${esc(kl("inventory"))}</kbd></button>`;
+    const ow = p.owed?.length ?? 0; // R8-Q1: reward items waiting for bag room
+    h += `<button class="hbtn" type="button" data-testid="dock-inventory" data-fk="h.d.i" data-open="inventory" aria-pressed="${panels.inventory}"><span>${esc(T.openInventory)}</span><kbd>${esc(kl("inventory"))}</kbd>${ow ? `<span class="bdg" data-testid="inv-badge" aria-label="${ow} ${esc(T.owedBadge)}">${ow}</span>` : ""}</button>`;
     h += `<button class="hbtn" type="button" data-testid="dock-character" data-fk="h.d.c" data-open="character" aria-pressed="${panels.character}"><span>${esc(T.openCharacter)}</span><kbd>${esc(kl("character"))}</kbd>${badge(p.attrPoints, T.attrPointsBadge)}</button>`;
     h += `<button class="hbtn" type="button" data-testid="dock-skills" data-fk="h.d.s" data-open="skills" aria-pressed="${panels.skills}"><span>${esc(T.openSkills)}</span><kbd>${esc(kl("skills"))}</kbd>${badge(p.skillPoints, T.skillPointsBadge)}</button>`;
     h += `<button class="hbtn" type="button" data-testid="dock-map" data-fk="h.d.m" data-open="map" aria-pressed="${panels.map}"><span>${esc(T.openMap)}</span><kbd>${esc(kl("map"))}</kbd></button>`;
@@ -258,6 +263,7 @@ export function createPanels(root, game) {
       else if (a && a !== doc.body && !el.left.contains(a) && !el.right.contains(a)) view.hudFk = null;
     }
     if (view.respecAsk && (u.left !== "skills" || c.scene !== "town")) view.respecAsk = false; // the confirmation never outlives the panel or the Lobby
+    root.classList.toggle("map-open", !!u.map); // N16: on the phone the full map keeps only its own dock button, so the map title (a canvas band at the top) is not covered
     root.classList.toggle("open-left", leftOpen); root.classList.toggle("open-right", rightOpen);
     const frontLeft = leftOpen && (u.front === "left" || !rightOpen);
     root.classList.toggle("front-left", frontLeft); root.classList.toggle("front-right", rightOpen && !frontLeft);
@@ -265,18 +271,18 @@ export function createPanels(root, game) {
     el.left.dataset.panel = u.left ?? ""; el.right.dataset.panel = "inventory";
     el.left.setAttribute("aria-label", u.left === "journal" ? T.journalTitle : u.left === "skills" ? T.skills : u.left === "npc" ? (S[c.ui.dialog?.nameKey] ?? "") : T.character);
 
-    const hudSig = sigOf(game.w, game.h, c.options?.keys, p.skillBar.hotkeys, p.skillBar.selected, p.skills, p.mp >= 0 && p.skillBar.hotkeys.map((id) => (id && content.skills[id]?.mana ? p.mp < content.skills[id].mana(Math.max(1, id === "strike" ? 1 : p.skills[id] ?? 0)) : 0)), c.belt.map((b) => b?.id ?? 0), p.attrPoints, p.skillPoints, u.inventory, u.left, u.map, p.xp, p.level, !!u.badge?.journal);
+    const hudSig = sigOf(game.w, game.h, c.options?.keys, p.skillBar.hotkeys, p.skillBar.selected, p.skills, p.mp >= 0 && p.skillBar.hotkeys.map((id) => (id && content.skills[id]?.mana ? p.mp < content.skills[id].mana(Math.max(1, id === "strike" ? 1 : p.skills[id] ?? 0)) : 0)), c.belt.map((b) => b?.id ?? 0), p.attrPoints, p.skillPoints, u.inventory, u.left, u.map, p.xp, p.level, !!u.badge?.journal, p.owed?.length ?? 0);
     if (hudSig !== view.sigs.hud) { view.sigs.hud = hudSig; renderInto(el.hud, renderHud(c)); }
 
     const base = [game.w, game.h, c.options?.keys, u.front, held?.id ?? 0, game.heldOrigin, !!view.drag, p.level, p.xp, p.xpNext, p.attrs, p.attrsTotal, p.attrPoints, p.skillPoints, p.hp, p.hpMax, p.mp, p.mpMax, p.gold, p.damage, p.defense, p.attackRating, p.resist, p.skills, p.skillBar.hotkeys, p.aura, p.name, p.class, c.depth, c.scene, c.player.respecsUsed,
-      c.inventory.items.map((i) => [i.id, i.x, i.y]), Object.values(c.equipment).map((i) => i?.id ?? 0), c.belt.map((b) => b?.id ?? 0), c.floor.name];
+      c.inventory.items.map((i) => [i.id, i.x, i.y]), p.owed?.length ?? 0, Object.values(c.equipment).map((i) => i?.id ?? 0), c.belt.map((b) => b?.id ?? 0), c.floor.name];
     if (rightOpen) { const sg = sigOf(base); if (sg !== view.sigs.right) { view.sigs.right = sg; renderInto(el.right, renderInventory(c)); } } else view.sigs.right = "";
     if (leftOpen) {
-      const sg = sigOf(base, u.left, u.vendorTab, view.sellArm, view.respecAsk, c.ui.dialog, c.vendor && [c.vendor.id, c.vendor.stock.map((e) => e.item.id)], c.stash.items.map((i) => i.id), (u.left === "journal" || u.left === "npc") && [c.quests, c.player.pouch, c.scene, u.questNotice]);
+      const sg = sigOf(base, u.left, u.vendorTab, view.sellArm, view.respecAsk, c.ui.dialog, c.vendor && [c.vendor.id, c.vendor.stock.map((e) => e.item.id)], c.stash.items.map((i) => i.id), (u.left === "journal" || u.left === "npc") && [c.quests, c.player.pouch, c.player.owed, c.scene]);
       if (sg !== view.sigs.left) {
         view.sigs.left = sg;
         renderInto(el.left, u.left === "skills" ? renderSkills(c) : u.left === "npc" ? renderNpc(c) : u.left === "journal" ? renderJournal(c) : renderCharacter(c));
-        if (u.left === "character") { flashChanged(); for (const cv of el.left.querySelectorAll("canvas[data-bust]")) { try { paintBust(cv, cv.dataset.bust); } catch { /* decoration */ } } }
+        if (u.left === "character") { flashChanged(); for (const cv of el.left.querySelectorAll("canvas[data-bust]")) { try { paintBust(cv, cv.dataset.bust, cv.dataset.look); } catch { /* decoration */ } } }
         if (view.preview && u.left === "character") showPreview(view.preview);
       }
     } else { view.sigs.left = ""; view.stats = {}; }
@@ -346,13 +352,11 @@ export function createPanels(root, game) {
     st.setProperty("--tw", (D.phone ? Math.round(w * 0.96) : Math.round(Math.min(560, free - 24))) + "px");
     st.left = ((cx / w) * 100).toFixed(2) + "%";
   }
-  /** VFIX-R7 U5: one sentence shows once. A toast that repeats the tracker pill, or the red alert that is on screen in the NPC window, is hidden (it stays in the live region). */
+  /** VFIX-R7 U5: one sentence shows once. A toast that repeats the tracker pill, is hidden (it stays in the live region). */
   function syncToastDup() {
     const tx = el.toast.textContent;
     const pill = !el.tracker.hidden && el.tracker.dataset.line === tx;
-    const al = el.left.querySelector(".nq-warn");
-    const alert = !!al && al.getClientRects().length > 0 && al.textContent === tx;
-    el.toast.classList.toggle("dup", !el.toast.hidden && (pill || alert));
+    el.toast.classList.toggle("dup", !el.toast.hidden && pill);
   }
   function syncToast() {
     const t = game.ui.toast;
