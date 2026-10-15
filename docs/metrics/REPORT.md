@@ -19,7 +19,7 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R8 | 12 | 2501.1 | 562.3 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 105 rows, 17151.3 k subagent tokens. **Your messages logged:** 34.
+**Ledger total:** 106 rows, 17151.3 k subagent tokens. **Your messages logged:** 34.
 
 ## Round R3
 
@@ -171,6 +171,7 @@ Retro summary (`round-07.json`): incidents 12, learnings L-032, L-033, L-034, L-
 | implementer | FIX-R8-UIR (toast queue, gear cache cap) | 121.8 | 59.3 | done | fps50_loaded: [47.4,48.3,48.7,49,57.6]; fps50_gear: [44.7,44.7,47.7,49.7,50]; load: 1.2-3.9 |
 | implementer | BAL-R8 (floor 2 hotspot) | 114.0 | 63.9 | done | deaths_total: {"before":[25,16,10],"after":[6,6,3]}; parity: {"medians_min":[24.3,24,23.8],"wins":"72/72"}; golden: re-pinned with proof |
 | orchestrator | verify R8 (quiet) | – | – | green except 1 adv-r7 check (suspected fixture) | tests: 1295; e2e: 18/19; fps50: [51.8,53.3,55,47.4,60]; fps50GearedHero: [51.8,52.9,53.3,46.2,55.8]; benchGear_fps50: [42.1,51.8,47.1]; load: 1.0-1.6 |
+| visual-reviewer | R8 visual review | – | – | done | score: {"g":[36,34],"ui":[35,34]}; verdict: pass; findings: {"medium":2,"low":9} |
 
 ## Harness work
 
