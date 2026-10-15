@@ -85,8 +85,8 @@ function bodyUnder(g, p, tier) {
   roundedTorso(g, p, 4.2); g.clip();
 }
 /** Pairs with bodyUnder: tiers 3 releases the clip (the one extra save), inks the rounded edge, then the vermillion lines on shoulders and hem and the collar diamond. */
-function bodyOver(g, p, tier, at) {
-  if (tier < 3) return trimOver(g, p, tier, at);
+function bodyOver(g, p, tier) { // the tier 3 collar diamond is fixed to the torso, tiers 1-2 use the shared trim (R11-10: no anchor parameter)
+  if (tier < 3) return trimOver(g, p, tier);
   const R = palette.rarity;
   g.restore();
   g.save();
@@ -111,7 +111,7 @@ function knit(g, slot, cat, tier, A) { // cardigan: soft sage knit, V-neck over 
     for (let i = 0; i < 3; i++) ellipse(g, cx0 + 1.6, shY + ly + 11 + i * ((hipY - shY - 13) / 2.4), 1.1, 1.1, "#f6f1e4", INK, 0.7);
     for (const sgn of [-1, 1]) fillPoly(g, [[cx0 + sgn * 4.4, hipY - 6], [cx0 + sgn * 8.4, hipY - 6], [cx0 + sgn * 8.4, hipY - 1.6], [cx0 + sgn * 4.4, hipY - 1.6]], "#6f9163", INK, 0.9);
   } else { fillPoly(g, [[cx0 - 4, shY + ly - 0.6], [cx0 + 4, shY + ly - 0.6], [cx0 + 3, shY + ly + 2.2], [cx0 - 3, shY + ly + 2.2]], "#6f9163", INK, 1); } // neck rib
-  bodyOver(g, p, tier, [cx0 + hw * 0.45, shY + ly + 7]);
+  bodyOver(g, p, tier);
 }
 
 function jacket(g, slot, cat, tier, A) { // blazer: navy, square shoulder pads, white shirt V, notched lapels, breast pocket with a square
@@ -128,7 +128,7 @@ function jacket(g, slot, cat, tier, A) { // blazer: navy, square shoulder pads, 
     const px = cx0 - hw * 0.55; fillPoly(g, [[px - 2.6, shY + ly + 6.4], [px + 2.6, shY + ly + 6.4], [px + 2.6, shY + ly + 7.6], [px - 2.6, shY + ly + 7.6]], "#26365e", INK, 0.8);
     fillPoly(g, [[px - 1.6, shY + ly + 4.4], [px + 0.2, shY + ly + 4.4], [px + 1.4, shY + ly + 6.6], [px - 1.6, shY + ly + 6.6]], "#fff6dc", INK, 0.7);
   } else { line(g, cx0, shY + ly + 3, cx0, p[2][1], "#1f2c50", 1.4); fillPoly(g, [[cx0 - 5, shY + ly - 0.4], [cx0 + 5, shY + ly - 0.4], [cx0 + 3, shY + ly + 2.4], [cx0 - 3, shY + ly + 2.4]], "#5a76b8", INK, 1); }
-  bodyOver(g, p, tier, [cx0 + hw * 0.5, shY + ly + 6]);
+  bodyOver(g, p, tier);
 }
 
 function vest(g, slot, cat, tier, A) { // hi-vis vest: lime, two silver reflective bands, straps over the shoulders, zip; sleeves stay the class shirt
@@ -140,7 +140,7 @@ function vest(g, slot, cat, tier, A) { // hi-vis vest: lime, two silver reflecti
   for (const y of [y1, y2]) { fillPoly(g, [[p[0][0] + 0.4, y], [p[1][0] - 0.4, y], [p[1][0] - 0.4, y + 2.6], [p[0][0] + 0.4, y + 2.6]], "#e8eef8", INK, 0.9); line(g, p[0][0] + 1.2, y + 1.3, p[1][0] - 1.2, y + 1.3, "#aab6cc", 0.8); }
   for (const sgn of [-1, 1]) fillPoly(g, [[cx0 + sgn * hw * 0.62, shY + ly - 0.6], [cx0 + sgn * hw * 0.98, shY + ly - 0.6], [cx0 + sgn * hw * 0.98, y1], [cx0 + sgn * hw * 0.66, y1]], "#e8eef8", INK, 0.8); // reflective straps
   if (A.front) { fillPoly(g, [[cx0 - 3, shY + ly - 0.6], [cx0 + 3, shY + ly - 0.6], [cx0, shY + ly + 3]], "#3a3f58", INK, 0.9); line(g, cx0, shY + ly + 3, cx0, p[2][1] - 0.4, INK, 1.2); }
-  bodyOver(g, p, tier, [cx0 - hw * 0.55, shY + ly + 14.6]);
+  bodyOver(g, p, tier);
 }
 
 function suit(g, slot, cat, tier, A) { // pinstripe suit: charcoal with light pinstripes, long jacket, white shirt, red tie, lapels
@@ -158,7 +158,7 @@ function suit(g, slot, cat, tier, A) { // pinstripe suit: charcoal with light pi
     fillPoly(g, [[cx0 + 3.4, shY + ly - 0.4], [cx0 + 7, shY + ly - 0.4], [cx0 + 1.2, hipY - 6]], "#2a2b3e", INK, 1);
     ellipse(g, cx0 - 0.5, hipY - 1, 1.1, 1.1, "#9a9cc0", INK, 0.7);
   } else line(g, cx0, shY + ly + 2, cx0, p[2][1], "#23243a", 1.3);
-  bodyOver(g, p, tier, [cx0 + hw * 0.5, shY + ly + 6]);
+  bodyOver(g, p, tier);
 }
 
 // ---------------------------------------------------------------- hands

@@ -269,6 +269,21 @@ function blit(g, e, sx, sy, z) {
 
 // ---- pooled scratch ----
 const pt = { x: 0, y: 0 }, AF = { anim: "idle", frame: 0 }, LS = { shade: 0, tint: "", tintA: 0 };
+/** R11: depth bias that lets the hero win ties against actors on the same or a touching tile; the hit nudge follows flashTicks (counts down from config.flashTicks = 8 ticks, 133 ms). */
+const HERO_DEPTH_BIAS = 0.25, NUDGE = { dx: 0, dy: 0 };
+/** Depth key of an actor (tile sum + 1.02); the hero gets the bias so he wins ties and near-ties against monsters in his footprint (R11 M-6). */
+export const actorDepth = (x, y, isPlayer) => x + y + 1.02 + (isPlayer ? HERO_DEPTH_BIAS : 0);
+/**
+ * Hit knock-back of a monster in screen px (R11 M-3), written to out.dx / out.dy: 3.5 px away from the hero at the hit (flashTicks = config.flashTicks),
+ * easing to 0 as the flash runs out. None under reduced motion, for a boss, a dying monster or with no flash. Pure.
+ */
+export function hitNudge(flashTicks, ex, ey, z, reduced, out) {
+  out.dx = 0; out.dy = 0;
+  if (reduced || !(flashTicks > 0)) return out;
+  const kk = Math.min(1, flashTicks / config.flashTicks), nn = Math.hypot(ex, ey) || 1;
+  out.dx = (ex / nn) * 3.5 * kk * z; out.dy = (ey / nn) * 3.5 * kk * z * 0.6;
+  return out;
+}
 const GOLD_SIZES = ["gold-s", "gold-m", "gold-l"];
 const pool = [], items = [], actorOut = [], posA = { x: 0, y: 0 }, posB = { x: 0, y: 0 };
 const out = { heroScreen: { x: 0, y: 0 }, heroDir: 0, actors: actorOut, heroItem: null };
@@ -503,7 +518,7 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
   const she = shTint ? atlas.shade(sh, shTint) : sh;
   g.drawImage(she.img, Math.round(sx + sox - sh.ox * k * z), Math.round(sy + soy - sh.oy * k * z), Math.round(sh.w * k * z), Math.round(sh.h * k * z));
   g.globalAlpha = 1;
-  const it = grab(pos.x + pos.y + 1.02, e, sx, sy);
+  const it = grab(actorDepth(pos.x, pos.y, isPlayer), e, sx, sy); // R11 M-6: the hero wins depth ties and near-ties, so a monster inside his footprint never covers his torso
   it.actor = true; it.isPlayer = isPlayer; it.a = alphaV; it.flash = flash; it.head = dm.head;
   it.k = kq; // R8-T N17: the named quest elite stands bigger than a manager (sprite, ring, status and plate follow)
   it.shade = shade; it.tint = tint; it.tintA = tintA; it.champ = champ; it.boss = boss; it.summoned = !isPlayer && !!a.summoned && !dying;
@@ -514,6 +529,10 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
     if (a.ai === "stagger") { // recoil away from the facing direction and shiver, easing out over the recovery
       const kk = Math.min(1, a.staggerT / config.hitRecoveryTicks), v = DIR_VEC[dir];
       it.dx = (-v[0] * 4 * kk + Math.sin(now * 0.075) * 1.8 * kk) * z; it.dy = -v[1] * 2 * kk * z;
+    }
+    else if (!boss && F.hero) { // R11 M-3: a short knock-back on every hit (state-backed like the flash), away from the hero; ex, ey = the hero-to-monster vector on screen
+      const ex = (pos.x - hp.x) - (pos.y - hp.y), ey = ((pos.x - hp.x) + (pos.y - hp.y)) * 0.5;
+      hitNudge(a.flashTicks, ex, ey, z, fx.reducedMotion, NUDGE); it.dx = NUDGE.dx; it.dy = NUDGE.dy;
     }
   }
   if (!isPlayer && !dying && a.tile && F.blocked) { // beside a wall or a tall prop that is drawn in front of it: the actor is shown through it, like the hero (round G fix)

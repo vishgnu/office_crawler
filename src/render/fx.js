@@ -567,17 +567,19 @@ export function createFx(style) {
         project(cam, f.tile.x + 0.5, f.tile.y + 0.5, pos);
         const pop = (1 + 0.9 * Math.max(0, 1 - t / 0.14)) * (f.kind === "crit" ? 1.35 : 1);
         const fs = Math.max(miss ? 15 : 30, Math.round((miss ? 10 : 21) * z * pop));
-        // spawns above the head and clear of the nameplate, then drifts up (right for monsters, left for the hero); stacked rows sit higher
-        const side = toPlayer ? -1 : 1, x = pos.x + side * Math.max((toPlayer ? 62 : 40) * z, 88) + side * 16 * e * z, y = pos.y - (head + 10 + 32 * e + rows[i] * 24) * z;
+        // R11 M-5: spawns beside the head (clear of the nameplate) and rises only ~14 px; stacked rows alternate sides and go one row (24 px) higher every second one,
+        // so a floater stays within ~40 px of its target (it used to drift 100-150 px away). The lane search below slides sideways first and lifts at most one row.
+        const side0 = toPlayer ? -1 : 1, row = Math.min(rows[i], 3), side = row & 1 ? -side0 : side0, gapX = (toPlayer ? 34 : 30) * z;
+        const rise = fx.reducedMotion ? 6 : 14 * e, x = pos.x + side * (gapX + 8 * e * z), y = pos.y - (head * 0.92 + 4 + rise + (row >> 1) * 24) * z;
         const text = miss ? S.miss : heal ? `+${f.value}` : f.kind === "crit" ? `${f.value}!` : String(f.value); // crit: a "!" so it never relies on size or colour alone
         g.font = fontFor(fs);
-        // own lane: never on a nameplate, health pip, ground-item label or leader line; lift in steps, then try the other side
+        // own lane: never on a nameplate, health pip, ground-item label or leader line; lift (twice at most), then the other side, then lift again
         const tw = g.measureText(text).width + 8, th = fs * 1.15, fr = fr0;
         let fy = y, fxx = x;
-        for (let tries = 0; tries < 9; tries++) {
+        for (let tries = 0; tries < 6; tries++) {
           fr.x = fxx - tw / 2; fr.y = fy - th / 2; fr.w = tw; fr.h = th;
           if (!fx.blocked(fr) && !frHit(fr)) break;
-          if (tries === 5) { fxx = pos.x - side * Math.max((toPlayer ? 62 : 40) * z, 88) - side * 16 * e * z; fy = y; } else fy -= th * 0.7;
+          if (tries === 2) { fxx = pos.x - side * (gapX + 8 * e * z); fy = y; } else fy -= th * 0.5;
         }
         const done = fl[nf] ?? (fl[nf] = { x: 0, y: 0, w: 0, h: 0 }); done.x = fr.x; done.y = fr.y; done.w = fr.w; done.h = fr.h; nf++;
         g.globalAlpha = t < 0.65 ? 1 : Math.max(0, 1 - (t - 0.65) / 0.35);

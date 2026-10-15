@@ -99,6 +99,7 @@ test("CR7-02 run-c (the new balance numbers of R7-3): re-pinned golden, stairs, 
   assert.ok(s.eventLog.filter((e) => !e.type.startsWith("quest.")).length === 256, "the log window is full");
   assert.deepEqual(s.player.pouch, []);
   assert.ok(content.sideIds.every((id) => s.quests[id].s === "available"));
+  assert.equal(s.stats.deaths, 0, "R11-10: the run-c recording has no death (a future re-record cannot hide one)");
   // CR8-04: no legacy copy of the previous (R7-3) run-c recording exists, so the golden is pinned by this hash only; the old 'differs under legacy balance' assert proved nothing about R7-3 and was dropped.
 });
 

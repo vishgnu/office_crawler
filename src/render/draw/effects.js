@@ -80,7 +80,7 @@ function bolt(g, x0, y0, x1, y1, seed, z, jag, widths, cols) { // jagged lightni
 
 export function createSkillFx(fx) {
   const efx = [], lights = [], zoneCache = new Map(), allyCache = new Map(), last = { fx: null, skill: null, at: -1e9, e: null, type: "physical" };
-  let nL = 0, absorbMax = 1, absorbRef = null, shieldSkill = "firewall", chain = null, dashDir = { x: 1, y: 1 };
+  let nL = 0, fizzAt = -1e9, absorbMax = 1, absorbRef = null, shieldSkill = "firewall", chain = null, dashDir = { x: 1, y: 1 };
   const M = () => fx.reducedMotion, FL = () => !(fx.reducedFlash || fx.reducedMotion); // reduced motion also drops white flashes (there is no separate option yet)
   const light = (x, y, r, colour, intensity) => { const o = lights[nL] ?? (lights[nL] = { x: 0, y: 0, r: 0, colour: "#fff", intensity: 0 }); o.x = x; o.y = y; o.r = r; o.colour = colour; o.intensity = intensity; nL++; };
   const push = (o) => { if (efx.length > 80) efx.shift(); efx.push(o); return o; };
@@ -90,7 +90,7 @@ export function createSkillFx(fx) {
     efx, lights, zoneCache,
     /** Debris chip colour for the last typed cast (physical dust, cold ice, shock sparks). */
     chipColour: () => (TYPE_COL[last.type] ?? TYPE_COL.physical)[last.type === "physical" ? 1 : 0],
-    reset() { efx.length = 0; zoneCache.clear(); allyCache.clear(); chain = null; absorbMax = 1; absorbRef = null; nL = 0; lights.length = 0; last.at = -1e9; },
+    reset() { fizzAt = -1e9; efx.length = 0; zoneCache.clear(); allyCache.clear(); chain = null; absorbMax = 1; absorbRef = null; nL = 0; lights.length = 0; last.at = -1e9; },
 
     /** Called from fx.handle for every event; returns true when it consumed the old orange burst ring (a typed ring replaces it). */
     handle(ev, core, now) {
@@ -144,6 +144,9 @@ export function createSkillFx(fx) {
         case "zoneTrigger": { const z = zoneCache.get(ev.id); if (z && z.kind === "trap") { push({ k: "splash", x: z.x, y: z.y, r: z.r, born: now, life: 560 }); if (FL()) push({ k: "ring", x: z.x, y: z.y, r: z.r, born: now, life: 420, type: "cold" }); } break; }
         case "zoneEnd": { const z = zoneCache.get(ev.id); if (z && z.kind === "field") push({ k: "puff", x: z.x, y: z.y, born: now, life: 520, grey: true, r: z.r }); zoneCache.delete(ev.id); break; }
         case "dash": push({ k: "dash", x: ev.from.x + 0.5, y: ev.from.y + 0.5, x2: ev.to.x + 0.5, y2: ev.to.y + 0.5, born: now, life: 620 }); dashDir = { x: ev.to.x - ev.from.x || 1, y: ev.to.y - ev.from.y }; break;
+        case "noMana": case "castRefused": // R11 M-4: a cast that does not go off (mana short, no target, out of range) gets a short dim ring at the feet, so the key press is not silent; at most one per 250 ms
+          if (now - fizzAt > 250) { fizzAt = now; push({ k: "puff", x: hx, y: hy, born: now, life: 320, grey: true, r: 0.5, fizz: ev.type === "noMana" }); }
+          break;
         case "floorEnter": api.reset(); break;
         default: break;
       }
@@ -215,7 +218,7 @@ export function createSkillFx(fx) {
           light(e.x + (e.x2 - e.x) * p, e.y + (e.y2 - e.y) * p, 1.6, "#ffe9b0", 0.35 * fade);
         } else if (e.k === "puff") {
           const rr = (0.3 + 0.9 * ease(k)) * RX * z * (e.r ?? 0.9) * 0.9; g.globalAlpha = fade; ell(g, cx, cy, rr, rr * 0.5); g.fillStyle = e.grey ? "rgba(190,190,205,0.26)" : e.cone ? "rgba(255,150,60,0.24)" : "rgba(255,255,255,0.22)"; g.fill();
-          g.lineWidth = Math.max(2, 2.4 * z * 0.7); g.strokeStyle = e.grey ? "#c9c9dd" : e.cone ? "#ffb070" : "#ffffff"; g.setLineDash([4 * z, 4 * z]); g.stroke(); g.setLineDash([]);
+          g.lineWidth = Math.max(2, 2.4 * z * 0.7); g.strokeStyle = e.fizz ? "#7f9cff" : e.grey ? "#c9c9dd" : e.cone ? "#ffb070" : "#ffffff"; g.setLineDash([4 * z, 4 * z]); g.stroke(); g.setLineDash([]);
         }
         g.restore();
       }

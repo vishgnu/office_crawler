@@ -797,7 +797,8 @@ html.hc .tr-in{background:#000;border-color:#fff;color:#fff}
 #ui.short .ph .xbtn { margin-left: 0; flex: none; }
 #ui.short .drawer { border-width: 3px; }
 #ui.short-panel .hudui { visibility: hidden; }
-#ui.short-panel .toast { -webkit-line-clamp: 1; padding: 2px 10px; max-width: 96vw; }
+/* R11-07: the strip under the panel holds two lines at the chosen text size (layout.js shortLane): 2 px border, 1 px padding, 15 px lines, all zoomed by --ts like the toast itself; the width is divided by the zoom so it never runs off the screen */
+#ui.short-panel .toast { -webkit-line-clamp: 2; padding: 1px 8px; border-width: 2px; font-size: 14px; line-height: 15px; max-width: calc(96vw / var(--ts, 1)); }
 #ui.short .inv { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; row-gap: 4px; padding: 4px 6px 0; align-items: start; }
 #ui.short .dollrow { display: contents; }
 #ui.short .doll { grid-column: 1; grid-row: 1 / span 2; grid-template-columns: repeat(7, 34px); grid-template-rows: repeat(6, 34px); }
@@ -811,7 +812,25 @@ html.hc .tr-in{background:#000;border-color:#fff;color:#fff}
 #ui.short #pright .footrow { margin-bottom: 0; padding: 4px 0 2px; }
 #ui.short .sheet { margin: 2px 4px; padding: 6px 8px; }
 #ui.short .dstats { grid-template-columns: 1fr 1fr; }
-#ui.short .tree .tnodes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* R11-01: short landscape: the tree is a real 3-column flow (core column --col = grid column, two grid rows per tier: its label spanning the width, then the cards). It used to override only the column count, so every card stayed pinned to column 1 (the portrait phone rules set grid-column: 1) and two thirds of the panel were empty.
+   The prerequisite is named in text on the card (the connectors stay hidden as on the portrait phone); Learn and F1-F4 stack under the card text because a third of the width is too narrow for both in one row. e2e/r11fix-ui.mjs checks the computed grid columns at 667x375. */
+#ui.short .tree .tnodes { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 6px; row-gap: 4px; }
+#ui.phone.short .tree .tl { grid-column: 1 / -1; grid-row: calc(var(--row) * 2 - 1); }
+#ui.phone.short .tree .tnode { grid-column: calc(var(--col) + 1); grid-row: calc(var(--row) * 2); }
+#ui.phone.short .tree .tnodes.chain .tl { grid-column: var(--row); grid-row: 1; } /* a one-card-per-tier chain (three tiers in every class): one row of three cards, tier 1 to 3 left to right, labels above */
+#ui.phone.short .tree .tnodes.chain .tnode { grid-column: var(--row); grid-row: 2; }
+#ui.phone.short .tree .tnode.ctr2 { justify-self: center; width: calc((100% - 6px) / 2); box-sizing: border-box; } /* L-5 on the short phone: a tier-1 card above two children in adjacent columns is centred over them */
+#ui.phone.short .tree .tnode.ctr-a0 { grid-column: 1 / span 2; }
+#ui.phone.short .tree .tnode.ctr-a1 { grid-column: 2 / span 2; }
+#ui.phone.short .tree .tnode > .learn, #ui.phone.short .tree .tnode > .sassign, #ui.phone.short .tree .tnode > .aura { grid-column: 1 / -1; }
+#ui.phone.short .tree .tnode .sassign { justify-content: space-between; }
+#ui.phone.short .tree .tnode .sassign .mini { flex: 1 1 0; min-width: 40px; }
+/* U-2: the points line (with Respec) and the Strike assignment row share one row, so the first screen of the body has room for a tier of cards */
+#ui.short .tree { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 8px; align-items: center; }
+#ui.short .tree > * { grid-column: 1 / -1; }
+#ui.short .tree > .tr-head { grid-column: 1; }
+#ui.short .tree > .slist { grid-column: 2; }
+#ui.short .tree .srow { margin-top: 0; }
 /* L-5: a tier-1 card whose two children are in columns 1 and 2 is centred over them (the staircase left it at the left with an empty right half) */
 #ui:not(.phone) .tree .tnode.ctr2 { justify-self: center; width: calc((100% - var(--gx)) / 2); box-sizing: border-box; }
 #ui:not(.phone) .tree .tnode.ctr-a0 { grid-column: 2 / span 2; }
@@ -829,3 +848,43 @@ html.hc .tr-in{background:#000;border-color:#fff;color:#fff}
 #ui.short .tree .tr-head { margin-bottom: 2px; }
 /* L-2: on a small portrait phone (<= 700 px high) the drag hint is dropped so the bag keeps its rows; the tooltip and the Esc key still teach it */
 @media (max-height: 700px) { #ui.phone:not(.short) .keyhint { display: none; } #ui.phone:not(.short) .inv { padding-top: 4px; } }
+
+/* R11-09: the one-line touch hint in the Desk Drawer footer (phone only; the long drag hint above stays hidden there to keep the bag's rows) */
+.touchhint { display: none; }
+#ui.short .touchhint { display: block; flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; color: var(--mut); }
+@media (max-height: 700px) { #ui.phone:not(.short) .touchhint { display: block; flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; color: var(--mut); } } /* wherever the long drag hint is hidden (short landscape, portrait <= 700 px high) this one line takes its place */
+
+/* R11 U-1: the victory and story screens scroll as a whole; on a phone their buttons sit in a bar that sticks to the bottom edge, so "Keep playing" / "Quit to title" are in view at 667x375, 740x360, 844x390 and 360x640 without scrolling. On a desktop window the bar is just the centred button row */
+.vic-acts { position: sticky; bottom: 0; z-index: 2; box-sizing: border-box; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 10px; }
+@media (max-height: 430px), (max-width: 480px) {
+  .vic-acts { width: calc(100% + 28px); margin: 0 -14px 0; padding: 14px 14px 8px; background: linear-gradient(rgba(14, 14, 22, 0), #0e0e16 22px); }
+  .vic-acts .btn { flex: 1 1 140px; min-width: 0; white-space: nowrap; padding-left: 8px; padding-right: 8px; }
+  .screen.victory, .screen.story-screen { padding-bottom: 0; } /* the bar sits flush on the bottom edge: no strip of story text under it */
+  .screen.victory .vic, .screen.story-screen .vic { margin-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom-width: 0; }
+  .screen.victory .vic > h3, .screen.victory .vic > .summary { order: 1; } /* the run summary comes before the story: it is what the player wants, the story scrolls under it */
+  .screen.victory .vic > .story { order: 2; }
+  .screen.victory .vic > .vic-acts { order: 3; }
+}
+@media (max-height: 430px) {
+  .screen.victory .vic, .screen.story-screen .vic { gap: 6px; padding: 10px 18px 8px; }
+  .screen.victory .story, .screen.story-screen .story { font-size: calc(15px * var(--ts, 1)); }
+  .vic-acts { flex-wrap: nowrap; }
+  .screen.victory .summary { margin: 0; padding: 4px 12px; gap: 14px; }
+  .screen.victory .summary dd { font-size: calc(20px * var(--ts, 1)); }
+}
+/* R11 U-3: the Options panel scrolls with room under it (and under the phone's home bar): the last help line and the panel border are never at the viewport edge */
+.screen.options { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+.screen.options .opt-panel { margin-bottom: 8px; }
+/* R11 U-4: on a small portrait phone (360x640) the info block scrolled inside a 170 px band and the stat bars were cut by the name field below: the flavour quote goes (the class text is in the header), so the head and the stat bars fit above the name field */
+@media (max-width: 760px) and (max-aspect-ratio: 1/1) and (max-height: 700px) { .cs-quote { display: none; } .cs-info { padding-top: 8px; } .cs-stats { margin-bottom: 4px; } }
+
+/* R11 U-2: the Employee File on a short landscape phone: smaller photo, no floor line, the four attributes in two columns, so the first screen shows the header, the XP and all attributes instead of the header and two of them */
+#ui.short .fh { gap: 8px; }
+#ui.short .photo { width: 44px; height: 54px; }
+#ui.short .fh > div:not(.photo):not(.stamp) > p:nth-of-type(2) { display: none; }
+#ui.short .sc-attr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 16px; }
+#ui.short .sc-attr > h3, #ui.short .sc-attr > .apv { grid-column: 1 / -1; }
+#ui.short .xpl { margin-top: 2px; } #ui.short .xpb2 { height: 10px; margin-top: 2px; } #ui.short .xpt { margin-top: 0; line-height: 1.2; }
+#ui.short .sheet h3 { margin: 4px 0 2px; } #ui.short .sheet { padding-top: 4px; padding-bottom: 4px; }
+#ui.short .attr { padding: 0; gap: 6px; }
+#ui.short .fh > div:not(.photo):not(.stamp) > h2 { line-height: 1.1; }

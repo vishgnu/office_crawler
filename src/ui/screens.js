@@ -57,6 +57,8 @@ export function createScreens(root, h) {
     b.addEventListener("click", (ev) => { ev.stopPropagation(); click(); onClick(); });
     return b;
   }
+  /** R11 U-1: the buttons of a long text screen (victory, story) in a bar that sticks to the bottom of the scrolling screen, so they are in view on a short phone without scrolling. */
+  const actions = (...btns) => { const d = el("div", "vic-acts"); d.append(...btns); return d; };
   const go = (name) => { sub = name; if (last) screens.show(last.menu, last.info, true); };
   const stats = (pairs) => {
     const list = el("dl", "summary");
@@ -109,7 +111,7 @@ export function createScreens(root, h) {
       box.setAttribute("role", "dialog"); box.setAttribute("aria-label", st.title);
       box.append(el("p", "kicker", T.storyKicker), el("h2", "", st.title));
       for (const line of st.lines) box.append(el("p", "story", line));
-      box.append(button(T.storyContinue, "story-continue", h.dismissStory));
+      box.append(actions(button(T.storyContinue, "story-continue", h.dismissStory)));
       s.append(box);
       return s;
     },
@@ -118,7 +120,7 @@ export function createScreens(root, h) {
       box.setAttribute("role", "dialog"); box.setAttribute("aria-label", S.victoryTitle);
       box.append(el("p", "kicker", T.victoryBoss), el("h2", "", S.victoryTitle), ...content.story.victory.lines.map((l) => el("p", "story", l)), el("h3", "", S.victoryStats));
       box.append(stats([[S.victoryTime, fmtTime(r.seconds ?? 0)], [S.victoryKills, String(r.kills ?? 0)], [S.victoryDeaths, String(r.deaths ?? 0)], [S.victoryLevel, String(r.level ?? 1)], [S.victoryGold, String(r.gold ?? 0)], [S.victoryDeepest, String(r.deepestDepth ?? 0)]]));
-      box.append(button(S.keepPlaying, "keep-playing", h.keepPlaying), button(T.victoryQuit, "quit", h.quit));
+      box.append(actions(button(S.keepPlaying, "keep-playing", h.keepPlaying), button(T.victoryQuit, "quit", h.quit)));
       s.append(box);
       return s;
     },

@@ -67,21 +67,24 @@ export const isPhone = (w, h) => w <= PHONE_MAX_W || h <= PHONE_MAX_H;
  * health mug and mana jug so the vessels stay visible; the world camera re-centres the hero in the gap that stays free.
  * Cells are 44 px from 1024 px up (the decision's minimum), 40 px on the narrow desktop band; on a phone the grid fits the width.
  */
-export const SHORT_MAX_H = 430, SHORT_LANE = 36, SHORT_CELL = 34; // short landscape phone (667x375, 740x360, 844x390): a 36 px toast strip under the panel, 34 px cells
+export const SHORT_MAX_H = 430, SHORT_LANE = 38, SHORT_CELL = 34; // short landscape phone (667x375, 740x360, 844x390): a toast strip under the panel (SHORT_LANE px at text size 1, see shortLane), 34 px cells
 export const TOAST_LANE = 48; // phone: a strip under an open drawer where the toast (at most two lines) sits, so it never covers the panel's action buttons or the potion belt
-export function drawerLayout(w, h) {
+/** R11-07: height of the toast strip under a short-phone panel. The toast there is two lines at most (a quest line is often longer than one), 2 px border, 1 px padding, 15 px lines: 36 px at text size 1, times the text-size option (the toast is zoomed by it), plus 2 px. */
+export const shortLane = (ts = 1) => Math.max(SHORT_LANE, Math.ceil(36 * (ts > 0 ? ts : 1)) + 2);
+/** `ts` is the text-size option (options.textScale, 1 to 1.5); only the short-phone strip depends on it. `lane` is the height of the toast strip under an open drawer on a phone, 0 on the desktop. */
+export function drawerLayout(w, h, ts = 1) {
   const L = hudLayout(w, h), phone = isPhone(w, h);
   const vesselTop = Math.min(L.health.rect.y, L.mana.rect.y), hudTop = Math.min(L.panel.y, L.beltPanel.y, vesselTop);
   if (phone) {
     // FIX-R8T-3 L-1: on a short landscape phone the panel runs down to a one-line toast strip at the bottom (the hotbar, belt and dock hide while it is open), the grid cells stay small
     // and the bag sits beside the equipment; without this the hotbar left only ~100-140 px of body
-    if (h <= SHORT_MAX_H && w > h) return { phone, short: true, top: 6, bottom: h - 6 - SHORT_LANE, left: 6, right: 6, leftW: w - 12, rightW: w - 12, cell: SHORT_CELL, hudTop, lane: SHORT_LANE };
+    if (h <= SHORT_MAX_H && w > h) { const lane = shortLane(ts); return { phone, short: true, top: 6, bottom: h - 6 - lane, left: 6, right: 6, leftW: w - 12, rightW: w - 12, cell: SHORT_CELL, hudTop, lane }; }
     const cell = Math.max(24, Math.floor((w - 36) / 10)); // the grid is the one part that cannot reach 44 px on a 390 px phone (10 columns)
-    return { phone, short: false, top: 6, bottom: Math.floor(hudTop - 6 - TOAST_LANE), left: 6, right: 6, leftW: w - 12, rightW: w - 12, cell, hudTop };
+    return { phone, short: false, top: 6, bottom: Math.floor(hudTop - 6 - TOAST_LANE), left: 6, right: 6, leftW: w - 12, rightW: w - 12, cell, hudTop, lane: TOAST_LANE };
   }
   const cell = w >= 1024 ? 44 : 40;
   const leftW = w >= 1024 ? 340 : 320, rightW = cell * 10 + 44;
-  return { phone, short: false, top: 8, bottom: Math.floor(Math.min(vesselTop, hudTop) - 8), left: 0, right: 0, leftW, rightW, cell, hudTop };
+  return { phone, short: false, top: 8, bottom: Math.floor(Math.min(vesselTop, hudTop) - 8), left: 0, right: 0, leftW, rightW, cell, hudTop, lane: 0 };
 }
 
 /** Horizontal camera shift (px) that keeps the hero centred in the gap left by the open drawers. */

@@ -9,7 +9,7 @@ export const T = {
   slotHead: "Head", slotBody: "Body", slotHands: "Gloves", slotFeet: "Shoes", slotBelt: "Belt", slotWeapon: "Weapon", slotOffhand: "Off-hand", slotRing1: "Ring", slotRing2: "Ring", slotAmulet: "ID",
   empty: "empty", cell: "Cell",
   rarityKey: "Rarity key", keys: "Keys",
-  keyHintPotions: "Potions", keyHintSkills: "Skills", dragHint: "Drag, or click then click. Right-click: equip or use. Esc: put back.",
+  keyHintPotions: "Potions", keyHintSkills: "Skills", dragHint: "Drag, or click then click. Right-click: equip or use. Esc: put back.", touchHint: "Tap, then tap where it goes.",
   rarityNormal: "Common", rarityMagic: "Magic", rarityRare: "Rare", rarityUnique: "Unique",
   keyNormal: "square mark, thin border", keyMagic: "diamond mark, solid border", keyRare: "star mark, double border", keyUnique: "crown mark, dashed border",
   gold: "gold", goldWord: "Gold", sellsFor: "Sells for", price: "Price", cells: "cells", needsMet: "Requirements met",

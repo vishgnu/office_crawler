@@ -19,6 +19,12 @@ export const HERO_DIM = {
 };
 export const HERO_RIMS = { "facilities-manager": "#ffe9a8", "sales-rep": "#ffd0e4", "it-wizard": "#b8f6ff", "ally.intern": "#cfe8ff", "ally.cone": "#ffd0a0" };
 
+/** R11 M-3: the hand of the card and laptop classes per attack frame (0 wind-up, 1 cocked, 2 strike, 3 recover): [reach, lift] as fractions of the strike pose. Frame 2 is the old strike pose. */
+const STRIKE = [[-0.3, 0.12], [-0.5, 0.55], [1, 1], [0.55, 0.5]];
+/** R11 M-3: the cast hand pushes forward on the release frame (px along the facing, per cast frame). */
+const CAST_THRUST = [0, 0, 6, 2];
+/** The attack hand [reach, lift]. Only with a weapon worn: the bare class sprite stays byte for byte the pre-R8 recording (AC-R-260-3, ADR-0008 point 6), so its old strike curve is kept. */
+const strike = (o, armed) => { if (armed) return STRIKE[Math.min(3, o.f)]; const t = Math.sin(Math.min(1, o.a / 0.75) * Math.PI * 0.6); return [t, t]; };
 const rect = (g, cx, cy, w, h, fill, st = INK, lw = 1.1) => fillPoly(g, [[cx - w / 2, cy - h / 2], [cx + w / 2, cy - h / 2], [cx + w / 2, cy + h / 2], [cx - w / 2, cy + h / 2]], fill, st, lw);
 const glow = (g, x, y, r, col, a) => { // soft additive light; the nominal colour is '#rrggbb'
   const gr = g.createRadialGradient(x, y, 0, x, y, r), c = col.slice(1).match(/../g).map((h) => parseInt(h, 16)).join(",");
@@ -76,6 +82,7 @@ function laptop(g, x, y, open, front, pulse) {
  */
 export function hero(g, id, o, G = null) {
   const K = SPEC[id], { fx, fy, bob, swing, lunge, a } = o, front = fy > -0.2, sc = K.sc, wide = K.wide;
+  const armed = !!worn(G, "weapon");
   const isFM = id === "facilities-manager", isSR = id === "sales-rep", isIT = id === "it-wizard";
   const lx = fx * lunge * 5, ly = fy * lunge * 2.5, hunch = isIT ? 2.4 : 0;
   const hipY = -K.legH * sc + bob * 0.4, shY = hipY - K.torsoH * sc + (isIT ? 2 : 0);
@@ -95,12 +102,12 @@ export function hero(g, id, o, G = null) {
       else { const t = (a - 0.75) / 0.25; tx = hxx + fx * 20 * (1 - t) * 0.6; ty = hyy - 2 + 8 * t; }
     } else { tx = hxx - side * 6 + fx * 2; ty = hyy - 24 + (o.anim === "walk" ? swing * 1.8 : o.bob * 0.6); }
   } else if (isSR) {
-    if (o.anim === "cast") { hx3 = hxx + fx * 7; hy3 = shY - 3 - 8 * o.cast + ly; tx = hx3; ty = hy3 - 4; }
-    else if (o.anim === "attack") { const t = Math.sin(Math.min(1, a / 0.75) * Math.PI * 0.6); hx3 = hxx + fx * 12 * t; hy3 = hyy - 12 * t + fy * 6 * t; tx = hx3; ty = hy3; }
+    if (o.anim === "cast") { hx3 = hxx + fx * (7 + (armed ? CAST_THRUST[o.f] : 0)); hy3 = shY - 3 - 8 * o.cast + ly; tx = hx3; ty = hy3 - 4; }
+    else if (o.anim === "attack") { const [r, l] = strike(o, armed); hx3 = hxx + fx * 12 * r; hy3 = hyy - 12 * l + fy * 6 * r; tx = hx3; ty = hy3; }
     else { hx3 = hxx; hy3 = hyy - 2 + (o.anim === "walk" ? swing * 1.5 : 0); tx = hx3; ty = hy3; }
   } else {
-    if (o.anim === "cast") { hx3 = hxx + fx * 8; hy3 = shY - 4 - 10 * o.cast + ly; }
-    else if (o.anim === "attack") { const t = Math.sin(Math.min(1, a / 0.75) * Math.PI * 0.6); hx3 = hxx + fx * 14 * t; hy3 = hyy - 14 * t + fy * 6 * t; }
+    if (o.anim === "cast") { hx3 = hxx + fx * (8 + (armed ? CAST_THRUST[o.f] : 0)); hy3 = shY - 4 - 10 * o.cast + ly; }
+    else if (o.anim === "attack") { const [r, l] = strike(o, armed); hx3 = hxx + fx * 14 * r; hy3 = hyy - 14 * l + fy * 6 * r; }
     else { hx3 = hxx; hy3 = hyy - 4 + (o.anim === "walk" ? swing * 1.5 : o.bob * 0.6); }
     tx = hx3; ty = hy3;
   }
@@ -109,7 +116,14 @@ export function hero(g, id, o, G = null) {
   const A = G ? { id, sc, front, fx, fy, side, lx, ly, hipY, shY, hw, wide, behind, skin: K.skin, shoeW: K.shoeW, anim: o.anim, f: o.f, n: o.n, near: [hx3, hy3], tip: [tx, ty], far: null, head: null, leg: null, two: !!wornW?.two, wdir: null, hook: "", legW: (isFM ? 6.4 : isSR ? 4.4 : 5.2) * sc, ns: [nx, ny], fs: [side * (hw - 0.5) + lx, shY + 3], taper: 0, cx0: 0 } : null;
   if (A) { // weapon direction: along hand -> tip for the wrench; upright (swinging forward in attack) for the card and laptop classes
     let wx = tx - hx3, wy = ty - hy3;
-    if (Math.hypot(wx, wy) < 2) { if (o.anim === "attack" && a > 0.2) { wx = fx * 0.9; wy = -0.3 + fy * 0.4; } else { wx = fx * 0.4 - side * 0.3; wy = -1; } }
+    if (Math.hypot(wx, wy) < 2) { // card and laptop classes: the weapon follows the hand pose. R11 M-3: wind-up and cocked back, strike forward, recover lower; cast: tilt back, up, thrust forward, ease up
+      const f = Math.min(3, o.f);
+      if (o.anim === "attack") { [wx, wy] = f === 0 ? [-fx * 0.25, -1] : f === 1 ? [-fx * 0.7, -0.75] : f === 2 ? [fx * 0.9, -0.3 + fy * 0.4] : [fx * 0.9, -0.05 + fy * 0.3]; }
+      else if (o.anim === "cast") { [wx, wy] = f === 0 ? [-fx * 0.3, -1] : f === 1 ? [0, -1] : f === 2 ? [fx * 0.8, -0.35 + fy * 0.3] : [fx * 0.4, -0.8]; }
+      else { wx = fx * 0.4 - side * 0.3; wy = -1; }
+    }
+    // R11 M-2: a two-handed weapon at rest or walking is carried slanted across the body in both hands (the shaft rises forward of the torso), not as an upright stub beside the hip
+    if (A.two && (o.anim === "idle" || o.anim === "walk")) { wx = fx * 0.6 - side * 0.12; wy = -1; }
     const wl = Math.hypot(wx, wy) || 1; A.wdir = [wx / wl, wy / wl];
   }
   // legs
@@ -261,16 +275,16 @@ export function hero(g, id, o, G = null) {
   else if (isSR) {
     if (o.anim === "cast") { // a fan of business cards held overhead
       for (let k = -2; k <= 2; k++) card(g, hx3 + k * 4.6, hy3 - 7 - Math.abs(k) * -1.4 - 2, k * 0.34, 1.15);
-    } else if (o.anim === "attack") { if (!wornW) stapler(g, hx3 + 2, hy3 - 1, Math.atan2(fy * 0.5, fx || 0.6) * 0.8 - 0.1 * (fx < 0 ? -1 : 1)); if (a > 0.3) for (let k = 0; k < 2; k++) card(g, hx3 + fx * (9 + k * 7), hy3 - 3 - k * 3, 0.5 + k, 0.95, 0.9 - k * 0.3); }
+    } else if (o.anim === "attack") { if (!wornW) stapler(g, hx3 + 2, hy3 - 1, Math.atan2(fy * 0.5, fx || 0.6) * 0.8 - 0.1 * (fx < 0 ? -1 : 1)); if (armed ? o.f >= 2 : a > 0.3) for (let k = 0; k < 2; k++) card(g, hx3 + fx * (9 + k * 7), hy3 - 3 - k * 3, 0.5 + k, 0.95, 0.9 - k * 0.3); }
     else if (!wornW) { stapler(g, hx3 + fx * 2 + 0.5, hy3 - 0.5, fx < 0 ? 3.3 : -0.1 + swing * 0.1); card(g, hx3 + side * -4 - fx * 3, hy3 - 6, -0.4 + Math.sin((o.f / o.n) * 6.28) * 0.3, 1); }
   } else { // IT: free hand, glowing; cast = keycaps orbit overhead
     if (o.anim === "cast" || o.anim === "attack") {
-      const k = o.anim === "cast" ? o.cast : Math.sin(Math.min(1, a / 0.75) * Math.PI * 0.6);
+      const k = o.anim === "cast" ? o.cast : strike(o)[1];
       glow(g, hx3, hy3 - 3, 14 + 6 * k, "#33e0ff", 0.4 + 0.25 * k);
       if (o.anim === "cast") for (let q = 0; q < 3; q++) {
         const an = (o.f / o.n) * 6.28 + q * 2.09, kx = hx3 + Math.cos(an) * 9, ky = hy3 - 10 + Math.sin(an) * 3.5;
         rect(g, kx, ky, 5.4, 5, "#4c5280", INK, 1); ellipse(g, kx, ky, 1.2, 1.2, "#33e0ff");
-      } else for (let q = 0; q < 3; q++) line(g, hx3 + fx * (4 + q * 3), hy3 - 2 - q, hx3 + fx * (9 + q * 3), hy3 - 3 - q * 1.5, "#bff7ff", 1.6);
+      } else if (!armed || o.f >= 2) for (let q = 0; q < 3; q++) line(g, hx3 + fx * (4 + q * 3), hy3 - 2 - q, hx3 + fx * (9 + q * 3), hy3 - 3 - q * 1.5, "#bff7ff", 1.6);
     }
     ellipse(g, hx3, hy3, 2.8, 2.8, K.skin, INK, 1.2);
     if (o.anim === "idle" || o.anim === "walk") { ellipse(g, hx3, hy3 - 0.3, 2.8, 2.8, K.skin, INK, 1.2); }

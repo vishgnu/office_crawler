@@ -1,6 +1,6 @@
 // The browser shell around the pure core: owns the state, the fixed-step loop, the camera, input
 // translation and rendering. Everything the test hook needs goes through this object.
-import { newGame, step, applyInput, snapshot, hashState, advance, config, spawnMonster, content, setLevel, setHp, teleportFloor, giveGold, spawnItem, takeGround, canPlace, releaseCursor } from "./core/index.js";
+import { newGame, step, applyInput, snapshot, hashState, advance, config, spawnMonster, content, setLevel, setHp, teleportFloor, giveGold, spawnItem, takeGround, canPlace, releaseCursor, closeDialog } from "./core/index.js";
 import { setQuestStep, completeQuest } from "./core/cheats.js";
 import { makeCamera, easeFollow } from "./ui/camera.js";
 import { hudLayout, cameraInset, drawerLayout } from "./ui/layout.js";
@@ -45,16 +45,14 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     // the real game (story on) starts armed; test fixtures keep the unarmed core default
     storyOn: !!story, wearStartKit: !!story, inset: 0, defaultStart: "town",
   };
-  let deadClosing = false;
   const syncUi = () => { // the NPC window follows the core dialog; the drawers go away with the run
     const u = game.ui;
     if (!game.core) { u.left = null; u.inventory = false; u.tooltip = null; u.map = false; return; }
     if (game.core.scene === "dead") { // R8-T N2: the death screen stands alone: drawers, map and tooltip close, and a held item goes back to the bag (else the floor) so none is lost or duplicated
       game.heldOrigin = null; u.left = null; u.inventory = false; u.invByDialog = false; u.map = false; u.tooltip = null;
-      if (!deadClosing && (game.core.cursorItem || game.core.ui.dialog)) { // guard: game.input re-enters emitChange
-        deadClosing = true;
-        try { if (game.core.cursorItem) releaseCursor(game.core); /* the input path refuses item commands once dead; the real death already did this in the core, this covers any other route to the death scene */ if (game.core.ui.dialog) game.input({ t: "closeDialog" }); } finally { deadClosing = false; }
-      }
+      // both are core functions called directly: the input path (intent.js `live`) refuses every command once the scene is dead, so game.input({ t: "closeDialog" }) would do nothing here. Neither emits, so no guard against re-entry is needed
+      if (game.core.cursorItem) releaseCursor(game.core); // the real death already did this in the core; this covers any other route to the death scene (bag, else the hero's tile with keep: no loss, no duplicate)
+      if (game.core.ui.dialog) closeDialog(game.core); // the core dialog (and an open vendor) is closed now instead of lingering until Respawn
       return;
     }
     if (u.left === "npc" && !game.core.ui.dialog) { u.left = null; if (u.inventory && u.invByDialog && !game.core.cursorItem) u.inventory = false; /* R8-Q2: the bag the dialog opened closes with it */ u.invByDialog = false; if (u.inventory) u.front = "inventory"; u.tooltip = null; }
@@ -75,13 +73,16 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
   let portalToast = false; // the Emergency Exit line is not overwritten by the floor name of the same step
   bus.on("*", (ev) => {
     if (!game.core) return;
-    if (ev.type === "floorEnter" && portalToast) return;
+    // R11-05, the points nudge rule: ONE low line per run ("You have points to spend"), shared with the level-up hint through pointsHintSeen. Only in the real game (storyOn),
+    // only when points are unspent, on the first arrival on floor 2 (a passive line: it waits behind the floor name and any quest line) or at the first level-up, whichever comes first.
+    // It is also offered when the Emergency Exit check below suppresses the floor name, so an arrival on floor 2 through the portal (whose floor name is suppressed) still gets it.
+    const nudge = () => { if (ev.type === "floorEnter" && ev.depth === 2) pointsHint({ passive: true, kind: "pointsHint" }); };
+    if (ev.type === "floorEnter" && portalToast) { nudge(); return; }
     const m = messageFor(ev, game.core);
     if (ev.type === "quest.completed") game.toastDrop(ev.id); // R8-Q3: a "return for your reward" line still waiting for this quest would show after it is handed in and look like a repeat
     if (m) game.toast(m, ev.type.startsWith("quest.") ? config.quests.toastMs : undefined, { quest: QUEST_LINES.has(ev.type), passive: PASSIVE_LINES.has(ev.type), urgent: URGENT_LINES.has(ev.type), kind: ev.type, qid: ev.type.startsWith("quest.") ? ev.id : undefined }); // a quest line stays for config.quests.toastMs (AC-R-254-2)
     if (ev.type === "portalOpen" || ev.type === "portalUse") portalToast = true;
-    // FIX-R8T-3 (acceptance follow-up 2): arriving on floor 2 with attribute or skill points unspent gets one low line, once per visit (a passive line: it waits behind the floor name and any quest line)
-    if (ev.type === "floorEnter" && ev.depth === 2 && (game.core.player.attrPoints > 0 || game.core.player.skillPoints > 0)) game.toast(T.pointsHint, undefined, { passive: true, kind: "pointsHint" });
+    nudge(); // after the floor name of the same step, so it is the second line
   });
   // R7: a new, advanced or completed quest lights the journal badge (cleared when the journal opens); the open journal and the tracker redraw on every change
   bus.on("*", (ev) => {
@@ -110,11 +111,11 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     return null;
   };
   let storyBossSeen = false, pointsHintSeen = false;
-  /** One-time prompt per run when attribute or skill points are waiting to be spent. */
-  const pointsHint = () => {
+  /** One-time prompt per run when attribute or skill points are waiting to be spent (at the first level-up, on loading a save, or on the first arrival on floor 2: see the rule above). */
+  const pointsHint = (opt) => {
     const p = game.core?.player;
     if (!game.storyOn || pointsHintSeen || !p || !(p.attrPoints > 0 || p.skillPoints > 0)) return;
-    pointsHintSeen = true; game.toast(T.pointsHint);
+    pointsHintSeen = true; game.toast(T.pointsHint, undefined, opt);
   };
   bus.on("levelup", () => pointsHint());
   const resetUi = () => { Object.assign(game.ui, { left: null, inventory: false, front: "inventory", vendorTab: "buy", tooltip: null, toast: null, map: false, options: null, story: null, slots: false, create: null, badge: { journal: false } }); game.inset = 0; storyBossSeen = false; pointsHintSeen = false; game.heldOrigin = null; game.toastReset?.(); };
@@ -495,8 +496,9 @@ export function createGame({ canvas, atlas, style, bus, testMode, realtime, seed
     else if (fx.lowHp) fx.drawLowHp(g, game.w, game.h, now, 0, bus);
     if (game.core) {
       if (game.ui.map) fmap.drawFull(g, game.core, game.w, game.h, now, game.hc); // the automap dims the world; the HUD stays crisp on top
-      hud.draw(g, game.w, game.h, game.core, atlas, now, game.core.player.target ?? game.hover, game.dpr, game.hc);
-      if (!game.ui.map && game.core.scene !== "dead") fmap.drawMini(g, game.core, fmap.miniRect(game.w, game.h, layoutFor(game.w, game.h)), now, game.hc);
+      const stripOnly = (game.ui.left || game.ui.inventory) && drawerLayout(game.w, game.h).short; // R11 U-2: a short landscape phone's panel runs down to the toast strip; the mug, jug, hotbar, belt and minimap would peek out under its edge, so they are not drawn while it is open (the DOM buttons hide the same way: #ui.short-panel .hudui)
+      if (!stripOnly) hud.draw(g, game.w, game.h, game.core, atlas, now, game.core.player.target ?? game.hover, game.dpr, game.hc);
+      if (!stripOnly && !game.ui.map && game.core.scene !== "dead") fmap.drawMini(g, game.core, fmap.miniRect(game.w, game.h, layoutFor(game.w, game.h)), now, game.hc);
     }
   };
   let lay = null, rectsFor = null, rectsL = null;

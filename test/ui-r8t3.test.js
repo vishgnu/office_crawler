@@ -34,8 +34,9 @@ test("L-6 one dispatch: the urgent line is first and keeps the lane, the floor n
   q.offer("Quest A", 4000, quest);
   q.begin(); q.offer("Lobby", undefined, passive("floorEnter")); q.offer("Back in the Lobby.", undefined, urgent("respawn")); q.end();
   assert.deepEqual(shown, ["Quest A", "Back in the Lobby."]);
-  assert.deepEqual(q.waiting(), ["Lobby"]);
-  advance(3200); assert.equal(shown.at(-1), "Lobby");
+  assert.deepEqual(q.waiting(), ["Quest A", "Lobby"], "R11-03: the quest line that was on screen is put back, ahead of the passive line");
+  advance(3200); assert.equal(shown.at(-1), "Quest A");
+  advance(4000); assert.equal(shown.at(-1), "Lobby");
 });
 
 test("L-6 an urgent line with an idle lane shows and later passive lines wait behind it for its time; the same text twice is shown once", () => {
@@ -48,10 +49,9 @@ test("L-6 an urgent line with an idle lane shows and later passive lines wait be
   advance(3200); assert.deepEqual(shown, ["Emergency Exit: a door opens.", "Level 3!"]);
 });
 
-test("L-6 game.js: respawn and the Emergency Exit lines are urgent, not passive; floor 2 nudge is a passive line once per arrival", () => {
+test("L-6 game.js: respawn and the Emergency Exit lines are urgent, not passive (the event path and the nudge rule run in test/ui-r11-behaviour.test.js)", () => {
   assert.match(game, /URGENT_LINES = new Set\(\["respawn", "portalOpen", "portalUse"\]\)/);
   assert.doesNotMatch(game, /PASSIVE_LINES = new Set\([^)]*"respawn"/);
-  assert.match(game, /ev\.type === "floorEnter" && ev\.depth === 2 && \(game\.core\.player\.attrPoints > 0 \|\| game\.core\.player\.skillPoints > 0\)\) game\.toast\(T\.pointsHint, undefined, \{ passive: true/);
 });
 
 test("L-1 drawerLayout: a short landscape phone gets one full-height panel (bottom near the viewport edge); portrait and desktop keep the HUD band", () => {

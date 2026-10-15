@@ -12,11 +12,7 @@ test("N1: full-screen layers scroll (overflow-y auto, safe centring) and compact
   assert.match(css, /@media \(max-height: 430px\) and \(min-width: 561px\) \{[^@]*\.cs-foot \{ position: sticky; bottom: 0;/);
 });
 
-test("N2: on the death scene the shell closes drawers and map and hands a held item back through the core releaseCursor (no loss, no duplicate)", () => {
-  assert.match(game, /game\.core\.scene === "dead"\) \{/);
-  assert.match(game, /releaseCursor\(game\.core\)/);
-  assert.match(game, /u\.left = null; u\.inventory = false;[^\n]*u\.map = false/);
-  assert.match(game, /deadClosing/, "re-entrancy guard (game.input calls emitChange)");
+test("N2 (text part; the behaviour is tested through createGame in test/ui-r11-behaviour.test.js): the dead scene styles", () => {
   assert.match(panels, /classList\.toggle\("scene-dead", c\.scene === "dead"\)/);
   assert.match(css, /#ui\.scene-dead \.dock \{ visibility: hidden; \}/);
 });

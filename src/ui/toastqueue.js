@@ -8,16 +8,18 @@
 // Every line that goes on screen is passed to show() exactly once, which is where the live region is written; a line that never goes on screen is a duplicate by text (the same text already shown or waiting) or a dropped world/direct line.
 // The cap (CR8-05) drops the oldest waiting world line first, then the oldest direct line; a quest line is never dropped (its live-region announcement may be the only channel a player has), so
 // the waiting list can exceed the cap by quest lines only.
-//   urgent line  (FIX-R8T-3: the respawn / belt-empty line, the Emergency Exit door line) shows at once, even over a held quest line, and clears the stale passive lines that wait (a potion or floor name from before it); waiting quest lines stay.
+//   urgent line  (FIX-R8T-3: the respawn / belt-empty line, the Emergency Exit door line) shows at once, even over a held quest line, and clears the stale passive lines that wait (STALE_KINDS: a potion, healed or floor name from before it); the level-up and skill-learned lines stay (they are the prompt to spend points) and waiting quest lines stay;
+//   a held quest line that is on screen when an urgent line arrives goes back to the head of the quest lines in the queue (R11-03), so it is shown again after the urgent line instead of being lost.
 const QP = [1, 0, 2, -1]; // queue order by class (quest 0, direct 1, passive 2, urgent 3 -> rank): urgent, direct, quest, passive
+const STALE_KINDS = new Set(["floorEnter", "potion", "healed"]); // passive lines that mean nothing after a respawn or a portal (R11-02); level-up and skill-learned lines do not belong here
 const PRI = (opt) => (opt.urgent ? 3 : opt.quest ? 0 : opt.passive ? 2 : 1);
 
 export function createToastQueue({ show, now = () => performance.now(), setT = setTimeout, clearT = clearTimeout, burstMs = 250, cap = 8, holdMs = 3200, minMs = 700 }) {
-  const tq = { q: [], timer: 0, until: 0, at: 0, text: null, quest: false, pri: 2 };
+  const tq = { q: [], timer: 0, until: 0, at: 0, text: null, quest: false, pri: 2, cur: null };
   let batch = [], depth = 0;
   const held = () => tq.until > now();
   function display(n) {
-    clearT(tq.timer); tq.timer = 0; tq.until = 0; tq.at = now(); tq.text = n.text; tq.quest = n.pri === 0; tq.pri = n.pri;
+    clearT(tq.timer); tq.timer = 0; tq.until = 0; tq.at = now(); tq.text = n.text; tq.cur = n; tq.quest = n.pri === 0; tq.pri = n.pri;
     if (n.hold || tq.q.length > 0) { // lines are waiting: this one keeps the lane for its time so they are not stranded
       tq.until = now() + (n.ms ?? holdMs);
       tq.timer = setT(() => { tq.timer = 0; tq.until = 0; const nx = tq.q.shift(); if (nx) display({ ...nx, hold: true }); }, n.ms ?? holdMs);
@@ -27,7 +29,9 @@ export function createToastQueue({ show, now = () => performance.now(), setT = s
   function place(n) {
     if (n.pri === 3) { // urgent: on screen now; stale world lines that wait are dropped, quest and direct lines keep their place
       if (n.text === tq.text) return;
-      tq.q = tq.q.filter((w) => w.pri !== 2 && w.text !== n.text);
+      const back = tq.quest && held() && tq.cur ? { ...tq.cur, hold: true } : null; // R11-03: the held quest line on screen is not forgotten
+      tq.q = tq.q.filter((w) => !(w.pri === 2 && STALE_KINDS.has(w.kind)) && w.text !== n.text);
+      if (back && back.text !== n.text) { let i = 0; while (i < tq.q.length && QP[tq.q[i].pri] < QP[0]) i++; tq.q.splice(i, 0, back); } // after the direct lines, ahead of the other quest lines (it is older) and the passive ones
       return display({ ...n, hold: true }); // it keeps the lane for its time: the lines of the same dispatch wait behind it
     }
     if (!held() || (n.pri === 0 && now() - tq.at >= burstMs)) return display(n);
@@ -59,7 +63,7 @@ export function createToastQueue({ show, now = () => performance.now(), setT = s
       for (const n of items) place(n);
     },
     drop(qid) { if (qid) { tq.q = tq.q.filter((w) => w.qid !== qid); batch = batch.filter((w) => w.qid !== qid); } },
-    reset() { tq.q.length = 0; batch = []; depth = 0; clearT(tq.timer); tq.timer = 0; tq.until = 0; tq.text = null; },
+    reset() { tq.q.length = 0; batch = []; depth = 0; clearT(tq.timer); tq.timer = 0; tq.until = 0; tq.text = null; tq.cur = null; },
     waiting: () => tq.q.map((w) => w.text),
     held,
   };

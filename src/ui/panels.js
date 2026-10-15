@@ -78,7 +78,7 @@ export function createPanels(root, game) {
   const view = { cur: { x: 0, y: 0 }, hoverKey: null, hoverEl: null, last: { x: -999, y: -999 }, drag: null, grab: { gx: 0, gy: 0 }, sigs: { hud: "", left: "", right: "" }, stats: {}, preview: null, toastId: 0, toastTimer: 0, sellArm: null, sellTimer: 0, respecAsk: false };
 
   // ------------------------------------------------------------ lookups
-  const cellPx = () => drawerLayout(game.w, game.h).cell;
+  const cellPx = () => drawerLayout(game.w, game.h, game.options?.textScale).cell;
   const itemFor = (key) => {
     const c = core(), [kind, v] = key.split(":");
     if (!c) return null;
@@ -129,7 +129,7 @@ export function createPanels(root, game) {
     h += `<div class="footrow"><div class="gold" data-testid="gold">${coinIcon()}<span>${num(p.gold)} ${esc(T.gold)}</span></div>`;
     if (p.owed?.length) h += `<div class="owed" data-testid="inv-owed" role="status" title="${esc(T.owedTitle)}: ${esc(p.owed.map((i) => i.name).join(", "))}">${esc(owedLine(p.owed.length))}</div>`;
     h += `<div class="notice" data-notice>`;
-    h += held ? `<span class="heldline">${esc(T.onCursor)}: ${nameLine(held)}</span><span class="reason" data-reason></span><button class="mini" type="button" data-act="putback" data-testid="put-back">${esc(T.putBack)}</button><button class="mini" type="button" data-act="dropfloor" data-testid="drop-floor">${esc(T.dropOnFloor)}</button>` : "";
+    h += held ? `<span class="heldline">${esc(T.onCursor)}: ${nameLine(held)}</span><span class="reason" data-reason></span><button class="mini" type="button" data-act="putback" data-testid="put-back">${esc(T.putBack)}</button><button class="mini" type="button" data-act="dropfloor" data-testid="drop-floor">${esc(T.dropOnFloor)}</button>` : `<span class="touchhint" data-testid="touch-hint" title="${esc(T.touchHint)}">${esc(T.touchHint)}</span>`; // R11-09: the drag hint is hidden on a phone to save rows; this one line stays in the footer (CSS shows it on the phone only) so a touch user still learns the pick-up, put-down flow
     return h + `</div></div></div></div>`;
   }
 
@@ -139,7 +139,7 @@ export function createPanels(root, game) {
     const p = c.player, xpv = xpProgress(p), pct = xpv.pct, pts = p.attrPoints;
     let h = `<div class="ph"><span class="phi">${skillIcon("panel:file")}</span><h2>${esc(T.fileTitle)}</h2>${closeBtn("character", T.closeCharacter)}</div><div class="pb"><div class="sheet" data-testid="employee-file">${tabsHtml("character")}`;
     h += `<div class="fh"><div class="photo"><canvas width="120" height="144" data-bust="${esc(p.class)}" data-look="${esc(figures.look(c.equipment))}" aria-hidden="true"></canvas></div>`;
-    h += `<div><h2 data-testid="file-name">${esc(p.name ?? "")}</h2><p data-testid="file-class">${esc(classById(p.class)?.name ?? "")} · <span data-stat="level">${esc(T.level)} ${p.level}</span></p><p>${esc(c.floor.name)}</p></div><div class="stamp" aria-hidden="true">${esc(T.probation)}</div></div>`;
+    h += `<div><h2 data-testid="file-name" title="${esc(p.name ?? "")}">${esc(p.name ?? "")}</h2><p data-testid="file-class" title="${esc(classById(p.class)?.name ?? "")}">${esc(classById(p.class)?.name ?? "")} · <span data-stat="level">${esc(T.level)} ${p.level}</span></p><p title="${esc(c.floor.name)}">${esc(c.floor.name)}</p></div><div class="stamp" aria-hidden="true">${esc(T.probation)}</div></div>`;
     h += xpFileHtml(xpv, p.level);
     h += `<section class="sc-attr"><h3>${esc(T.attributes)} <em>${esc(T.pointsToSpend)}: <b data-stat="attrPoints">${pts}</b></em></h3>`;
     for (const k of T.attrOrder) {
@@ -192,7 +192,7 @@ export function createPanels(root, game) {
   // Gear / File / Skills tabs exist on the phone only (G2 #15, intentional): on desktop Gear sits in the right drawer and File / Skills in the left one,
   // both can be open side by side, so every panel is one click or key away without tabs; on the phone a single drawer fills the screen, so tabs switch it.
   function tabsHtml(active) { // phone: one panel at a time, tabs switch (Gear / Employee File / Skills / talk)
-    const D = drawerLayout(game.w, game.h);
+    const D = drawerLayout(game.w, game.h, game.options?.textScale);
     if (!D.phone) return "";
     const tabs = [["inventory", T.tabGear], ["character", T.tabFile], ["skills", T.tabSkills]];
     if (core().ui.dialog) tabs.push(["npc", T.tabNpc]);
@@ -245,7 +245,7 @@ export function createPanels(root, game) {
     const fk = root.contains(doc.activeElement) && node.contains(doc.activeElement) ? doc.activeElement.dataset.fk : null;
     const body = node.querySelector(".pb"), top = body ? body.scrollTop : 0;
     node.innerHTML = html;
-    if (drawerLayout(game.w, game.h).short) { // FIX-R8T-3 L-1: title and tabs share one row on a short landscape phone (the tabs move into the header, before the close button)
+    if (drawerLayout(game.w, game.h, game.options?.textScale).short) { // FIX-R8T-3 L-1: title and tabs share one row on a short landscape phone (the tabs move into the header, before the close button)
       const ph = node.querySelector(".ph"), tabs = node.querySelector(".pb .tabs"), x = ph?.querySelector(".xbtn");
       if (ph && tabs && x) ph.insertBefore(tabs, x);
     }
@@ -263,7 +263,7 @@ export function createPanels(root, game) {
   }
   const sigOf = (...v) => JSON.stringify(v);
   function sync() {
-    const c = core(), menu = game.menu(), D = drawerLayout(game.w, game.h);
+    const c = core(), menu = game.menu(), D = drawerLayout(game.w, game.h, game.options?.textScale);
     root.hidden = !c;
     root.toggleAttribute("inert", !!menu);
     if (!c) { view.sigs = { hud: "", left: "", right: "" }; hideTip(); return; }
@@ -348,7 +348,10 @@ export function createPanels(root, game) {
     t.hidden = !tr || !!menu || c.scene === "dead" || (D.phone ? leftOpen || rightOpen || !!game.ui.map : leftOpen); // VFIX-R7 U2: no pill over an open left panel; on the phone also not over the floor map's title (it covered the Skills assign buttons)
     if (!tr) return;
     const s = hudLayout(game.w, game.h).scale;
-    if (D.phone) { t.style.left = "6px"; t.style.right = "6px"; t.style.top = (game.w <= 340 ? 100 : 54) + "px"; } // at 340 px and under the dock wraps to two rows (CSS), the pill moves below them
+    if (D.phone) { // R11 visual M-1: the dock wraps to a second row when its five buttons do not fit (360 px with the badges); the pill sits under the real bottom of the dock instead of a fixed 54 px, so it never covers the wrapped Journal button
+      const dk = el.hud.querySelector(".dock"), ts = Number.parseFloat(getComputedStyle(root).getPropertyValue("--ts")) || 1, bottom = dk && dk.getClientRects().length ? dk.getBoundingClientRect().bottom : 50;
+      t.style.left = "6px"; t.style.right = "6px"; t.style.top = Math.ceil((bottom + 4) / ts) + "px";
+    }
     else {
       t.style.left = (leftOpen ? D.leftW + 8 : Math.round(12 * s)) + "px";
       t.style.right = ((rightOpen ? D.rightW + 8 : 8) + 140) + "px";
@@ -368,7 +371,7 @@ export function createPanels(root, game) {
     const free = Math.max(200, w - L - R), cx = L + (w - L - R) / 2;
     const st = el.toast.style;
     const stripToast = D.short && (game.ui.left || game.ui.inventory); // a short phone with a panel open: the toast sits in the strip under the panel
-    st.setProperty("--tb", stripToast ? "3px" : Math.max(0, game.h - Math.floor(D.hudTop) + (D.phone ? 4 : 8)) + "px");
+    st.setProperty("--tb", stripToast ? "1px" : Math.max(0, game.h - Math.floor(D.hudTop) + (D.phone ? 4 : 8)) + "px");
     st.setProperty("--tw", (D.phone ? Math.round(w * 0.96) : Math.round(Math.min(560, free - 24))) + "px");
     st.left = ((cx / w) * 100).toFixed(2) + "%";
   }
@@ -385,7 +388,7 @@ export function createPanels(root, game) {
     el.toast.textContent = t.text; el.toast.title = t.text; el.toast.hidden = false;
     el.live.textContent = ""; el.live.textContent = t.text;
     syncToastDup(); // before the re-placement below: tipBottom reads the toast's dup class
-    if (view.hoverKey && view.hoverEl?.isConnected && !el.tip.hidden) { layoutToast(drawerLayout(game.w, game.h)); showTip(view.hoverKey, view.hoverEl); } // R8-U2: a tip that is already open moves out from under the new toast
+    if (view.hoverKey && view.hoverEl?.isConnected && !el.tip.hidden) { layoutToast(drawerLayout(game.w, game.h, game.options?.textScale)); showTip(view.hoverKey, view.hoverEl); } // R8-U2: a tip that is already open moves out from under the new toast
     clearTimeout(view.toastTimer);
     view.toastTimer = setTimeout(() => { el.toast.hidden = true; if (game.ui.toast?.id === t.id) game.ui.toast = null; }, t.ms ?? 3200);
   }
@@ -436,7 +439,7 @@ export function createPanels(root, game) {
     el.tip.style.left = "0px"; el.tip.style.top = "0px"; el.tip.style.maxHeight = "";
     // the tip follows the text size through CSS zoom: measure in viewport px and convert back for left/top/max-height
     const ts = parseFloat(document.documentElement.style.getPropertyValue("--ts")) || 1, tr = el.tip.getBoundingClientRect();
-    const D = drawerLayout(game.w, game.h), w = Math.round(tr.width), h = Math.round(tr.height);
+    const D = drawerLayout(game.w, game.h, game.options?.textScale), w = Math.round(tr.width), h = Math.round(tr.height);
     const panelNode = anchor.closest(".drawer"), itemNode = kind === "inv" && anchor.matches(".cell") ? root.querySelector(`.item[data-item="${CSS.escape(it.id)}"]`) : null, anchorRect = rectOf(itemNode ?? anchor);
     const drawers = [el.left, el.right].filter((n) => n.classList.contains("open")).map(rectOf);
     let pos;
@@ -462,7 +465,7 @@ export function createPanels(root, game) {
     el.tip.hidden = false;
     el.tip.style.left = "0px"; el.tip.style.top = "0px"; el.tip.style.maxHeight = "";
     const ts = parseFloat(document.documentElement.style.getPropertyValue("--ts")) || 1, tr = el.tip.getBoundingClientRect();
-    const D = drawerLayout(game.w, game.h), w = Math.round(tr.width), h = Math.round(tr.height), anchorRect = rectOf(anchor), panelNode = anchor.closest(".drawer");
+    const D = drawerLayout(game.w, game.h, game.options?.textScale), w = Math.round(tr.width), h = Math.round(tr.height), anchorRect = rectOf(anchor), panelNode = anchor.closest(".drawer");
     let pos;
     if (D.phone) { pos = { x: 8, y: Math.min(Math.max(8, anchorRect.y + anchorRect.h + 6), Math.max(8, D.bottom - h)), h }; el.tip.style.right = "8px"; el.tip.style.width = "auto"; }
     else {

@@ -57,7 +57,8 @@ function staff(g, slot, cat, tier, A) { // long graphite shaft with a USB plug o
 
 function pole(g, slot, cat, tier, A) { // mop halberd (two-handed): long shaft, steel axe-blade and spike, a fan of mop strands
   const F = begin(A); if (!F) return;
-  shaft(g, F, -8, 33, 2.8, "#b8a27a", "#e6d6aa");
+  shaft(g, F, -14, 33, 3.2, "#b8a27a", "#e6d6aa"); // R11 M-2: a long visible butt below the lower hand
+  { const [bx, by] = F(-14, 0); ellipse(g, bx, by, 2.2, 2.2, "#6a5a3c", INK, 0.9); }
   for (let i = -3; i <= 3; i++) { const [x0, y0] = F(27, i * 0.7), [x1, y1] = F(15 + Math.abs(i) * 1.1, i * 3.4); ink(g, x0, y0, x1, y1, 3.6); }
   for (let i = -3; i <= 3; i++) { const [x0, y0] = F(27, i * 0.7), [x1, y1] = F(15 + Math.abs(i) * 1.1, i * 3.4); line(g, x0, y0, x1, y1, i % 2 ? "#efe6cf" : "#d4c9a8", 2); } // strands
   fillPoly(g, wpoly(F, [[26, -3], [28.4, -3], [28.4, 3], [26, 3]]), "#8793ae", INK, 1.1); // bracket
@@ -72,6 +73,8 @@ function pole(g, slot, cat, tier, A) { // mop halberd (two-handed): long shaft, 
 
 function heavy(g, slot, cat, tier, A) { // extinguisher club (two-handed): fat red cylinder, white label, black valve head, hose
   const F = begin(A); if (!F) return;
+  shaft(g, F, -15, -1, 3.2, "#8a5a34", "#c08a56"); // R11 M-2: a wooden haft below the cylinder, so the club reads as a two-hand weapon
+  { const [bx, by] = F(-15, 0); ellipse(g, bx, by, 2.3, 2.3, "#5a3a1c", INK, 0.9); }
   const hose = wpoly(F, [[22, 1.5], [27, 6], [26, 11]]);
   g.beginPath(); g.moveTo(hose[0][0], hose[0][1]); g.quadraticCurveTo(hose[1][0], hose[1][1], hose[2][0], hose[2][1]); g.lineWidth = 3.8; g.strokeStyle = INK; g.stroke(); g.lineWidth = 1.8; g.strokeStyle = "#3a3f58"; g.stroke();
   const body = wpoly(F, [[-3, -4.8], [20, -4.8], [23, -3], [23, 3], [20, 4.8], [-3, 4.8]]);
