@@ -559,3 +559,18 @@ Known items go straight into fix packages; the adversarial test engineer hunts f
 - **R11-FIX2-UI:** F-05 keyboard focus (C panel, Options from pause); F-04 options written whole by a stale tab (merge per key or reload before write); F-06 Skills Learn buttons below the scroll fold at 1280x720/1366x768 (scroll into view on keyboard focus / tier jump, or compact tiers); update e2e/r8t3-fix.mjs [points] checks to the R11-05 rule; add the r11-* sweep scripts that pass to run-all; R11-08 testhook uniqueGuard nit.
 - **R11-FIX2-CORE (alone in src/core):** F-03 re-click spam on a changing far target in a crowd: hit an adjacent aggressor first (FM first hit 168-300 ticks vs 48-60 nearest); then F-01 floor 2 first pack vs a level-2 Facilities Manager (2 deaths in 12 FM runs, both seed 3, 18 s after arrival) — smallest change, bot parity and goldens with proof.
 - F-07 decision (orchestrator, customer default "once per run"): the floor-2 reminder is shared with the level-up hint by design (R11-05); no change.
+
+## Open product backlog at project end (2026-10-16, customer: "bugs left will be for later")
+Source: harness/reviews/office-crawler-postmortem.md (backlog) + R11 acceptance. Severity in brackets.
+- F-01 floor 2 first pack vs a fast level-2 Facilities Manager (2 deaths in 12 real-click runs, seed 3; minDist 14 tried, mixed, reverted) [medium-low]
+- Floors 5-9 and the boss never played with real mouse input (bot/in-page policy only) [medium-low, evidence hole]
+- Real-click play takes 5-12x the bot's floor-4 damage (SR fell to 2 hp) [low]
+- FM click spam into a far-changing crowd: first hit ~144 ticks vs 48-60 nearest; a nearer-attacker rule could halve it [low]
+- Stair transition, death collapse and reduced motion never judged in motion [low-medium]
+- e2e/r11-play.mjs spendUi race (boundingBox null after waitForSelector at a level-up, 2 crashes, not reproduced by hand) [low, test]
+- Landscape skill list: finger drag on a real device not checked (wheel only) [low]
+- iOS decimal keypad / touch specifics never checked on a device [info]
+- Test debt: source-regex tests left in ui-r8t2/ui-r8t3, duplicated sq5 seed list [low]
+- R8-T wishes: common-tier silhouette, toast order polish [low]
+- Sound never judged by a person [info, human]
+- No keyboard movement (by spec); load restores full hp (by design) [info, accepted]
