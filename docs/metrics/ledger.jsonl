@@ -86,4 +86,4 @@
 {"round": "R7", "role": "implementer", "pkg": "VFIX-R7-WORLD", "tokensK": 178.1, "minutes": 54.7, "status": "done (G4 needs core)", "fixed": ["G1","G2","G3","N9","N10"], "fps50": [53.3, 59, 58.5, 56.7, 56.3], "load": "2.6-3.7", "source": "task usage"}
 {"round": "R7", "role": "implementer", "pkg": "VFIX-R7-UI", "tokensK": 277.6, "minutes": 82.1, "status": "done (N12 partial)", "tests": 1155, "fixed": ["U1","U2","U3","U4","U5","U6","N14","R8-Q2 partial","R8-Q3"], "source": "task usage"}
 {"round": "R7", "role": "orchestrator", "pkg": "verify after visual fixes (quiet)", "status": "done", "tests": 1154, "e2e": "17/17", "fps50": [53.7, 51.8, 54.5], "load": "1.1-1.5", "source": "orchestrator run"}
-{"round": "R7", "role": "visual-reviewer", "pkg": "R7b narrow re-review", "tokensK": null, "minutes": null, "status": "done", "score": {"g": [35, 34], "ui": [35, 34]}, "verdict": "pass", "source": "agent report; usage pending"}
+{"round": "R7", "role": "visual-reviewer", "pkg": "R7b narrow re-review", "tokensK": 96.3, "minutes": 2.8, "status": "done", "score": {"g": [35, 34], "ui": [35, 34]}, "verdict": "pass", "source": "task usage"}
