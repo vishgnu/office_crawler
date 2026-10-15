@@ -73,7 +73,10 @@ h2 { margin: 0 0 8px; font-size: calc(clamp(26px, 4.5vw, 44px) * var(--ts, 1)); 
 .bdg{margin-left:6px;background:var(--gold);color:var(--ol);border-radius:10px;padding:0 6px;font-size:14px;font-weight:800}
 #ui.open-right:not(.phone) .dock{right:calc(var(--rw) + 8px)}
 #ui.phone.open-left .dock,#ui.phone.open-right .dock{display:none}
-#ui.phone.map-open .dock{display:none} /* N16: the full map is a canvas overlay with its title at the top; a tap closes it (game.js pointer), so the dock row (which covered the title) waits */
+/* N16: on the phone the full map keeps a single dock button (Map, the way to close it by touch) at the right edge; the other four sat on the map title, a canvas band at the top */
+#ui.phone.map-open .dock .hbtn:not([data-open=map]){display:none}
+#ui.phone.map-open .dock .hbtn[data-open=map]{display:flex}
+#ui.phone.map-open .dock{flex-wrap:nowrap}
 #ui.phone .dock{flex-direction:row;top:6px;left:6px;right:6px;justify-content:flex-end}
 #ui.phone .hbtn kbd,#ui.phone .hbtn .bdg{margin-left:2px}
 #ui.phone .hbtn{padding:3px 7px;font-size:14px}

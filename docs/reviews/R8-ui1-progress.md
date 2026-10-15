@@ -1,0 +1,7 @@
+# R8-ui1 progress (UI-G1, implementer)
+- start 2026-10-15: read ADR-0008, spec 13, plan R8-0.3, R8-g1/core1 progress, R7 late review. Layering: save/slots.js imports only the pure render/gearlooks.js (layering test restricts ui/input/core, not save).
+- done: R8-0.3 main.js look wiring, bust cache LRU 8 (ui/slots.js paintBust(canvas, class, look)), Employee File bust (data-look, repaint on equipment change), slot index `look` (save/slots.js, ADR-0006 amendment), slot cards and Load dialog, class cards show the start weapon; e2e/r8gear.mjs (registered in run-all)
+- done: CORE-R8-1 ui_needs: owed lines (toast, dialog quest-owed, Desk Drawer inv-owed, dock badge inv-badge); removed T.bagFullNotice, questdialog warn, game.js questNotice, messages case; tests ui-hudstate, ui-quests-dialog, ui-quests, e2e ui/r7quest rewritten
+- done: CR7L-01/02 ui/toastqueue.js (pure lane, begin/end per dispatch, direct lines queue behind a held quest line, never clear the queue, cap 8), CR7L-03 plateDraw cleared (render fn else branch + toTitle, perf().platesDrawn), N16 phone map keeps only the Map dock button
+- note: direct toasts (refusals, hints) now wait behind a held quest line (up to its 4 s), per CR7L-02; e2e ui (Emergency Exit, stairs locked) and s3ui (points hint) wait for the toast instead of reading it at once
+- done: shots docs/shots/r8ui-{bust-d,slotcards-d,owed-d,owed-m}.jpg via e2e/r8ui-shots.mjs (looked at: gear visible in bust and cards, owed line + dock badge + toast, phone toast clamp 3 lines)

@@ -87,6 +87,18 @@ await g.page.waitForTimeout(300);
 check("CR7L-03 plates are drawn while playing and the plate drawer is cleared on the title backdrop", during === true && (await g.app("perf")).platesDrawn === false, { during });
 check("no page errors", g.errors.length === 0, g.errors);
 
+// ---- N16: the phone map keeps one dock button, the title row is free; a tap on it closes the map
+{
+  const m = await open(browser, { query: "test=1&seed=3", viewport: { width: 390, height: 844 }, lobby: true });
+  await startNew(m.page, { cls: "facilities-manager" }); await m.app("step", 3); await m.app("ui.open", "map"); await m.page.waitForTimeout(300);
+  const vis = await m.page.evaluate(() => [...document.querySelectorAll(".dock .hbtn")].filter((e) => e.offsetParent).map((e) => e.dataset.testid));
+  check("N16 phone: with the full map open only the Map dock button shows (the title band is free)", vis.length === 1 && vis[0] === "dock-map", vis);
+  await m.page.click(T("dock-map")); await m.app("step", 2);
+  const after = await m.page.evaluate(() => [...document.querySelectorAll(".dock .hbtn")].filter((e) => e.offsetParent).length);
+  check("N16 phone: the Map button closes the map and the dock is whole again", (await m.state()).ui.panels.map === false && after === 4, after);
+  check("N16 no page errors", m.errors.length === 0, m.errors);
+  await m.context.close();
+}
 await browser.close();
 const { failed } = finish("r8gear");
 process.exit(failed ? 1 : 0);
