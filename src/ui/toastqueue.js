@@ -5,6 +5,7 @@
 //   passive line (level-up, floor name, potion...) waits behind a held line.
 //   One dispatch (begin/end) collects its lines first and orders them quest, direct, passive, so a level-up that the same reward caused is shown after the reward line instead of being overwritten by it (CR7L-01).
 // Every line that goes on screen is passed to show() exactly once, which is where the live region is written; a line that never goes on screen (the same text already shown or waiting, the cap) is a duplicate by text.
+const QP = [1, 0, 2]; // queue order by class (quest 0, direct 1, passive 2 -> rank): direct, quest, passive
 const PRI = (opt) => (opt.quest ? 0 : opt.passive ? 2 : 1);
 
 export function createToastQueue({ show, now = () => performance.now(), setT = setTimeout, clearT = clearTimeout, burstMs = 250, cap = 8, holdMs = 3200 }) {
@@ -25,7 +26,7 @@ export function createToastQueue({ show, now = () => performance.now(), setT = s
     if (n.text === tq.text || tq.q.some((w) => w.text === n.text)) return;
     if (n.kind === "floorEnter") tq.q = tq.q.filter((w) => w.kind !== "floorEnter"); // only the latest floor name waits: a backlog of stale names never builds up
     let i = tq.q.length;
-    while (i > 0 && tq.q[i - 1].pri > n.pri) i--;
+    while (i > 0 && QP[tq.q[i - 1].pri] > QP[n.pri]) i--; // in the queue a direct line goes ahead of the quest lines that wait too (it never cuts the one on screen short)
     tq.q.splice(i, 0, n);
     while (tq.q.length > cap) tq.q.pop();
   }

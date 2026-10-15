@@ -87,3 +87,12 @@ test("a direct line replaces a world line on show at once (a refusal is not dela
   assert.deepEqual(shown, ["Level 2!", "Not enough mana"]); assert.deepEqual(q.waiting(), ["Floor 2"]);
   advance(3200); assert.deepEqual(shown, ["Level 2!", "Not enough mana", "Floor 2"], "the waiting line still gets its turn");
 });
+
+test("a direct line goes ahead of quest lines that are only waiting, behind the one on screen", () => {
+  const { q, shown, advance } = lane();
+  q.offer("Quest A", 4000, quest);
+  q.begin(); q.offer("Quest B", 4000, { quest: true, kind: "quest.step", qid: "b" }); q.end();
+  q.offer("The way down is locked", undefined, {});
+  assert.deepEqual(shown, ["Quest A"]); assert.deepEqual(q.waiting(), ["The way down is locked", "Quest B"]);
+  advance(4000); assert.equal(shown.at(-1), "The way down is locked");
+});

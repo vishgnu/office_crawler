@@ -638,7 +638,7 @@ for (const [W, H] of [[1280, 800], [1024, 768], [390, 844]]) {
     const toast = g.page.locator("#toast"), cls = await toast.getAttribute("class");
     const owedTxt = await g.page.locator(T("quest-owed")).textContent().catch(() => null), tt = await toast.textContent();
     const sq5 = await g.state();
-    check(`${w}: R8-Q1 the hand-in completes with a full bag; the window and the toast say that items wait until the bag has room`, sq5.quests.sq5.state === "completed" && (sq5.player.owed?.length ?? 0) > 0 && /wait until your bag has room/.test(owedTxt ?? "") && /wait until your bag has room|waits until your bag has room/.test(tt ?? ""), { owedTxt, tt, owed: sq5.player.owed?.length, q: sq5.quests.sq5, dlg: sq5.ui.dialog?.npc });
+    check(`${w}: R8-Q1 the hand-in completes with a full bag; the window and the toast say that items wait until the bag has room`, sq5.quests.sq5.state === "completed" && (sq5.player.owed?.length ?? 0) > 0 && /waits? until your bag has room/.test(owedTxt ?? "") && /waits? until your bag has room/.test(tt ?? ""), { owedTxt, tt, owed: sq5.player.owed?.length, q: sq5.quests.sq5, dlg: sq5.ui.dialog?.npc });
     check(`${w}: the inventory dock button carries a count while items are owed`, (await g.page.locator(T("inv-badge")).count()) === 1 || d.ui.panels.inventory, await g.page.locator(T("inv-badge")).count());
     const say = await rect(g.page, "#pleft .say"), pb = await rect(g.page, "#pleft .pb");
     await g.page.evaluate(() => { const b = document.querySelector("#pleft .pb"); b.scrollTop = b.scrollHeight; });
