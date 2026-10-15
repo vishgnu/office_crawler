@@ -32,12 +32,12 @@ function pips(n) {
   return h;
 }
 
-function nodeHtml(n, c, bar, row, parents, kids, chainCol = null) {
+function nodeHtml(n, c, bar, row, parents, kids) {
   const learned = n.level > 0, canLearn = n.canLearn, p = c.player;
   const verb = learned ? T.upgrade : T.learn;
   const needs = n.requires.length ? `. ${T.trNeeds}: ${n.requires.map((r) => `${r.name} ${r.level}`).join(", ")}` : "";
   const label = `${n.name}. ${T.trTier} ${n.tier}. ${T.trLevelOf} ${n.level} / ${n.maxLevel}. ${STATE_WORD[n.state]}${n.lockReason ? `. ${n.lockReason}` : ""}${needs}${n.signature ? `. ${T.trSignature}` : ""}`;
-  let h = `<li class="tnode st-${n.state}${n.signature ? " sig" : ""}${n.assigned !== null ? " bar" : ""}${chainCol !== null ? " ci" + chainCol : ""}" data-testid="skill-${esc(n.id)}" data-state="${esc(n.state)}" data-tier="${Number(n.tier)}" style="--col:${Number(n.col) || 0};--row:${row}">`;
+  let h = `<li class="tnode st-${n.state}${n.signature ? " sig" : ""}${n.assigned !== null ? " bar" : ""}" data-testid="skill-${esc(n.id)}" data-state="${esc(n.state)}" data-tier="${Number(n.tier)}" style="--col:${Number(n.col) || 0};--row:${row}">`;
   // R6 tier connector (G2 #14 / N8): drawn from n.requires over the fixed column grid; CSS only, no measuring. The first prerequisite sets the elbow.
   const from = n.requires.map((r) => parents.get(r.id)).find((x) => x);
   if (from) { const dx = (Number(n.col) || 0) - from.col; h += `<i class="lk ${dx > 0 ? "l" : dx < 0 ? "r" : "s"}${n.requires.every((r) => r.met) ? " ok" : ""}" style="--span:${Math.abs(dx)}" aria-hidden="true"></i>`; }
@@ -95,11 +95,11 @@ export function renderTree(c, opts = {}) {
     const tiers = [...new Set(b.nodes.map((n) => n.tier))].sort((a, z) => a - z);
     const parents = new Map(b.nodes.map((n) => [n.id, n])), kids = new Set(b.edges.map((e) => e.from));
     // VFIX-R7 N12: a branch that is one chain (one node per tier, at most three) is laid out as one row of cards left to right, not a staircase that leaves two thirds of the panel empty
-    const chain = tiers.length <= 3 && tiers.every((t) => b.nodes.filter((n) => n.tier === t).length === 1);
+    const chain = tiers.every((t) => b.nodes.filter((n) => n.tier === t).length === 1) && b.nodes.every((n) => n.col <= 1);
     h += `<ul class="tnodes${chain ? " chain" : ""}">`;
     tiers.forEach((t, i) => {
-      h += `<li class="tl${chain ? " ci" + i : ""}" style="--row:${chain ? 1 : i + 1}">${esc(T.trTier)} ${Number(t)}</li>`;
-      h += b.nodes.filter((n) => n.tier === t).sort((a, z) => a.col - z.col).map((n) => nodeHtml(n, c, bar, chain ? 2 : i + 1, parents, kids, chain ? i : null)).join("");
+      h += `<li class="tl" style="--row:${i + 1}">${esc(T.trTier)} ${Number(t)}</li>`;
+      h += b.nodes.filter((n) => n.tier === t).sort((a, z) => a.col - z.col).map((n) => nodeHtml(n, c, bar, i + 1, parents, kids)).join("");
     });
     h += `</ul></section>`;
   }

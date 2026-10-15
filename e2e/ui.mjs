@@ -615,8 +615,8 @@ for (const [W, H] of [[1280, 800], [1024, 768], [390, 844]]) {
     const g = await start("test=1&seed=3", { width: 1280, height: 720 }, "facilities-manager");
     await g.app("cheat.setLevel", 12); await g.app("ui.open", "skills"); await g.app("step", 2);
     check("U2 the tracker pill is hidden while the Skills panel is open", await g.page.locator(T("tracker")).isHidden());
-    const tops = await g.page.evaluate(() => [...document.querySelectorAll('[data-testid="branch-maintenance"] .tnode')].map((e) => Math.round(e.getBoundingClientRect().top)));
-    check("N12 the single-chain branch is one row of cards", tops.length === 3 && tops.every((t) => t === tops[0]), tops);
+    const cw = await g.page.evaluate(() => { const r = (id) => document.querySelector(`[data-testid="${id}"]`).getBoundingClientRect(); const a = r("skill-pallet-slam"), b = r("skill-floor-buffer"); return { a: a.width, b: b.width, above: a.bottom <= b.top + 1 }; });
+    check("N12 the single-chain branch uses two wide columns and the parent stays above its dependant", cw.a > 170 && cw.b > 170 && cw.above, cw);
     await g.app("ui.close", "skills"); await g.app("step", 2);
     check("U2 the tracker pill is back with the panel closed", await g.page.locator(T("tracker")).isVisible());
     await g.context.close();

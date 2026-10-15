@@ -320,7 +320,7 @@ export function createPanels(root, game) {
   /** One line for the pinned quest. It sits between the drawers and the dock, so it never covers a panel control. */
   function syncTracker(c, D, leftOpen, rightOpen, menu) {
     const t = el.tracker, tr = c.quests ? trackerOf(questView(c)) : null;
-    t.hidden = !tr || !!menu || c.scene === "dead" || (D.phone ? leftOpen || rightOpen : leftOpen); // VFIX-R7 U2: no pill over an open left panel (it covered the Skills assign buttons)
+    t.hidden = !tr || !!menu || c.scene === "dead" || (D.phone ? leftOpen || rightOpen || !!game.ui.map : leftOpen); // VFIX-R7 U2: no pill over an open left panel; on the phone also not over the floor map's title (it covered the Skills assign buttons)
     if (!tr) return;
     const s = hudLayout(game.w, game.h).scale;
     if (D.phone) { t.style.left = "6px"; t.style.right = "6px"; t.style.top = (game.w <= 340 ? 100 : 54) + "px"; } // at 340 px and under the dock wraps to two rows (CSS), the pill moves below them

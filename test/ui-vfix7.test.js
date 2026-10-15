@@ -20,9 +20,6 @@ test("N12 a branch that is one chain gets the row layout, a branching branch kee
   const lists = h.split('<ul class="tnodes').slice(1).map((s) => s.slice(0, 8));
   assert.ok(lists.some((s) => s.startsWith(" chain")), "maintenance is a chain");
   assert.ok(lists.some((s) => !s.startsWith(" chain")), "safety branches at tier 2");
-  const chain = h.slice(h.indexOf('class="tnodes chain"'));
-  assert.match(chain, /class="tl ci0" style="--row:1"/);
-  assert.match(chain, /class="tnode [^"]*ci1"[^>]*data-tier="2" style="--col:1;--row:2"/);
 });
 
 test("U1 the dock badge shows 99+ and keeps the real count for screen readers", () => {
@@ -32,7 +29,7 @@ test("U1 the dock badge shows 99+ and keeps the real count for screen readers", 
 });
 
 test("U2/U5 the tracker hides while a left panel is open; a toast that repeats the pill or the visible alert is hidden", () => {
-  assert.match(panels, /\(D\.phone \? leftOpen \|\| rightOpen : leftOpen\)/);
+  assert.match(panels, /\(D\.phone \? leftOpen \|\| rightOpen \|\| !!game\.ui\.map : leftOpen\)/);
   assert.match(panels, /el\.tracker\.dataset\.line === tx/);
   assert.match(css, /\.toast\.dup\{visibility:hidden\}/);
 });

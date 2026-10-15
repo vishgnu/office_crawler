@@ -726,11 +726,5 @@ html.hc .tr-in{background:#000;border-color:#fff;color:#fff}
 
 /* VFIX-R7 U6: the NPC's opening quote stays in view when the window scrolls to a quest button */
 .npc .say{position:sticky;top:0;z-index:3;background:var(--panel);margin:0;padding:4px 0}
-/* VFIX-R7 N12: a single-chain branch is one row of three cards with a short connector between them (desktop); the phone keeps its one column */
-#ui:not(.phone) .tree .tnodes.chain { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 14px; row-gap: 2px; }
-#ui:not(.phone) .tree .chain .ci0 { grid-column: 1; } #ui:not(.phone) .tree .chain .ci1 { grid-column: 2; } #ui:not(.phone) .tree .chain .ci2 { grid-column: 3; }
-#ui:not(.phone) .tree .chain .tl { grid-row: 1; writing-mode: horizontal-tb; transform: none; border: 0; border-bottom: 2px solid var(--rim); text-align: left; padding: 0 0 1px; font-size: 14px; }
-#ui:not(.phone) .tree .chain .tnode { grid-row: 2; }
-#ui:not(.phone) .tree .chain .lk { left: -16px; right: auto; width: 16px; top: 22px; height: 3px; background: var(--lc); }
-#ui:not(.phone) .tree .chain .lk::before, #ui:not(.phone) .tree .chain .lk::after { display: none; }
-#ui:not(.phone) .tree .chain .kd { display: none; }
+/* VFIX-R7 N12: a single-chain branch (core columns 0 and 1 only) uses two wide columns and a tighter row gap, not three columns with the third one empty; the connectors and the parent-above-child order are unchanged (desktop; the phone keeps its one column) */
+#ui:not(.phone) .tree .tnodes.chain { grid-template-columns: 20px repeat(2, minmax(0, 1fr)); row-gap: 14px; }

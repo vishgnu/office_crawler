@@ -18,7 +18,7 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R7 | 26 | 5392.4 | 1014.7 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 86 rows, 14101.1 k subagent tokens. **Your messages logged:** 30.
+**Ledger total:** 87 rows, 14101.1 k subagent tokens. **Your messages logged:** 30.
 
 ## Round R3
 
@@ -144,6 +144,7 @@ Retro summary (`round-06.json`): incidents 10, learnings L-032, L-033, L-034, L-
 | visual-reviewer | R7 visual review | 161.4 | 6.4 | done | score: {"g":[35,33],"ui":[35,32]}; verdict: iterate; findings: {"medium":4,"low":6,"r6_open":5} |
 | customer-proxy | R7 acceptance | 274.0 | 101.1 | done | verdict: accept with follow-ups (nothing rejected) |
 | implementer | VFIX-R7-WORLD | 178.1 | 54.7 | done (G4 needs core) | fixed: ["G1","G2","G3","N9","N10"]; fps50: [53.3,59,58.5,56.7,56.3]; load: 2.6-3.7 |
+| implementer | VFIX-R7-UI | – | – | done (N12 partial) | tests: 1155; fixed: ["U1","U2","U3","U4","U5","U6","N14","R8-Q2 partial","R8-Q3"] |
 
 ## Harness work
 
