@@ -1,7 +1,7 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
 _Last updated 2026-10-15T04:51:58Z. Keep this block current after every step; the log below is history._
 
-**Where we are:** R8 closed (accept with follow-ups, retro done). R8-T running: TE-R8T (worktree), FIX-UI-R8T, FIX-WORLD-R8T, CORE-R8T-1 in parallel; then CORE-R8T-2 balance alone, review, visual, fix round, verify, proxy, retro. Then R11, then END-OF-PROJECT TASK. Harness 0.5.1 released (user go).
+**Where we are:** R8-T closed (accepted with follow-ups, visual 37/35 36/34, quiet verify green, retro done). R11 running: R11-0 test infra, R11-1 delta review, R11-2 motion/visual; then R11-3 regression sweep, fix round, verify, final acceptance, retro. Then END-OF-PROJECT TASK. Harness 0.5.1 released (user go).
 
 **In flight (check the files, not memory):**
 - ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
@@ -304,3 +304,4 @@ Each round also improves the harness (learnings → agent definitions/rules), as
 - [retro R8-T] HARNESS CHANGED (unreleased patch, CHANGELOG "after 0.5.1"): test-engineer, visual-reviewer, implementer, reviewer wording; 1 playbook row; metrics-report round key 8T; learnings L-054..L-056; STATUS.md refreshed.
 
 - 2026-10-15T16:58Z Retro R8-T done: round-08T.json, L-054..L-056 new, L-042/L-049/L-037 reopened; agent defs updated (landscape body height, behavioural tests, live known list). Retro agent ran one read-only git status (L-033 4th slip, self-disclosed). Fact for L-042: at 16:4xZ the orchestrator discarded 38 docs/shots files rewritten by the final verify run (git checkout, not committed). Proposed first R11 package: all e2e honour E2E_SHOTS + lint test.
+- 2026-10-15T16:58Z R11 plan written (50-plan.md). Launching R11-0 test infra, R11-1 delta review (scratchpad r11-delta.patch, a89036d..HEAD), R11-2 motion/visual in parallel; R11-3 regression sweep after R11-0 (worktree).
