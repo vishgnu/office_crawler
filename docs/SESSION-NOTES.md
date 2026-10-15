@@ -1,25 +1,19 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
-_Last updated 2026-10-15T04:51:58Z. Keep this block current after every step; the log below is history._
+_Last updated 2026-10-15T19:39:06Z. Keep this block current after every step; the log below is history._
 
 **Where we are:** R8-T closed (accepted with follow-ups, visual 37/35 36/34, quiet verify green, retro done). R11 running: R11-0 test infra, R11-1 delta review, R11-2 motion/visual; then R11-3 regression sweep, fix round, verify, final acceptance, retro. Then END-OF-PROJECT TASK. Harness 0.5.1 released (user go).
 
 **In flight (check the files, not memory):**
-- ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
-  ADR-0006), setName-while-paused workaround, landscape-phone layout condensed only, tree shots show top only.
-- (done) UI-R5: wiring + character select (variant A) + skill-tree panel + 5 slots in Options + audio cues + e2e fixes
-  (ui.mjs, s3ui.mjs) + per-script e2e timeout. Progress: `docs/reviews/R5-ui-progress.md`. When done: run
-  `npm test` and `npm run e2e` (one command) yourself; test N5 (ui must not import render) must be resolved;
-  wire `src/render/hudchrome.js` into hud.js (see `docs/reviews/G-world-progress.md`).
-- G gate: in-game reviews scored appeal 32 / craft 31 (target ≥ 34). **G-FIX done** (crops in `docs/shots/g-fix/`,
-  569 tests ×3 green, bench median 47.1, atlas ~3.85 s). e2e ui.mjs/s3ui.mjs red, owned by UI-R5. Not fixed yet: additive
-  pool washes dark monsters, nameplate body avoidance, horizontal loot-tag nudge, FM face eye-band. **Re-review G after UI-R5.**
+- **R11 in flight** (overall test and polish, harness 0.5.1). Plan: `docs/product/50-plan.md` "Round R11".
+- R11-FIX-UI (implementer): review R11-01..R11-10 + visual M-1, U-1..U-4. Progress: `docs/reviews/R11-fix-ui-progress.md`.
+- R11-3 regression sweep (test-engineer, frozen worktree `scratchpad/wt-r11` at 6cbcb4f): real play floors 1-4 per class, full runs, 10 Hz click spam, save/load, keyboard. Report: `docs/reviews/R11-adversarial.md`; copy its `e2e/r11-*` back from the worktree.
+- Done in R11: R11-0 screenshots default outside the repo + lint test; R11-1 delta code review; R11-2 visual + motion review PASS (38/36, 37/35); R11-FIX-RENDER (two-hand carry, attack poses, hit nudge, floaters, depth ties).
 
 **Next steps, in order:**
-1. After UI-R5: **adversarial test-engineer pass** (never run so far; learning L-021, experiment E1), then code review
-   R4+R5, in-game visual review incl. character select, a fix round, proxy acceptance, then `harness-retro` round 5 and
-   the ledger rows.
-2. R6 class balance (parity ±25 %, Sales Rep weakest; casters scale from weapon/Grit, which is a design flaw) + polish.
-3. R7–8 flawless gameplay → R9–10 lighting (use the `fx.lights` hook) → R11–12 overall test & polish → harness-reviewer post-mortem.
+1. Add `e2e/r11fix-render.mjs` to `e2e/run-all.mjs` once the UI fixer hands back; small fix pass for R11-3 findings.
+2. Orchestrator quiet verify (load <= 1.5; unit x3, run-all, 5+3 bench; second session if a regression is suspected).
+3. Final proxy acceptance of the whole game, then `harness-retro` R11, rebuild play/, portals, REPORT.md.
+4. **END-OF-PROJECT TASK** (below).
 
 **END-OF-PROJECT TASK (user, 2026-10-14):** when the game is done: harness-reviewer post-mortem, then a NEW HARNESS VERSION that folds in circle-2 answers (harness/docs/product/circles/circle-02.md) and everything learned; update ALL harness files and ALL generated HTML (both portals, REPORT.md, STATUS, README, CHANGELOG, benchmarks re-run) with the latest data. The user then cleans up the repos and continues with the harness separately.
 
@@ -27,8 +21,7 @@ _Last updated 2026-10-15T04:51:58Z. Keep this block current after every step; th
 (`docs/metrics/ledger.jsonl`); commit and push after every step; file ownership per parallel package; run the suite yourself
 before calling a package done; never route around permission refusals; harness learnings → `harness/learnings/`.
 
-**Waiting for the customer:** sound kit by ear, respec rule, AMBIENT_LIFT +12 %, G gate overrule?, file:// save risk note?, harness circle 2, portal-overview pick.
-(Decided: IP closeness OK, names approved.)
+**Waiting for the customer:** nothing open (all R8/R11 questions decided; harness 0.5.1 released with the go of 2026-10-15).
 
 ---
 

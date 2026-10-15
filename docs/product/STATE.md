@@ -1,13 +1,11 @@
 # STATE
 
-_Updated 2026-10-14 by the orchestrator._
+_Updated 2026-10-15 by the orchestrator._
 
-**Phase: Build. Round 4 (classes, skill trees, 5 save slots) in progress; round 5 render running; round G (graphics detail)
-in review.** Slices S1–S3 accepted (PROXY). Harness version 0.4.0 (rounds 1–6 and G), 0.5.0 from round 7. Experiments: docs/harness-experiments.md.
+**Phase: Build, last round. R1–R8, G and R8-T accepted (PROXY); R11 (overall test and polish) in flight; then the end-of-project task.** R9–R10 and R12 dropped by the customer. Harness 0.4.0 (R1–R6, G), 0.5.0 (R7–R8), 0.5.1 (R8-T, R11). Experiments: docs/harness-experiments.md.
 
 ## Open questions
-- **Q1 ESCALATE - real customer (not delegated): how close names and visuals may go to the original.** Safe default: strict originality.
-- Q2-Q7 (look and tone, MVP scope, save, audio, monetisation/hosting, session length) may be answered by `customer-proxy`; defaults proposed.
+- None. Q1 (IP closeness) decided by the customer; Q2–Q7 answered (proxy, confirmed by the customer).
 
 ## Delegation
 Gate authority for this project is delegated to `customer-proxy` while the user is away (see `00-brief.md`,

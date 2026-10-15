@@ -17,10 +17,11 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R6 | 15 | 2375.6 | 376.8 | 2222.0 | 770 | inGame 35/34, charselect 35/34, uiTreeSlotsPause 35/34, note [appeal, craft]; target 34; first time craft reached 34; G3 was 34/33 | adversarial: 7; codeReview: 15; visualReview: 7; customer: 8; escaped: 0; escapedNote: none shipped; two things were found late and are open: N11/R7-2 floor-entry stutter (found by the richer bench, no review saw it) and F1 hero stand-off (bot watchdog had masked it, CR6-05) |
 | R7 | 29 | 5941.5 | 1105.7 | 5766.3 | 1154 | inGame 35/34, charselect null, uiTreeSlotsPause 35/34, note [appeal, craft]; R7 first review iterate: in-game 35/33, UI 35/32; after the visual fix round R7b pass 35/34 both; R6 was 35/34 | adversarial: 10; codeReview: 16; visualReview: 25; customer: 8; escaped: 0; escapedNote: none shipped; the R7 acceptance feel items (bag full, early deaths) are open for R8 |
 | R8 | 17 | 3375.6 | 699.7 | 3238.9 | 1295 | inGame 36/34, uiTreeSlotsPause 35/34, note [appeal, craft]; first review pass, no iterate; R7 first review was 35/33 and 35/32, R7b 35/34 | adversarial: 3; codeReview: 0; visualReview: 22; customer: 6; escaped: 0; escapedNote: none shipped; T1 and T2 are product defects found only by the proxy (L-052) |
-| 8T | 14 | 2106.3 | 479.5 | 2106.3 | 1334 | inGame 37/35, uiTreeSlotsPause 36/34, note [appeal, craft]; first review pass, motion not judged; R8 was 36/34 and 35/34 | adversarial: 7; codeReview: 10; visualReview: 18; customer: 5; escaped: 0; escapedNote: none shipped; L-1 (High) was found by the visual review, not by the TE's reachability e2e (L-055) |
+| 8T | 15 | 2280.4 | 484.3 | 2106.3 | 1334 | inGame 37/35, uiTreeSlotsPause 36/34, note [appeal, craft]; first review pass, motion not judged; R8 was 36/34 and 35/34 | adversarial: 7; codeReview: 10; visualReview: 18; customer: 5; escaped: 0; escapedNote: none shipped; L-1 (High) was found by the visual review, not by the TE's reachability e2e (L-055) |
+| R11 | 4 | 699.8 | 119.7 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 126 rows, 20132.1 k subagent tokens. **Your messages logged:** 39.
+**Ledger total:** 131 rows, 21006.0 k subagent tokens. **Your messages logged:** 42.
 
 ## Round R3
 
@@ -200,8 +201,18 @@ Retro summary (`round-08.json`): incidents 7, learnings L-051, L-052, L-053, L-0
 | implementer | FIX-R8T-3-RENDER | 118.5 | 23.3 | done | items: ["G-R1","G-R2","L-4"]; unit: 1331/1334 (3 reds from parallel UI agent) |
 | implementer | FIX-R8T-3-UI | 235.0 | 35.7 | done | items: ["L-1","L-2","L-3","L-5","L-6","points nudge","in-hand overlap"]; unit: 1334/1334 x2; e2e: r8t3-fix 134/134 |
 | orchestrator | final verify R8-T (quiet) | – | – | green | tests: 1334/0 x3; e2e: 32/32 scripts; fps50: [56.3,51.1,51.8,48.6,48.6]; fps50GearedHero: [56.7,57.6,57.1,49.3,52.2]; benchGear_fps50Geared: [52.9,47.7,51.8]; benchGear_plain: [58.5,58.1,56.3]; justEquipped_maxMs: 16.8-33.4; load: 1.0-2.5 |
+| harness-retro | retro R8-T | 174.1 | 4.8 | done | learnings_new: ["L-054","L-055","L-056"]; reopened: ["L-042","L-049","L-037"]; rule_breach: L-033 one read-only git status (self-disclosed) |
 
 Retro summary (`round-08T.json`): incidents 9, learnings L-054, L-055, L-056, L-042, L-049, L-037, L-032, L-033, L-020, L-022, L-034, L-051, L-052, L-053, rework {"fixRounds":3,"reverts":1,"detail":"fix round 1 = FIX-R8T-UI + FIX-R8T-RENDER from the code review (F1..F10); fix round 2 = FIX-R8T-2 from the TE findings (N1..N4) and e2e upkeep; fix round 3 = FIX-R8T-3-RENDER + FIX-R8T-3-UI from the visual review and acceptance (polish). The first-wave packages (CORE-R8T-1, FIX-WORLD-R8T, FIX-UI-R8T, CORE-R8T-2) were planned known-item work, not fix rounds. 1 revert: accidental commit of 7 regenerated docs/shots jpgs (7d53845, reverted; from SESSION-NOTES 13:29Z, git not run by the retro).","fixTokensK":717.6,"fixShare":"717.6 k tokens, 34.1 % of the round (R8: 8.4 %); the polish round alone is 353.5 k"}.
+
+## Round R11
+
+| Role | Package | Tokens k | Minutes | Status | Result |
+|---|---|---|---|---|---|
+| reviewer | R11-1 delta code review | 170.2 | 8.9 | changes_needed | findings: {"major":1,"minor":6,"nit":3} |
+| visual-reviewer | R11-2 motion + overall visual | 178.4 | 14.6 | done | score: {"g":[38,36],"ui":[37,35]}; motion: acceptable, iterate-light; findings: {"high":1,"medium":3,"low-medium":1,"low":5} |
+| implementer | R11-0 test infra (E2E_SHOTS) | 105.8 | 46.6 | done | lint_test: 5 tests, proven red; shots_hash_check: 949 unchanged; unit: 1339 x3; e2e: 32/32 |
+| implementer | R11-FIX-RENDER | 245.4 | 49.6 | done | items: ["M-2","M-3","M-4","M-5","M-6","G-R1 verified","R11-10"]; unit: 1358/0 x2 |
 
 ## Harness work
 
@@ -252,3 +263,6 @@ Retro summary (`round-08T.json`): incidents 9, learnings L-054, L-055, L-056, L-
 | 2026-10-15T13:28:53Z | decision | yes do the harness |
 | 2026-10-15T16:48:12Z | question | quick status update please |
 | 2026-10-15T16:49:54Z | go | good work proceed |
+| 2026-10-15T17:00:56Z | question | how long is the expected rest runtime? |
+| 2026-10-15T18:27:05Z | question | sorry we lost internet where are we? |
+| 2026-10-15T19:38:42Z | instruction | update in tods and runtime left pls |
