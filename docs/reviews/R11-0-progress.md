@@ -1,0 +1,8 @@
+# R11-0 TEST-INFRA progress
+
+- done: shared resolver `e2e/shots-dir.mjs` (`shotsDir(explicit)`: explicit dir arg, then `E2E_SHOTS`, then `--publish` = docs/shots, else `os.tmpdir()/office-crawler-shots`; `PUBLISHED_SHOTS` for reads). `e2e/helpers.mjs` `SHOTS` now uses it (was `e2e/shots`).
+- done: scripts moved onto it. Via `shotsDir(process.argv[2])`: polish-final-shots, polish-shots, r5fix-ui-shots, r6-ui-shots, r6fix-ui-shots, r7-ui-journal-shots, r7fix-ui-shots, s2fix-shots, shots, ui-shots, world-g-pairs (before-images read from PUBLISHED_SHOTS), world-g-shots, world-r5-shots, world-shots, art-sheet, vfix7-ui-shots, world-g-sheet (default `<shots>/g-sheet.jpg`). Via helpers `SHOTS`: adv-r5, adv-r6, adv-r7, r5ui, s3ui, r7journal, r7quest, r8ui-shots (R8UI_OUT still overrides), vfix7-w-shots, world-gfix-shots/-strip/-wall (`<shots>/g-fix/`). Already fine: adv-r8, r8gear, r8t*, combat, realtime, render. bench/ and bot/ write no images (nothing changed).
+- done: `test/e2e-shots-lint.test.js` (5 tests; verified red with a probe script that wrote to docs/shots).
+- done: regenerated with `--publish`: r8g2-sheet-{fm,sr,it}, r8g2-tiers-{fm,sr,it}, r8g2-set-{fm,sr,it} (art-sheet modes cats/tiers/set). `r8g2-ingame.jpg` has no generator script; left alone. No other gear sheet is published by art-sheet.
+- done: `node e2e/run-all.mjs` without E2E_SHOTS: E2E OK, 32/32 scripts. sha1 of docs/shots before/after: all 949 pre-existing files identical. 12 new `r11-visual-*.jpg` appeared from the parallel visual reviewer (not from e2e; all added files carry that prefix).
+- done: `node --test` x3: 1339 pass, 0 fail.
