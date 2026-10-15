@@ -525,10 +525,19 @@ R4-4 -> R6-1 ; R5 -> R6-2
 R9–R10 (lighting) and R12 (second overall test and polish) are dropped. Order now: R7 (rest) → R8 → R8-T → R11 → end-of-project task.
 
 ## R8 acceptance follow-ups (proxy, 2026-10-15) — for R8-T
-- R8-T1 (medium): Desk Drawer clipped at <=1366x768 (bag row 4 and footer incl. owed line cut off). Scroll or resize; e2e clicking Drop on floor with the real mouse at 1280x720.
-- R8-T2 (low-medium): transparent .xptip hover box (~204x29, bottom centre) swallows canvas clicks; pointer-events none or smaller.
-- R8-T3 (medium): floor 2 still a spike for a level-2 hero (FM died twice, SR/IT ~28 % hp in 10 min). Re-run floors 1-4 with quests accepted; consider a floor-1 reward (potion or gear).
-- R8-T4 (medium-low): AI1 at 1 Hz re-clicks on a changing far target should still hit an adjacent attacker within 1.5 s; add a deterministic test.
-- R8-T5: adv-r7 owed check closed (fixture fixed, 261/261); profile BENCH_GEAR 47.1 (R8-P1).
-- R8-T6 (proxy evidence holes): unique-tier look, Emergency Exit at 40 gold, floors 5-9 / boss / verdict by real play, R8-Q2/Q3, slot cards after reload.
+- R8-A1 (medium): Desk Drawer clipped at <=1366x768 (bag row 4 and footer incl. owed line cut off). Scroll or resize; e2e clicking Drop on floor with the real mouse at 1280x720.
+- R8-A2 (low-medium): transparent .xptip hover box (~204x29, bottom centre) swallows canvas clicks; pointer-events none or smaller.
+- R8-A3 (medium): floor 2 still a spike for a level-2 hero (FM died twice, SR/IT ~28 % hp in 10 min). Re-run floors 1-4 with quests accepted; consider a floor-1 reward (potion or gear).
+- R8-A4 (medium-low): AI1 at 1 Hz re-clicks on a changing far target should still hit an adjacent attacker within 1.5 s; add a deterministic test.
+- R8-A5: adv-r7 owed check closed (fixture fixed, 261/261); profile BENCH_GEAR 47.1 (R8-P1).
+- R8-A6 (proxy evidence holes): unique-tier look, Emergency Exit at 40 gold, floors 5-9 / boss / verdict by real play, R8-Q2/Q3, slot cards after reload.
 - Wishes: Lobby belt-empty restock hint after a death; stronger silhouette change for common-tier gear.
+
+### R8-T work packages (orchestrator plan, 2026-10-15)
+Known items go straight into fix packages; the adversarial test engineer hunts for new ones in parallel on a frozen worktree of 4f25e82. File ownership is disjoint.
+- **TE-R8T (test-engineer, worktree):** no-cheat full runs per class to the boss in a real browser (or the browser bot if a run exceeds 60 min, stated), save/load across quests + gear looks + slots (incl. write-then-immediate-reload), keyboard-only journey, phone layouts, offline file:// smoke, size check, legal/denylist scan, reachability at 1280x720 and 1366x768 (elementFromPoint on every panel control, L-052), pin down the [R7-tabs] flake. Owns `e2e/**` (new scripts `e2e/r8t-*.mjs`), report `docs/reviews/R8T-adversarial.md`. Findings only, no product fixes.
+- **FIX-UI-R8T (implementer, UI):** R8-A1 Desk Drawer at <=1366x768, R8-A2 .xptip pointer events, R8-V2 U-1/U-2/U-4/U-5, R8-V1 N16/N12, R8-Q2/Q3, wish: Lobby belt-empty hint after a death. Owns `src/ui/**`, `src/main.js`, `style.css`, `src/index.html`, unit tests `test/ui-r8t*.test.js`.
+- **FIX-WORLD-R8T (implementer, WORLD):** R8-V2 G-1..G-4, wish: stronger common-tier silhouette, N17 elite size, R8-P1/R8-A5 profile the BENCH_GEAR scene and fix the hot path (target fps50 >= 48 there; final bench by the orchestrator when quiet). Owns `src/render/**`, `bench/**`, unit tests `test/render-r8t*.test.js`.
+- **CORE-R8T-1 (implementer, CORE):** R8-A4 deterministic re-click test (adjacent attacker hit within 1.5 s at a 1 Hz click period) and fix if red, R8-M1 mapMarkers, G-5 testhook giveItem unique, ADV-R7-10 (the unit-test todo), ASSET-LICENCES.md. Owns `src/core/**`, `src/testhook/**`, `bot/**`, `test/core-r8t*.test.js`, `docs/ASSET-LICENCES.md`. Goldens: re-pin only with proof.
+- **CORE-R8T-2 (balance, alone/last):** R8-A3 floor 2 spike for a level-2 hero (re-run floors 1-4 with quests accepted; consider a floor-1 reward). Reds tagged `reds_from_balance`.
+- Then: code review of all R8-T diffs, visual review (1280x720 and 1366x768 too), one fix round from TE + review findings, orchestrator quiet verify + bench, proxy acceptance, retro.
