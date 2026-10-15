@@ -35,8 +35,9 @@ export function installTestHook(game, extras = {}, win = window) {
     const pool = content.uniques.filter((u) => u.minIlvl <= ilvl && (!opts.slot || content.items[u.base].slot === opts.slot) && (!opts.base || u.base === opts.base));
     if (!pool.length) return { refused: { ok: false, error: "no unique for this base/slot at this item level" } };
     if (!config.uniqueOncePerGame || !pool.some((u) => taken.has(u.id))) return null;
-    const free = pool.find((u) => !taken.has(u.id));
-    if (!free) return { refused: { ok: false, error: "every matching unique was already found this game" } };
+    // narrow only to a base whose matching uniques are ALL untaken (rollItem picks at random among them and turns a taken pick into a rare); else refuse
+    const free = pool.find((u) => !taken.has(u.id) && pool.filter((v) => v.base === u.base).every((v) => !taken.has(v.id)));
+    if (!free) return { refused: { ok: false, error: "every matching unique was already found this game (or shares its base with a found one)" } };
     return { opts: { ...opts, base: free.base } }; // rollItem picks among all matches and turns a taken pick into a rare: choose an untaken one up front so no stray rare is created
   };
   // fellback:true (should not happen after the narrowing above) means a rare item WAS created although ok is false.

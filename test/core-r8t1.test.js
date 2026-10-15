@@ -91,6 +91,21 @@ test("[G-5] partly taken: with some matching uniques already found, the hook nar
     assert.ok(inSlot.slice(1).some((u) => u.base === game.last.base));
   }
 });
+test("[R11-08] one-unique-per-base assumption: the narrowing above holds because every base has exactly one unique; with a second unique on a base and one of them found the hook refuses instead of risking a stray rare", () => {
+  const perBase = {}; for (const u of content.uniques) perBase[u.base] = (perBase[u.base] ?? 0) + 1;
+  assert.ok(Object.values(perBase).every((n) => n === 1), "ASSUMPTION of the narrowing test: one unique per base (if this fails, review the uniqueGuard narrowing)");
+  const first = content.uniques.find((u) => u.base === "blazer"), twin = { ...first, id: `${first.id}-r11twin` };
+  content.uniques.push(twin);
+  try {
+    for (const fn of ["giveItem", "spawnItem"]) {
+      const { api, game } = rig();
+      game.core.uniquesFound.push(first.id);
+      game.last = null;
+      const r = api.cheat[fn]({ base: "blazer", rarity: "unique", ilvl: 20 });
+      assert.equal(r.ok, false, fn); assert.match(r.error, /already found/); assert.equal(game.last, null, "refused before rolling");
+    }
+  } finally { content.uniques.splice(content.uniques.indexOf(twin), 1); }
+});
 test("[G-5] on the real game: a unique request gives a unique (item and uniquesFound), a base without one gives nothing", async () => {
   const { spawnItem, takeGround } = await import("../src/core/index.js");
   const s = newGame(9, { class: "facilities-manager", start: "town" });
