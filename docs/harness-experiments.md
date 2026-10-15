@@ -42,3 +42,11 @@ Harness version at kickoff: 0.3.0 (rounds 1–3); 0.4.0 from round 4. Hypotheses
 
 Cost note for the post-mortem: R7 is the most expensive round so far, 5766.3 k tokens over 28 agent rows and 1099.6 agent minutes (R6 2375.6 k from the ledger, 2222.0 k in round-06.json; R5 2407.0 k). Implementers 3435.1 k (60 %), adversary 769.6 k, architects 504.2 k, proxies 354.7 k. Drivers: R7 contains three scope blocks (quest journal, R7-4 five more quests with arcs, spread-difficulty balance) plus AI and stutter work, and 17 % went into fix rounds.
 
+
+### Results after retro R8 (2026-10-15; evidence for `harness-reviewer`, who decides at the post-mortem)
+
+| # | Status | Numbers and evidence |
+|---|---|---|
+| E1 | **Supported on both thresholds again; ordering untested.** | Adversarial pass R8: 3 minor findings (2 not in the code review); code review R8: 0 blocking, 7 should, 7 nit; late-R7 review: 0 blocking, 6 should. Expected >= 1 adversarial finding and <= 1 blocking: met. `metrics/round-08.json` |
+| E2 | **Leaning supported for build rounds, still inconclusive overall.** | ADR-0008 with 14 ACs and 3 packages: 0 renames recorded; 1 fix round (review and adversary findings), not contract gaps. Deviation counts not extracted this round. |
+| E3 | **Held, extended.** | In-game 36/34, UI 35/34 on the first review (R7 first review 35/33 and 35/32). Not caused by the L-048 proposal (not applied); see L-053. |

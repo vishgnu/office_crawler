@@ -142,3 +142,8 @@ These five entries were in the human-log but had no briefing here; they were act
 **Recorded as real-customer answers** for the open list given the same morning: quests are the intended route (no extra
 balance for skipping them); Emergency Exit stays at 40 gold; belt, rings and amulet do not show on the figure; an equipped
 weapon replaces the class prop; no 5th Lobby character; the portal-overview pick is folded into the final harness version.
+
+## Late-recorded go-aheads (user, 2026-10-15, verbatim from human-log.jsonl; added in retro R8, learning L-037)
+
+- 2026-10-15T04:23:27Z (instruction): > ok proceed (after the time outlook: R8, R8-T, R11, end-of-project task)
+- 2026-10-15T10:12:03Z (go): > ok proceed (R8 verify, visual review and acceptance were running; retro R8 follows)

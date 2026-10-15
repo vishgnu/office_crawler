@@ -1,0 +1,352 @@
+{
+ "project": "office-crawler",
+ "harnessVersion": "0.5.0",
+ "round": "R8",
+ "slice": "R8: late-R7 code review (L-049), ADR-0008 gear visuals (ARCH), R8-0.1 render core, R8-0.2 21 part painters, R8-0.3 UI busts/owed/toast, CORE-R8-1 (owed rewards, sparse floor 1, entry grace, potions, AI re-click, map pins, CR7L-04/05/06), code review R8 and ADV-R8 in parallel, fix round (FIX-R8-CORE, FIX-R8-UIR, adv-r5 fixture fix), BAL-R8 floor-2 hotspot (alone, last), orchestrator quiet verify, visual review R8, adv-r7 owed fixture follow-up, proxy acceptance. Orchestrator verify rows have no usage.",
+ "elapsedMin": null,
+ "elapsedNote": "R7 retro done 02:04Z on 2026-10-15; R8 proxy acceptance done 10:15Z the same day: about 490 min wall clock, of which the user was away until 04:15Z. R8 start was not logged with a time other than the ledger 'round start' row. Sum of agent minutes (688.0) counts parallel work.",
+ "humanMin": null,
+ "humanMessages": 5,
+ "humanMessagesNote": "human-log.jsonl 04:15Z-10:12Z on 2026-10-15 (after the R7 retro): 2 questions (where are we, time outlook), 1 decision ('Defaults are fine'), 1 instruction and 1 go (both 'ok proceed'). 0 rework requests. The instruction and the go had no briefing in 00-brief.md; added late in this retro (L-037, counted as an incident).",
+ "wallClockUtc": {
+  "architect": "02:08Z",
+  "lateR7CodeReview": "02:15Z",
+  "R8-0.1": "03:13Z",
+  "CORE-R8-1": "03:46Z",
+  "R8-0.2": "04:08Z",
+  "R8-0.3": "04:51Z",
+  "codeReviewR8": "04:58Z",
+  "ADV-R8": "06:08Z",
+  "FIX-R8-CORE": "06:54Z",
+  "FIX-R8-UIR": "07:08Z",
+  "BAL-R8": "08:12Z",
+  "verifyR8": "09:04Z",
+  "visualReview": "09:25Z",
+  "advR7FixtureFollowUp": "09:41Z",
+  "acceptance": "10:15Z"
+ },
+ "agents": [
+  {
+   "role": "architect",
+   "pkg": "ADR-0008 gear visuals",
+   "tokensK": 130.5,
+   "minutes": 3.4,
+   "status": "done"
+  },
+  {
+   "role": "reviewer",
+   "pkg": "code review late R7 (L-049)",
+   "tokensK": 294.0,
+   "minutes": 10.9,
+   "status": "done"
+  },
+  {
+   "role": "implementer",
+   "pkg": "R8-0.1 gear render core",
+   "tokensK": 258.2,
+   "minutes": 64.8,
+   "status": "done"
+  },
+  {
+   "role": "implementer",
+   "pkg": "CORE-R8-1 (acceptance follow-ups + CR7L-04/05/06)",
+   "tokensK": 351.2,
+   "minutes": 101.6,
+   "status": "done",
+   "note": "read-only git diff (L-033, 3rd time)"
+  },
+  {
+   "role": "implementer",
+   "pkg": "R8-0.2 gear part art (21 categories)",
+   "tokensK": 277.3,
+   "minutes": 55.2,
+   "status": "done"
+  },
+  {
+   "role": "implementer",
+   "pkg": "R8-0.3 UI (busts, owed, toast lane, CR7L-01/02/03, N16)",
+   "tokensK": 264.2,
+   "minutes": 64.3,
+   "status": "done",
+   "note": "stopped by the orchestrator after hand-back, background work still running (L-032)"
+  },
+  {
+   "role": "reviewer",
+   "pkg": "code review R8",
+   "tokensK": 217.5,
+   "minutes": 6.4,
+   "status": "done"
+  },
+  {
+   "role": "test-engineer",
+   "pkg": "ADV-R8",
+   "tokensK": 322.0,
+   "minutes": 76.0,
+   "status": "done"
+  },
+  {
+   "role": "implementer",
+   "pkg": "FIX-R8-CORE",
+   "tokensK": 145.0,
+   "minutes": 45.5,
+   "status": "done"
+  },
+  {
+   "role": "test-engineer",
+   "pkg": "ADV adv-r5 fixture fix",
+   "tokensK": 5.4,
+   "minutes": 11.0,
+   "status": "done",
+   "note": "cumulative 327.4k minus 322.0k"
+  },
+  {
+   "role": "implementer",
+   "pkg": "FIX-R8-UIR (toast queue, gear cache cap)",
+   "tokensK": 121.8,
+   "minutes": 59.3,
+   "status": "done"
+  },
+  {
+   "role": "implementer",
+   "pkg": "BAL-R8 (floor 2 hotspot)",
+   "tokensK": 114.0,
+   "minutes": 63.9,
+   "status": "done"
+  },
+  {
+   "role": "visual-reviewer",
+   "pkg": "R8 visual review",
+   "tokensK": 184.4,
+   "minutes": 20.1,
+   "status": "done"
+  },
+  {
+   "role": "test-engineer",
+   "pkg": "ADV-R8 adv-r7 owed fixture",
+   "tokensK": 335.0,
+   "minutes": 35.3,
+   "status": "done",
+   "note": "verdict test defect, not product bug (L-051)"
+  },
+  {
+   "role": "customer-proxy",
+   "pkg": "R8 proxy acceptance",
+   "tokensK": 218.4,
+   "minutes": 70.3,
+   "status": "done"
+  }
+ ],
+ "tokensKTotal": 3238.9,
+ "tokensKNote": "sum of the 15 ledger rows for R8 with usage (the orchestrator rows and the harness-retro row are not included). R7 was 5766.3 k, so R8 is about 0.56 of R7. The adv-r5 fixture row is the delta of a resumed agent (L-028).",
+ "agentMinutesTotal": 688.0,
+ "harnessWork": [],
+ "defects": {
+  "adversarial": {
+   "total": 3,
+   "minor": 3,
+   "ids": [
+    "ADV-R8-01 forged ids vs nextItemId",
+    "ADV-R8-02 owed delivery steals a held-cursor cell (= CR8-01)",
+    "ADV-R8-03 melee re-click every 1-2 ticks never answered"
+   ],
+   "held": "grace 1000 seeds, owed fuzz, belt, pins, 20000 looks, gear cache under swap storm 4.9 MB, toast queue",
+   "e2e": "19/19 (adv-r8 39, adv-r7 257 at the first pass)",
+   "staleChecksMovedToOwedFlow": "CR8-02 closed",
+   "uniqueToAdversarial": [
+    "ADV-R8-01",
+    "ADV-R8-03"
+   ],
+   "overlapWithCodeReview": [
+    "ADV-R8-02 = CR8-01"
+   ]
+  },
+  "codeReview": {
+   "lateR7": {
+    "blocking": 0,
+    "should": 6,
+    "nit": 6
+   },
+   "r8": {
+    "blocking": 0,
+    "should": 7,
+    "nit": 7
+   },
+   "uniqueToReview": [
+    "CR8-03 gear cache cap ignores silhouettes",
+    "CR8-04 legacy proof overstated",
+    "CR8-05 toast queue drops lines",
+    "CR8-06 save imports render",
+    "CR8-07 owed without version bump"
+   ],
+   "note": "scope R8: CORE-R8-1 and R8-0.1/0.2/0.3; FIX-R8-CORE, FIX-R8-UIR and BAL-R8 (about 381 k tokens) not reviewed (L-049 residual)"
+  },
+  "visualReview": {
+   "count": 11,
+   "medium": 2,
+   "low": 9,
+   "note": "G-1 magic vs normal indistinct in greyscale, G-2 unique blazer reads as a box, 9 lows (R8-V2 in 50-plan.md); verdict pass on the first review"
+  },
+  "customer": {
+   "count": 6,
+   "note": "acceptance follow-ups R8-T1 Desk Drawer clipped at <= 1366x768, T2 .xptip hover box swallows clicks, T3 floor 2 spike for a level-2 hero, T4 AI1 at 1 Hz, T5 close adv-r7 and profile BENCH_GEAR, T6 evidence holes; nothing rejected"
+  },
+  "escaped": 0,
+  "escapedNote": "none shipped; T1 and T2 are product defects found only by the proxy (L-052)"
+ },
+ "quality": {
+  "unitTests": 1295,
+  "unitTestsStart": 1155,
+  "unitTestsNote": "1295 at the quiet verify (3 runs green); 1155 at the CORE-R8-1 baseline",
+  "e2eChecks": null,
+  "e2eScripts": 19,
+  "e2eDetail": "verify 18/19 (adv-r7 owed-after-drops red, a test defect); after the fixture fix adv-r5 150/150, adv-r7 261/261, adv-r8 39/39; [R7-tabs] intermittent in 1 of 4 runs",
+  "visualScore": {
+   "inGame": [
+    36,
+    34
+   ],
+   "uiTreeSlotsPause": [
+    35,
+    34
+   ],
+   "note": "[appeal, craft]; first review pass, no iterate; R7 first review was 35/33 and 35/32, R7b 35/34"
+  },
+  "fps50": 53.3,
+  "fps50Runs": [
+   51.8,
+   53.3,
+   55,
+   47.4,
+   60
+  ],
+  "fps50Min": 47.4,
+  "fps50GearedHero": {
+   "median": 52.9,
+   "runs": [
+    51.8,
+    52.9,
+    53.3,
+    46.2,
+    55.8
+   ]
+  },
+  "fps50BenchGearScene": {
+   "median": 47.1,
+   "runs": [
+    42.1,
+    51.8,
+    47.1
+   ],
+   "target": 48,
+   "note": "3 runs, not 5; AC-R-262-4 does not name the scene (L-020)"
+  },
+  "loadFinal": "1.0-1.6",
+  "perf": {
+   "gearCacheMB": "7.3 at R8-0.2; cap scales with atlas (49.9 MB at 2.5) after FIX-R8-UIR",
+   "atlasMs": "450 at R8-0.1",
+   "packageFps50": {
+    "R8-0.1": {
+     "plain": 56.7,
+     "geared": 55.0,
+     "load": "3-7"
+    },
+    "R8-0.2": {
+     "geared": [
+      53.7,
+      58.5,
+      55.4,
+      53.7,
+      53.7
+     ]
+    },
+    "FIX-R8-UIR": {
+     "plain": [
+      47.4,
+      48.3,
+      48.7,
+      49,
+      57.6
+     ],
+     "geared": [
+      44.7,
+      44.7,
+      47.7,
+      49.7,
+      50
+     ],
+     "load": "1.2-3.9"
+    }
+   }
+  },
+  "botWinRate": {
+   "all": "72/72 after BAL-R8 (parity), 72/72 at CORE-R8-1"
+  },
+  "parity": {
+   "clearTimeMin": {
+    "FM": 24.3,
+    "SR": 24.0,
+    "IT": 23.8
+   },
+   "deathsPerClassTotal": {
+    "before": {
+     "FM": 25,
+     "SR": 16,
+     "IT": 10
+    },
+    "after": {
+     "FM": 6,
+     "SR": 6,
+     "IT": 3
+    }
+   },
+   "floor1Deaths": 0,
+   "floor2HotspotBeforeBAL": "FM 12, SR 5, IT 0 (CORE-R8-1)",
+   "note": "BAL-R8: xpMult per floor (f1 2.5x); no floor stands out by more than 2 deaths"
+  },
+  "golden": "re-recorded with legacy proof in CORE-R8-1 (orchestrator reproduced the legacy hashes at 0934a57 in a worktree: exact match), unchanged by FIX-R8-CORE, re-pinned with proof in BAL-R8"
+ },
+ "rework": {
+  "fixRounds": 1,
+  "reverts": 0,
+  "detail": "fix round 1 = FIX-R8-CORE + FIX-R8-UIR (+ adv-r5 fixture fix, 5.4 k) from CR8-01..07 and ADV-R8-01..03; BAL-R8 is a planned follow-up from CORE-R8-1's hotspot, not a fix round; the visual review passed with no fix round; one test-defect follow-up (adv-r7 owed fixture, 335.0 k). No reverts recorded in SESSION-NOTES.",
+  "fixTokensK": 272.2,
+  "fixShare": "272.2 k tokens, 8.4 % of the round; with the adv-r7 fixture follow-up (335.0 k) 18.7 %"
+ },
+ "contract": {
+  "build": "ADR-0008 and spec 13-gear-visuals.md (14 ACs R-260..R-262) written by the architect before R8-0.1/0.2/0.3; CORE-R8-1 ran in parallel in src/core with no overlap",
+  "deviations": null,
+  "note": "deviation counts not extracted for R8 from the notes files in this retro"
+ },
+ "incidents": [
+  "R8-0.3 (implementer) was stopped by the orchestrator after hand-back with background work still running, although the rule and the processes: none line were in the definition (L-032 reopened; 1 of 15 agents, R7 2 of 28)",
+  "CORE-R8-1 ran a read-only git diff despite the no-git rule (L-033, third time; not disclosed in its progress file)",
+  "adv-r7 owed-after-drops e2e check went red because of a stale fixture (tall reward, scattered free cells); 335.0 k tokens and 35.3 min to prove a test defect; adv-r5 fixture ids also stale after FIX-R8-CORE (L-051)",
+  "Desk Drawer controls cut off at 1280x720 and 1366x768 and a transparent hover box swallowed clicks; found only by the proxy acceptance (L-052)",
+  "BENCH_GEAR scene fps50 median 47.1 under the 48 target at the quiet verify; FIX-R8-UIR's package numbers (geared 44.7-50 at load 1.2-3.9) were not compared with R8-0.2 (L-020)",
+  "FIX-R8-CORE, FIX-R8-UIR and BAL-R8 (about 381 k tokens) had no code review (L-049 residual)",
+  "2 go-ahead entries in the human-log had no briefing in 00-brief.md; added late in this retro (L-037)"
+ ],
+ "learnings": [
+  "L-051",
+  "L-052",
+  "L-053",
+  "L-032",
+  "L-033",
+  "L-020",
+  "L-022",
+  "L-041",
+  "L-042",
+  "L-043",
+  "L-044",
+  "L-045",
+  "L-046",
+  "L-048",
+  "L-049",
+  "L-037"
+ ],
+ "experiments": {
+  "E1": "supported on both thresholds again: adversarial 3 minor (2 unique), code review blocking 0 in both reviews (<= 1 met); passes ran in parallel, ordering untested; the late-R7 review (L-049) ran first and its core items fed CORE-R8-1",
+  "E2": "supported for the build round (one architect ADR with 14 ACs, 3 packages, 0 recorded renames); 1 fix round driven by review findings, not contract gaps; deviation counts not extracted",
+  "E3": "held and extended: in-game 36/34 and UI 35/34 on the first review (R7 first review 35/33 and 35/32); crops at 1x per hand-back, early-pass proposal not applied (L-053)"
+ }
+}
