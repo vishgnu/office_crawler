@@ -4,9 +4,7 @@ import assert from "node:assert/strict";
 import { newGame, step, applyInput, config, content, enterFloor, generateFloor, snapshot } from "../src/core/index.js";
 import { installTestHook } from "../src/testhook/index.js";
 import { setQuestStep } from "../src/core/cheats.js";
-import { gameOn, replay } from "./helpers.js";
-import { hashState } from "../src/core/index.js";
-import { readFileSync } from "node:fs";
+import { gameOn } from "./helpers.js";
 
 // ---- R8-A4 ----
 const ROWS = [
@@ -55,7 +53,7 @@ function spamRun(cls, period, offset, ticks = 480) {
   let first = -1, swings = 0;
   for (let t = 0; t < ticks; t++) {
     const n = s.eventLog.length;
-    step(s, t % period === 0 ? [{ t: "attack", id: far[(t / period + offset) % far.length].id }] : []);
+    step(s, t % period === 0 ? [{ t: "click", button: 0, tile: { ...far[(t / period + offset) % far.length].tile } }] : []);
     for (const e of s.eventLog.slice(n)) if ((e.type === "hit" || e.type === "miss") && e.source === "player" && adj.has(e.target)) { swings++; if (first < 0) first = t; }
   }
   return { first, swings };
@@ -69,23 +67,15 @@ for (const cls of content.classes.map((c) => c.id)) {
     }
   });
 }
-test("[R11-F03] a lone far click (no spam) is not redirected: the hero walks to a far target even with an awake monster nearby, and a 1 Hz click is unchanged", () => {
+test("[R11-F03] a lone far click (no spam) is not redirected: the hero walks to a far target even with an awake monster nearby", () => {
   const s = gameOn(OPEN, [["zombie-intern", 13, 5], ["zombie-intern", 22, 2]], 1, { class: "sales-rep" });
   s.player.hp = s.player.hpMax = 1e6;
-  s.monsters[0].ai = "chase"; s.monsters[0].damage = 1; s.monsters[1].ai = "idle";
-  step(s, [{ t: "attack", id: s.monsters[1].id }]);
+  s.monsters[0].ai = "chase"; s.monsters[0].damage = 1; s.monsters[1].ai = "idle"; s.monsters[1].hp = s.monsters[1].hpMax = 1e6;
+  step(s, [{ t: "click", button: 0, tile: { ...s.monsters[1].tile } }]);
   for (let i = 0; i < 20; i++) step(s, []);
   assert.equal(s.player.target, s.monsters[1].id, "the single click's target is kept");
-});
-
-test("[R11-F03] golden proof: run-c (the bot's recorded run re-orders attacks every few ticks) replays to its pre-R11 hash 0792d55d8cdcdf89 with the spam rule off, and to the re-pinned run-c.hash with it on", () => {
-  const run = JSON.parse(readFileSync("test/fixtures/run-c.json", "utf8")), keep = config.spamTicks;
-  try {
-    config.spamTicks = -1;
-    assert.equal(hashState(replay(run, { start: "town" })), "0792d55d8cdcdf89", "rule off: the old golden, so the rule is the only change");
-  } finally { config.spamTicks = keep; }
-  assert.equal(hashState(replay(run, { start: "town" })), readFileSync("test/fixtures/run-c.hash", "utf8").trim());
-  assert.notEqual(readFileSync("test/fixtures/run-c.hash", "utf8").trim(), "0792d55d8cdcdf89");
+  for (let k = 0; k < 4; k++) { step(s, [{ t: "click", button: 0, tile: { ...s.monsters[1].tile } }]); for (let i = 0; i < 59; i++) step(s, []); }
+  assert.equal(s.player.target, s.monsters[1].id, "one click a second is not spam either");
 });
 
 // ---- R8-M1 ----

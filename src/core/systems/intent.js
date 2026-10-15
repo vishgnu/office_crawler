@@ -57,6 +57,13 @@ function issueMove(state, tile) {
   return OK;
 }
 
+/** R11-F03: three or more mouse clicks on monsters, each within spamTicks of the one before (a tapped mouse at 3 to 10 Hz), mark click spam; see the strike-back rule in playerIntent.
+ *  Only mouse clicks count (the bot's `attack` orders do not), and the count lives outside the game state (not hashed, not saved: a loaded game starts counting again). */
+function noteClick(state) {
+  const ck = clicks.get(state);
+  clicks.set(state, { t: state.tick, n: ck && state.tick - ck.t <= config.spamTicks ? ck.n + 1 : 1 });
+}
+
 function issueAttack(state, id) {
   const m = state.monsters.find((o) => o.id === id);
   if (!m || m.ai === "dead") return fail("no such living monster");
@@ -66,10 +73,6 @@ function issueAttack(state, id) {
   // the retarget needs the order to have been planned once (p.goal), so a fresh reachable click is never replaced on its first tick.
   // ADV-R8-03: a re-click of the very same target is not a new order: keep p.goal (the "planned once" mark) so a click every 1-2 ticks cannot defeat the retarget.
   const same = p.target === id;
-  // R11-F03: three or more attack clicks, each within spamTicks of the one before (a tapped mouse at 3 to 10 Hz), mark click spam; see the strike-back rule in playerIntent.
-  // Kept outside the game state (not hashed, not saved: a loaded game simply starts counting again), so recorded runs and goldens without spam do not move.
-  const ck = clicks.get(state), run = ck && state.tick - ck.t <= config.spamTicks ? ck.n + 1 : 1;
-  clicks.set(state, { t: state.tick, n: run });
   p.target = id; p.path = []; p.goal = same ? p.goal : null; p.repathT = 0; p.standT = p.next ? 0 : (p.standT ?? 0); p.pickup = null; p.stairs = null; p.interact = null; p.toPortal = false;
   return OK;
 }
@@ -175,6 +178,7 @@ function mouseDown(state, tile, button, hold) {
     Object.assign(state.input.mouse, { down: false, button, tile: { ...tile }, mode: "pickup", applied: { ...tile } });
     return r;
   }
+  if (m) noteClick(state);
   const res = m ? issueAttack(state, m.id) : issueMove(state, tile);
   Object.assign(state.input.mouse, { down: hold, button, tile: { ...tile }, mode: m ? "attack" : "move", applied: { ...tile } });
   return res;

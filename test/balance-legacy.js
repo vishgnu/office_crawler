@@ -14,7 +14,7 @@ const OLD_HP = { "zombie-intern": 14, "printer-imp": 8, "temp-worker": 10, "prin
 export function withLegacyBalance(fn) {
   const keep = {
     depthMult: config.depthMult, xpPct: config.scaling.xpPct, champ: config.championChance, vend: monsters["vending-machine"].minDepth, exit: bases["emergency-exit"].value,
-    early: config.population.early, xpMult: config.xpMult, potionMarkup: config.potionBuyOverSell, kits: classes.map((c) => c.startKit.healthPotions), grace: config.entryGrace, boss: { hp: config.boss.hpMult, dmg: config.boss.damageMult }, spam: config.spamTicks,
+    early: config.population.early, xpMult: config.xpMult, potionMarkup: config.potionBuyOverSell, kits: classes.map((c) => c.startKit.healthPotions), grace: config.entryGrace, boss: { hp: config.boss.hpMult, dmg: config.boss.damageMult },
     hp: Object.fromEntries(Object.keys(OLD_HP).map((id) => [id, monsters[id].hpBase])),
   };
   try {
@@ -23,7 +23,6 @@ export function withLegacyBalance(fn) {
     config.potionBuyOverSell = config.buyOverSell; for (const c of classes) c.startKit.healthPotions = OLD_POTIONS; // R8-B3
     config.xpMult = null; config.entryGrace = null; config.population.early = null; // R8-B2, R8-B1 (floor 1 pack rules)
     config.boss.hpMult = 3; config.boss.damageMult = 0.7; // CR7L-05: the boss numbers of the pre-R7-3 balance (R7-balance.md item 6)
-    config.spamTicks = -1; // R11-F03: the click-spam strike-back rule did not exist
     for (const [id, hp] of Object.entries(OLD_HP)) monsters[id].hpBase = hp;
     const out = fn();
     if (out && typeof out.then === "function") throw new Error("withLegacyBalance is synchronous: the numbers are restored when fn returns");
@@ -32,7 +31,7 @@ export function withLegacyBalance(fn) {
     config.depthMult = keep.depthMult; config.scaling.xpPct = keep.xpPct; config.championChance = keep.champ; monsters["vending-machine"].minDepth = keep.vend; bases["emergency-exit"].value = keep.exit;
     config.potionBuyOverSell = keep.potionMarkup; classes.forEach((c, i) => { c.startKit.healthPotions = keep.kits[i]; });
     config.entryGrace = keep.grace; config.population.early = keep.early; config.xpMult = keep.xpMult;
-    config.spamTicks = keep.spam; config.boss.hpMult = keep.boss.hp; config.boss.damageMult = keep.boss.dmg;
+    config.boss.hpMult = keep.boss.hp; config.boss.damageMult = keep.boss.dmg;
     for (const [id, hp] of Object.entries(keep.hp)) monsters[id].hpBase = hp;
   }
 }

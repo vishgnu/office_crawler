@@ -9,11 +9,12 @@ _Last updated 2026-10-15T19:39:06Z. Keep this block current after every step; th
 - R11-3 regression sweep (test-engineer, frozen worktree `scratchpad/wt-r11` at 6cbcb4f): real play floors 1-4 per class, full runs, 10 Hz click spam, save/load, keyboard. Report: `docs/reviews/R11-adversarial.md`; copy its `e2e/r11-*` back from the worktree.
 - Done in R11: R11-0 screenshots default outside the repo + lint test; R11-1 delta code review; R11-2 visual + motion review PASS (38/36, 37/35); R11-FIX-RENDER (two-hand carry, attack poses, hit nudge, floaters, depth ties).
 
-**Next steps, in order:**
-1. Add `e2e/r11fix-render.mjs` to `e2e/run-all.mjs` once the UI fixer hands back; small fix pass for R11-3 findings.
-2. Orchestrator quiet verify (load <= 1.5; unit x3, run-all, 5+3 bench; second session if a regression is suspected).
-3. Final proxy acceptance of the whole game, then `harness-retro` R11, rebuild play/, portals, REPORT.md.
-4. **END-OF-PROJECT TASK** (below).
+**Next steps, in order (DEADLINE 2026-10-16 04:00 UTC = 06:00 CEST, user 20:57Z; bugs may stay open, data + retro + harness version first):**
+1. ~22:00 R11-FIX2-CORE hands back (time-boxed; F-01 may be deferred). Commit.
+2. ~22:00-23:15 quiet verify (unit x2, run-all, bench 5+3). Then final proxy acceptance (short, ~45 min) and harness-retro R11 right after.
+3. ~00:30 harness-reviewer post-mortem (whole project). ~01:30 new harness version (fold circle-02 answers, learnings, post-mortem proposals incl. deny Bash(git:*) for build agents), update ALL harness files, STATUS, README, CHANGELOG, both portals, REPORT.md. ~02:30 benchmark B1 re-run on the new version. 03:30 final portals, notes, push. Open bugs -> backlog in 50-plan.md.
+
+**END-OF-PROJECT TASK** (below).
 
 **END-OF-PROJECT TASK (user, 2026-10-14):** when the game is done: harness-reviewer post-mortem, then a NEW HARNESS VERSION that folds in circle-2 answers (harness/docs/product/circles/circle-02.md) and everything learned; update ALL harness files and ALL generated HTML (both portals, REPORT.md, STATUS, README, CHANGELOG, benchmarks re-run) with the latest data. The user then cleans up the repos and continues with the harness separately.
 

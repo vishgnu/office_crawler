@@ -154,3 +154,7 @@ Question: release the accumulated harness changes (after retro R7 and R8) as 0.5
 ## Late-recorded go-ahead (user, 2026-10-15, verbatim from human-log.jsonl; added in retro R8-T, learning L-037)
 
 - 2026-10-15T16:49:54Z (go): > good work proceed (after the quick status update: R8-T final verify green, retro R8-T follows, then R11)
+
+### Instruction 2026-10-15T20:57:05Z (deadline)
+Verbatim: "i will warp up for tody please make it complte by tomorrow 6am cest even if that means we will have some bugs left that will be for later - we need to get the data and the last retro so the harness can proceeed after human review"
+Reading: hard deadline 2026-10-16 06:00 CEST (04:00 UTC). Priority: data, R11 retro, post-mortem, new harness version, all harness files and HTML updated, benchmark. Open bugs go to a backlog for later.
