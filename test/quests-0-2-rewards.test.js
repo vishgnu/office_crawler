@@ -93,35 +93,52 @@ test("AC-R-247-3 hand-in twice grants once; the second call is refused with no e
   assert.equal(hashStateWithout(s, STRIP), h); assert.equal(s.player.gold, gold);
 });
 
-test("AC-R-247-3 full bag: atomic refusal (bagFull), nothing changes, quest stays ready, then succeeds once space is freed", () => {
+test("AC-R-247-3 / R8-Q1 full bag: the hand-in completes, gold and xp are paid, the items wait in the owed pouch and move into the bag when there is room", () => {
   const s = ready(7, "sq3");
   fillBag(s);
-  const h = hashStateWithout(s, STRIP), n = s.eventLog.length;
+  const g0 = s.player.gold, n = s.eventLog.length, bag = s.inventory.items.length;
   const r = applyInput(s, { t: "questHandIn", id: "sq3" });
-  assert.deepEqual([r.ok, r.error, r.reason], [false, "bagFull", "bagFull"]);
-  assert.equal(hashStateWithout(s, STRIP), h, "no part of the reward, no id minted, no tick");
-  assert.equal(s.quests.sq3.s, "ready");
-  assert.equal(s.groundItems.length, 0, "nothing dropped on the floor");
-  assert.deepEqual(s.eventLog.slice(n).map((e) => [e.type, e.id, e.reason]), [["quest.handInRefused", "sq3", "bagFull"]]);
-  s.inventory.items.length = 0; // space freed
-  assert.ok(applyInput(s, { t: "questHandIn", id: "sq3" }).ok);
+  assert.ok(r.ok, "a full bag does not block the hand-in");
   assert.equal(s.quests.sq3.s, "completed");
+  assert.ok(s.player.gold > g0, "gold paid at once");
+  assert.equal(s.inventory.items.length, bag, "the bag is untouched");
+  assert.equal(s.groundItems.length, 0, "nothing dropped on the floor");
+  const owed = s.player.owed, want = 1 + config.quests.sq3.potions;
+  assert.equal(owed.length, want, "the weapon and the potions are owed");
+  assert.equal(new Set([...owed.map((i) => i.id), ...s.inventory.items.map((i) => i.id)]).size, bag + want, "ids are unique");
+  const done = s.eventLog.slice(n).find((e) => e.type === "quest.completed");
+  assert.equal(done.rewards.owed, want);
+  assert.ok(!s.eventLog.slice(n).some((e) => e.type === "quest.handInRefused"));
+  step(s, []);
+  assert.equal(s.player.owed.length, want, "still no room: still owed");
+  s.inventory.items.length = 0; // space freed
+  step(s, []);
+  assert.equal(s.player.owed, undefined, "the key is gone once everything is delivered");
+  assert.equal(s.inventory.items.length, want);
+  assert.ok(s.inventory.items.every((i) => Number.isInteger(i.x) && Number.isInteger(i.y)));
+  assert.equal(s.eventLog.filter((e) => e.type === "pickup").length, want, "one pickup event per delivered item");
 });
 
-test("AC-R-247-3 a bag with only 1x1 holes: refused while the weapon or all potions do not fit, no partial grant", () => {
+test("AC-R-247-3 / R8-Q1 a bag with only 1x1 holes: the potions that fit go in, the weapon waits for a 2-high gap; nothing is lost or duplicated", () => {
   let s = ready(7, "sq3");
-  fillBag(s, 2); // two 1x1 holes: potions (2) would fit, the weapon (taller than 1x1) does not
-  assert.ok(!findSpot(s.inventory, { w: rewardOf(s, "sq3").gear.w, h: rewardOf(s, "sq3").gear.h }));
-  const h = hashStateWithout(s, STRIP), g = s.player.gold;
-  assert.equal(applyInput(s, { t: "questHandIn", id: "sq3" }).error, "bagFull");
-  assert.equal(hashStateWithout(s, STRIP), h); assert.equal(s.player.gold, g);
+  fillBag(s, 2); // two 1x1 holes: the potions fit, the weapon (taller than 1x1) does not
+  const gearItem = rewardOf(s, "sq3").gear;
+  assert.ok(!findSpot(s.inventory, { w: gearItem.w, h: gearItem.h }));
+  assert.ok(applyInput(s, { t: "questHandIn", id: "sq3" }).ok);
+  assert.equal(s.player.owed.length, 1, "only the weapon is owed");
+  assert.equal(s.player.owed[0].kind, "gear");
+  assert.equal(potions(s).length, 40, "the two potions took the two holes");
+  s.inventory.items = s.inventory.items.filter((i) => i.kind !== "potion"); // clear the bag
+  step(s, []);
+  assert.equal(s.player.owed, undefined);
+  assert.equal(gear(s).length, 1);
   s = ready(7, "sq1");
   fillBag(s, 2); // sq1: three potions, two holes
-  const h1 = hashStateWithout(s, STRIP);
-  assert.equal(applyInput(s, { t: "questHandIn", id: "sq1" }).error, "bagFull");
-  assert.equal(hashStateWithout(s, STRIP), h1);
+  assert.ok(applyInput(s, { t: "questHandIn", id: "sq1" }).ok);
+  assert.equal(s.player.owed.length, 1);
   s.inventory.items.pop();
-  assert.ok(applyInput(s, { t: "questHandIn", id: "sq1" }).ok, "three holes: the three potions fit");
+  step(s, []);
+  assert.equal(s.player.owed, undefined);
   assert.equal(potions(s).length, 40);
 });
 

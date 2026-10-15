@@ -498,8 +498,8 @@ function gavel(g, hx, hy, tx, ty, rage, o) {
   if (rage || o.anim === "windup") { const [gx, gy] = q(0, -T * 2.4); g.save(); g.globalAlpha = rage ? 0.5 : 0.3 + 0.25 * o.w; ellipse(g, gx, gy, 6 + o.w * 2, 4 + o.w * 2, rage ? "#ff5a3a" : "#ffd24a"); g.restore(); }
 }
 
-/** Draw one character frame at the origin. type: 'clerk' | monster id. */
-export function drawFigure(g, type, anim, dir, f) {
+/** Draw one character frame at the origin. type: 'clerk' | monster id. `gear` (R8, gearparts.js makeGear) is only read by the class heroes; absent = the pre-R8 sprite. */
+export function drawFigure(g, type, anim, dir, f, gear = null) {
   const L = LOOKS[type] ?? LOOKS["temp-worker"], o = pose(anim, dir, f); // an unknown type (new content before its look exists) draws as a stand-in instead of breaking the atlas build
   g.save();
   if (anim === "death") {
@@ -509,7 +509,7 @@ export function drawFigure(g, type, anim, dir, f) {
     o.anim = "idle"; o.bob = 0; o.swing = 0; o.lunge = 0;
   }
   if (anim === "idle") o.bob = o.S * (L.breath ?? (HERO_IDS.includes(type) ? 2 : 0.9)); // idle breathing: 2 px bob on the hero and the manager (reads at 1x), 0.9 on the rest
-  if (HERO_IDS.includes(type)) hero(g, type, o);
+  if (HERO_IDS.includes(type)) hero(g, type, o, gear);
   else if (type.startsWith("ally.")) ally(g, type, o);
   else (L.kind === "imp" ? imp : L.kind === "machine" ? machine : L.kind === "director" ? director : human)(g, L, o);
   g.restore();

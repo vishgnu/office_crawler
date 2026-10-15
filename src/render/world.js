@@ -6,6 +6,7 @@ import { statusFlags, drawStatus, SF } from "./draw/effects.js";
 import { keys, FLOOR_WEIGHTS, dirIndex, DIR_VEC, PLAYER_CLASS, heroType, ALLY_ANIMS, FLOOR_VARIANTS, WALL_VARIANTS, ANIMS, PLAYER_ANIMS, DIRS, NPC_FRAMES, bossType } from "./keys.js";
 import { project } from "../ui/camera.js";
 import { WALL, FLOOR, STAIRS_UP, STAIRS_DOWN, DOOR } from "../core/tiles.js";
+import { gearTick, gearTable, gearFrame, warmGear } from "./gearcache.js";
 
 /** Float tile position of an actor (tile + progress towards `next`). Pass `out` to avoid an allocation. */
 export function actorPos(a, out = { x: 0, y: 0 }) {
@@ -68,6 +69,7 @@ export function warmHero(atlas, cls, budgetMs = Infinity) {
 const warmState = new WeakMap();
 const WARM_ORDER = ["idle", "walk", "attack"]; // death is one sprite per kill, a single 4 ms draw: not worth 32 sprites a type
 export function warmFrames(atlas, core, budgetMs = 1.5) {
+  warmGear(atlas, core); // R8: idle and walk of the worn-gear signature, 0.7 ms a frame, paused 240 frames after a floor change (gearcache.js)
   let w = warmState.get(atlas);
   if (!w) warmState.set(atlas, (w = { types: new Set(), queue: [], i: 0, hero: "" }));
   const mons = core.monsters;
@@ -277,7 +279,7 @@ const grab = (d, e, x, y) => {
   return it;
 };
 const byDepth = (a, b) => a.d - b.d;
-const hp = { x: 0, y: 0 }, F = { blocked: null, fw: 0, fh: 0, g: null, cam: null, atlas: null, prev: null, alpha: 1, fx: null, now: 0, env: null, figs: null, hfigs: null, hero: null, htype: PLAYER_CLASS, shadowE: null, light: null, items };
+const hp = { x: 0, y: 0 }, F = { blocked: null, fw: 0, fh: 0, g: null, cam: null, atlas: null, prev: null, alpha: 1, fx: null, now: 0, env: null, figs: null, hfigs: null, gear: null, gframe: 0, hero: null, htype: PLAYER_CLASS, shadowE: null, light: null, items };
 
 function lerpPos(a, o) {
   actorPos(a, posA);
@@ -406,7 +408,11 @@ function tempRing(g, sx, sy, r, z) {
 }
 
 const monFrame = (atlas, type, anim, dir, f) => { const row = F.figs.mon[type][anim][dir]; return row[f] ?? (row[f] = atlas.get(keys.mon(type, anim, dir, f))); };
-const heroFrame = (atlas, anim, dir, f) => { const row = F.hfigs[anim][dir]; return row[f] ?? (row[f] = atlas.get(keys.plr(F.htype, anim, dir, f))); };
+const heroFrame = (atlas, anim, dir, f) => {
+  const row = F.hfigs[anim][dir], e = row[f];
+  if (F.gear) return e ? (e.use = F.gframe, e) : gearFrame(atlas, F.gear, anim, dir, f); // worn gear (R8): the baked sprite of the signature, built on first sight
+  return e ?? (row[f] = atlas.get(keys.plr(F.htype, anim, dir, f)));
+};
 
 /**
  * The hero's body drawn again over the screen-space loot beams (WORLD-R6, N3): beams belong to the ground, so they pass behind the hero, never through him.
@@ -631,6 +637,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
     const e = gi.gold ? atlas.get(keys.loot(GOLD_SIZES[gi.gold < 25 ? 0 : gi.gold < 80 ? 1 : 2])) : atlas.get(keys.loot("item"));
     items.push(grab(gi.tile.x + gi.tile.y + 1 - 0.25, e, pt.x, pt.y));
   }
+  const gst = gearTick(atlas, core); // R8: six identity compares per frame; switches the sprite table of the hero when the worn gear changed
   warmFrames(atlas, core);
   F.prev = prev; F.alpha = alpha; fx.heroType = heroType(core.player.class);
   fx.drawGround(g, cam, atlas, now); out.lights = fx.lights; // light hook: [{x, y, r, colour, intensity}] for the lighting rounds
@@ -639,7 +646,7 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
   // ---- actors: positions first (lights need them), then lit sprites ----
   F.g = g; F.cam = cam; F.atlas = atlas; F.prev = prev; F.alpha = alpha; F.fx = fx; F.now = now; F.env = env; F.light = light;
   F.blocked = c.blocked; F.fw = fw; F.fh = fh;
-  F.figs = figureTable(atlas); F.htype = heroType(core.player.class); F.hfigs = heroFigs(atlas, core.player.class); F.shadowE = atlas.get(keys.fx("shadow"));
+  F.figs = figureTable(atlas); F.htype = heroType(core.player.class); F.gear = gearTable(atlas); F.gframe = gst.frame; F.hfigs = F.gear ? F.gear.rows : heroFigs(atlas, core.player.class); F.shadowE = atlas.get(keys.fx("shadow"));
   lerpPos(hero, hp);
   const mons = core.monsters, nm = mons.length, npcs = core.floor.npcs ?? [], na = nm + npcs.length;
   const slot = (i) => actorOut[i] ?? (actorOut[i] = { id: "", type: "", name: "", sub: "", ai: "", hp: 0, hpMax: 0, dead: false, champ: false, npc: false, boss: false, hid: false, lit: "", x: 0, y: 0, sx: 0, sy: 0, d: 0, pr: 0 });

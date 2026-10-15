@@ -1,7 +1,7 @@
 // R7-4.1 the two new side quests (AC-R-258-1..5): sq4 "The Misfiled Ledger" (item, stash keeper, floors 5 and 6) and sq5 "Slide Deck Surplus" (6 Consultants on floors 5 and 6, vendor).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { newGame, generateFloor, applyInput, config, content, snapshot, npcMarker, enterFloor, questRng, questSpot, rewardSummary, rewardOf } from "../src/core/index.js";
+import { newGame, generateFloor, applyInput, config, content, snapshot, npcMarker, enterFloor, questRng, questSpot, rewardSummary, rewardOf, step } from "../src/core/index.js";
 import { itemFloorOf } from "../src/core/systems/quests.js";
 import { killMonster } from "../src/core/systems/damage.js";
 import { buildGrid, flood } from "../src/core/grid.js";
@@ -192,17 +192,23 @@ test("AC-R-258-4 sq4 pays its gold, experience and potions and no gear; sq5 pays
   }
 });
 
-test("AC-R-258-4 a full bag refuses both hand-ins atomically (nothing paid, quest stays ready) and a retry after room pays the same piece", () => {
+test("AC-R-258-4 / R8-Q1 a full bag pays both hand-ins (gold and xp at once); the piece is owed and then delivered, the same piece as with room", () => {
   for (const id of ["sq4", "sq5"]) {
     const s = newGame(3, { start: "town" }); setQuestStep(s, id, 2); full(s);
-    const snap = JSON.stringify({ g: s.player.gold, x: s.player.xp, inv: s.inventory, q: s.quests, p: s.player.pouch });
-    const r = setQuestStep(s, id, 3);
-    assert.deepEqual([r.ok, r.error], [false, "bagFull"]);
-    assert.equal(JSON.stringify({ g: s.player.gold, x: s.player.xp, inv: s.inventory, q: s.quests, p: s.player.pouch }), snap, `${id}: nothing changed`);
-    assert.equal(s.quests[id].s, "ready");
-    if (id === "sq4") assert.equal(s.player.pouch.length, 1, "the ledger stays in the pouch");
-    s.inventory.items = [];
+    const g = s.player.gold, bag = s.inventory.items.length;
     assert.deepEqual(setQuestStep(s, id, 3), { ok: true });
+    assert.equal(s.quests[id].s, "completed");
+    assert.ok(s.player.gold > g, `${id}: gold paid`);
+    assert.equal(s.inventory.items.length, bag, "the bag is as full as before");
+    assert.ok(s.player.owed.length >= 1, "the reward items are owed");
+    if (id === "sq4") assert.equal(s.player.pouch.length, 0, "the ledger left the pouch");
+    const names = s.player.owed.map((i) => i.name);
+    s.inventory.items = [];
+    step(s, []);
+    assert.equal(s.player.owed, undefined);
+    assert.deepEqual(s.inventory.items.map((i) => i.name), names);
+    const open = newGame(3, { start: "town" }); setQuestStep(open, id, 2); setQuestStep(open, id, 3);
+    assert.deepEqual(open.inventory.items.slice(-names.length).map((i) => i.name), names, "the same items as with room");
   }
 });
 

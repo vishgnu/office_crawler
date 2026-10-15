@@ -70,7 +70,7 @@ test("setQuestStep on a side quest: 0 available, 1 active, 2 ready (the badge en
   for (const bad of [-1, 4, 1.5, "1"]) assert.equal(setQuestStep(s, "sq1", bad).ok, false);
 });
 
-test("setQuestStep(side, 3) goes through the hand-in path: reward granted, pin moved, save legal; a full bag is returned as bagFull and changes nothing", () => {
+test("setQuestStep(side, 3) goes through the hand-in path: reward granted, pin moved, save legal; a full bag no longer blocks it (R8-Q1: the items are owed, the save stays legal)", () => {
   const s = hero(); s.quests.pinned = "sq1"; setQuestStep(s, "sq1", 2);
   const gold = s.player.gold, bag = s.inventory.items.length; s.events.length = 0;
   assert.deepEqual(setQuestStep(s, "sq1", 3), { ok: true });
@@ -84,5 +84,5 @@ test("setQuestStep(side, 3) goes through the hand-in path: reward granted, pin m
   const full = hero(); setQuestStep(full, "sq3", 2);
   for (let y = 0; y < full.inventory.h; y++) for (let x = 0; x < full.inventory.w; x++) if (!full.inventory.items.some((o) => o.x <= x && x < o.x + o.w && o.y <= y && y < o.y + o.h)) full.inventory.items.push({ id: `f${x}_${y}`, base: "x", name: "x", kind: "consumable", rarity: "normal", w: 1, h: 1, x, y });
   const r = setQuestStep(full, "sq3", 3);
-  assert.equal(r.ok, false); assert.equal(r.error, "bagFull"); assert.equal(full.quests.sq3.s, "ready");
+  assert.deepEqual(r, { ok: true }); assert.equal(full.quests.sq3.s, "completed"); assert.ok(full.player.owed.length >= 1);
 });

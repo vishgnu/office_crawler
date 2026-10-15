@@ -300,7 +300,7 @@ test("[R7-pouch] random sequences of real operations never break the invariant, 
 });
 
 // =============================================================================================== hand-in atomicity
-test("[R7-handin] a bag that fits the reward exactly accepts it; one cell fewer is refused with the state untouched and the quest ready; freeing the cell completes it", () => {
+test("[R7-handin] a bag that fits the reward exactly accepts it; one cell fewer is refused with the state untouched and the quest ready; freeing the cell completes it", { todo: "R8-Q1: a full bag no longer refuses a hand-in (the items are owed); replaced by test/r8-core1.test.js" }, () => {
   for (const [seed, cls] of [[1, "facilities-manager"], [2, "sales-rep"], [3, "it-wizard"], [4, "facilities-manager"]]) for (const id of ["sq1", "sq2", "sq3"]) {
     const s = hero(seed, cls);
     if (id === "sq2") toBadge(s); else { accept(s, id); setQuestStep(s, id, 2); }
@@ -388,7 +388,7 @@ test("[R7-handin] reward rerolls versus requirements: a hero of level 8 with the
   assert.ok(bad.length <= 12, `${bad.length} of 1200 unwearable rewards, first: ${bad.slice(0, 3).join(" | ")}`);
 });
 
-test("[R7-handin] the reward does not depend on how the hero stands when the bag was full: refused, then a bigger bag, gives the same gear as an immediate hand-in", () => {
+test("[R7-handin] the reward does not depend on how the hero stands when the bag was full: refused, then a bigger bag, gives the same gear as an immediate hand-in", { todo: "R8-Q1: a full bag no longer refuses a hand-in (the items are owed); replaced by test/r8-core1.test.js" }, () => {
   const a = hero(41); accept(a, "sq3"); setQuestStep(a, "sq3", 2); talk(a, GIVER.sq3);
   const b = structuredClone(a);
   fillBag(a); assert.equal(applyInput(a, { t: "questHandIn", id: "sq3" }).error, "bagFull");

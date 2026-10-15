@@ -324,7 +324,7 @@ test("[R74-sq4] the ledger: one on the floor chosen by questRng from {5,6} for 1
   }
 });
 
-test("[R74-sq4] sq4 and sq2 together: the pouch holds both items at once with a full bag, each readies only its own quest, and the pouch is empty again after each hand-in", () => {
+test("[R74-sq4] sq4 and sq2 together: the pouch holds both items at once with a full bag, each readies only its own quest, and the pouch is empty again after each hand-in", { todo: "R8-Q1: a full bag no longer refuses a hand-in (the items are owed); replaced by test/r8-core1.test.js" }, () => {
   const s = hero(61);
   accept(s, "sq2"); accept(s, "sq4");
   for (const [id, fl] of [["sq2", itemFloorOf(61, "sq2")], ["sq4", itemFloorOf(61, "sq4")]]) {
@@ -474,7 +474,7 @@ test("[R74-sq5] a run that never accepts is untouched by the revive and the new 
   }
 });
 
-test("[R74-sq5] the reward: exactly one magic ring, amulet or belt at item level gearFloor x ilvlPerDepth, no potions; same item for the same seed and class, the class affix tag differs per class; refused on a full bag with the state untouched", () => {
+test("[R74-sq5] the reward: exactly one magic ring, amulet or belt at item level gearFloor x ilvlPerDepth, no potions; same item for the same seed and class, the class affix tag differs per class; refused on a full bag with the state untouched", { todo: "R8-Q1: a full bag no longer refuses a hand-in (the items are owed); replaced by test/r8-core1.test.js" }, () => {
   const items = {};
   for (const cls of ["facilities-manager", "sales-rep", "it-wizard"]) for (let seed = 1; seed <= 60; seed++) {
     const s = hero(seed, cls);
@@ -554,7 +554,7 @@ test("[R74-giver] the pin and the map marker with two quests of one giver: compl
   assert.deepEqual(mapMarkers(s).map((m) => [m.quest, m.kind]), [["sq5", "npc"]]);
 });
 
-test("[R74-giver] two quests handed in with ONE bag that fits only one reward: the first is paid, the second refused whole, then paid after freeing space; no duplicate or lost reward", () => {
+test("[R74-giver] two quests handed in with ONE bag that fits only one reward: the first is paid, the second refused whole, then paid after freeing space; no duplicate or lost reward", { todo: "R8-Q1: a full bag no longer refuses a hand-in (the items are owed); replaced by test/r8-core1.test.js" }, () => {
   const s = hero(82);
   accept(s, "sq1"); accept(s, "sq5");
   setQuestStep(s, "sq1", 2); setQuestStep(s, "sq5", 2);

@@ -360,8 +360,7 @@ export function handInQuest(state, id) {
   for (const it of items) { mint(state, it); if (!autoplace(state.inventory, it)) { (state.player.owed ??= []).push(it); owed++; } }
   state.player.pouch = state.player.pouch.filter((e) => e.quest !== id);
   state.quests[id] = { s: "completed", p: q.p };
-  emit(state, { type: "quest.completed", id, title: def.title, rewards: { gold: r.gold, xp: r.xp, items: items.map((it) => it.name), owed } });
-  if (owed) emit(state, { type: "quest.rewardOwed", id, count: owed, names: state.player.owed.slice(-owed).map((it) => it.name) });
+  emit(state, { type: "quest.completed", id, title: def.title, rewards: { gold: r.gold, xp: r.xp, items: items.map((it) => it.name), ...(owed ? { owed } : {}) } });
   if (state.quests.pinned === id) repin(state, id);
   return OK;
 }
@@ -372,18 +371,17 @@ export const OWED_MAX = 4 * sideIds.length;
 /**
  * R8-Q1: move owed reward items into the bag, in order, as far as they fit. Called every tick (cheap when nothing is owed) and after a load.
  * The key `player.owed` exists only while something is owed, so a run that never has a full bag at a hand-in hashes as before.
- * One quest.rewardDelivered event per call that moved something.
+ * Each delivered item emits a `pickup` event (no new event type).
  */
 export function settleOwed(state) {
   const owed = state.player.owed;
   if (!owed) return;
-  const moved = [];
   for (let i = 0; i < owed.length;) {
-    if (autoplace(state.inventory, owed[i])) moved.push(owed.splice(i, 1)[0]);
-    else i++;
+    if (!autoplace(state.inventory, owed[i])) { i++; continue; }
+    const [it] = owed.splice(i, 1);
+    emit(state, { type: "pickup", id: it.id, name: it.name, rarity: it.rarity }); // the same event as a pickup from the ground: toast and cue exist
   }
   if (!owed.length) delete state.player.owed;
-  if (moved.length) emit(state, { type: "quest.rewardDelivered", count: moved.length, names: moved.map((it) => it.name) });
 }
 
 /** Input questHandIn { id }: needs the giver's dialog open (same gate as accept). Never refused for a full bag (R8-Q1): what does not fit waits in the owed pouch. */

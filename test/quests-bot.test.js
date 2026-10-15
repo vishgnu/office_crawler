@@ -27,7 +27,7 @@ test("AC-R-256-2 Lobby: before the first descent the bot has accepted all five s
   assert.ok(s.quests.main.m.memo, "the memo is reported as read");
 });
 
-test("AC-R-247-3 bagFull: a bag full of gear is sold, the hand-in is retried and completes", () => {
+test("AC-R-247-3 / R8-Q1 full bag of gear: the hand-in completes at once, nothing is lost (the reward is in the bag or owed)", () => {
   const s = newGame(2, { start: "town" }), mem = createBotMemory({ depth: 9 });
   s.quests.sq2 = { s: "ready", p: 1 }; s.player.pouch.push({ id: "qi-sq2", quest: "sq2" });
   s.quests.sq1 = { s: "completed", p: 8 }; s.quests.sq3 = { s: "completed", p: 1 };
@@ -35,21 +35,23 @@ test("AC-R-247-3 bagFull: a bag full of gear is sold, the hand-in is retried and
   for (let i = 0; i < 40; i++) { const it = mint(s, makeItem("hole-punch-hammer")); if (!autoplace(s.inventory, it)) break; mem.noEquip.add(it.id); }
   assert.ok(s.inventory.items.length > 3);
   drive(s, mem, 6000, (x) => x.quests.sq2.s === "completed" || x.depth > 0);
-  assert.ok(mem.q.bagFullRounds >= 1, "the first hand-in was refused with bagFull");
+  assert.equal(mem.q.bagFullRounds, 0, "nothing is refused any more");
   assert.equal(s.quests.sq2.s, "completed");
   assert.equal(s.player.pouch.length, 0);
+  const all = [...s.inventory.items, ...(s.player.owed ?? []), ...Object.values(s.equipment), ...s.belt].filter(Boolean);
+  assert.equal(new Set(all.map((i) => i.id)).size, all.length, "no duplicate ids");
 });
 
-test("AC-R-247-3 bagFull: a bag with no gear in it is emptied into the stash, then the hand-in completes", () => {
+test("AC-R-247-3 / R8-Q1 a bag of potions only: the hand-in completes at once, no stash round is needed", () => {
   const s = newGame(3, { start: "town" }), mem = createBotMemory({ depth: 9 });
   s.quests.sq1 = { s: "completed", p: 8 }; s.quests.sq2 = { s: "completed", p: 1 }; s.quests.sq3 = { s: "ready", p: 1 };
   s.inventory.items = [];
   for (let i = 0; i < 80; i++) { if (!autoplace(s.inventory, mint(s, makeItem("lukewarm-coffee")))) break; }
   s.belt = s.belt.map(() => null);
   drive(s, mem, 9000, (x) => x.quests.sq3.s === "completed" || x.depth > 0);
-  assert.ok(mem.q.bagFullRounds >= 1, "the first hand-in was refused with bagFull");
+  assert.equal(mem.q.bagFullRounds, 0, "nothing is refused any more");
   assert.equal(s.quests.sq3.s, "completed");
-  assert.ok(s.stash.items.length > 0, "something went to the stash");
+  assert.equal(s.stash.items.length, 0, "nothing had to go to the stash");
 });
 
 for (const cls of content.classes.map((c) => c.id)) {

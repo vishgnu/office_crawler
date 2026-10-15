@@ -66,6 +66,26 @@ export const vector = {
       try { fn(g, sc); } finally { restoreInkScale(k0); setTexRes(r0); }
     }; // the on-screen zoom follows from the rim width (rim = 2 screen px)
     const atlas = createAtlas(scale, { rim, hc });
+    /**
+     * Bake one hero frame wearing gear (R8, ADR-0008): the class painter runs with the gear hooks into a fresh canvas of the atlas entry size and anchor, with the
+     * same rim bake, so blit / flash / shade / outline treat it like any hero entry. Called by render/gearcache.js on first sight of a frame of a signature.
+     * A part painter that throws is caught in gearHook; the frame is then redrawn without that slot.
+     */
+    atlas.bakeHero = (cls, anim, d, f, gear) => {
+      const img = document.createElement("canvas");
+      img.width = Math.ceil(FIG_W * scale); img.height = Math.ceil(FIG_H * scale);
+      const g = img.getContext("2d");
+      g.scale(scale, scale);
+      lazyDraw((gg, sc) => figureWithRim(gg, sc, FIG_W, FIG_H, rim, palette.rims[cls], (tg) => {
+        for (let pass = 0; pass < 8; pass++) {
+          gear.failed.length = 0;
+          tg.save(); tg.translate(FIG_FX, FIG_FY); drawFigure(tg, cls, anim, d, f, gear); tg.restore();
+          if (!gear.failed.length) break;
+          tg.save(); tg.setTransform(1, 0, 0, 1, 0, 0); tg.clearRect(0, 0, tg.canvas.width, tg.canvas.height); tg.restore(); // a slot painter threw: that slot is dead now, draw again without it
+        }
+      }))(g, scale);
+      return { key: `gear:${cls}:${anim}:${d}:${f}`, img, w: img.width / scale, h: img.height / scale, ox: FIG_FX, oy: FIG_FY, sil: null };
+    };
     const steps = [];
     for (const theme of Object.keys(content.themes)) {
       steps.push(() => {

@@ -3,6 +3,7 @@
 // Identity must survive at ~60 px: FM = wide, hard hat, hi-vis vest, a long wrench; SR = slim, pink suit, headset, blonde quiff, white shoes;
 // IT = hunched purple hoodie, cyan glowing laptop, dark spikes, round glasses.
 import { INK, limb, ellipse, fillPoly, line, shade, ink } from "../../draw/shapes.js";
+import { gearHook, worn } from "../../gearparts.js";
 
 export const HERO_IDS = ["facilities-manager", "sales-rep", "it-wizard"];
 /** Accent colour per class (UI tokens --class-facilities / --class-sales / --class-it). */
@@ -68,20 +69,56 @@ function laptop(g, x, y, open, front, pulse) {
   fillPoly(g, [[x - w / 2 - 1.5, y], [x + w / 2 + 1.5, y], [x + w / 2 + 3, y + 2.6], [x - w / 2 - 3, y + 2.6]], "#aeb8cf", INK, 1.2);
 }
 
-/** Painters share one signature: (g, id, o) with o from characters.js pose(). */
-export function hero(g, id, o) {
+/**
+ * Painters share one signature: (g, id, o) with o from characters.js pose(). `G` (R8, ADR-0008) is the optional gear state from gearparts.js makeGear():
+ * absent or with nothing worn, no hook does anything and the draw is the pre-R8 sprite call for call (test/render-r8-gear.test.js).
+ */
+export function hero(g, id, o, G = null) {
   const K = SPEC[id], { fx, fy, bob, swing, lunge, a } = o, front = fy > -0.2, sc = K.sc, wide = K.wide;
   const isFM = id === "facilities-manager", isSR = id === "sales-rep", isIT = id === "it-wizard";
   const lx = fx * lunge * 5, ly = fy * lunge * 2.5, hunch = isIT ? 2.4 : 0;
   const hipY = -K.legH * sc + bob * 0.4, shY = hipY - K.torsoH * sc + (isIT ? 2 : 0);
   const side = fx >= 0 ? -1 : 1, pulse = 0.5 + 0.5 * Math.sin((o.f / o.n) * Math.PI * 2 * (o.anim === "idle" ? 1 : 2));
   const hw = 7.5 * sc * wide; // torso half width
+  // near arm + the class item: hand and item-tip positions (numbers only; drawn further down). Hoisted so gear behind the body can use them.
+  const nx = -side * (hw - 0.5) + lx, ny = shY + 3 + ly;
+  const hxx = -side * (hw + 1.6) + lx, hyy = hipY - 5 + ly;
+  let hx3 = hxx, hy3 = hyy, tx, ty;
+  const ahead = (k) => fx * k, adown = (k) => fy * k;
+  if (isFM) {
+    // wrench: idle shouldered, walk bobs, attack: raise, slam, recover; cast: overhead ground slam pose
+    if (o.anim === "cast") { hx3 = hxx + fx * 6; hy3 = shY - 2 - 5 * o.cast + ly; tx = hx3 + fx * 3 - side * 1; ty = hy3 - 12 - 2 * o.cast; }
+    else if (o.anim === "attack") {
+      if (a < 0.34) { const t = a / 0.34; tx = hxx + (-side) * 4 - fx * 3 * t; ty = hyy - 10 - 20 * t; }
+      else if (a < 0.75) { const t = (a - 0.34) / 0.41; tx = hxx + fx * 20 * t - side * 2; ty = hyy - 30 + 31 * t + fy * 10 * t; }
+      else { const t = (a - 0.75) / 0.25; tx = hxx + fx * 20 * (1 - t) * 0.6; ty = hyy - 2 + 8 * t; }
+    } else { tx = hxx - side * 6 + fx * 2; ty = hyy - 24 + (o.anim === "walk" ? swing * 1.8 : o.bob * 0.6); }
+  } else if (isSR) {
+    if (o.anim === "cast") { hx3 = hxx + fx * 7; hy3 = shY - 3 - 8 * o.cast + ly; tx = hx3; ty = hy3 - 4; }
+    else if (o.anim === "attack") { const t = Math.sin(Math.min(1, a / 0.75) * Math.PI * 0.6); hx3 = hxx + fx * 12 * t; hy3 = hyy - 12 * t + fy * 6 * t; tx = hx3; ty = hy3; }
+    else { hx3 = hxx; hy3 = hyy - 2 + (o.anim === "walk" ? swing * 1.5 : 0); tx = hx3; ty = hy3; }
+  } else {
+    if (o.anim === "cast") { hx3 = hxx + fx * 8; hy3 = shY - 4 - 10 * o.cast + ly; }
+    else if (o.anim === "attack") { const t = Math.sin(Math.min(1, a / 0.75) * Math.PI * 0.6); hx3 = hxx + fx * 14 * t; hy3 = hyy - 14 * t + fy * 6 * t; }
+    else { hx3 = hxx; hy3 = hyy - 4 + (o.anim === "walk" ? swing * 1.5 : o.bob * 0.6); }
+    tx = hx3; ty = hy3;
+  }
+  // anchors for the gear parts (only built when gear is worn)
+  const wornW = worn(G, "weapon"), behind = !front && o.anim !== "attack" && o.anim !== "cast";
+  const A = G ? { id, sc, front, fx, fy, side, lx, ly, hipY, shY, hw, wide, behind, skin: K.skin, shoeW: K.shoeW, anim: o.anim, f: o.f, n: o.n, near: [hx3, hy3], tip: [tx, ty], far: null, head: null, leg: null, two: !!wornW?.two, wdir: null, hook: "" } : null;
+  if (A) { // weapon direction: along hand -> tip for the wrench; upright (swinging forward in attack) for the card and laptop classes
+    let wx = tx - hx3, wy = ty - hy3;
+    if (Math.hypot(wx, wy) < 2) { if (o.anim === "attack" && a > 0.2) { wx = fx * 0.9; wy = -0.3 + fy * 0.4; } else { wx = fx * 0.4; wy = -1; } }
+    const wl = Math.hypot(wx, wy) || 1; A.wdir = [wx / wl, wy / wl];
+  }
   // legs
   for (const k of [-1, 1]) {
     const ph = swing * k, ftx = k * 3.8 * sc * (isFM ? 1.25 : 1) + fx * 6 * ph, fty = fy * 3 * ph - Math.max(0, ph) * 2;
     limb(g, k * 3.6 * sc * (isFM ? 1.3 : 1) + lx * 0.2, hipY, ftx, fty - 1, k < 0 ? shade(K.pants, -0.36) : K.pants, (isFM ? 6.4 : isSR ? 4.4 : 5.2) * sc);
+    if (A) { A.leg = { x: ftx, y: fty, k }; gearHook(g, "legs", G, A); }
     ellipse(g, ftx + fx * 1.4, fty, K.shoeW * sc, 2.5 * sc, K.shoe, INK, 1.3);
     if (isIT) line(g, ftx - K.shoeW * 0.8 + fx * 1.4, fty + 1.9, ftx + K.shoeW * 0.8 + fx * 1.4, fty + 1.9, "#33e0ff", 1.3);
+    if (A) gearHook(g, "feet", G, A);
   }
   // far arm behind the torso (IT: the laptop arm)
   const sleeve = isFM ? K.shirt : isSR ? "#e0457b" : K.shirt;
@@ -91,6 +128,7 @@ export function hero(g, id, o) {
   else if (isSR && o.anim === "cast") farHand = [side * 9 + lx + fx * 6, shY - 4 - 6 * o.cast];
   else farHand = [side * (hw + 1.5) + lx - fx * 1, hipY - 3 + swing * 2 * -side];
   farTo(farHand[0], farHand[1]);
+  if (A) { A.far = farHand; gearHook(g, "weaponBack", G, A); if (!front) gearHook(g, "offhand", G, A); } // behind the torso: a weapon carried at the back, an off-hand seen from behind
   // torso
   const tl = -hw, tr = hw, taper = isSR ? 2.2 : isFM ? -0.5 : 0.5;
   const torso = (col, edge = INK, lw = 1.7) => fillPoly(g, [[tl + lx, shY + ly], [tr + lx, shY + ly], [tr - taper + lx * 0.5, hipY + 1], [tl + taper + lx * 0.5, hipY + 1]], col, edge, lw);
@@ -136,11 +174,14 @@ export function hero(g, id, o) {
     }
   }
   line(g, tl + lx + 1, shY + ly + 1.2, tr + lx - 1, shY + ly + 1.2, shade(isFM ? "#ff8a1f" : isSR ? "#e0457b" : K.shirt, 0.4), 1.2);
+  if (A) gearHook(g, "torso", G, A);
   // lanyard + badge for everyone but the FM (keys at the belt) -- IT cord pair
-  // laptop (IT) is held on the far side, in front of the torso edge
-  if (isIT) laptop(g, farHand[0] + (front ? side * 0 : 0), farHand[1] - 1, 1, front, pulse);
+  // laptop (IT) is held on the far side, in front of the torso edge; a worn off-hand item or a two-handed weapon replaces it
+  if (isIT && !worn(G, "offhand") && !wornW?.two) laptop(g, farHand[0] + (front ? side * 0 : 0), farHand[1] - 1, 1, front, pulse);
+  if (A && front) gearHook(g, "offhand", G, A);
   // head
   const hr = K.head * 1.1, hx = lx + fx * 2.2 + fx * hunch, hy = shY - hr + 3 + ly + bob * 0.5 + fy * 0.8 + (isIT ? 3 : 0);
+  if (A) A.head = { x: hx, y: hy, r: hr };
   limb(g, lx + fx * 1.2, shY + 2 + ly, hx, hy + hr * 0.6, K.skin, isFM ? 6 : 4); // neck
   if (isIT) { // hood bunched behind and around the head
     ellipse(g, hx - fx * 1.5, hy + 1.4, hr + 3.6, hr + 2.2, shade(K.shirt, -0.3), INK, 1.5);
@@ -205,37 +246,16 @@ export function hero(g, id, o) {
     }
   }
   g.beginPath(); g.arc(hx, hy, hr - 1, Math.PI * 1.05, Math.PI * 1.55); g.lineWidth = 1.8; g.strokeStyle = shade(K.skin, 0.5); g.stroke(); // rim light
+  if (A) gearHook(g, "head", G, A);
 
-  // near arm + the class item
-  const nx = -side * (hw - 0.5) + lx, ny = shY + 3 + ly;
-  const hxx = -side * (hw + 1.6) + lx, hyy = hipY - 5 + ly;
-  let hx3 = hxx, hy3 = hyy, tx, ty;
-  const ahead = (k) => fx * k, adown = (k) => fy * k;
-  if (isFM) {
-    // wrench: idle shouldered, walk bobs, attack: raise, slam, recover; cast: overhead ground slam pose
-    if (o.anim === "cast") { hx3 = hxx + fx * 6; hy3 = shY - 2 - 5 * o.cast + ly; tx = hx3 + fx * 3 - side * 1; ty = hy3 - 12 - 2 * o.cast; }
-    else if (o.anim === "attack") {
-      if (a < 0.34) { const t = a / 0.34; tx = hxx + (-side) * 4 - fx * 3 * t; ty = hyy - 10 - 20 * t; }
-      else if (a < 0.75) { const t = (a - 0.34) / 0.41; tx = hxx + fx * 20 * t - side * 2; ty = hyy - 30 + 31 * t + fy * 10 * t; }
-      else { const t = (a - 0.75) / 0.25; tx = hxx + fx * 20 * (1 - t) * 0.6; ty = hyy - 2 + 8 * t; }
-    } else { tx = hxx - side * 6 + fx * 2; ty = hyy - 24 + (o.anim === "walk" ? swing * 1.8 : o.bob * 0.6); }
-  } else if (isSR) {
-    if (o.anim === "cast") { hx3 = hxx + fx * 7; hy3 = shY - 3 - 8 * o.cast + ly; tx = hx3; ty = hy3 - 4; }
-    else if (o.anim === "attack") { const t = Math.sin(Math.min(1, a / 0.75) * Math.PI * 0.6); hx3 = hxx + fx * 12 * t; hy3 = hyy - 12 * t + fy * 6 * t; tx = hx3; ty = hy3; }
-    else { hx3 = hxx; hy3 = hyy - 2 + (o.anim === "walk" ? swing * 1.5 : 0); tx = hx3; ty = hy3; }
-  } else {
-    if (o.anim === "cast") { hx3 = hxx + fx * 8; hy3 = shY - 4 - 10 * o.cast + ly; }
-    else if (o.anim === "attack") { const t = Math.sin(Math.min(1, a / 0.75) * Math.PI * 0.6); hx3 = hxx + fx * 14 * t; hy3 = hyy - 14 * t + fy * 6 * t; }
-    else { hx3 = hxx; hy3 = hyy - 4 + (o.anim === "walk" ? swing * 1.5 : o.bob * 0.6); }
-    tx = hx3; ty = hy3;
-  }
+  // near arm + the class item (positions were computed above, before the legs)
   limb(g, nx, ny, hx3, hy3, sleeve, isFM ? 5.8 : isSR ? 3.9 : 4.8);
-  if (isFM) wrench(g, hx3, hy3, tx, ty);
+  if (isFM) { if (!wornW) wrench(g, hx3, hy3, tx, ty); }
   else if (isSR) {
     if (o.anim === "cast") { // a fan of business cards held overhead
       for (let k = -2; k <= 2; k++) card(g, hx3 + k * 4.6, hy3 - 7 - Math.abs(k) * -1.4 - 2, k * 0.34, 1.15);
-    } else if (o.anim === "attack") { stapler(g, hx3 + 2, hy3 - 1, Math.atan2(fy * 0.5, fx || 0.6) * 0.8 - 0.1 * (fx < 0 ? -1 : 1)); if (a > 0.3) for (let k = 0; k < 2; k++) card(g, hx3 + fx * (9 + k * 7), hy3 - 3 - k * 3, 0.5 + k, 0.95, 0.9 - k * 0.3); }
-    else { stapler(g, hx3 + fx * 2 + 0.5, hy3 - 0.5, fx < 0 ? 3.3 : -0.1 + swing * 0.1); card(g, hx3 + side * -4 - fx * 3, hy3 - 6, -0.4 + Math.sin((o.f / o.n) * 6.28) * 0.3, 1); }
+    } else if (o.anim === "attack") { if (!wornW) stapler(g, hx3 + 2, hy3 - 1, Math.atan2(fy * 0.5, fx || 0.6) * 0.8 - 0.1 * (fx < 0 ? -1 : 1)); if (a > 0.3) for (let k = 0; k < 2; k++) card(g, hx3 + fx * (9 + k * 7), hy3 - 3 - k * 3, 0.5 + k, 0.95, 0.9 - k * 0.3); }
+    else if (!wornW) { stapler(g, hx3 + fx * 2 + 0.5, hy3 - 0.5, fx < 0 ? 3.3 : -0.1 + swing * 0.1); card(g, hx3 + side * -4 - fx * 3, hy3 - 6, -0.4 + Math.sin((o.f / o.n) * 6.28) * 0.3, 1); }
   } else { // IT: free hand, glowing; cast = keycaps orbit overhead
     if (o.anim === "cast" || o.anim === "attack") {
       const k = o.anim === "cast" ? o.cast : Math.sin(Math.min(1, a / 0.75) * Math.PI * 0.6);
@@ -248,9 +268,10 @@ export function hero(g, id, o) {
     ellipse(g, hx3, hy3, 2.8, 2.8, K.skin, INK, 1.2);
     if (o.anim === "idle" || o.anim === "walk") { ellipse(g, hx3, hy3 - 0.3, 2.8, 2.8, K.skin, INK, 1.2); }
   }
+  if (A) gearHook(g, "weaponFront", G, A);
   if (!isFM) ellipse(g, hx3, hy3, isSR ? 2.5 : 2.8, isSR ? 2.5 : 2.8, K.skin, INK, 1.2);
   else ellipse(g, hx3, hy3, 3.4, 3.4, K.skin, INK, 1.2);
-  
+  if (A) gearHook(g, "hands", G, A);
 }
 
 /** Summoned allies: the Summer Intern (small, lanyard, oversized mug) and the Traffic Cone decoy. Idle/walk/attack/death like the monsters. */
