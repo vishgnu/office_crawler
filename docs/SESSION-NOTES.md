@@ -317,3 +317,4 @@ Each round also improves the harness (learnings → agent definitions/rules), as
 - 2026-10-15T22:28Z R11 quiet verify green: unit 1366/0 x3, e2e 39/39 scripts, bench plain median 58.1, geared hero 59.0, BENCH_GEAR geared 58.1. docs/shots untouched by the run.
 - 2026-10-15T22:28Z Launched R11 final proxy acceptance (45 min box) and benchmark B1 on 0.6.0 step 1 (run dir harness/benchmarks/runs/B1-0.6.0, node_modules symlink — do not commit the symlink).
 - 2026-10-15T22:29Z B1 0.6.0 step 1 (81.8k, 1.0 min): 7 questions, readiness 9->18 in separate steps, 15 ACs, axe-core named. Caveat: spec folded the 0.5.0 run's findings in — comparison not like for like. Step 2 implementer launched.
+- 2026-10-15T22:37Z B1 on 0.6.0 complete: 343.0k, 8.5 min; ACs 15/15 verified (0.5.0: 14/15), visual 29/40 (same), 8 findings 0 serious; no regression; caveat spec read the 0.5.0 run. SUMMARY.md + results.md row written.
