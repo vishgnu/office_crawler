@@ -1,22 +1,19 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
-_Last updated 2026-10-15T19:39:06Z. Keep this block current after every step; the log below is history._
+_Last updated 2026-10-15T22:44:48Z. Keep this block current after every step; the log below is history._
 
-**Where we are:** R8-T closed (accepted with follow-ups, visual 37/35 36/34, quiet verify green, retro done). R11 running: R11-0 test infra, R11-1 delta review, R11-2 motion/visual; then R11-3 regression sweep, fix round, verify, final acceptance, retro. Then END-OF-PROJECT TASK. Harness 0.5.1 released (user go).
+**Where we are:** PROJECT DONE (2026-10-16). R11 accepted with follow-ups, retro done (round-11.json), post-mortem done, harness 0.6.0 released, benchmark B1 re-run (no regression). Waiting for the human review.
 
 **In flight (check the files, not memory):**
-- **R11 in flight** (overall test and polish, harness 0.5.1). Plan: `docs/product/50-plan.md` "Round R11".
-- R11-FIX-UI (implementer): review R11-01..R11-10 + visual M-1, U-1..U-4. Progress: `docs/reviews/R11-fix-ui-progress.md`.
-- R11-3 regression sweep (test-engineer, frozen worktree `scratchpad/wt-r11` at 6cbcb4f): real play floors 1-4 per class, full runs, 10 Hz click spam, save/load, keyboard. Report: `docs/reviews/R11-adversarial.md`; copy its `e2e/r11-*` back from the worktree.
-- Done in R11: R11-0 screenshots default outside the repo + lint test; R11-1 delta code review; R11-2 visual + motion review PASS (38/36, 37/35); R11-FIX-RENDER (two-hand carry, attack poses, hit nudge, floaters, depth ties).
+- Nothing. No agent is running.
 
-**Next steps, in order (DEADLINE 2026-10-16 04:00 UTC = 06:00 CEST, user 20:57Z; bugs may stay open, data + retro + harness version first):**
-1. ~22:00 R11-FIX2-CORE hands back (time-boxed; F-01 may be deferred). Commit.
-2. ~22:00-23:15 quiet verify (unit x2, run-all, bench 5+3). Then final proxy acceptance (short, ~45 min) and harness-retro R11 right after.
-3. ~00:30 harness-reviewer post-mortem (whole project). ~01:30 new harness version (fold circle-02 answers, learnings, post-mortem proposals incl. deny Bash(git:*) for build agents), update ALL harness files, STATUS, README, CHANGELOG, both portals, REPORT.md. ~02:30 benchmark B1 re-run on the new version. 03:30 final portals, notes, push. Open bugs -> backlog in 50-plan.md.
+**Next steps, in order:**
+1. Human review: harness/STATUS.md "Version 0.6.0 and what waits for human review" (hooks install, gate wording, Opus/human anchor, deferred tools, repo split).
+2. Then the user cleans up the repos (harness repo + one repo per project) and continues with the harness separately.
+3. Open product backlog for later: docs/product/50-plan.md "Open product backlog at project end".
 
 **END-OF-PROJECT TASK** (below).
 
-**END-OF-PROJECT TASK (user, 2026-10-14):** when the game is done: harness-reviewer post-mortem, then a NEW HARNESS VERSION that folds in circle-2 answers (harness/docs/product/circles/circle-02.md) and everything learned; update ALL harness files and ALL generated HTML (both portals, REPORT.md, STATUS, README, CHANGELOG, benchmarks re-run) with the latest data. The user then cleans up the repos and continues with the harness separately.
+**END-OF-PROJECT TASK (user, 2026-10-14) — DONE 2026-10-16:** when the game is done: harness-reviewer post-mortem, then a NEW HARNESS VERSION that folds in circle-2 answers (harness/docs/product/circles/circle-02.md) and everything learned; update ALL harness files and ALL generated HTML (both portals, REPORT.md, STATUS, README, CHANGELOG, benchmarks re-run) with the latest data. The user then cleans up the repos and continues with the harness separately.
 
 **Standing rules:** record user messages verbatim (00-brief.md + metrics/human-log.jsonl); ledger row per hand-back
 (`docs/metrics/ledger.jsonl`); commit and push after every step; file ownership per parallel package; run the suite yourself
@@ -322,3 +319,4 @@ Each round also improves the harness (learnings → agent definitions/rules), as
 - [retro R11] WORKED: the delta review ran first and found 1 major + 6 minor on 823 k tokens that R8-T never reviewed (L-049 partly); the real-input sweep found 4 defects that bot parity 72/72 could not (L-059); L-042 is fixed (run-all left 949 docs/shots files identical); 0 stopped agents and no git slip in R11 (L-032, L-033); visual 38/36, 37/35 and a clean quiet verify (1366 unit x3, 39 e2e scripts); R11 cost 1796.9 k tokens, 342 min wall.
 - [retro R11] HURT: four heavy agents at once gave load about 25 (FIX-UI 135 min for 308 k, a killed unit run: L-057); the four R11 fix packages (845.5 k, 47 %) got no delta review and no 'skipped' row (L-049); M-1 passed 147 reachability checks in the quiet HUD (L-058); the RESUME block was stale again after the 19:39Z rewrite and a 19:38Z instruction had no briefing, added late (L-060, L-037); F-01 floor 2 balance deferred.
 - [retro R11] HARNESS CHANGED: round-11.json; new L-057..L-061 (applied in the 0.6.0 part A wording); verified L-008, L-011, L-016, L-027, L-042, L-047, L-054; closed L-022, L-053; L-033 applied; still reopened L-019, L-020, L-032, L-037, L-049; INDEX counts 61 learnings (35 verified, 17 applied, 2 open, 5 reopened, 2 closed). Proposals for the orchestrator are in the retro return.
+- 2026-10-15T22:44Z END-OF-PROJECT TASK done: retro R11 (140.0k), STATUS/README/CHANGELOG/VERSION 0.6.0, RESUME + STATE refreshed, REPORT.md (13 rounds, 141 rows), both portals rebuilt (tests 63/63, tools 8/8). L-049 'reviewed: skipped' row added for the R11 fix packages. Waiting for human review.

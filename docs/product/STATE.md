@@ -2,7 +2,7 @@
 
 _Updated 2026-10-15 by the orchestrator._
 
-**Phase: Build, last round. R1–R8, G and R8-T accepted (PROXY); R11 (overall test and polish) in flight; then the end-of-project task.** R9–R10 and R12 dropped by the customer. Harness 0.4.0 (R1–R6, G), 0.5.0 (R7–R8), 0.5.1 (R8-T, R11). Experiments: docs/harness-experiments.md.
+**Phase: Done (2026-10-16). R1–R8, G, R8-T and R11 accepted (PROXY); post-mortem and harness 0.6.0 done; open bugs in the backlog (50-plan.md, end).** R9–R10 and R12 dropped by the customer. Harness 0.4.0 (R1–R6, G), 0.5.0 (R7–R8), 0.5.1 (R8-T, R11). Experiments: docs/harness-experiments.md.
 
 ## Open questions
 - None. Q1 (IP closeness) decided by the customer; Q2–Q7 answered (proxy, confirmed by the customer).

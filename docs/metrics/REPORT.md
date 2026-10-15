@@ -18,11 +18,11 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R7 | 29 | 5941.5 | 1105.7 | 5766.3 | 1154 | inGame 35/34, charselect null, uiTreeSlotsPause 35/34, note [appeal, craft]; R7 first review iterate: in-game 35/33, UI 35/32; after the visual fix round R7b pass 35/34 both; R6 was 35/34 | adversarial: 10; codeReview: 16; visualReview: 25; customer: 8; escaped: 0; escapedNote: none shipped; the R7 acceptance feel items (bag full, early deaths) are open for R8 |
 | R8 | 17 | 3375.6 | 699.7 | 3238.9 | 1295 | inGame 36/34, uiTreeSlotsPause 35/34, note [appeal, craft]; first review pass, no iterate; R7 first review was 35/33 and 35/32, R7b 35/34 | adversarial: 3; codeReview: 0; visualReview: 22; customer: 6; escaped: 0; escapedNote: none shipped; T1 and T2 are product defects found only by the proxy (L-052) |
 | 8T | 15 | 2280.4 | 484.3 | 2106.3 | 1334 | inGame 37/35, uiTreeSlotsPause 36/34, note [appeal, craft]; first review pass, motion not judged; R8 was 36/34 and 35/34 | adversarial: 7; codeReview: 10; visualReview: 18; customer: 5; escaped: 0; escapedNote: none shipped; L-1 (High) was found by the visual review, not by the TE's reachability e2e (L-055) |
-| R11 | 9 | 1796.9 | 507.9 | 1796.9 | 1366 | inGame 38/36, uiTreeSlotsPause 37/35, note [appeal, craft]; R8-T was 37/35 and 36/34; reviewer saw the previous score (L-061); B1 blind score equals the anchored one (29 = 29) | adversarial: 9; codeReview: 10; visualReview: 20; customer: 4; escaped: 0; escapedNote: none shipped as High; F-01 (medium-low) is deferred by the user's deadline decision and sits in the backlog in 50-plan.md |
+| R11 | 10 | 1936.9 | 511.3 | 1796.9 | 1366 | inGame 38/36, uiTreeSlotsPause 37/35, note [appeal, craft]; R8-T was 37/35 and 36/34; reviewer saw the previous score (L-061); B1 blind score equals the anchored one (29 = 29) | adversarial: 9; codeReview: 10; visualReview: 20; customer: 4; escaped: 0; escapedNote: none shipped as High; F-01 (medium-low) is deferred by the user's deadline decision and sits in the backlog in 50-plan.md |
 | end | 2 | 409.5 | 12.0 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 139 rows, 22512.6 k subagent tokens. **Your messages logged:** 43.
+**Ledger total:** 141 rows, 22652.6 k subagent tokens. **Your messages logged:** 43.
 
 ## Round R3
 
@@ -220,6 +220,8 @@ Retro summary (`round-08T.json`): incidents 9, learnings L-054, L-055, L-056, L-
 | implementer | R11-FIX2-CORE | 138.0 | 60.3 | partial | items: {"F-03":"done","F-01":"deferred, reverted"}; parity: {"wins":"72/72","medians_min":[24.3,23.5,23.6]}; goldens: unchanged; unit: 1366/1366 x3 |
 | orchestrator | verify R11 (quiet) | – | – | green | tests: 1366/0 x3; e2e: 39/39 scripts; fps50: [56.7,56.7,60,58.1,58.5]; fps50GearedHero: [59,59.5,59,59,54.5]; benchGear_fps50Geared: [53.3,58.1,59]; load: 1.1-3.5 |
 | customer-proxy | R11 final acceptance | 131.8 | 11.7 | done | verdict: accept with follow-ups; follow_ups: 5 |
+| orchestrator | review coverage note | – | – | reviewed: skipped | reason: deadline mode (customer 20:57Z): FIX-RENDER, FIX-UI, FIX2-UI, FIX2-CORE not delta-reviewed; covered by quiet verify (unit x3, 39 e2e) and final acceptance only; learning: L-049 |
+| harness-retro | retro R11 (last) | 140.0 | 3.4 | done | learnings_new: ["L-057","L-058","L-059","L-060","L-061"]; index: 61: verified 35, applied 17, open 2, reopened 5, closed 2 |
 
 Retro summary (`round-11.json`): incidents 6, learnings L-057, L-058, L-059, L-060, L-061, L-042, L-049, L-037, L-032, L-033, L-020, L-022, L-019, L-018, L-048, L-053, L-055, L-056, L-008, L-011, L-016, L-027, L-030, L-047, L-054, L-040, rework {"fixRounds":2,"reverts":1,"detail":"fix round 1 = FIX-RENDER + FIX-UI from the delta review, visual review and R11-0..2 findings; fix round 2 = FIX2-UI + FIX2-CORE from the regression sweep. 1 revert: F-01 balance change tried in FIX2-CORE and reverted (deferred).","fixTokensK":845.5,"fixShare":"845.5 k tokens, 47.1 % of the round (R8-T 34.1 %, R8 8.4 %), a polish round by design"}.
 
