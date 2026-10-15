@@ -147,3 +147,6 @@ weapon replaces the class prop; no 5th Lobby character; the portal-overview pick
 
 - 2026-10-15T04:23:27Z (instruction): > ok proceed (after the time outlook: R8, R8-T, R11, end-of-project task)
 - 2026-10-15T10:12:03Z (go): > ok proceed (R8 verify, visual review and acceptance were running; retro R8 follows)
+
+### Decision 2026-10-15T13:28:53Z (harness release)
+Question: release the accumulated harness changes (after retro R7 and R8) as 0.5.1? Verbatim answer: "yes do the harness". Taken as the go for the 0.5.1 patch release (wording and rules only).

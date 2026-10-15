@@ -1,7 +1,7 @@
 # >>> RESUME HERE (orchestrator, read first after any context loss) <<<
 _Last updated 2026-10-15T04:51:58Z. Keep this block current after every step; the log below is history._
 
-**Where we are:** R8 closed (accept with follow-ups, retro done). R8-T running: TE-R8T (worktree), FIX-UI-R8T, FIX-WORLD-R8T, CORE-R8T-1 in parallel; then CORE-R8T-2 balance alone, review, visual, fix round, verify, proxy, retro. Then R11, then END-OF-PROJECT TASK. Open question to user: release harness 0.5.1?
+**Where we are:** R8 closed (accept with follow-ups, retro done). R8-T running: TE-R8T (worktree), FIX-UI-R8T, FIX-WORLD-R8T, CORE-R8T-1 in parallel; then CORE-R8T-2 balance alone, review, visual, fix round, verify, proxy, retro. Then R11, then END-OF-PROJECT TASK. Harness 0.5.1 released (user go).
 
 **In flight (check the files, not memory):**
 - ADV-R5 adversarial test-engineer (see above). UI-R5 open items for review/decision: stale tab-owner lock (no timeout,
@@ -289,3 +289,4 @@ Each round also improves the harness (learnings → agent definitions/rules), as
 - 2026-10-15T12:19Z FIX-R8T-2 launched (N1-N4, e2e stale updates, r8t-* into run-all). Then: quiet verify + 5-run bench, visual review, proxy, retro.
 - 2026-10-15T13:14Z FIX-R8T-2 done: N1 short landscape (screen scroll + compact <430px), N2 death closes drawers/map/tooltip, held item released once (bag else floor), dock hidden; N3 dock buttons >=44; N4 name ellipsis. e2e: run-all now incl. 11 r8t-* + r8t2-fix; all green except r8t-scan play/ copy (orchestrator). Unit 1319/0 x2. Next: copy dist->play, quiet verify + bench.
 - 2026-10-15T13:14Z Orchestrator quiet verify started (unit x3, run-all, bench 5 plain + 3 BENCH_GEAR), nothing else running. Visual review waits for it.
+- 2026-10-15T13:28Z User go: harness 0.5.1 released (VERSION, CHANGELOG sections folded, STATUS). Patch: no benchmark re-run. Office Crawler uses 0.5.1 from R8-T.

@@ -16,10 +16,11 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | G | 11 | 1893.6 | 117.6 | 1374.1 | 668 | prototypeC3 31/31, g1 32/31, g2 33/32, g3 34/33, gate 34 target; under 33 = another pass; proxy passed at 34/33 with follow-ups | adversarial: null; adversarialNote: No adversarial pass on render work (visual rounds use visual reviewers); the adversarial pass of R5 covered the save/UI code only; codeReview: 0; visualReview: 12; customer: 0; escaped: 0 |
 | R6 | 15 | 2375.6 | 376.8 | 2222.0 | 770 | inGame 35/34, charselect 35/34, uiTreeSlotsPause 35/34, note [appeal, craft]; target 34; first time craft reached 34; G3 was 34/33 | adversarial: 7; codeReview: 15; visualReview: 7; customer: 8; escaped: 0; escapedNote: none shipped; two things were found late and are open: N11/R7-2 floor-entry stutter (found by the richer bench, no review saw it) and F1 hero stand-off (bot watchdog had masked it, CR6-05) |
 | R7 | 29 | 5941.5 | 1105.7 | 5766.3 | 1154 | inGame 35/34, charselect null, uiTreeSlotsPause 35/34, note [appeal, craft]; R7 first review iterate: in-game 35/33, UI 35/32; after the visual fix round R7b pass 35/34 both; R6 was 35/34 | adversarial: 10; codeReview: 16; visualReview: 25; customer: 8; escaped: 0; escapedNote: none shipped; the R7 acceptance feel items (bag full, early deaths) are open for R8 |
-| R8 | 16 | 3373.5 | 691.8 | 3238.9 | 1295 | inGame 36/34, uiTreeSlotsPause 35/34, note [appeal, craft]; first review pass, no iterate; R7 first review was 35/33 and 35/32, R7b 35/34 | adversarial: 3; codeReview: 0; visualReview: 22; customer: 6; escaped: 0; escapedNote: none shipped; T1 and T2 are product defects found only by the proxy (L-052) |
+| R8 | 17 | 3375.6 | 699.7 | 3238.9 | 1295 | inGame 36/34, uiTreeSlotsPause 35/34, note [appeal, craft]; first review pass, no iterate; R7 first review was 35/33 and 35/32, R7b 35/34 | adversarial: 3; codeReview: 0; visualReview: 22; customer: 6; escaped: 0; escapedNote: none shipped; T1 and T2 are product defects found only by the proxy (L-052) |
+| 8-T | 10 | 1328.7 | 351.0 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 109 rows, 18023.7 k subagent tokens. **Your messages logged:** 35.
+**Ledger total:** 120 rows, 19354.5 k subagent tokens. **Your messages logged:** 37.
 
 ## Round R3
 
@@ -175,8 +176,24 @@ Retro summary (`round-07.json`): incidents 12, learnings L-032, L-033, L-034, L-
 | test-engineer | ADV-R8 adv-r7 owed fixture | 335.0 | 35.3 | done | verdict: test defect, not product bug; fix: e2e/adv-r7.mjs [R7-handin] frees whole top rows; checks: {"adv-r7":"261/261","adv-r8":"39/39"}; watch: [R7-tabs] intermittent 1 of 4 runs |
 | customer-proxy | R8 proxy acceptance | 218.4 | 70.3 | done | verdict: accept with follow-ups (medium confidence); follow_ups: 6; shots: 72 |
 | harness-retro | retro R8 | 134.6 | 3.8 | done | learnings_new: ["L-051","L-052","L-053"]; reopened: ["L-032","L-033","L-020","L-022"]; proposed_release: 0.5.1 |
+| customer-proxy | R8 proxy acceptance (duplicate hand-back delta) | 2.1 | 7.9 | duplicate | rule_breach: L-032 re-sent hand-back |
 
 Retro summary (`round-08.json`): incidents 7, learnings L-051, L-052, L-053, L-032, L-033, L-020, L-022, L-041, L-042, L-043, L-044, L-045, L-046, L-048, L-049, L-037, rework {"fixRounds":1,"reverts":0,"detail":"fix round 1 = FIX-R8-CORE + FIX-R8-UIR (+ adv-r5 fixture fix, 5.4 k) from CR8-01..07 and ADV-R8-01..03; BAL-R8 is a planned follow-up from CORE-R8-1's hotspot, not a fix round; the visual review passed with no fix round; one test-defect follow-up (adv-r7 owed fixture, 335.0 k). No reverts recorded in SESSION-NOTES.","fixTokensK":272.2,"fixShare":"272.2 k tokens, 8.4 % of the round; with the adv-r7 fixture follow-up (335.0 k) 18.7 %"}.
+
+## Round 8-T
+
+| Role | Package | Tokens k | Minutes | Status | Result |
+|---|---|---|---|---|---|
+| implementer | CORE-R8T-1 | 115.3 | 32.0 | done | items: {"R8-A4":"test green, no AI change","R8-M1":"already in core, test added","G-5":"fixed in testhook","ADV-R7-10":"left, rewrite todo","ASSET-LICENCES":"written, no external assets"}; unit: 1302/0/1todo; goldens: unchanged |
+| implementer | FIX-WORLD-R8T | 155.8 | 34.5 | done | items: {"G-1..G-4":"done","common silhouette":"done","N17":"done","R8-P1":"no steady-state cost; bench waits for warm; quiet bench pending"}; unit: 1312/0 (1 run, load); load: 9-20 |
+| implementer | FIX-UI-R8T | 182.7 | 34.5 | done | items: {"R8-A1":"fits at 1366x768, scroll + sticky footer at 1280x720","R8-A2":"pointer-events none","U-1,U-2,U-4,U-5,N12":"done","N16,Q2,Q3":"already done","belt hint":"done"}; unit: 1309/0/1todo (1 run, load); e2e_stale: ["e2e/ui.mjs:472 phone Map button"] |
+| reviewer | R8-T code review | 132.3 | 3.8 | changes_needed | findings: {"major":2,"minor":6,"nit":2} |
+| implementer | CORE-R8T-2 balance | 105.9 | 37.1 | done | change: depthMult.hp[1] 0.72 -> 0.62; floor2_deaths: {"before":{"FM":2,"SR":1,"IT":0},"after":{"FM":0,"SR":0,"IT":0}}; parity: {"wins":"72/72","medians_min":[23.8,24,23.3]}; goldens: run-c re-recorded with proof; reds_from_balance: ["CR7-02 run-c, resolved"] |
+| implementer | FIX-R8T-UI (review fixes) | 103.1 | 15.8 | done | items: ["F1","F3","F4","F5","F7ui","F8"]; unit: 1315/1315 x2 |
+| implementer | FIX-R8T-RENDER (review fixes) | 115.2 | 16.8 | done | items: ["F2","F6","F7render","F9","F10"]; unit: 1315/1315 x2; rule_breach: L-032: handed back with own background work still running (harness notice) |
+| implementer | FIX-R8T-RENDER (duplicate hand-back delta) | 1.6 | 4.2 | duplicate | rule_breach: L-032 re-sent hand-back; stopped by orchestrator (TaskStop) |
+| test-engineer | TE-R8T adversarial e2e (worktree) | 272.6 | 117.8 | done | findings: {"medium-low":1,"low":3,"info":3}; full_runs: {"FM":"won 0 deaths","SR":"won 1 death f8","IT":"won 0 deaths"}; new_scripts: 13; flake: [R7-tabs] 0/79, test hardened |
+| implementer | FIX-R8T-2 (TE findings + e2e) | 144.2 | 54.5 | done | items: ["N1","N2","N3","N4","e2e stale","run-all +12"]; unit: 1319/0 x2; e2e: green except r8t-scan play copy |
 
 ## Harness work
 
@@ -223,3 +240,5 @@ Retro summary (`round-08.json`): incidents 7, learnings L-051, L-052, L-053, L-0
 | 2026-10-15T04:20:50Z | question | What is the time outlook? |
 | 2026-10-15T04:23:27Z | instruction | ok proceed |
 | 2026-10-15T10:12:03Z | go | ok proceed |
+| 2026-10-15T13:22:35Z | question | are we complete? |
+| 2026-10-15T13:28:53Z | decision | yes do the harness |
