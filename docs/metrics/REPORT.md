@@ -16,10 +16,10 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | G | 11 | 1893.6 | 117.6 | 1374.1 | 668 | prototypeC3 31/31, g1 32/31, g2 33/32, g3 34/33, gate 34 target; under 33 = another pass; proxy passed at 34/33 with follow-ups | adversarial: null; adversarialNote: No adversarial pass on render work (visual rounds use visual reviewers); the adversarial pass of R5 covered the save/UI code only; codeReview: 0; visualReview: 12; customer: 0; escaped: 0 |
 | R6 | 15 | 2375.6 | 376.8 | 2222.0 | 770 | inGame 35/34, charselect 35/34, uiTreeSlotsPause 35/34, note [appeal, craft]; target 34; first time craft reached 34; G3 was 34/33 | adversarial: 7; codeReview: 15; visualReview: 7; customer: 8; escaped: 0; escapedNote: none shipped; two things were found late and are open: N11/R7-2 floor-entry stutter (found by the richer bench, no review saw it) and F1 hero stand-off (bot watchdog had masked it, CR6-05) |
 | R7 | 29 | 5941.5 | 1105.7 | 5766.3 | 1154 | inGame 35/34, charselect null, uiTreeSlotsPause 35/34, note [appeal, craft]; R7 first review iterate: in-game 35/33, UI 35/32; after the visual fix round R7b pass 35/34 both; R6 was 35/34 | adversarial: 10; codeReview: 16; visualReview: 25; customer: 8; escaped: 0; escapedNote: none shipped; the R7 acceptance feel items (bag full, early deaths) are open for R8 |
-| R8 | 8 | 2114.9 | 382.6 | – | – | – | – |
+| R8 | 10 | 2265.3 | 439.1 | – | – | – | – |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 101 rows, 16765.1 k subagent tokens. **Your messages logged:** 34.
+**Ledger total:** 103 rows, 16915.5 k subagent tokens. **Your messages logged:** 34.
 
 ## Round R3
 
@@ -166,7 +166,9 @@ Retro summary (`round-07.json`): incidents 12, learnings L-032, L-033, L-034, L-
 | implementer | R8-0.3 UI (busts, owed, toast lane, CR7L-01/02/03, N16) | 264.2 | 64.3 | done | tests: 1225; e2e: 16/17 (adv-r7 stale fixtures → adversary) |
 | reviewer | code review R8 | 217.5 | 6.4 | done | findings: {"blocking":0,"should":7,"nit":7} |
 | test-engineer | ADV-R8 | 322.0 | 76.0 | done | findings: {"minor":3}; e2e: 19/19 (adv-r8 39, adv-r7 257); tests: 1281 |
-| implementer | FIX-R8-CORE | – | – | done | tests: 1295; fixed: ["CR8-01","ADV-R8-01","ADV-R8-03","CR8-04","CR8-06","CR8-07 (saveVersion 6)"]; golden: unchanged |
+| implementer | FIX-R8-CORE | 145.0 | 45.5 | done | tests: 1295; fixed: ["CR8-01","ADV-R8-01","ADV-R8-03","CR8-04","CR8-06","CR8-07 (saveVersion 6)"]; golden: unchanged |
+| test-engineer | ADV adv-r5 fixture fix | 5.4 | 11.0 | done | e2e: adv-r5 150/150, adv-r7 257/257, adv-r8 39/39 |
+| implementer | FIX-R8-UIR (toast queue, gear cache cap) | – | – | done | fps50_loaded: [47.4,48.3,48.7,49,57.6]; fps50_gear: [44.7,44.7,47.7,49.7,50]; load: 1.2-3.9 |
 
 ## Harness work
 
