@@ -49,6 +49,18 @@ export function itemBoxHtml(it, { fill = false, pos = null, cls = "", unmet = fa
 export const rowItemHtml = (it, tipKey, right, mainText = "") => `<li class="row" data-tip="${esc(tipKey)}"><span class="ricon" style="--rw:${Number(it.w) || 1};--rh:${Number(it.h) || 1}">${itemIcon(it)}</span><span class="rname">${nameLineHtml(it, 14)}<small>${esc(mainText)}</small></span>${right}</li>`;
 const num = (n) => Number(n).toLocaleString("en-US");
 
+export const xpFileHtml = (xpv, level) => { // Employee File XP row: label, bar and the total as visible text (R8-T F1)
+  const pct = xpv.pct;
+  return `<div class="xpl" title="${esc(T.xpTotal)}: ${num(xpv.total)}"><span>${esc(T.experience)}</span><span data-stat="xp" data-testid="xp-label" data-total="${Number(xpv.total) || 0}">${xpv.capped ? esc(T.xpMax) : `${num(xpv.into)} / ${num(xpv.span)} ${esc(T.xpToLevel)} ${level + 1} (${pct}%)`}</span></div><div class="xpb2" role="img" title="${esc(T.xpTotal)}: ${num(xpv.total)}" aria-label="${esc(T.experience)} ${pct}%, ${esc(T.xpTotal)} ${num(xpv.total)}"><i style="width:${pct}%"></i></div><div class="xpt" data-stat="xp-total" data-testid="xp-total">${esc(T.xpTotal)}: ${num(xpv.total)}</div>`;
+};
+/** The HUD XP hover box (transparent, takes no pointer events): an image with a spoken label, not a focus stop. */
+export const xpTipHtml = (xt, xr, fs) => `<div class="xptip" data-testid="hud-xp" role="img" title="${esc(T.xpTotal)}: ${num(xt.total)}" aria-label="${esc(T.experience)} ${xt.pct}%, ${esc(T.xpTotal)} ${num(xt.total)}" style="left:${(xr.x - 2).toFixed(1)}px;top:${(xr.y - fs - 8).toFixed(1)}px;width:${(xr.w + 4).toFixed(1)}px;height:${(xr.h + fs + 10).toFixed(1)}px"></div>`;
+/** Tooltip bottom edge: above the HUD band and above a real (non-duplicate) toast, but never lower than ~130 px of room (R8-U2, F8). */
+export const tipLimit = (hudTop, toastTop = null) => {
+  let b = hudTop - 8;
+  if (toastTop !== null) b = Math.min(b, toastTop - 8);
+  return Math.max(b, Math.min(hudTop - 8, 130));
+};
 export function createPanels(root, game) {
   const doc = root.ownerDocument, core = () => game.core;
   root.innerHTML = `
@@ -128,7 +140,7 @@ export function createPanels(root, game) {
     let h = `<div class="ph"><span class="phi">${skillIcon("panel:file")}</span><h2>${esc(T.fileTitle)}</h2>${closeBtn("character", T.closeCharacter)}</div><div class="pb"><div class="sheet" data-testid="employee-file">${tabsHtml("character")}`;
     h += `<div class="fh"><div class="photo"><canvas width="120" height="144" data-bust="${esc(p.class)}" data-look="${esc(figures.look(c.equipment))}" aria-hidden="true"></canvas></div>`;
     h += `<div><h2 data-testid="file-name">${esc(p.name ?? "")}</h2><p data-testid="file-class">${esc(classById(p.class)?.name ?? "")} · <span data-stat="level">${esc(T.level)} ${p.level}</span></p><p>${esc(c.floor.name)}</p></div><div class="stamp" aria-hidden="true">${esc(T.probation)}</div></div>`;
-    h += `<div class="xpl" title="${esc(T.xpTotal)}: ${num(xpv.total)}"><span>${esc(T.experience)}</span><span data-stat="xp" data-testid="xp-label" data-total="${Number(xpv.total) || 0}">${xpv.capped ? esc(T.xpMax) : `${num(xpv.into)} / ${num(xpv.span)} ${esc(T.xpToLevel)} ${p.level + 1} (${pct}%)`}</span></div><div class="xpb2" role="img" title="${esc(T.xpTotal)}: ${num(xpv.total)}" aria-label="${esc(T.experience)} ${pct}%, ${esc(T.xpTotal)} ${num(xpv.total)}"><i style="width:${pct}%"></i></div>`;
+    h += xpFileHtml(xpv, p.level);
     h += `<section class="sc-attr"><h3>${esc(T.attributes)} <em>${esc(T.pointsToSpend)}: <b data-stat="attrPoints">${pts}</b></em></h3>`;
     for (const k of T.attrOrder) {
       const own = p.attrs[k], tot = p.attrsTotal?.[k] ?? own, bonus = tot - own, hint = attrHint(p.class, k);
@@ -207,7 +219,7 @@ export function createPanels(root, game) {
     }
     h += `</div>`;
     const xr = L.xp, xt = xpProgress(p);
-    h += `<div class="xptip" data-testid="hud-xp" tabindex="-1" title="${esc(T.xpTotal)}: ${num(xt.total)}" aria-label="${esc(T.experience)} ${xt.pct}%, ${esc(T.xpTotal)} ${num(xt.total)}" style="left:${(xr.x - 2).toFixed(1)}px;top:${(xr.y - fs - 8).toFixed(1)}px;width:${(xr.w + 4).toFixed(1)}px;height:${(xr.h + fs + 10).toFixed(1)}px"></div>`;
+    h += xpTipHtml(xt, xr, fs);
     const badge = (n, what) => (n > 0 ? `<span class="bdg" aria-label="${n} ${esc(what)}">${n > 99 ? "99+" : n}</span>` : ""); // VFIX-R7 U1: "99+" keeps the phone dock inside the screen; the label keeps the real count
     h += `<div class="dock" role="group" aria-label="${esc(T.toggleLabel)}">`;
     const ow = p.owed?.length ?? 0; // R8-Q1: reward items waiting for bag room
@@ -364,6 +376,7 @@ export function createPanels(root, game) {
     view.toastObj = t; view.toastId = t.id;
     el.toast.textContent = t.text; el.toast.title = t.text; el.toast.hidden = false;
     el.live.textContent = ""; el.live.textContent = t.text;
+    syncToastDup(); // before the re-placement below: tipBottom reads the toast's dup class
     if (view.hoverKey && view.hoverEl?.isConnected && !el.tip.hidden) { layoutToast(drawerLayout(game.w, game.h)); showTip(view.hoverKey, view.hoverEl); } // R8-U2: a tip that is already open moves out from under the new toast
     clearTimeout(view.toastTimer);
     view.toastTimer = setTimeout(() => { el.toast.hidden = true; if (game.ui.toast?.id === t.id) game.ui.toast = null; }, t.ms ?? 3200);
@@ -378,9 +391,9 @@ export function createPanels(root, game) {
   };
   /** R8-U2: the tooltip ends above a visible toast (its measured box, not a guess), so a toast never covers the lower half of a tip. */
   const tipBottom = (D) => {
-    let b = D.hudTop - 8;
-    if (!el.toast.hidden && !el.toast.classList.contains("dup")) { const r = el.toast.getBoundingClientRect(); if (r.height) b = Math.min(b, r.top - 8); }
-    return b;
+    let top = null;
+    if (!el.toast.hidden && !el.toast.classList.contains("dup")) { const r = el.toast.getBoundingClientRect(); if (r.height) top = r.top; }
+    return tipLimit(D.hudTop, top);
   };
   const rectOf = (n) => { const r = n.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
   function tipHtml(d, cmp, extra) {

@@ -9,3 +9,12 @@
 - done: wish: respawn toast with an empty belt reads "Back in the Lobby. Your belt is empty: restock potions at the Break Room Barista." (ui/messages.js, ui/text.js).
 - tests: test/ui-r8t.test.js (7).
 - verify: node --test full run 1310 tests, 1309 pass, 0 fail (1 todo, ADV-R7-10); two further full runs were killed by the timeout under load from parallel agents (not red); build ok; e2e/ui.mjs 174/175 (stale: phone Map button assertion).
+
+## Fix round (R8-T code review)
+- done: F1 Employee File prints "Total experience: N" as visible text (`xpFileHtml`, `.xpt`); HUD `.xptip` is `role="img"` (no tabindex), title/aria-label kept so e2e/ui.mjs:434 (reads `title` of hud-xp) still holds. Tested on the pure builders.
+- done: F3 footer sticky `bottom:0` + `padding-bottom:10px` + `#pright .pb{scroll-padding-bottom:64px}`; 1280x720 screenshot (scratchpad, viewed): footer bottom == body bottom (584), nothing clipped.
+- done: F8 `syncToastDup()` before the tip re-placement; `tipLimit(hudTop, toastTop)` pure with a 130 px lower bound, unit tested.
+- done: F7 UI: ui-r8t tests use builders/pure functions (xpFileHtml, xpTipHtml, tipLimit); U-5 pre-existing-rule assertion dropped. CSS-only items (A1, A2 pointer-events, U-4 crop, N12) remain declaration checks.
+- done: F4 testhook: partly taken uniques are narrowed to an untaken unique's base before rolling (no stray rare); fellback:true documented as "a rare was created"; partial-taken test added.
+- done: F5 ADV-R7-10 test uses the 12 short seeds (102 105 173 183 194 412 446 447 468 565 597 657); adv-r74 todo converted to a real assertion on those seeds.
+- verify: node --test x2: 1315 pass, 0 fail, 0 todo; build ok.

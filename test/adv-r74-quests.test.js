@@ -450,13 +450,14 @@ test("[R74-sq5] revive: floors 5 and 6 cleared BEFORE the accept can still be co
   assert.deepEqual(JSON.stringify([t.floors[5].killed]), before, "enough alive: nothing is revived");
 });
 
-test("[R74-sq5] ADV-R7-10 every seed can complete sq5: floors 5 and 6 together spawn at least config.quests.sq5.kill.count consultants (700 seeds; AC-R-258-3 checked 100)", { todo: "ADV-R7-10: kept as todo on purpose: the generator still spawns fewer than 6 on these seeds; the fix guarantees the count when sq5 is accepted (topUpKills, tested in quests-sq45.test.js on 1000 seeds)" }, () => {
-  const short = [];
-  for (let seed = 1; seed <= 700; seed++) {
+test("[R74-sq5] ADV-R7-10 the generator alone leaves some seeds short of sq5's consultant count; the top-up on accept guarantees it (pinned short seeds; 1000-seed scan in quests-sq45.test.js)", () => {
+  for (const seed of [102, 105, 173, 183, 194, 412, 446, 447, 468, 565, 597, 657]) {
     const n = [5, 6].reduce((t, d) => t + generateFloor(seed, d).spawns.filter((sp) => sp.type === config.quests.sq5.kill.monster).length, 0);
-    if (n < config.quests.sq5.kill.count) short.push(`${seed}:${n}`);
+    assert.ok(n < config.quests.sq5.kill.count, `seed ${seed}: ${n} spawned`);
+    const t = hero(seed); accept(t, "sq5");
+    const alive = [5, 6].reduce((c, d) => { enterFloor(t, d, { at: "entry" }); return c + live(t, "consultant").length; }, 0);
+    assert.ok(alive >= config.quests.sq5.kill.count, `seed ${seed}: ${alive} alive after accept`);
   }
-  assert.deepEqual(short, [], `${short.length} seeds cannot finish sq5`);
 });
 
 test("[R74-sq5] a run that never accepts is untouched by the revive and the new objects: floors 5 and 6 of 30 seeds produce identical monsters with and without sq4 and sq5 available, and no rng is drawn", () => {

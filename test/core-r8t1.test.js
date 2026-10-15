@@ -79,6 +79,18 @@ test("[G-5] testhook giveItem/spawnItem with rarity unique: a base with a unique
   const t = api.cheat.giveItem({ base: "blazer", rarity: "unique", ilvl: 20 });
   assert.equal(t.ok, false); assert.match(t.error, /already found/);
 });
+test("[G-5] partly taken: with some matching uniques already found, the hook narrows the request to an untaken one before rolling (no stray rare, ok:true)", () => {
+  const slot = "weapon", inSlot = content.uniques.filter((u) => content.items[u.base].slot === slot && u.minIlvl <= 20);
+  assert.ok(inSlot.length >= 2, "the slot has at least two uniques");
+  for (const fn of ["giveItem", "spawnItem"]) {
+    const { api, game } = rig();
+    game.core.uniquesFound.push(inSlot[0].id);
+    const r = api.cheat[fn]({ slot, rarity: "unique", ilvl: 20 });
+    assert.equal(r.ok, true, fn); assert.equal(r.fellback, undefined);
+    assert.notEqual(game.last.base, inSlot[0].base, "the taken unique's base is not requested");
+    assert.ok(inSlot.slice(1).some((u) => u.base === game.last.base));
+  }
+});
 test("[G-5] on the real game: a unique request gives a unique (item and uniquesFound), a base without one gives nothing", async () => {
   const { spawnItem, takeGround } = await import("../src/core/index.js");
   const s = newGame(9, { class: "facilities-manager", start: "town" });
@@ -93,14 +105,13 @@ test("[G-5] on the real game: a unique request gives a unique (item and uniquesF
 });
 
 // ---- ADV-R7-10 ----
-test("[ADV-R7-10] every seed can finish sq5: where floors 5 and 6 spawn fewer than the quest's count, accepting tops them up (700 seeds)", () => {
-  const k = config.quests.sq5.kill, short = [];
-  for (let seed = 1; seed <= 700; seed++) {
+// Seeds below 700 where floors 5 and 6 alone spawn fewer consultants than sq5 needs (computed once; the full 1000-seed scan of topUpKills is in quests-sq45.test.js).
+const SQ5_SHORT_SEEDS = [102, 105, 173, 183, 194, 412, 446, 447, 468, 565, 597, 657];
+test("[ADV-R7-10] sq5 can be finished on the known short seeds: the generator alone leaves them short, accepting tops them up", () => {
+  const k = config.quests.sq5.kill;
+  for (const seed of SQ5_SHORT_SEEDS) {
     const n = k.depths.reduce((t, d) => t + generateFloor(seed, d).spawns.filter((sp) => sp.type === k.monster).length, 0);
-    if (n < k.count) short.push(seed);
-  }
-  assert.ok(short.length > 0, "the generator alone still leaves some seeds short (that is why the top-up exists)");
-  for (const seed of short) {
+    assert.ok(n < k.count, `seed ${seed} is still short without the top-up (${n})`);
     const s = newGame(seed, { class: "facilities-manager", name: "Adv", start: "town", wearStartKit: true });
     s.quests.sq5 = { s: "active", p: 0 };
     let alive = 0;

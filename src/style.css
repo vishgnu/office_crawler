@@ -137,7 +137,8 @@ h2 { margin: 0 0 8px; font-size: calc(clamp(26px, 4.5vw, 44px) * var(--ts, 1)); 
 .pv.bad{border-style:dashed;border-color:var(--bad);background:repeating-linear-gradient(45deg,rgba(255,143,128,.35) 0 6px,transparent 6px 12px)}
 .footrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 /* R8-A1: when the drawer is shorter than its content (<=1366x768) the body scrolls, but the footer (gold, owed line, Put back / Drop on floor) stays in view */
-#pright .footrow{position:sticky;bottom:-10px;background:var(--panel);padding:6px 0 4px;margin-bottom:-4px;z-index:5;border-top:2px solid var(--rim)}
+#pright .pb{scroll-padding-bottom:64px}
+#pright .footrow{position:sticky;bottom:0;background:var(--panel);padding:6px 0 10px;margin-bottom:-10px;z-index:5;border-top:2px solid var(--rim)}
 .gold{display:inline-flex;align-items:center;gap:8px;font-size:17px;font-weight:800;color:var(--gold);background:var(--panel3);border:2px solid var(--ol);border-radius:8px;padding:3px 10px}
 .notice{flex:1;min-width:140px;font-size:14px;color:var(--txt);min-height:20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .hint{color:var(--mut)}
@@ -163,6 +164,7 @@ h2 { margin: 0 0 8px; font-size: calc(clamp(26px, 4.5vw, 44px) * var(--ts, 1)); 
 .sheet h3 em{font-style:normal;letter-spacing:0;text-transform:none;color:var(--ink);font-size:14px}
 .xpl{display:flex;justify-content:space-between;flex-wrap:wrap;gap:0 12px;font-size:14px;margin-top:8px}
 .xpb2{height:14px;border:3px solid var(--ol);border-radius:8px;background:#cfc3a2;overflow:hidden;margin-top:3px}
+.xpt{font-size:14px;margin-top:4px;opacity:.85}
 .xpb2 i{display:block;height:100%;background:repeating-linear-gradient(90deg,#d99a00 0 14px,#b57d00 14px 16px)}
 .sc-attr{order:1}.sc-blk{order:2}.sc-der{order:3}
 .attr{display:grid;grid-template-columns:1fr auto 40px;align-items:center;gap:8px;padding:2px 0;border-bottom:1px dashed #b9ad8c}
