@@ -134,3 +134,11 @@ These five entries were in the human-log but had no briefing here; they were act
 - 2026-10-14T15:52:37Z (instruction): > go ahead i will go afk for a while
 - 2026-10-14T16:03:53Z (decision): > Circle 2 answers Q1-Q7, drop circle 2, wrap up a new harness version at the very end with all files and htmls updated
 - 2026-10-14T18:48:21Z (decision): > No we proceed this is good (keep the full round plan, no merging)
+
+## Customer decision (user, 2026-10-15, verbatim)
+
+> Defaults are fine
+
+**Recorded as real-customer answers** for the open list given the same morning: quests are the intended route (no extra
+balance for skipping them); Emergency Exit stays at 40 gold; belt, rings and amulet do not show on the figure; an equipped
+weapon replaces the class prop; no 5th Lobby character; the portal-overview pick is folded into the final harness version.

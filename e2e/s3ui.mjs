@@ -449,7 +449,9 @@ let exported = null;
   s = await g.state();
   check("first run: the class kit weapon is worn, the basic attack is the class one and the signature skill is on F1", s.equipment.weapon?.base === FM.startKit.weapon && s.player.skillBar.primary === FM.basic && s.player.skillBar.hotkeys[0] === FM.signature, { weapon: s.equipment.weapon?.base, bar: s.player.skillBar });
   await g.app("cheat.setLevel", 3);
-  check("first run: a one-time prompt appears when points are waiting to be spent", (await g.state()).ui.toast === UT.pointsHint, (await g.state()).ui.toast);
+  // CR7L-02: the hint waits behind the quest line that holds the lane (and the level-up line), it is shown when its turn comes
+  const hinted = await g.page.waitForFunction((t) => window.__app.getState().ui.toast === t, UT.pointsHint, { timeout: 15000 }).then(() => true, () => false);
+  check("first run: a one-time prompt appears when points are waiting to be spent", hinted, (await g.state()).ui.toast);
   await g.app("cheat.teleportFloor", 9);
   s = await g.state();
   check("AC-R-104-2 entering the Executive Suite shows the boss text", s.ui.menu === "story" && (await g.page.locator(".screen.story-screen").innerText()).includes(content.story.boss.lines[0]), s.ui.menu);

@@ -17,12 +17,10 @@ Gate authority for this project is delegated to `customer-proxy` while the user 
 - IP closeness: keep the current approach (mechanics/feel, everything else original). Names and title approved.
 
 ## Waiting for the real customer
-- **Quests optional or intended?** With quests the floors are now smooth (deaths spread out, floor 5 has 2 deaths in 72 runs). A hero who accepts NO quest still hits a wall at floor 5 (32 deaths). Should the game also be balanced for players who skip quests (softer floor 5 / lighter quest rewards), or are quests the intended route? Default: quests are the intended route.
-- **Emergency Exit price**: to make quest hand-in trips short, the Emergency Exit (teleport to the Lobby) now costs 40 gold instead of 200. Fine, or should trips cost more? Default: keep 40.
-- **Gear visuals (R8-0)**: should belt, rings and amulet also show on the figure? Default: no (only head, body, hands, feet, weapon, off-hand). And does a weapon replace the class prop (wrench, clipboard, laptop) when equipped? Default: yes, replaced.
-- **Optional (R7-4.3)**: the 5th side quest comes from the vendor (second quest there), because only 4 Lobby characters exist. Want a new, 5th Lobby character instead? (about 250 lines + art; default: no).
-- **Portal-overview variant pick** (harness; may fold into the final harness version).
-- Review `proxy-log.md` whenever you are back.
+- Nothing open. Review `proxy-log.md` whenever you are back.
+
+## Decided by the real customer (2026-10-15)
+- Defaults accepted: quests intended route; Emergency Exit 40 gold; belt/rings/amulet not shown; weapon replaces class prop; no 5th Lobby NPC; portal-overview pick in the final harness version.
 
 ## Decided by the real customer (2026-10-14)
 - AMBIENT_LIFT +12 %: keep ("don't change it, it is good").
