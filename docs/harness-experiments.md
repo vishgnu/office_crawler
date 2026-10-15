@@ -50,3 +50,14 @@ Cost note for the post-mortem: R7 is the most expensive round so far, 5766.3 k t
 | E1 | **Supported on both thresholds again; ordering untested.** | Adversarial pass R8: 3 minor findings (2 not in the code review); code review R8: 0 blocking, 7 should, 7 nit; late-R7 review: 0 blocking, 6 should. Expected >= 1 adversarial finding and <= 1 blocking: met. `metrics/round-08.json` |
 | E2 | **Leaning supported for build rounds, still inconclusive overall.** | ADR-0008 with 14 ACs and 3 packages: 0 renames recorded; 1 fix round (review and adversary findings), not contract gaps. Deviation counts not extracted this round. |
 | E3 | **Held, extended.** | In-game 36/34, UI 35/34 on the first review (R7 first review 35/33 and 35/32). Not caused by the L-048 proposal (not applied); see L-053. |
+
+### Results after retro R8-T (2026-10-15; first round on harness 0.5.1; evidence for `harness-reviewer`, who decides at the post-mortem)
+
+| # | Status | Numbers and evidence |
+|---|---|---|
+| E1 | **Supported on both thresholds again; ordering untested.** | Adversarial pass R8-T (frozen worktree): 7 findings (0 major, 1 medium-low, 3 low, 3 info), 4 actionable and none overlapping the review; code review R8-T: 0 blocking, 2 major, 6 minor, 2 nit, the two majors (XP total a11y, bench warm wait) not caught by the implementers' own tests; visual review: 1 High (landscape-phone panels) that neither of the others found. Three independent lenses, three disjoint finding sets (`office-crawler/docs/metrics/round-08T.json`). Coverage gap: the review saw about 61 % of the round's tokens (L-049 reopened). |
+| E2 | **Not exercised.** | No ADR in R8-T; disjoint file ownership held (no cross-package red in the TE results; 3 transient unit reds from a parallel package in the polish round). 3 fix rounds driven by review, TE and visual findings, not by contract gaps. |
+| E3 | **Held.** | In-game 37/35, UI 36/34 on the first review (R8 36/34 and 35/34); every number at or above the gate of 34; motion not judged. |
+
+Cost note for the post-mortem: R8-T 2106.3 k tokens over 13 agents and a 1.6 k duplicate (R8 3238.9 k, R7 5766.3 k), 479.5 agent minutes, 391 min wall clock; fix packages 717.6 k (34.1 %), of which the polish round 353.5 k.
+

@@ -17,10 +17,10 @@ Rounds 1–3 were run before the ledger existed: their per-agent tables are in [
 | R6 | 15 | 2375.6 | 376.8 | 2222.0 | 770 | inGame 35/34, charselect 35/34, uiTreeSlotsPause 35/34, note [appeal, craft]; target 34; first time craft reached 34; G3 was 34/33 | adversarial: 7; codeReview: 15; visualReview: 7; customer: 8; escaped: 0; escapedNote: none shipped; two things were found late and are open: N11/R7-2 floor-entry stutter (found by the richer bench, no review saw it) and F1 hero stand-off (bot watchdog had masked it, CR6-05) |
 | R7 | 29 | 5941.5 | 1105.7 | 5766.3 | 1154 | inGame 35/34, charselect null, uiTreeSlotsPause 35/34, note [appeal, craft]; R7 first review iterate: in-game 35/33, UI 35/32; after the visual fix round R7b pass 35/34 both; R6 was 35/34 | adversarial: 10; codeReview: 16; visualReview: 25; customer: 8; escaped: 0; escapedNote: none shipped; the R7 acceptance feel items (bag full, early deaths) are open for R8 |
 | R8 | 17 | 3375.6 | 699.7 | 3238.9 | 1295 | inGame 36/34, uiTreeSlotsPause 35/34, note [appeal, craft]; first review pass, no iterate; R7 first review was 35/33 and 35/32, R7b 35/34 | adversarial: 3; codeReview: 0; visualReview: 22; customer: 6; escaped: 0; escapedNote: none shipped; T1 and T2 are product defects found only by the proxy (L-052) |
-| 8-T | 10 | 1328.7 | 351.0 | – | – | – | – |
+| 8T | 14 | 2106.3 | 479.5 | 2106.3 | 1334 | inGame 37/35, uiTreeSlotsPause 36/34, note [appeal, craft]; first review pass, motion not judged; R8 was 36/34 and 35/34 | adversarial: 7; codeReview: 10; visualReview: 18; customer: 5; escaped: 0; escapedNote: none shipped; L-1 (High) was found by the visual review, not by the TE's reachability e2e (L-055) |
 | harness | 1 | 162.6 | 6.8 | – | – | – | – |
 
-**Ledger total:** 120 rows, 19354.5 k subagent tokens. **Your messages logged:** 37.
+**Ledger total:** 126 rows, 20132.1 k subagent tokens. **Your messages logged:** 39.
 
 ## Round R3
 
@@ -85,7 +85,7 @@ Retro summary (`round-05.json`): incidents 6, learnings L-025, L-026, L-027, L-0
 | implementer | WORLD-FIX (G3) | 219.6 | 21.7 | done | tests: 649; fps50: noisy 40-47 under load (before 51.8 quiet); orchestrator re-run pending; fixed: ["F1","F2","F3","F4","FM-face","F1-skill-VFX","CR-14"] |
 | visual-reviewer | G3 re-review + char select | 145.8 | 7.5 | done | score: {"g":[34,33],"charselect":[34,33]}; verdict: iterate narrow (craft 1 short); new: {"medium":3,"low":5} |
 
-Retro summary (`round-0G.json`): incidents 5, learnings L-025, L-020, L-018, L-024, L-022, rework {"fixRounds":2,"reverts":0,"detail":"G-FIX (after G1 reviews), WORLD-FIX / G3 (after G2). Each fix round re-reviewed by a visual-reviewer."}.
+Retro summary (`round-G.json`): incidents 5, learnings L-025, L-020, L-018, L-024, L-022, rework {"fixRounds":2,"reverts":0,"detail":"G-FIX (after G1 reviews), WORLD-FIX / G3 (after G2). Each fix round re-reviewed by a visual-reviewer."}.
 
 ## Round R6
 
@@ -180,7 +180,7 @@ Retro summary (`round-07.json`): incidents 12, learnings L-032, L-033, L-034, L-
 
 Retro summary (`round-08.json`): incidents 7, learnings L-051, L-052, L-053, L-032, L-033, L-020, L-022, L-041, L-042, L-043, L-044, L-045, L-046, L-048, L-049, L-037, rework {"fixRounds":1,"reverts":0,"detail":"fix round 1 = FIX-R8-CORE + FIX-R8-UIR (+ adv-r5 fixture fix, 5.4 k) from CR8-01..07 and ADV-R8-01..03; BAL-R8 is a planned follow-up from CORE-R8-1's hotspot, not a fix round; the visual review passed with no fix round; one test-defect follow-up (adv-r7 owed fixture, 335.0 k). No reverts recorded in SESSION-NOTES.","fixTokensK":272.2,"fixShare":"272.2 k tokens, 8.4 % of the round; with the adv-r7 fixture follow-up (335.0 k) 18.7 %"}.
 
-## Round 8-T
+## Round R8T
 
 | Role | Package | Tokens k | Minutes | Status | Result |
 |---|---|---|---|---|---|
@@ -194,6 +194,14 @@ Retro summary (`round-08.json`): incidents 7, learnings L-051, L-052, L-053, L-0
 | implementer | FIX-R8T-RENDER (duplicate hand-back delta) | 1.6 | 4.2 | duplicate | rule_breach: L-032 re-sent hand-back; stopped by orchestrator (TaskStop) |
 | test-engineer | TE-R8T adversarial e2e (worktree) | 272.6 | 117.8 | done | findings: {"medium-low":1,"low":3,"info":3}; full_runs: {"FM":"won 0 deaths","SR":"won 1 death f8","IT":"won 0 deaths"}; new_scripts: 13; flake: [R7-tabs] 0/79, test hardened |
 | implementer | FIX-R8T-2 (TE findings + e2e) | 144.2 | 54.5 | done | items: ["N1","N2","N3","N4","e2e stale","run-all +12"]; unit: 1319/0 x2; e2e: green except r8t-scan play copy |
+| orchestrator | verify R8-T (quiet) | – | – | green | tests: 1319/0 x3; e2e: 31/31 scripts; fps50: [51.8,55.8,45.6,47.4,46.8]; fps50GearedHero: [51.1,53.3,54.5,46.2,52.6]; benchGear_fps50Geared: [47.4,57.1,51.1]; benchGear_plain: [48.6,50.4,44.7]; justEquipped_maxMs: [33.4,66.6,16.8,33.4,33.3]; load: 1.0-4.5 |
+| visual-reviewer | R8-T visual review | 186.1 | 16.6 | done | score: {"g":[37,35],"ui":[36,34]}; verdict: pass; findings: {"high":1,"low-medium":2,"low":5,"info":1} |
+| customer-proxy | R8-T proxy acceptance | 238.0 | 52.9 | done | verdict: accept with follow-ups (medium); follow_ups: 5 |
+| implementer | FIX-R8T-3-RENDER | 118.5 | 23.3 | done | items: ["G-R1","G-R2","L-4"]; unit: 1331/1334 (3 reds from parallel UI agent) |
+| implementer | FIX-R8T-3-UI | 235.0 | 35.7 | done | items: ["L-1","L-2","L-3","L-5","L-6","points nudge","in-hand overlap"]; unit: 1334/1334 x2; e2e: r8t3-fix 134/134 |
+| orchestrator | final verify R8-T (quiet) | – | – | green | tests: 1334/0 x3; e2e: 32/32 scripts; fps50: [56.3,51.1,51.8,48.6,48.6]; fps50GearedHero: [56.7,57.6,57.1,49.3,52.2]; benchGear_fps50Geared: [52.9,47.7,51.8]; benchGear_plain: [58.5,58.1,56.3]; justEquipped_maxMs: 16.8-33.4; load: 1.0-2.5 |
+
+Retro summary (`round-08T.json`): incidents 9, learnings L-054, L-055, L-056, L-042, L-049, L-037, L-032, L-033, L-020, L-022, L-034, L-051, L-052, L-053, rework {"fixRounds":3,"reverts":1,"detail":"fix round 1 = FIX-R8T-UI + FIX-R8T-RENDER from the code review (F1..F10); fix round 2 = FIX-R8T-2 from the TE findings (N1..N4) and e2e upkeep; fix round 3 = FIX-R8T-3-RENDER + FIX-R8T-3-UI from the visual review and acceptance (polish). The first-wave packages (CORE-R8T-1, FIX-WORLD-R8T, FIX-UI-R8T, CORE-R8T-2) were planned known-item work, not fix rounds. 1 revert: accidental commit of 7 regenerated docs/shots jpgs (7d53845, reverted; from SESSION-NOTES 13:29Z, git not run by the retro).","fixTokensK":717.6,"fixShare":"717.6 k tokens, 34.1 % of the round (R8: 8.4 %); the polish round alone is 353.5 k"}.
 
 ## Harness work
 
@@ -242,3 +250,5 @@ Retro summary (`round-08.json`): incidents 7, learnings L-051, L-052, L-053, L-0
 | 2026-10-15T10:12:03Z | go | ok proceed |
 | 2026-10-15T13:22:35Z | question | are we complete? |
 | 2026-10-15T13:28:53Z | decision | yes do the harness |
+| 2026-10-15T16:48:12Z | question | quick status update please |
+| 2026-10-15T16:49:54Z | go | good work proceed |
