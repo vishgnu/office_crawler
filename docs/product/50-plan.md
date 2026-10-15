@@ -523,3 +523,12 @@ R4-4 -> R6-1 ; R5 -> R6-2
 
 ## Scope change 2026-10-14 (customer)
 R9–R10 (lighting) and R12 (second overall test and polish) are dropped. Order now: R7 (rest) → R8 → R8-T → R11 → end-of-project task.
+
+## R8 acceptance follow-ups (proxy, 2026-10-15) — for R8-T
+- R8-T1 (medium): Desk Drawer clipped at <=1366x768 (bag row 4 and footer incl. owed line cut off). Scroll or resize; e2e clicking Drop on floor with the real mouse at 1280x720.
+- R8-T2 (low-medium): transparent .xptip hover box (~204x29, bottom centre) swallows canvas clicks; pointer-events none or smaller.
+- R8-T3 (medium): floor 2 still a spike for a level-2 hero (FM died twice, SR/IT ~28 % hp in 10 min). Re-run floors 1-4 with quests accepted; consider a floor-1 reward (potion or gear).
+- R8-T4 (medium-low): AI1 at 1 Hz re-clicks on a changing far target should still hit an adjacent attacker within 1.5 s; add a deterministic test.
+- R8-T5: adv-r7 owed check closed (fixture fixed, 261/261); profile BENCH_GEAR 47.1 (R8-P1).
+- R8-T6 (proxy evidence holes): unique-tier look, Emergency Exit at 40 gold, floors 5-9 / boss / verdict by real play, R8-Q2/Q3, slot cards after reload.
+- Wishes: Lobby belt-empty restock hint after a death; stronger silhouette change for common-tier gear.
