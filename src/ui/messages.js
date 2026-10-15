@@ -41,7 +41,7 @@ export function messageFor(ev, state) {
     case "potion": return `${T.msgPotion} ${ev.value} ${ev.restores === "hp" ? T.health : T.mana}.`;
     case "allocate": return `${T.msgAlloc} ${T.statAttr[ev.attr] ?? ev.attr}.`;
     case "healed": return T.healed;
-    case "respawn": return T.msgRespawned;
+    case "respawn": return state.belt?.some((b) => b) ? T.msgRespawned : `${T.msgRespawned} ${T.msgRestock}`; // wish (R8 acceptance): after a death with an empty belt, say where to restock
     case "portalOpen": return T.msgPortalOpen;
     case "portalUse": return T.msgPortalBack;
     case "bossTelegraph": return ev.kind === "slam" ? S.bossTelegraphSlam : ev.kind === "volley" ? S.bossTelegraphVolley : null; // also the screen-reader warning (live region)

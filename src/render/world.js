@@ -275,7 +275,7 @@ const out = { heroScreen: { x: 0, y: 0 }, heroDir: 0, actors: actorOut, heroItem
 let nPool = 0;
 const grab = (d, e, x, y) => {
   const it = pool[nPool++] ?? (pool[nPool - 1] = { d: 0, e: null, x: 0, y: 0, a: 1, actor: false, isPlayer: false, alert: false, shade: 0, tint: "", tintA: 0, flash: false, head: 0, hurt: false, dx: 0, dy: 0, icon: 0, champ: false, mute: false, npc: false, boss: false, summoned: false, ghost: false, led: false });
-  it.d = d; it.e = e; it.x = x; it.y = y; it.a = 1; it.actor = false; it.isPlayer = false; it.alert = false; it.shade = 0; it.tint = ""; it.tintA = 0; it.flash = false; it.dx = 0; it.dy = 0; it.icon = 0; it.champ = false; it.mute = false; it.npc = false; it.hurt = false; it.boss = false; it.summoned = false; it.sf = 0; it.ghost = false; it.led = false;
+  it.d = d; it.e = e; it.x = x; it.y = y; it.a = 1; it.actor = false; it.isPlayer = false; it.alert = false; it.shade = 0; it.tint = ""; it.tintA = 0; it.flash = false; it.dx = 0; it.dy = 0; it.icon = 0; it.champ = false; it.mute = false; it.npc = false; it.hurt = false; it.boss = false; it.summoned = false; it.sf = 0; it.ghost = false; it.led = false; it.k = 1;
   return it;
 };
 const byDepth = (a, b) => a.d - b.d;
@@ -441,6 +441,7 @@ function redrawHero(g) {
 
 /** Share of an actor's own (shaded, tinted) body that is drawn back over the additive pool light: the wash on actors is clamped to the remaining 1 - this (round G3, F2). */
 const RESTORE_A = 0.72;
+const QUEST_ELITE_K = 1.14;
 const restore = [];
 /**
  * Called by the lighting pass right after the additive pools: every actor standing in a pool gets its own sprite drawn again over the wash, so pale
@@ -450,11 +451,11 @@ function restoreActors(g) {
   const { cam, atlas } = F, z = cam.z;
   for (let i = 0; i < restore.length; i++) {
     const it = restore[i], x = it.x + it.dx, y = it.y + it.dy;
-    const ra = it.ghost ? RESTORE_A * 0.85 : RESTORE_A; // an actor beside a wall or prop is restored a little less: it is already shown through the wall (ghost copy)
+    const ra = it.ghost ? RESTORE_A * 0.85 : RESTORE_A, zk = it.k === 1 ? z : z * it.k; // an actor beside a wall or prop is restored a little less: it is already shown through the wall (ghost copy)
     g.globalAlpha = ra * it.a;
-    blit(g, it.flash ? atlas.flash(it.e) : it.e, x, y, z);
-    if (it.shade > 0) { g.globalAlpha = it.shade * it.a * ra; blit(g, atlas.shade(it.e, "#070518"), x, y, z); }
-    g.globalCompositeOperation = "multiply"; g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, z); g.globalCompositeOperation = "source-over";
+    blit(g, it.flash ? atlas.flash(it.e) : it.e, x, y, zk);
+    if (it.shade > 0) { g.globalAlpha = it.shade * it.a * ra; blit(g, atlas.shade(it.e, "#070518"), x, y, zk); }
+    g.globalCompositeOperation = "multiply"; g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, zk); g.globalCompositeOperation = "source-over";
   }
   g.globalAlpha = 1;
 }
@@ -487,7 +488,7 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
   // contact shadow on the ground, under everything that stands there
   const k = (dm.shadowR * 2.25) / 62, sh = F.shadowE;
   if (isPlayer && !dying) heroRing(g, sx, sy, dm.shadowR * 1.7, z, now);
-  if (champ) champRing(g, sx, sy, dm.shadowR * 1.6, z, now, env.style.palette.champion);
+  if (champ) champRing(g, sx, sy, dm.shadowR * 1.6 * (a.quest ? QUEST_ELITE_K : 1), z, now, env.style.palette.champion);
   if (boss && !dying) bossAura(g, sx, sy, dm.shadowR * 1.7, z, now, a.boss?.phase >= 2);
   if (!isPlayer && a.summoned && !dying) tempRing(g, sx, sy, dm.shadowR * 1.5, z);
   g.globalAlpha = 0.85 * alphaV;
@@ -501,6 +502,7 @@ function addActor(a, isPlayer, pos, dir, sx, sy) {
   g.globalAlpha = 1;
   const it = grab(pos.x + pos.y + 1.02, e, sx, sy);
   it.actor = true; it.isPlayer = isPlayer; it.a = alphaV; it.flash = flash; it.head = dm.head;
+  it.k = champ && a.quest ? QUEST_ELITE_K : 1; // R8-T N17: the named quest elite stands bigger than a manager (sprite, ring, status and plate follow)
   it.shade = shade; it.tint = tint; it.tintA = tintA; it.champ = champ; it.boss = boss; it.summoned = !isPlayer && !!a.summoned && !dying;
   if (!isPlayer && !dying) {
     const sf = statusFlags(a); it.sf = sf; // R5 statuses: stun / mute / freeze share muteT and differ by statusKind
@@ -659,19 +661,19 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
   F.figs = figureTable(atlas); F.htype = heroType(core.player.class); F.gear = gearTable(atlas); F.gframe = gst.frame; F.hfigs = F.gear ? F.gear.rows : heroFigs(atlas, core.player.class); F.shadowE = atlas.get(keys.fx("shadow"));
   lerpPos(hero, hp);
   const mons = core.monsters, nm = mons.length, npcs = core.floor.npcs ?? [], na = nm + npcs.length;
-  const slot = (i) => actorOut[i] ?? (actorOut[i] = { id: "", type: "", name: "", sub: "", ai: "", hp: 0, hpMax: 0, dead: false, champ: false, npc: false, boss: false, hid: false, lit: "", x: 0, y: 0, sx: 0, sy: 0, d: 0, pr: 0 });
+  const slot = (i) => actorOut[i] ?? (actorOut[i] = { id: "", type: "", name: "", sub: "", ai: "", hp: 0, hpMax: 0, dead: false, champ: false, npc: false, boss: false, hid: false, lit: "", x: 0, y: 0, sx: 0, sy: 0, d: 0, pr: 0, big: 1 });
   for (let i = 0; i < nm; i++) {
     const m = mons[i], o = slot(i);
     lerpPos(m, posB);
     o.id = m.id; o.type = m.type; o.name = m.name ?? (content.monsters[m.type] ?? content.bosses?.[m.type])?.name ?? m.type; o.ai = m.ai; o.hp = m.hp; o.hpMax = m.hpMax; o.dead = m.ai === "dead";
-    o.champ = m.tier === "champion"; o.sub = o.champ ? modLine(m) : ""; o.npc = false;
+    o.champ = m.tier === "champion"; o.big = o.champ && m.quest ? QUEST_ELITE_K : 1; o.sub = o.champ ? modLine(m) : ""; o.npc = false;
     o.boss = m.tier === "boss"; o.lit = o.boss ? (m.boss?.phase >= 2 ? "rage" : "boss") : "";
     o.x = posB.x; o.y = posB.y; o.d = Math.hypot(posB.x - hp.x, posB.y - hp.y);
     project(cam, o.x + 0.5, o.y + 0.5, pt); o.sx = pt.x; o.sy = pt.y;
   }
   for (let i = 0; i < npcs.length; i++) {
     const n = npcs[i], o = slot(nm + i);
-    o.id = `npc:${n.id}`; o.type = `npc-${n.id}`; o.name = S[content.npcs[n.id]?.nameKey] ?? n.id; o.sub = ""; o.ai = "idle"; o.hp = 0; o.hpMax = 0; o.dead = false; o.champ = false; o.npc = true; o.boss = false; o.lit = "";
+    o.id = `npc:${n.id}`; o.type = `npc-${n.id}`; o.name = S[content.npcs[n.id]?.nameKey] ?? n.id; o.sub = ""; o.ai = "idle"; o.hp = 0; o.hpMax = 0; o.dead = false; o.champ = false; o.big = 1; o.npc = true; o.boss = false; o.lit = "";
     o.x = n.tile.x; o.y = n.tile.y; o.d = Math.hypot(o.x - hp.x, o.y - hp.y);
     project(cam, o.x + 0.5, o.y + 0.5, pt); o.sx = pt.x; o.sy = pt.y;
   }
@@ -707,28 +709,28 @@ export function drawWorld(g, cam, atlas, core, prev, alpha, fx, now, rs, env) {
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
     if (!it.actor) { blit(g, it.e, it.x, it.y, z); if (it.led) rackLeds(g, it.x, it.y, z, now, it); continue; }
-    const x = it.x + it.dx, y = it.y + it.dy;
+    const x = it.x + it.dx, y = it.y + it.dy, zk = it.k === 1 ? z : z * it.k;
     if (it.a < 1) g.globalAlpha = it.a;
     if (it.champ) { // outline: a baked ring of the sprite's silhouette in the champion colour, under the sprite
       g.globalAlpha = 0.95 * it.a;
-      blit(g, atlas.outline(it.e, champColour, 1.6), x, y, z);
+      blit(g, atlas.outline(it.e, champColour, 1.6), x, y, zk);
       g.globalAlpha = it.a;
     }
-    if (it.hurt) { g.globalAlpha = 0.9 * it.a; blit(g, atlas.outline(it.e, "#ff2b3a", 2.2), x, y, z); g.globalAlpha = it.a; } // hurt: a red rim, the body stays readable
-    blit(g, it.flash ? atlas.flash(it.e) : it.e, x, y, z);
-    if (it.mute) { g.globalAlpha = 0.34 * it.a; blit(g, atlas.tint(it.e, "#7c88b8"), x, y, z); }
-    if (it.sf & SF.freeze) { g.globalAlpha = 0.5 * it.a; blit(g, atlas.tint(it.e, "#9fe4ff"), x, y, z); }
-    if (it.sf & SF.burn) { g.globalAlpha = (fx.reducedMotion ? 0.2 : 0.14 + 0.1 * Math.sin(now / 90 + x)) * it.a; blit(g, atlas.tint(it.e, "#ff7a1f"), x, y, z); }
-    if (it.shade > 0) { g.globalAlpha = it.shade * it.a; blit(g, atlas.shade(it.e, "#070518"), x, y, z); }
+    if (it.hurt) { g.globalAlpha = 0.9 * it.a; blit(g, atlas.outline(it.e, "#ff2b3a", 2.2), x, y, zk); g.globalAlpha = it.a; } // hurt: a red rim, the body stays readable
+    blit(g, it.flash ? atlas.flash(it.e) : it.e, x, y, zk);
+    if (it.mute) { g.globalAlpha = 0.34 * it.a; blit(g, atlas.tint(it.e, "#7c88b8"), x, y, zk); }
+    if (it.sf & SF.freeze) { g.globalAlpha = 0.5 * it.a; blit(g, atlas.tint(it.e, "#9fe4ff"), x, y, zk); }
+    if (it.sf & SF.burn) { g.globalAlpha = (fx.reducedMotion ? 0.2 : 0.14 + 0.1 * Math.sin(now / 90 + x)) * it.a; blit(g, atlas.tint(it.e, "#ff7a1f"), x, y, zk); }
+    if (it.shade > 0) { g.globalAlpha = it.shade * it.a; blit(g, atlas.shade(it.e, "#070518"), x, y, zk); }
     if (it.tintA > 0) { // pool colour on the actor (round G fix): multiply at 15-25 % plus a half-strength colour wash, so the cast survives the additive pool on top of it
-      g.globalCompositeOperation = "multiply"; g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, z); g.globalCompositeOperation = "source-over";
-      g.globalAlpha = it.tintA * 0.8 * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, z);
+      g.globalCompositeOperation = "multiply"; g.globalAlpha = it.tintA * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, zk); g.globalCompositeOperation = "source-over";
+      g.globalAlpha = it.tintA * 0.8 * it.a; blit(g, atlas.tint(it.e, it.tint), x, y, zk);
     }
-    if (it.hurt) { g.globalAlpha = 0.14; blit(g, atlas.tint(it.e, "#ff1f2e"), x, y, z); }
+    if (it.hurt) { g.globalAlpha = 0.14; blit(g, atlas.tint(it.e, "#ff1f2e"), x, y, zk); }
     g.globalAlpha = 1;
     if (it.tintA > 0 && !it.hurt && it.a > 0.6) restore.push(it); // (an actor faded because it stands in front of the hero is not restored: the hero must stay readable) // lit by a pool: its body is drawn again over the additive pass (restoreActors)
     if (it.summoned) blit(g, atlas.get(keys.fx("badge")), x + 5 * z, y - 30 * z, z * 0.9); // temp badge pinned to the chest
-    if (it.sf) drawStatus(g, it.sf, x, y, it.head, z, now, fx.reducedMotion);
+    if (it.sf) drawStatus(g, it.sf, x, y, it.head * it.k, z, now, fx.reducedMotion);
     if (it.icon) drawIcon(g, atlas, it, x, y, z, now);
   }
 

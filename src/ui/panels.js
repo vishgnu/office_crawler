@@ -126,7 +126,7 @@ export function createPanels(root, game) {
   function renderCharacter(c) {
     const p = c.player, xpv = xpProgress(p), pct = xpv.pct, pts = p.attrPoints;
     let h = `<div class="ph"><span class="phi">${skillIcon("panel:file")}</span><h2>${esc(T.fileTitle)}</h2>${closeBtn("character", T.closeCharacter)}</div><div class="pb"><div class="sheet" data-testid="employee-file">${tabsHtml("character")}`;
-    h += `<div class="fh"><div class="photo"><canvas width="112" height="112" data-bust="${esc(p.class)}" data-look="${esc(figures.look(c.equipment))}" aria-hidden="true"></canvas></div>`;
+    h += `<div class="fh"><div class="photo"><canvas width="120" height="144" data-bust="${esc(p.class)}" data-look="${esc(figures.look(c.equipment))}" aria-hidden="true"></canvas></div>`;
     h += `<div><h2 data-testid="file-name">${esc(p.name ?? "")}</h2><p data-testid="file-class">${esc(classById(p.class)?.name ?? "")} · <span data-stat="level">${esc(T.level)} ${p.level}</span></p><p>${esc(c.floor.name)}</p></div><div class="stamp" aria-hidden="true">${esc(T.probation)}</div></div>`;
     h += `<div class="xpl" title="${esc(T.xpTotal)}: ${num(xpv.total)}"><span>${esc(T.experience)}</span><span data-stat="xp" data-testid="xp-label" data-total="${Number(xpv.total) || 0}">${xpv.capped ? esc(T.xpMax) : `${num(xpv.into)} / ${num(xpv.span)} ${esc(T.xpToLevel)} ${p.level + 1} (${pct}%)`}</span></div><div class="xpb2" role="img" title="${esc(T.xpTotal)}: ${num(xpv.total)}" aria-label="${esc(T.experience)} ${pct}%, ${esc(T.xpTotal)} ${num(xpv.total)}"><i style="width:${pct}%"></i></div>`;
     h += `<section class="sc-attr"><h3>${esc(T.attributes)} <em>${esc(T.pointsToSpend)}: <b data-stat="attrPoints">${pts}</b></em></h3>`;
@@ -364,6 +364,7 @@ export function createPanels(root, game) {
     view.toastObj = t; view.toastId = t.id;
     el.toast.textContent = t.text; el.toast.title = t.text; el.toast.hidden = false;
     el.live.textContent = ""; el.live.textContent = t.text;
+    if (view.hoverKey && view.hoverEl?.isConnected && !el.tip.hidden) { layoutToast(drawerLayout(game.w, game.h)); showTip(view.hoverKey, view.hoverEl); } // R8-U2: a tip that is already open moves out from under the new toast
     clearTimeout(view.toastTimer);
     view.toastTimer = setTimeout(() => { el.toast.hidden = true; if (game.ui.toast?.id === t.id) game.ui.toast = null; }, t.ms ?? 3200);
   }
@@ -374,6 +375,12 @@ export function createPanels(root, game) {
     if (!cam) return { x: -9, y: -9, w: 0, h: 0 };
     const z = cam.z, cx = game.w / 2 + (game.inset || 0), cy = game.h / 2 + 12 * z;
     return { x: cx - 26 * z, y: cy - 62 * z, w: 52 * z, h: 74 * z };
+  };
+  /** R8-U2: the tooltip ends above a visible toast (its measured box, not a guess), so a toast never covers the lower half of a tip. */
+  const tipBottom = (D) => {
+    let b = D.hudTop - 8;
+    if (!el.toast.hidden && !el.toast.classList.contains("dup")) { const r = el.toast.getBoundingClientRect(); if (r.height) b = Math.min(b, r.top - 8); }
+    return b;
   };
   const rectOf = (n) => { const r = n.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
   function tipHtml(d, cmp, extra) {
@@ -418,7 +425,7 @@ export function createPanels(root, game) {
       el.tip.style.right = "8px"; el.tip.style.width = "auto";
     } else {
       el.tip.style.right = ""; el.tip.style.width = "";
-      pos = placeTip({ w, h, anchor: anchorRect, panel: panelNode ? rectOf(panelNode) : null, side: panelNode === el.left ? "left" : "right", drawers, hero: heroRect(), bounds: { left: 8, top: 8, right: game.w - 8, bottom: D.hudTop - 8 - (el.toast.hidden ? 0 : 52) }, keepClear: [...root.querySelectorAll(".plus,.dock .hbtn")].map(rectOf) });
+      pos = placeTip({ w, h, anchor: anchorRect, panel: panelNode ? rectOf(panelNode) : null, side: panelNode === el.left ? "left" : "right", drawers, hero: heroRect(), bounds: { left: 8, top: 8, right: game.w - 8, bottom: tipBottom(D) }, keepClear: [...root.querySelectorAll(".plus,.dock .hbtn")].map(rectOf) });
     }
     el.tip.style.left = pos.x / ts + "px"; el.tip.style.top = pos.y / ts + "px";
     el.tip.style.maxHeight = Math.max(80, D.hudTop - 16) / ts + "px";
@@ -439,7 +446,7 @@ export function createPanels(root, game) {
     if (D.phone) { pos = { x: 8, y: Math.min(Math.max(8, anchorRect.y + anchorRect.h + 6), Math.max(8, D.bottom - h)), h }; el.tip.style.right = "8px"; el.tip.style.width = "auto"; }
     else {
       el.tip.style.right = ""; el.tip.style.width = "";
-      pos = placeTip({ w, h, anchor: anchorRect, panel: panelNode ? rectOf(panelNode) : null, side: "left", drawers: [el.left, el.right].filter((x) => x.classList.contains("open")).map(rectOf), hero: heroRect(), bounds: { left: 8, top: 8, right: game.w - 8, bottom: D.hudTop - 8 - (el.toast.hidden ? 0 : 52) }, keepClear: [...root.querySelectorAll(".dock .hbtn")].map(rectOf) });
+      pos = placeTip({ w, h, anchor: anchorRect, panel: panelNode ? rectOf(panelNode) : null, side: "left", drawers: [el.left, el.right].filter((x) => x.classList.contains("open")).map(rectOf), hero: heroRect(), bounds: { left: 8, top: 8, right: game.w - 8, bottom: tipBottom(D) }, keepClear: [...root.querySelectorAll(".dock .hbtn")].map(rectOf) });
     }
     el.tip.style.left = pos.x / ts + "px"; el.tip.style.top = pos.y / ts + "px"; el.tip.style.maxHeight = Math.max(80, D.hudTop - 16) / ts + "px"; el.tip.style.overflowY = "auto";
     view.hoverKey = `node:${id}`;

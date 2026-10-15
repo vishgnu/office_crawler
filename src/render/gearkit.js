@@ -16,7 +16,10 @@ export function trimUnder(g, pts, tier) { if (tier >= 3) edge(g, pts, UNIQUE_RIM
 /** The tier marks, drawn OVER the finished part. `at` = [x, y] where the unique diamond sits (default: just above the top of the outline). */
 export function trimOver(g, pts, tier, at = null) {
   const R = palette.rarity;
-  if (tier === 1) edge(g, scaled(pts, 0.8), R.magic, 1.5);
+  if (tier === 1) { // R8-T G-1: the blue edge carries a hue-free highlight (dark flank + bright core), so magic differs from normal in greyscale too
+    const s = scaled(pts, 0.8);
+    edge(g, s, "rgba(20,16,40,0.7)", 3); edge(g, s, R.magic, 1.7); edge(g, s, "#ffffff", 0.8);
+  }
   else if (tier === 2) {
     edge(g, scaled(pts, 0.9), R.rare, 1.1); edge(g, scaled(pts, 0.66), R.rare, 1.1);
     const s = scaled(pts, 0.78);

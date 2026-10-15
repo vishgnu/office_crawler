@@ -48,12 +48,14 @@ function bustSource(classId, look) {
   return c;
 }
 export function paintBust(canvas, classId, look = "") {
-  const g = canvas.getContext("2d"), src = bustSource(classId, cleanLook(look)), s = canvas.width;
+  const g = canvas.getContext("2d"), src = bustSource(classId, cleanLook(look)), cw = canvas.width, ch = canvas.height;
   canvas.dataset.look = cleanLook(look); // for tests and the e2e: the look this canvas was last painted with
-  g.clearRect(0, 0, s, s);
-  g.fillStyle = "#17123a"; g.fillRect(0, 0, s, s);
+  g.clearRect(0, 0, cw, ch);
+  g.fillStyle = "#17123a"; g.fillRect(0, 0, cw, ch);
   g.imageSmoothingQuality = "high";
-  g.drawImage(src, 140, 262, 200, 200, 0, 0, s, s); // head and shoulders of the 480 x 600 portrait
+  // R8-U4: the whole figure (hat to boots, the figure spans y 240..525 of the 480 x 600 portrait), centred, at the canvas aspect: the old head-and-shoulders crop never showed boots or gloves
+  const sh = 280, sw = sh * (cw / ch);
+  g.drawImage(src, 240 - sw / 2, 240, sw, sh, 0, 0, cw, ch);
 }
 
 export const fmtPlay = (sec) => `${Math.floor((sec ?? 0) / 3600)}:${String(Math.floor(((sec ?? 0) % 3600) / 60)).padStart(2, "0")}`;

@@ -116,7 +116,7 @@ export function createLabels(style) {
         let dup = false;
         for (let j = 0; j < n && !dup; j++) if (placed[j].name === a.name && !a.npc && a.pr > 0 && Math.abs(placed[j].ax - a.sx) < placed[j].w * 1.2) dup = true;
         if (dup) continue;
-        const head = style.dims[a.type]?.head ?? 50;
+        const head = (style.dims[a.type]?.head ?? 50) * (a.big || 1);
         const sp = L.sprite(a.name, fs, hc, dpr, !a.npc, a.sub, a.champ), r = placed[n];
         const crown = a.champ ? Math.round(10 * s) : 0; // VFIX-R7 G1: a champion wears a crown on its head, the plate sits above the crown
         const ax = Math.round(a.sx), ay = Math.round(a.sy - head * z - 5 * s) - crown;

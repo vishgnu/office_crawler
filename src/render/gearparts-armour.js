@@ -2,7 +2,8 @@
 // They are drawn over the class outfit: head parts over hair and glasses, body parts over the class torso, hand parts over the hand circles, foot parts over the shoes.
 // Painters are `(g, slot, category, tier, A)`; A.hook names the hook point. Pure functions of their arguments (no RNG, no clock).
 import { INK, fillPoly, ellipse, line, limb } from "./draw/shapes.js";
-import { trimUnder, trimOver, arcPts, secondHand } from "./gearkit.js";
+import { trimUnder, trimOver, arcPts, secondHand, UNIQUE_RIM } from "./gearkit.js";
+import { palette } from "./styles/vector/palette.js";
 
 // ---------------------------------------------------------------- head
 /** Dome over the top of the head: a half ellipse, closed along the hairline. */
@@ -21,7 +22,10 @@ function headCap(g, slot, cat, tier, A) { // visor cap: rounded teal dome, seam 
   if (A.front) { // bill
     const bx = d.cx + A.fx * r * 0.85, rx = r * (0.98 - 0.36 * s), by = d.cy + 1.1;
     fillPoly(g, arcPts(bx, by, rx, 2.0, 0, Math.PI, 8).concat([[bx - rx, by - 0.4], [bx + rx, by - 0.4]]), "#1f6f7c", INK, 1.3);
-  } else { fillPoly(g, [[d.cx - 3.2, d.cy + 0.6], [d.cx + 3.2, d.cy + 0.6], [d.cx + 3.2, d.cy + 2.8], [d.cx - 3.2, d.cy + 2.8]], "#1f6f7c", INK, 1); ellipse(g, d.cx, d.cy + 1.7, 0.9, 0.9, "#cbd3e2"); } // strap + buckle
+  } else { fillPoly(g, [[d.cx - 3.2, d.cy + 0.6], [d.cx + 3.2, d.cy + 0.6], [d.cx + 3.2, d.cy + 2.8], [d.cx - 3.2, d.cy + 2.8]], "#1f6f7c", INK, 1); ellipse(g, d.cx, d.cy + 1.7, 0.9, 0.9, "#cbd3e2"); // strap + buckle
+    for (const k of [-1, 1]) { g.beginPath(); g.ellipse(d.cx, d.cy + 1.2, r * 0.9 * 0.5 + 1.6 * (k < 0 ? 1 : 1), r * 0.92 * 1.0, 0, k < 0 ? Math.PI * 1.08 : Math.PI * 1.55, k < 0 ? Math.PI * 1.45 : Math.PI * 1.92); g.lineWidth = 1; g.strokeStyle = "#1d6470"; g.stroke(); } // panel seams
+    g.beginPath(); g.ellipse(d.cx, d.cy + 0.4, r + 0.6, r * 0.5, 0, Math.PI * 0.08, Math.PI * 0.92); g.lineWidth = 1.2; g.strokeStyle = "#143f48"; g.stroke(); // dark arc under the dome: cap and hair never read as one ball
+  }
   trimOver(g, d.pts, tier, [d.cx, d.cy - r * 0.92 - 3.4]);
 }
 
@@ -65,9 +69,22 @@ function torsoPts(A, ext, hem, shoulder = 0) {
   return [[-hw - ext - shoulder + lx, shY + ly - 0.6], [hw + ext + shoulder + lx, shY + ly - 0.6], [hw - taper + ext + lx * 0.5, hipY + 1 + hem], [-hw + taper - ext + lx * 0.5, hipY + 1 + hem]];
 }
 
+/** R8-T G-2: a unique body keeps the class torso width: the heavy rim sits on the shoulder line and the hem only, the centre stays open (lapels, tie, buttons show). Tiers 0-2 use the shared trim. */
+function bodyUnder(g, p, tier) {
+  if (tier < 3) return trimUnder(g, p, tier);
+  for (const seg of [[p[0], p[1]], [p[3], p[2]]]) { g.beginPath(); g.moveTo(seg[0][0] - 1, seg[0][1]); g.lineTo(seg[1][0] + 1, seg[1][1]); g.lineWidth = 4.2; g.lineCap = "round"; g.strokeStyle = UNIQUE_RIM; g.stroke(); }
+}
+function bodyOver(g, p, tier, at) {
+  if (tier < 3) return trimOver(g, p, tier, at);
+  const R = palette.rarity;
+  for (const [a, b, dy] of [[p[0], p[1], 1.9], [p[3], p[2], -1.9]]) { g.beginPath(); g.moveTo(a[0] + 1.5, a[1] + dy); g.lineTo(b[0] - 1.5, b[1] + dy); g.lineWidth = 1.7; g.lineCap = "round"; g.strokeStyle = R.unique; g.stroke(); }
+  const cx = at ? at[0] : (p[0][0] + p[1][0]) / 2, cy = at ? at[1] : p[0][1] + 7;
+  fillPoly(g, [[cx, cy - 3.6], [cx + 2.8, cy], [cx, cy + 3.6], [cx - 2.8, cy]], "#fff2c0", R.unique, 1);
+}
+
 function knit(g, slot, cat, tier, A) { // cardigan: soft sage knit, V-neck over a white shirt, buttons, ribbed hem band and two pockets
-  const p = torsoPts(A, 0.9, 3.4), { hw, lx, ly, shY, hipY, cx0 } = A, hemY = hipY + 4.4;
-  trimUnder(g, p, tier);
+  const p = torsoPts(A, 1.6, 4.4, 0.4), { hw, lx, ly, shY, hipY, cx0 } = A, hemY = hipY + 4.4;
+  bodyUnder(g, p, tier);
   fillPoly(g, p, "#86a878", INK, 1.6);
   fillPoly(g, [[p[0][0], p[0][1]], [p[0][0] + 5, p[0][1]], [p[3][0] + 4, p[3][1]], [p[3][0], p[3][1]]], "#a3c294", null); // lit left edge
   fillPoly(g, [[p[1][0], p[1][1]], [p[1][0] - 4.5, p[1][1]], [p[2][0] - 4, p[2][1]], [p[2][0], p[2][1]]], "#6a8a5e", null); // shade side
@@ -79,12 +96,12 @@ function knit(g, slot, cat, tier, A) { // cardigan: soft sage knit, V-neck over 
     for (let i = 0; i < 3; i++) ellipse(g, cx0 + 1.6, shY + ly + 11 + i * ((hipY - shY - 13) / 2.4), 1.1, 1.1, "#f6f1e4", INK, 0.7);
     for (const sgn of [-1, 1]) fillPoly(g, [[cx0 + sgn * 4.4, hipY - 6], [cx0 + sgn * 8.4, hipY - 6], [cx0 + sgn * 8.4, hipY - 1.6], [cx0 + sgn * 4.4, hipY - 1.6]], "#6f9163", INK, 0.9);
   } else { fillPoly(g, [[cx0 - 4, shY + ly - 0.6], [cx0 + 4, shY + ly - 0.6], [cx0 + 3, shY + ly + 2.2], [cx0 - 3, shY + ly + 2.2]], "#6f9163", INK, 1); } // neck rib
-  trimOver(g, p, tier, [cx0 + hw * 0.45, shY + ly + 7]);
+  bodyOver(g, p, tier, [cx0 + hw * 0.45, shY + ly + 7]);
 }
 
 function jacket(g, slot, cat, tier, A) { // blazer: navy, square shoulder pads, white shirt V, notched lapels, breast pocket with a square
-  const p = torsoPts(A, 1.3, 4.2, 0.9), { ly, shY, hipY, cx0, lx, hw } = A;
-  trimUnder(g, p, tier);
+  const p = torsoPts(A, 1.8, 4.8, 1.5), { ly, shY, hipY, cx0, lx, hw } = A;
+  bodyUnder(g, p, tier);
   fillPoly(g, p, "#34487e", INK, 1.6);
   fillPoly(g, [[p[0][0], p[0][1]], [p[0][0] + 4, p[0][1]], [p[3][0] + 3, p[3][1]], [p[3][0], p[3][1]]], "#4a64a4", null);
   fillPoly(g, [[p[1][0], p[1][1]], [p[1][0] - 4.5, p[1][1]], [p[2][0] - 3, p[2][1]], [p[2][0], p[2][1]]], "#26365e", null);
@@ -96,24 +113,24 @@ function jacket(g, slot, cat, tier, A) { // blazer: navy, square shoulder pads, 
     const px = cx0 - hw * 0.55; fillPoly(g, [[px - 2.6, shY + ly + 6.4], [px + 2.6, shY + ly + 6.4], [px + 2.6, shY + ly + 7.6], [px - 2.6, shY + ly + 7.6]], "#26365e", INK, 0.8);
     fillPoly(g, [[px - 1.6, shY + ly + 4.4], [px + 0.2, shY + ly + 4.4], [px + 1.4, shY + ly + 6.6], [px - 1.6, shY + ly + 6.6]], "#fff6dc", INK, 0.7);
   } else { line(g, cx0, shY + ly + 3, cx0, p[2][1], "#1f2c50", 1.4); fillPoly(g, [[cx0 - 5, shY + ly - 0.4], [cx0 + 5, shY + ly - 0.4], [cx0 + 3, shY + ly + 2.4], [cx0 - 3, shY + ly + 2.4]], "#5a76b8", INK, 1); }
-  trimOver(g, p, tier, [cx0 + hw * 0.5, shY + ly + 6]);
+  bodyOver(g, p, tier, [cx0 + hw * 0.5, shY + ly + 6]);
 }
 
 function vest(g, slot, cat, tier, A) { // hi-vis vest: lime, two silver reflective bands, straps over the shoulders, zip; sleeves stay the class shirt
-  const p = torsoPts(A, 0.2, 1.4), { ly, shY, hipY, cx0, hw, lx } = A;
-  trimUnder(g, p, tier);
+  const p = torsoPts(A, 0.8, 2.2, 0.3), { ly, shY, hipY, cx0, hw, lx } = A;
+  bodyUnder(g, p, tier);
   fillPoly(g, p, "#c9e63a", INK, 1.6);
   fillPoly(g, [[p[1][0], p[1][1]], [p[1][0] - 4, p[1][1]], [p[2][0] - 3, p[2][1]], [p[2][0], p[2][1]]], "#a6c22a", null);
   const y1 = shY + ly + 6.4, y2 = shY + ly + 12.6;
   for (const y of [y1, y2]) { fillPoly(g, [[p[0][0] + 0.4, y], [p[1][0] - 0.4, y], [p[1][0] - 0.4, y + 2.6], [p[0][0] + 0.4, y + 2.6]], "#e8eef8", INK, 0.9); line(g, p[0][0] + 1.2, y + 1.3, p[1][0] - 1.2, y + 1.3, "#aab6cc", 0.8); }
   for (const sgn of [-1, 1]) fillPoly(g, [[cx0 + sgn * hw * 0.62, shY + ly - 0.6], [cx0 + sgn * hw * 0.98, shY + ly - 0.6], [cx0 + sgn * hw * 0.98, y1], [cx0 + sgn * hw * 0.66, y1]], "#e8eef8", INK, 0.8); // reflective straps
   if (A.front) { fillPoly(g, [[cx0 - 3, shY + ly - 0.6], [cx0 + 3, shY + ly - 0.6], [cx0, shY + ly + 3]], "#3a3f58", INK, 0.9); line(g, cx0, shY + ly + 3, cx0, p[2][1] - 0.4, INK, 1.2); }
-  trimOver(g, p, tier, [cx0 - hw * 0.55, shY + ly + 14.6]);
+  bodyOver(g, p, tier, [cx0 - hw * 0.55, shY + ly + 14.6]);
 }
 
 function suit(g, slot, cat, tier, A) { // pinstripe suit: charcoal with light pinstripes, long jacket, white shirt, red tie, lapels
-  const p = torsoPts(A, 1.1, 5.2, 0.5), { ly, shY, hipY, cx0, hw } = A;
-  trimUnder(g, p, tier);
+  const p = torsoPts(A, 1.6, 5.8, 1.0), { ly, shY, hipY, cx0, hw } = A;
+  bodyUnder(g, p, tier);
   fillPoly(g, p, "#3a3b50", INK, 1.6);
   g.save(); g.beginPath(); g.moveTo(p[0][0], p[0][1]); for (const q of p) g.lineTo(q[0], q[1]); g.closePath(); g.clip();
   for (let x = p[0][0] + 2.4; x < p[1][0]; x += 3.2) line(g, x, shY + ly, x - 0.4, hipY + 8, "#9a9cc0", 0.9);
@@ -126,7 +143,7 @@ function suit(g, slot, cat, tier, A) { // pinstripe suit: charcoal with light pi
     fillPoly(g, [[cx0 + 3.4, shY + ly - 0.4], [cx0 + 7, shY + ly - 0.4], [cx0 + 1.2, hipY - 6]], "#2a2b3e", INK, 1);
     ellipse(g, cx0 - 0.5, hipY - 1, 1.1, 1.1, "#9a9cc0", INK, 0.7);
   } else line(g, cx0, shY + ly + 2, cx0, p[2][1], "#23243a", 1.3);
-  trimOver(g, p, tier, [cx0 + hw * 0.5, shY + ly + 6]);
+  bodyOver(g, p, tier, [cx0 + hw * 0.5, shY + ly + 6]);
 }
 
 // ---------------------------------------------------------------- hands
@@ -139,14 +156,14 @@ function handSpots(A) {
 const HK = 1.2; // hand parts are drawn 20 % larger than the bare hand so they read at ~60 px
 const rot = (pts, cx, cy, ux, uy) => pts.map(([a, b]) => [cx + ux * a * HK - uy * b * HK, cy + uy * a * HK + ux * b * HK]); // a along the arm (towards the hand), b across
 
-function brace(g, slot, cat, tier, A) { // wrist brace: navy neoprene band with a strap and a white edge, hand left bare
+function brace(g, slot, cat, tier, A) { // wrist brace (R8-T G-3): a slim navy band across the wrist with a white edge and one yellow stud; the hand stays bare and clear of the face
   for (const [x, y, ux, uy] of handSpots(A)) {
-    const band = rot([[-6.6, -3.8], [-1, -3.8], [-1, 3.8], [-6.6, 3.8]], x, y, ux, uy);
+    const band = rot([[-4.6, -3], [-2, -3], [-2, 3], [-4.6, 3]], x, y, ux, uy);
     trimUnder(g, band, tier);
-    fillPoly(g, band, "#2f4b9c", INK, 1.3);
-    fillPoly(g, rot([[-3.4, -3.8], [-1.8, -3.8], [-1.8, 3.8], [-3.4, 3.8]], x, y, ux, uy), "#e8eef8", null);
-    fillPoly(g, rot([[-6, -1.6], [-4, -1.6], [-4, 1.6], [-6, 1.6]], x, y, ux, uy), "#ffd23a", INK, 0.7);
-    trimOver(g, band, tier, [x - ux * 3.4 - uy * 0, y - uy * 3.4 - 5.4]);
+    fillPoly(g, band, "#2f4b9c", INK, 1.2);
+    fillPoly(g, rot([[-3.6, -3], [-2.8, -3], [-2.8, 3], [-3.6, 3]], x, y, ux, uy), "#e8eef8", null);
+    const [sx, sy] = rot([[-4, 0]], x, y, ux, uy)[0]; ellipse(g, sx, sy, 0.9, 0.9, "#ffd23a", INK, 0.5);
+    trimOver(g, band, tier, [x - ux * 3.4, y - uy * 3.4 - 4.6]);
   }
 }
 function gloves(g, slot, cat, tier, A) { // rubber gloves: mint, flared cuff, a thumb and three finger bumps

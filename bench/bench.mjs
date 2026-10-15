@@ -62,6 +62,9 @@ try {
     await g.page.waitForTimeout(1500); // warm-up
     // the lazy sprites of the new types are drawn a few per frame in the first seconds after they appear (world.js warmFrames); wait until that is done so the window is steady state
     for (let i = 0, last = -1; i < 60; i++) { const c = await g.page.evaluate(() => window.__atlasStats?.lazy ?? 0); if (c === last) break; last = c; await g.page.waitForTimeout(400); }
+    // R8-P1: the hero's idle/walk frames of the worn signature are baked ~1 a few frames (gearcache.js warmGear, ~4 ms each, 80 frames); a window that overlaps that warm-up
+    // measures its spikes, not the steady state. Wait until the warm queue is done (builds stop growing), like for the monster sprites above.
+    if (geared) for (let i = 0, last = -1; i < 60; i++) { const c = (await g.app("perf")).gearCache.builds; if (c === last) break; last = c; await g.page.waitForTimeout(600); }
     // the measured window: 150 real frames; every frame's dt, the atlas first-use counters and heap drops (GC) are recorded inside it
     const win = await g.page.evaluate(() => new Promise((r) => {
       const st = window.__atlasStats ?? { lazy: 0, lazyMs: 0, sil: 0, silMs: 0 }, s0 = { ...st }, dts = [], mem = () => performance.memory?.usedJSHeapSize ?? 0;

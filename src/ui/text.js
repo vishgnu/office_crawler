@@ -52,7 +52,7 @@ export const T = {
   tabGear: "Gear", tabFile: "Employee File", tabSkills: "Skills", tabNpc: "Talk", panelTabs: "Panels",
   // messages
   msgEquip: "Equipped", msgUnequip: "Unequipped", msgBuy: "Bought", msgSell: "Sold", msgPickup: "Picked up", msgLevel: "Level up! Now level", msgPotion: "Restored", msgLearn: "Learned", msgAlloc: "Raised", msgFull: "Inventory full", msgAfford: "Not enough gold", msgNoPath: "No way there",
-  msgBeltFull: "Belt is full", msgReqs: "Requirements not met", msgBlocked: "Two-handed weapon in the way", msgRespawned: "Back in the Lobby.", msgFloor: "Floor", msgLobby: "The Lobby",
+  msgBeltFull: "Belt is full", msgReqs: "Requirements not met", msgBlocked: "Two-handed weapon in the way", msgRespawned: "Back in the Lobby.", msgRestock: "Your belt is empty: restock potions at the Break Room Barista.", msgFloor: "Floor", msgLobby: "The Lobby",
   msgHeldWorld: "Place the item first, or press Esc to put it back.",
   stairsLocked: "The way down is locked. Something waits below.",
   // map (R-075) and Emergency Exit (R-046)
