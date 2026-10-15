@@ -256,7 +256,7 @@ button.plus:disabled{background:var(--disabled-bg);color:var(--disabled-fg);bord
 #ui.phone .bgrid{grid-template-columns:repeat(4,44px);grid-auto-rows:44px}
 #ui.phone .sheet{margin:4px;padding:8px}
 #ui.phone .dstats{grid-template-columns:1fr}
-#ui.phone .toast{font-size:14px;padding:2px 10px;line-height:1.2;-webkit-line-clamp:2}
+#ui.phone .toast{font-size:14px;padding:2px 10px;line-height:1.2;-webkit-line-clamp:3}
 #ui.phone .tip{left:8px;right:8px;width:auto}
 #ui.phone .xbtn{width:44px;height:44px}
 #ui.phone .plus{width:44px;height:44px}
