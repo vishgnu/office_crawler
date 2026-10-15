@@ -387,16 +387,23 @@ if (sec("slots")) {
   const bl = await B.app("slots.run", { t: "loadSlot", slot: 1, confirm: true });
   await B.app("step", 2);
   check("[R7-tabs] after an explicit take-over the second tab holds the same character", bl.ok);
-  await talk(B, "vendor"); await B.page.click(T("quest-handin-sq1")).catch(() => {}); await B.app("step", 2);
+  // R8-T (flake hardening, L-027): the dialog must really be open and the hand-in button actionable before the click; the click is awaited and its failure is part of the check
+  // (it used to be swallowed by .catch(() => {}), which turned a slow render under load into a silent no-op and a red "tab B hands in" check with no cause).
+  const dlgOpen = await talk(B, "vendor");
+  await B.page.waitForSelector(T("quest-handin-sq1"), { state: "visible", timeout: 5000 }).catch(() => {});
+  let clickErr = null;
+  await B.page.click(T("quest-handin-sq1"), { timeout: 5000 }).catch((e) => { clickErr = String(e.message).split("\n")[0]; });
+  await B.app("step", 2);
   if ((await B.state()).quests.sq1.state !== "completed") { // the real hero's bag was full: make room through the vendor (real sell input) and retry
     for (const it of (await B.state()).inventory.items.slice(0, 10)) await B.app("input", { t: "sell", id: it.id });
-    await B.page.click(T("quest-handin-sq1")).catch(() => {}); await B.app("step", 2);
+    await B.page.waitForSelector(T("quest-handin-sq1"), { state: "visible", timeout: 5000 }).catch(() => {});
+    await B.page.click(T("quest-handin-sq1"), { timeout: 5000 }).catch((e) => { clickErr = String(e.message).split("\n")[0]; }); await B.app("step", 2);
   }
   const bState = await B.state();
   const w = await B.app("save.write");
   const textB = await A.app("slots.raw", 1);
   const pb = deserialize(textB);
-  check("[R7-tabs] tab B hands in sq1 and its save is a legal state (completed, pouch rule holds)", pb.ok && bState.quests.sq1.state === "completed" && (pb.state.quests.sq1.s === "completed" || w?.ok === false), [pb.message, w, bState.quests.sq1.state, bState.scene, bState.ui.dialog, pb.ok && pb.state.quests.sq1.s]);
+  check("[R7-tabs] tab B hands in sq1 and its save is a legal state (completed, pouch rule holds)", pb.ok && bState.quests.sq1.state === "completed" && (pb.state.quests.sq1.s === "completed" || w?.ok === false), [pb.message, w, bState.quests.sq1.state, bState.scene, bState.ui.dialog, pb.ok && pb.state.quests.sq1.s, { dlgOpen, clickErr }]);
   // tab A is stale: it still believes sq1 is ready. Its write must not silently overwrite B's newer state with the stale one.
   const aw = await A.app("save.write");
   const textAfter = await A.app("slots.raw", 1);
