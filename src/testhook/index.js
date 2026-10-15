@@ -1,6 +1,7 @@
 // window.__app (ADR-0003, S1 subset). Installed only with ?test=1. A thin adapter: no game logic here.
 import { slotsHook, characterHook, treeHook } from "../save/hook.js";
 import { setQuestStep, completeQuest } from "../core/cheats.js";
+import { content, config } from "../core/index.js";
 
 const isObj = (v) => v !== null && typeof v === "object";
 const fail = (error) => ({ ok: false, error });
@@ -22,6 +23,27 @@ export function installTestHook(game, extras = {}, win = window) {
     const t = target(spec);
     if (t.error) return fail(t.error);
     return game.input({ t: "click", tile: t.tile, button: opts.button ?? 0, hold: !!opts.hold });
+  };
+
+  /**
+   * G-5: rollItem turns a "unique" request into a rare when no unique fits (17 of the 25 bases have none, or it is below its item level, or already found).
+   * A test that asked for a unique must not get a rare quietly: refuse before rolling when none fits, and report it when the roll fell back anyway.
+   */
+  const uniqueGuard = (opts) => {
+    if (opts.rarity !== "unique" || opts.potion || !game.core) return null;
+    const c = game.core, ilvl = opts.ilvl ?? (opts.depth ?? c.depth) * config.ilvlPerDepth, taken = new Set(c.uniquesFound ?? []);
+    const pool = content.uniques.filter((u) => u.minIlvl <= ilvl && (!opts.slot || content.items[u.base].slot === opts.slot) && (!opts.base || u.base === opts.base));
+    if (!pool.length) return { ok: false, error: "no unique for this base/slot at this item level" };
+    if (config.uniqueOncePerGame && pool.every((u) => taken.has(u.id))) return { ok: false, error: "every matching unique was already found this game" };
+    return null;
+  };
+  const uniqueCheck = (opts, run) => {
+    const refused = uniqueGuard(opts);
+    if (refused) return refused;
+    const wants = opts.rarity === "unique" && !opts.potion && game.core, before = wants ? (game.core.uniquesFound?.length ?? 0) : 0;
+    const r = run();
+    if (wants && r?.ok && (game.core.uniquesFound?.length ?? 0) <= before) return { ok: false, error: "the roll fell back to a rare (matching uniques already found); a rare item was created", fellback: true, id: r.id };
+    return r;
   };
 
   const tree = treeHook(() => game.core);
@@ -88,8 +110,8 @@ export function installTestHook(game, extras = {}, win = window) {
       damageMonster: (id, n) => (typeof id === "string" && Number.isFinite(n) ? game.cheat.damageMonster(id, n) : fail("damageMonster needs a monster id and an amount")),
       teleportFloor: (depth) => game.cheat.teleportFloor(depth),
       giveGold: (n) => game.cheat.giveGold(n),
-      spawnItem: (opts, tile) => game.cheat.spawnItem(isObj(opts) ? opts : {}, tileArg(tile) ?? undefined),
-      giveItem: (opts) => game.cheat.giveItem(isObj(opts) ? opts : {}),
+      spawnItem: (opts, tile) => { const o = isObj(opts) ? opts : {}; return uniqueCheck(o, () => game.cheat.spawnItem(o, tileArg(tile) ?? undefined)); },
+      giveItem: (opts) => { const o = isObj(opts) ? opts : {}; return uniqueCheck(o, () => game.cheat.giveItem(o)); },
       completeQuest: (id) => (questId(id) ? questCheat("completeQuest", id) : fail("bad id")),
     },
     quests,
