@@ -288,6 +288,8 @@ export function schemaProblem(d) {
   }
   if (!Array.isArray(d.uniquesFound) || d.uniquesFound.length > 100 || d.uniquesFound.some((u) => !safeId(u))) return "bad uniques";
   if (!isInt(d.nextItemId, 1)) return "bad item counter";
+  // ADV-R8-01: the counter is the only minting source, so a stored minted id ("i<n>") is below it; a forged future id would collide with an item minted later.
+  for (const id of ids) { const m = /^i(\d+)$/.exec(id); if (m && Number(m[1]) >= d.nextItemId) return "bad item id"; }
   if (!isObj(d.rng) || ["world", "combat", "ai", "loot"].some((n) => !isObj(d.rng[n]) || !isInt(d.rng[n].s, 0, 0xffffffff)) || Object.keys(d.rng).length !== 4) return "bad random streams";
   if (!hasOnly(d.stats, STATS_KEYS) || Object.values(d.stats).length !== STATS_KEYS.length || Object.values(d.stats).some((n) => !isInt(n, 0))) return "bad stats";
   if (!isObj(d.explored)) return "bad explored";
