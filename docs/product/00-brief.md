@@ -26,14 +26,14 @@ so the harness gets tested and improved on a real project.
 | G2 | Stay close to the original | **partly contradicted** | Close in mechanics: yes. The original's names, characters, artwork, music, text, logo and trade dress belong to their owner. Harness rule 06 forbids copying them. All of these are original here |
 | G3 | An agent plays the user's role while they are away | **supported** | `customer-proxy` agent; every answer is tagged PROXY and logged in `proxy-log.md` for review; legal/IP/public/irreversible items are escalated |
 | G4 | Separate folder | **supported** | `office-crawler/` at the repo root |
-| G5 | Use it to test and improve the harness | **supported** | Learnings in `docs/harness-learnings.md`; fixes go into `harness/` |
+| G5 | Use it to test and improve the harness | **supported** | Learnings in `docs/harness-learnings.md`; fixes go into `../agent_harness/` |
 
 ## Delegation record
 
 - **Who/when:** the user, 2026-10-13, in the session that built the harness.
 - **Scope:** for `office-crawler` only, `customer-proxy` may answer circle questions, pick variants, and accept
   slices (phase gates included) while the user is away.
-- **Not delegated:** anything listed under "Never decide" in `harness/.claude/agents/customer-proxy.md`.
+- **Not delegated:** anything listed under "Never decide" in `../agent_harness/.claude/agents/customer-proxy.md`.
   Also not delegated: gates of the harness project itself.
 
 ## Addendum (user, 2026-10-13, verbatim)

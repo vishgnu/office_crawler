@@ -15,7 +15,7 @@ Answerer: the real customer or, under the delegation record, `customer-proxy`. Q
 
 ## Readiness (area N, R-240..R-256)
 
-Threshold 16/20, no item at 0 (`harness/02-lifecycle.md`). Scored for area N only.
+Threshold 16/20, no item at 0 (`../agent_harness/02-lifecycle.md`). Scored for area N only.
 
 | # | Item | Score | Reasoning |
 |---|---|---|---|

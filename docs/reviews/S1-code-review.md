@@ -1,6 +1,6 @@
 # S1 code review (S1-1..S1-5)
 
-Reviewer: `reviewer` agent. Scope: `office-crawler/src`, `test`, `e2e`, `build.mjs`, `package.json` (diff 476a4f2..HEAD c4bbdd0).
+Reviewer: `reviewer` agent. Scope: `src`, `test`, `e2e`, `build.mjs`, `package.json` (diff 476a4f2..HEAD c4bbdd0).
 Read-only checks run: `npm test` 96/96 pass, 0 skipped; `npm run e2e` all scripts pass (Chromium; Firefox and WebKit not installed here, SKIP is printed, not failed).
 
 **Verdict: changes needed** (1 blocking, 6 should, 6 nit)

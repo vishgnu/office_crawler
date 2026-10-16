@@ -1,7 +1,7 @@
 # Metrics: iteration 1 (slice S1, playable core)
 
 Collected by the orchestrator from the subagent completion reports (tokens = subagent tokens; time = agent wall time).
-Raw input for the agent-vs-traditional scorecard (`harness/11-operating-model.md`). All agents ran on Sonnet;
+Raw input for the agent-vs-traditional scorecard (`../agent_harness/11-operating-model.md`). All agents ran on Sonnet;
 the orchestrator ran on Opus.
 
 | Step | Agent | Tokens (k) | Minutes | Output |

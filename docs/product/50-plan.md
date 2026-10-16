@@ -561,7 +561,7 @@ Known items go straight into fix packages; the adversarial test engineer hunts f
 - F-07 decision (orchestrator, customer default "once per run"): the floor-2 reminder is shared with the level-up hint by design (R11-05); no change.
 
 ## Open product backlog at project end (2026-10-16, customer: "bugs left will be for later")
-Source: harness/reviews/office-crawler-postmortem.md (backlog) + R11 acceptance. Severity in brackets.
+Source: ../agent_harness/reviews/office-crawler-postmortem.md (backlog) + R11 acceptance. Severity in brackets.
 - F-01 floor 2 first pack vs a fast level-2 Facilities Manager (2 deaths in 12 real-click runs, seed 3; minDist 14 tried, mixed, reverted) [medium-low]
 - Floors 5-9 and the boss never played with real mouse input (bot/in-page policy only) [medium-low, evidence hole]
 - Real-click play takes 5-12x the bot's floor-4 damage (SR fell to 2 hp) [low]

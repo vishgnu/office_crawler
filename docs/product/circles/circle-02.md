@@ -24,7 +24,7 @@ Customer words recorded as `agreed`: R-200 (number of classes), R-202 (a tree pe
 
 ## Definition of Ready, re-scored for the new area
 
-Threshold: 16/20, no item at 0 (`harness/02-lifecycle.md`). Scored for area M only; the rest of the project keeps its earlier state (spec and S1 exist).
+Threshold: 16/20, no item at 0 (`../agent_harness/02-lifecycle.md`). Scored for area M only; the rest of the project keeps its earlier state (spec and S1 exist).
 
 | # | Item | Score | Reasoning |
 |---|---|---|---|

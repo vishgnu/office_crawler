@@ -1,6 +1,6 @@
 # S2 code review (S2-1..S2-5)
 
-Reviewer: `reviewer` agent. Scope: `office-crawler/src`, `test`, `e2e`, `bot` (diff 9ada7b1..HEAD). Read-only checks: `npm test` 312/312 pass; `npm run e2e` all scripts pass (ui 103/103). Core determinism greps clean (`layering.test.js` bans clocks, Math.random and trig in core; only `main.js` seeds from `Date.now()`, which is allowed). State round-trips through JSON unchanged after floor changes and 20 drops.
+Reviewer: `reviewer` agent. Scope: `src`, `test`, `e2e`, `bot` (diff 9ada7b1..HEAD). Read-only checks: `npm test` 312/312 pass; `npm run e2e` all scripts pass (ui 103/103). Core determinism greps clean (`layering.test.js` bans clocks, Math.random and trig in core; only `main.js` seeds from `Date.now()`, which is allowed). State round-trips through JSON unchanged after floor changes and 20 drops.
 
 Verdict: **changes needed** (3 blocking, 6 should, 6 nit).
 

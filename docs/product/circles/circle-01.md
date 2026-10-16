@@ -5,7 +5,7 @@ Answerer: the real customer or, under the delegation record in `00-brief.md`, `c
 
 ## Readiness before (this circle): 9 / 20 - not ready
 
-Threshold: 16/20, no item at 0 (default, `harness/02-lifecycle.md`). Greenfield, so there is no as-is model; the first draft rests on the brief and genre knowledge (INFERRED, not OBSERVED).
+Threshold: 16/20, no item at 0 (default, `../agent_harness/02-lifecycle.md`). Greenfield, so there is no as-is model; the first draft rests on the brief and genre knowledge (INFERRED, not OBSERVED).
 
 | # | Item | Score | Reasoning |
 |---|---|---|---|

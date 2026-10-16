@@ -1,6 +1,6 @@
 # Code review: rounds R4 (core), R5 (WORLD + UI) and G / G-FIX
 
-Reviewer: reviewer agent, 2026-10-14. Read-only. Range: `c1be6f3` (last round-3 commit) to HEAD `0034514`, for `office-crawler/src`, `e2e`, `test`.
+Reviewer: reviewer agent, 2026-10-14. Read-only. Range: `c1be6f3` (last round-3 commit) to HEAD `0034514`, for `src`, `e2e`, `test`.
 Inputs read: spec 11, ADR-0005 and ADR-0006, R4-contract, R4-core-notes, R5-world-notes, R5-ui-progress, 40-nfr, both denylists.
 Checks run: `npm test` = 574 pass / 0 fail (read-only). A scratch script (outside the repo) exercised the store and the importer to confirm CR-01 and CR-02/03/04 claims. The e2e suite and a real browser were NOT run.
 

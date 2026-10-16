@@ -1,7 +1,7 @@
 # ADR-0001 Stack
 
 Date: 2026-10-13. Status: proposed (architect; gate authority delegated to the customer proxy, see `../proxy-log.md`).
-Inputs: `../00-brief.md`, `../20-requirements.md` (R-110..R-113), `../40-nfr.md`, `../circles/circle-01.md` (Q2, Q3, Q5 PROXY answers), `../30-spec/10-tech-and-testability.md`, stack pack `harness/stack-packs/static-web/`.
+Inputs: `../00-brief.md`, `../20-requirements.md` (R-110..R-113), `../40-nfr.md`, `../circles/circle-01.md` (Q2, Q3, Q5 PROXY answers), `../30-spec/10-tech-and-testability.md`, stack pack `../agent_harness/stack-packs/static-web/`.
 
 ## Context
 
@@ -19,7 +19,7 @@ A single-player, real-time isometric action-RPG for desktop browsers. No server,
 
 ## Decision
 
-1. **Stack pack: `static-web`** (`harness/stack-packs/static-web/`, commands `npm ci`, `npm test`, `npm run build`, `npm run e2e`). No adapter needed beyond the extensions below.
+1. **Stack pack: `static-web`** (`../agent_harness/stack-packs/static-web/`, commands `npm ci`, `npm test`, `npm run build`, `npm run e2e`). No adapter needed beyond the extensions below.
 2. **Language:** plain modern JavaScript, ES modules, target `es2022`. Types are documented with JSDoc typedefs in `src/core/types.js` (no build step).
 3. **Rendering:** one HTML5 `<canvas>` using the 2D context for the world, HUD and in-game panels. Menus, title, game over, error and options screens are DOM overlays (real `<button>`s with roles and text from the string table) so tests and screen readers can find them (AC-R-001-2, AC-R-023-2, AC-NFR-Q02-1).
 4. **Build:** esbuild (already in the skeleton, `0.25.10`, MIT) bundles `src/main.js` and CSS into **one** `dist/index.html`, IIFE, minified. `build.mjs` additionally: injects a CSP meta tag (`default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src blob:; connect-src 'none'`, AC-NFR-S01-2), embeds the licence list (`THIRD-PARTY-LICENSES`) in the HTML as a `<script type="text/plain" id="licenses">` block, because the build must stay one file (AC-NFR-L04-1 reads it from there and from `package-lock.json`).

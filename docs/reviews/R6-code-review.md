@@ -1,6 +1,6 @@
 # R6 code review (reviewer, 2026-10-14)
 
-Scope: diff `ad484ad~1..HEAD` (office-crawler/src, bot, test, e2e): BAL-R6 (core numbers, power attribute, bot, new tests, golden), UI-R6, WORLD-R6. Read-only. `npm test`: 686/686 pass (33 s).
+Scope: diff `ad484ad~1..HEAD` (src, bot, test, e2e): BAL-R6 (core numbers, power attribute, bot, new tests, golden), UI-R6, WORLD-R6. Read-only. `npm test`: 686/686 pass (33 s).
 Verdict: **changes needed** (no blocker; 8 should, 7 nit). The golden re-record is justified. The power-attribute formula is correct and deterministic.
 
 ## Checked and fine (evidence)

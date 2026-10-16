@@ -1,7 +1,9 @@
 # Office Crawler (working title)
 
+> **Repo layout:** clone this repo next to the harness repo (`../agent_harness/`). Links to the harness, and the portal and metrics commands (run from `../agent_harness/`), assume that layout.
+
 A browser action-RPG tribute to the classic isometric hack-and-slash genre, set in an office.
-**Also the harness's second target project**: it is built with the agents and conventions in `../harness/`,
+**Also the harness's second target project**: it is built with the agents and conventions in `../agent_harness/`,
 with the `customer-proxy` agent standing in for the user, to find and fix weaknesses in the harness.
 
 Start at `docs/product/STATE.md`. Harness learnings are logged in `docs/harness-learnings.md`.
